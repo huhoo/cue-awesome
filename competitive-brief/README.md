@@ -1,38 +1,13 @@
-# competitive-brief — 竞品简报生成器
+# competitive-brief
 
-**把散落在网页/PDF/录音/视频里的竞品素材，变成可溯源、可对比、可更新的决策简报。**
-
-## 一句话
-
-不是代写分析，是把素材结构化 + 交叉验证 + 按框架出稿。
-
-## 快速开始
-
-```bash
-# 安装
-npx skills add huhoo/cue-awesome --skill competitive-brief
-
-# 启动
-+intake "竞品A官网 竞品B定价页 竞品C年报.pdf"
-```
-
-## 流程
+围绕一个决策问题做竞品分析，出带证据链的简报。
 
 ```
-素材 → omni-reader -> +intake -> +brief -> +map -> +gather(cue) -> +draft -> +check
++brief "我们要不要进入北美中小律所的合规工具市场"
+  → 先定决策、看谁、到什么程度
+  → omni-reader 收素材，cue-research 深研交叉验证
+  → 每一条 claim 标 fact/inference/opinion
+  → 交付：结论 + 追溯 + 自己还需要确认什么
 ```
 
-## 三件套交付
-
-- `brief.html` — 阅读版
-- `brief.pdf` — 分享版
-- `brief.md` — 编辑版
-
-## 依赖
-
-- **推荐安装**：`cue-omni-reader`（素材摄入）、`cue-research`（深研取证）
-- **Python**：pymupdf、jinja2、pyyaml
-
-## License
-
-MIT
+依赖（推荐安装，不计费不装也能跑但缺能力）：`cue-omni-reader`、`cue-research`。
