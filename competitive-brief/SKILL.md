@@ -2,7 +2,7 @@
 name: competitive-brief
 slug: competitive-brief
 displayName: 竞品简报
-version: 0.2.0
+version: 0.3.0
 summary: "给一个决策问题和竞品清单，先填证据表，再渲染成可读简报。"
 tags:
   - 竞品分析
@@ -15,7 +15,7 @@ description: "先填 evidence table，再渲染简报——约束比流程重要
 license: MIT
 agent_created: true
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   requires:
     recommendedSkills: ["cue-omni-reader", "cue-research"]
 ---
@@ -46,11 +46,11 @@ evidence table 是一个简单的 markdown 表格。**简报从这个表渲染�
 
 | 竞品 | 维度 | 主张 | 证据级别 | 来源 | 日期 | 置信度 |
 |---|---|---|---|---|---|---|
-| Cursor | 定价 | 5人月费 $100 | fact | cursor.com/pricing | 2026-09 | 高 |
-| Claude Code | 模型开放度 | 仅支持 Claude 系列 | fact | claude.com/pricing | 2026-09 | 高 |
-| Claude Code | 上下文 | 200K token 窗口 | fact | docs.anthropic.com | 2026-09 | 高 |
-| OpenCode | 多文件编辑 | 能力依赖底层 CLI | inference | README | 2026-09 | 低 |
-| Codex CLI | 成熟度 | 产品迭代节奏不稳定 | opinion | — | — | 低 |
+| Cursor | 定价 | Individual $20/月/人，Teams $40/用户/月，Enterprise 定制 | fact | cursor.com/pricing（omni-reader 解析） | 2026-09-18 | 高 |
+| Claude Code | 上下文 | Up to 1M token，视模型而定 | fact | claude.com/pricing（omni-reader 解析） | 2026-09-18 | 高 |
+| OpenCode | 开源 | ✅ MIT 开源，Go 开发 | fact | github.com/opencode-ai/opencode（omni-reader 解析） | 2026-09-18 | 高 |
+| OpenCode | 成熟度 | 项目已归档，转移至 Crush | fact | github repo README（omni-reader 解析） | 2026-09-18 | 高 |
+| Codex CLI | 成熟度 | 2025 H2 推出，持续迭代中 | inference | github commit history | 2026-09 | 中 |
 
 ### 约束
 
