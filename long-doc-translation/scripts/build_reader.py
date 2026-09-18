@@ -157,7 +157,14 @@ MD = None
 def get_md():
     global MD
     if MD is None:
-        import markdown
+        try:
+            import markdown
+        except ImportError:
+            # 与其他脚本一致：缺依赖给「可执行的下一步」，而不是抛 traceback
+            die("缺少依赖：markdown（build_reader 需要它把主稿 .md 渲染成 HTML）。",
+                "安装：pip install markdown",
+                "说明：merge_build.py 缺它时仍会生成主稿 .md、只跳过 HTML；"
+                "但 build_reader.py 的产物就是 HTML，无法跳过这一步。")
         MD = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists", "attr_list"])
     return MD
 
@@ -684,7 +691,7 @@ mark.hit.cur{outline:2px solid var(--accent); background:var(--accent); color:#f
 if __name__ == "__main__":
     # 生成前校验：没有片段就别产出空壳 HTML（看起来"成功"实则什么都没有）
     ensure_chunks(CHUNKS, ".md")
-    check_python_deps("pypinyin", "markdown")
+    check_python_deps("pypinyin", "markdown", hard=("markdown",))
     out_dir = os.path.dirname(OUT_HTML)
     if out_dir and not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)

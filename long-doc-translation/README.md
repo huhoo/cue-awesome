@@ -26,10 +26,19 @@
 
 `init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py`
 
+## 规范（`references/`）
+
+| 文件 | 内容 |
+|---|---|
+| `pitfalls.md` | 五大陷阱：发现 / 修复 / 预防，含**脚本静默失效模式** |
+| `qa-checklist.md` | 七项质检标准 + 脚本阈值 + 修复动作 + 交付基线 |
+| `reader-build.md` | 增强阅读版 HTML 的工程决策与依赖降级 |
+| `parallel-translation.md` | 并行翻译分片原则、子代理提示词三要素、验收 |
+
 ## 上手
 
 ```bash
 python scripts/init_project.py --help    # 每个脚本都支持 --help
 ```
 
-完整流程、硬性规则与实测参数见 [`SKILL.md`](SKILL.md)。版本见其 frontmatter（1.2.0）。
+完整流程、硬规则与实测参数见 [`SKILL.md`](SKILL.md)；版本历史见 [`CHANGELOG.md`](CHANGELOG.md)。当前版本 **1.3.0**。

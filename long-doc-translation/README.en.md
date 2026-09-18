@@ -26,10 +26,19 @@ parse → clean & slice → build style guide + glossary → parallel batched tr
 
 `init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py`
 
+## Specs (`references/`)
+
+| File | Content |
+|---|---|
+| `pitfalls.md` | Five pitfalls: detection / fix / prevention, including **silent script failure modes** |
+| `qa-checklist.md` | Seven QA criteria + script thresholds + fixes + delivery baseline |
+| `reader-build.md` | Engineering decisions and dependency degradation for the enhanced reader HTML |
+| `parallel-translation.md` | Chunking rules, three must-haves for sub-agent prompts, acceptance checks |
+
 ## Getting started
 
 ```bash
 python scripts/init_project.py --help    # every script supports --help
 ```
 
-See [`SKILL.md`](SKILL.md) for the full flow, hard rules and measured parameters. Version is in its frontmatter (1.2.0).
+See [`SKILL.md`](SKILL.md) for the full flow, hard rules and measured parameters; see [`CHANGELOG.md`](CHANGELOG.md) for version history. Current version **1.3.0**.

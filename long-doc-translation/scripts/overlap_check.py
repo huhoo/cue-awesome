@@ -43,9 +43,15 @@ SKIP_REVERSED = True
 # =============================================================
 
 
+# 命名不匹配 GROUP_RE 时统一归入此组。
+# 【关键】绝不能退化为「每个文件自成一组」——那样组内只有 1 片，
+# 相邻比较一次都不会发生，脚本会打印「✅ 未发现重叠」而实际什么都没查（静默假通过）。
+FALLBACK_GROUP = "_all"
+
+
 def group_key(name):
     m = GROUP_RE.match(name)
-    return m.group(1) if m else os.path.splitext(name)[0]
+    return m.group(1) if m else FALLBACK_GROUP
 
 
 def page_range(text):
@@ -86,14 +92,28 @@ def main():
         groups.setdefault(group_key(os.path.basename(f)), []).append(f)
 
     print(f"=== 切片覆盖与重叠检测（{len(files)} 个片段，{len(groups)} 部）===\n")
+
+    # 命名模式自检：没有文件匹配「部_篇_编号」时，说明已退化为全序列比较
+    matched = sum(1 for f in files if GROUP_RE.match(os.path.basename(f)))
+    if matched == 0 and len(files) > 1:
+        warn(f"没有文件名匹配「部_篇_编号」模式（如 01_phil_018.md），"
+             f"已退化为「全部视为同一部」做全序列比较。\n"
+             f"   若本项目确有多部（正文/索引/附录页码各自起算），请改用具名模式或调整 GROUP_RE，"
+             f"否则跨部比较会误报。")
+
     has_page = False
     overlaps = []
     skipped = []
+    compared = 0          # 实际发生过的相邻比较次数（用于识别「什么都没比」）
 
     for gname in sorted(groups):
-        print(f"─ 部：{gname}")
+        items = sorted(groups[gname])
+        if len(items) == 1 and len(files) > 1:
+            print(f"─ 部：{gname}   （仅 1 片，无相邻片可比较）")
+        else:
+            print(f"─ 部：{gname}")
         prev = None            # (name, first, last)
-        for f in sorted(groups[gname]):
+        for f in items:
             text = open(f, encoding="utf-8", errors="ignore").read()
             first, last = page_range(text)
             name = os.path.basename(f)
@@ -112,10 +132,12 @@ def main():
 
             has_page = True
             flag = ""
-            if prev and prev[2] is not None and first <= prev[2]:
-                flag = (f"   <== 重叠！上一片尾 S.{prev[2]}，本片首 S.{first}"
-                        f"（重叠约 {prev[2]-first+1} 页）")
-                overlaps.append((prev[0], name, first, prev[2]))
+            if prev and prev[2] is not None:
+                compared += 1          # 真正做过一次相邻比较
+                if first <= prev[2]:
+                    flag = (f"   <== 重叠！上一片尾 S.{prev[2]}，本片首 S.{first}"
+                            f"（重叠约 {prev[2]-first+1} 页）")
+                    overlaps.append((prev[0], name, first, prev[2]))
             print(f"    {name}: S.{first} – S.{last}{flag}")
             prev = (name, first, last)
         print()
@@ -125,6 +147,13 @@ def main():
         print("⚠ 所有片段均无页边码，无法做内容重叠判定。")
         print("  建议：译文务必保留原书页边码（如 〔S. 123〕），这是检测重叠与断档的唯一可靠锚点。")
         sys.exit(0)
+
+    if compared == 0 and len(files) > 1:
+        # 每组都只有 1 片 → 一次相邻比较都没发生，此时「未发现重叠」是假结论
+        print("⚠ 未对任何相邻片段做过比较（每个分组都只有 1 个片段）。")
+        print("  本次「未发现重叠」不成立，请勿据此放行。")
+        print("  处理：统一命名后重跑；若确实是多部结构，用「部_篇_编号」命名或改 GROUP_RE。")
+        sys.exit(3)
 
     if overlaps:
         print(f"❌ 发现 {len(overlaps)} 处相邻片段重叠：\n")

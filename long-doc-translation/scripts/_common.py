@@ -93,8 +93,12 @@ def safe_read(path, note=""):
             "检查文件权限，或是否被其他程序占用" + (f"（{note}）" if note else ""))
 
 
-def check_python_deps(*mods):
-    """检查可选依赖是否安装，缺失时给出安装命令（不阻断，仅提醒）。"""
+def check_python_deps(*mods, hard=()):
+    """检查可选依赖是否安装，缺失时给出安装命令（不阻断，仅提醒）。
+
+    hard: 必装依赖的子集（缺了脚本会退出）。对这部分会明确提示「无法降级」，
+          避免出现「仍可运行」与随后报错自相矛盾的提示。
+    """
     import importlib
     missing = []
     for m in mods:
@@ -106,6 +110,11 @@ def check_python_deps(*mods):
         pkg = "pypinyin" if "pypinyin" in missing else " ".join(missing)
         warn("缺少依赖：%s" % ", ".join(missing))
         print("   → 安装：pip install %s" % pkg, file=sys.stderr)
-        print("   → 未安装时脚本仍可运行，但相关功能会降级（如术语表改按 Unicode 排序）",
-              file=sys.stderr)
+        hard_missing = [m for m in missing if m in hard]
+        if hard_missing:
+            print("   → 注意：%s 是本脚本的必装依赖，缺了无法降级运行（详见下方错误提示）。"
+                  % ", ".join(hard_missing), file=sys.stderr)
+        else:
+            print("   → 未安装时脚本仍可运行，但相关功能会降级（如术语表改按 Unicode 排序）",
+                  file=sys.stderr)
     return not missing

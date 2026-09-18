@@ -3,7 +3,7 @@
 
 name: long-doc-translation
 slug: long-doc-translation
-version: 1.2.0
+version: 1.3.0
 
 description: >-
   长篇外文（德/英/法/日等）学术专著、古籍、档案、译著的全文高质量中译流水线：
@@ -34,6 +34,8 @@ triggers:
   - 长篇翻译
   - 译著
   - 逐段翻译
+  - translate a whole book
+  - full-text translation of a scholarly monograph
 
 # 运行依赖
 requires:
