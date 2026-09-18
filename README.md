@@ -1,27 +1,33 @@
 # cue-awesome
 
-个人自研的 WorkBuddy / Cue 技能集合仓。每个子目录是一个独立 skill，可单独复制使用。
+**[English](README.md) · [中文](README.zh-CN.md)**
+
+A personal collection of self-built agent skills for WorkBuddy / Cue. Each subdirectory is a standalone skill — copy the one you need and use it on its own.
 
 ## Skills
 
-| 目录 | Name | 版本 | 用途 |
+| Directory | Name | Version | What it does |
 |---|---|---|---|
-| [`journal-draft/`](journal-draft/) | journal-draft | 0.15.3 | 企业期刊 / 内刊 / 客户通讯 / ESG 报告 / 年鉴特刊的「底稿生成器」：把版式体例从 PDF 里量化成可校验参数（版面网格、版心、字号序列、行距、色板、栏目模板），再按这套参数生产新一期内容。含法规动态栏目规范、CTA 溯源机制。 |
-| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.2.0 | 长篇外文（德 / 英 / 法 / 日等）学术专著、古籍、档案、译著的全文高质量中译流水线：解析 → 清洗切片 → 建体例与术语表 → 并行分批翻译 → 多维质检 → 合并交付带目录的阅读版。 |
+| [`journal-draft/`](journal-draft/) | journal-draft | 0.15.3 | Draft generator for corporate journals / in-house magazines / client newsletters / investor letters / ESG reports / yearbook specials. It **measures** a publication's layout and editorial conventions out of a sample PDF and turns them into verifiable parameters (grid, type area, type scale, leading, color palette, section templates), then produces the next issue against those parameters. Includes the regulatory-dynamics section spec and CTA source-tracing. |
+| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.2.0 | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
 
-## 安装
+## Install
 
-把需要的 skill 子目录复制到 WorkBuddy 用户级 skills 目录：
+Copy the skill directory you want into the WorkBuddy user-level skills directory:
 
 ```bash
 cp -r journal-draft ~/.workbuddy/skills/
 cp -r long-doc-translation ~/.workbuddy/skills/
 ```
 
-Windows 对应路径：`C:\Users\<用户名>\.workbuddy\skills\`
+On Windows: `C:\Users\<username>\.workbuddy\skills\`
 
-## 说明
+## Language
 
-- 本仓为个人自研集合，与 Cue 官方技能集合 [sensedeal/cue-skills](https://github.com/sensedeal/cue-skills) 无关 —— 后者是官方 monorepo，本仓不是它的子集，也不并入其中。
-- `LICENSE.md` / `NOTICE.md` 适用于整个仓库。
-- 打包产物（`dist/`、`*.zip`）不入库，发布包见各 skill 的 manifest / CHANGELOG。
+Docs are bilingual: `README.md` (English) / `README.zh-CN.md` (Chinese). Skill instruction files follow the same convention — see [`docs/i18n.md`](docs/i18n.md).
+
+## Notes
+
+- This is a **personal** collection. It is not affiliated with the official Cue skills monorepo [sensedeal/cue-skills](https://github.com/sensedeal/cue-skills), is not a subset of it, and is not merged into it.
+- `LICENSE.md` / `NOTICE.md` apply to the whole repository.
+- Build artifacts (`dist/`, `*.zip`) are not committed; release packages are described in each skill's manifest / CHANGELOG.
