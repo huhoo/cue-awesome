@@ -34,6 +34,16 @@ On Windows: `C:\Users\<username>\.workbuddy\skills\`
 
 Docs are bilingual: `README.md` (English) / `README.zh-CN.md` (Chinese). Skill instruction files follow the same convention — see [`docs/i18n.md`](docs/i18n.md).
 
+## Contributing
+
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR: commit format, the checklist for adding a skill, and what must never be committed. The gate runs on every push and PR:
+
+```bash
+python scripts/check_skills.py
+```
+
+New skill proposals: open an issue with the **new skill proposal** template.
+
 ## Notes
 
 - This is a **personal** collection. It is not affiliated with the official Cue skills monorepo [sensedeal/cue-skills](https://github.com/sensedeal/cue-skills), is not a subset of it, and is not merged into it.

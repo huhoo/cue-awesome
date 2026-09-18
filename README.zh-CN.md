@@ -30,6 +30,16 @@ cp -r competitive-brief ~/.workbuddy/skills/
 
 Windows 对应路径：`C:\Users\<用户名>\.workbuddy\skills\`
 
+## 贡献
+
+提交前先看 [`CONTRIBUTING.md`](CONTRIBUTING.md)：commit / PR 规范、新增 skill 清单、禁止提交的内容。全仓门禁每次 push 与 PR 都会跑：
+
+```bash
+python scripts/check_skills.py
+```
+
+新 skill 提案：用 issue 模板「新 skill 提案」开一个。
+
 ## 说明
 
 - 本仓为个人自研集合，与 Cue 官方技能集合 [sensedeal/cue-skills](https://github.com/sensedeal/cue-skills) 无关 —— 后者是官方 monorepo，本仓不是它的子集，也不并入其中。

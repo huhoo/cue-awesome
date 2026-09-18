@@ -1,0 +1,29 @@
+name: skill-lint
+
+# 全仓结构与 frontmatter 门禁：任何人 push / 开 PR 都跑。
+# 加新 skill 不需要改这里 —— 顶层含 SKILL.md 的目录会被自动发现。
+# 只依赖标准库（PyYAML 可用时用，不可用则回退简易解析）。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install PyYAML (optional, improves frontmatter parsing)
+        run: python -m pip install --quiet pyyaml || true
+
+      - name: Repo skill lint
+        run: python scripts/check_skills.py
