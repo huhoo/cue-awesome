@@ -1,10 +1,14 @@
-# 运行时缓存，不进版本控制
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 
-# 工作产物：每期的中间产物由用户目录承载，不应出现在技能目录
-/build/
-/out/
-/out2/
-/images/gen/
-/smoke/
+# Packaging artifacts
+dist/
+*.zip
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
