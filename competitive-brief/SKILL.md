@@ -11,7 +11,7 @@ tags:
   - battlecard
   - 产品策略
   - 市场情报
-description: "围绕一个决策问题做竞品分析：不是信息堆砌，是证据支撑的判断。支持网页、PDF（含扫描件）、音频（财报会/演示/播客）、视频四种来源。每一条判断性结论标注 fact / inference / opinion，要求 EvidenceCard 追溯。"
+description: "围绕一个决策问题做竞品分析：不是信息堆砌，是证据支撑的判断。支持网页、PDF（含扫描件）、音频（财报会/演示/播客）、视频四种来源。每一条判断性结论标注 fact / inference / opinion，要求 EvidenceCard 追溯。Triggers: 竞品分析 / 竞品简报 / 竞品对比 / 对标 / battlecard / 这个市场要不要进 / 对手怎么样; competitive analysis / competitive brief / competitor comparison / battlecard / market entry research."
 license: MIT
 agent_created: true
 metadata:
