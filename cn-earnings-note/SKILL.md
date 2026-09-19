@@ -2,7 +2,7 @@
 name: cn-earnings-note
 slug: cn-earnings-note
 displayName: A股财报深度点评
-version: 0.1.0
+version: 0.1.1
 summary: "A股/港股财报深度点评（8–12 页研报级 AI 初稿）：法定披露四期差异 + 附注风险扫描 + 同业交叉验证，逐数可回查，评级一律 [待人工]。"
 description: "A股/港股财报深度点评生成器。输入「主体+报告期」，产出研报级八节 AI 初稿：四期差异（累计/单季双口径）、分部量价、盈利质量与现金流含金量、附注风险扫描（关联方/受限资金/或有负债）、指引与催化剂、同业对照。取证走 Cue 通道：结构化披露（data-mcp）+ 原文解析（omni-reader）+ 横向深研（cue-research），每条数字带可信级标注。改造自 anthropics/financial-services earnings-analysis（Apache-2.0）的 A股化重实现，口径方法参考道以研究院 dao-financial-services（MIT）。Triggers: 深度点评XX财报 / XX半年报点评 / 季报分析 / 年报深度点评 / 给我出一份XX的财报底稿; A-share earnings analysis / analyze XX's annual results / post-earnings update / deep earnings review. 不用于：只要一页纸快评（直接用 cue-research 的「个股快评」搭子）、Excel 模型更新（用 anthropics 原版 model-builder）、行情/估值数值流（equity_market 通道未开放）。"
 tags: [投研, 财报点评, A股, 深度研究]
@@ -50,6 +50,7 @@ metadata:
 ## 3. 管线（五段 + 收尾门禁，可从任意段续跑）
 
 开工建 `progress.md` 台账，每段完成记一行；中断后先读它，问过的问题不重问。
+**period 参数词表（实测契约）**：半年报用 `YYYYH1`、年报用纯年份 `YYYY`；`YYYYAR` 类后缀实测**静默返回空且不报错**——取数前用定期报告标题反向核对报告期在场，勿以空返回推断「无披露」。
 **段间依赖纪律**:每段起手先核台账里上游产物(`+fetch` 需 `+resolve` 的主体代码与公告索引号;`+draft` 需前四段落点与 `sources.jsonl`;`+check` 需 note 全文)——上游缺失回补对应段,不静默跳段。
 
 ### 3.1 `+resolve` 主体与披露定位
