@@ -42,6 +42,23 @@ RATING_WORD_RE = re.compile(
 )
 TARGET_VALUE_RE = re.compile(r"目标价[^。\n]*?\d+(?:\.\d+)?\s*(?:元|港元|美元|RMB|HKD|USD)", re.IGNORECASE)
 PENDING_RE = re.compile(r"\[待人工\]")
+# 白名单评级词以斜杠枚举并列且同行带 [待人工] 时,是 data-channels.md §4.3 允许的
+# 「模板占位句式」(封面声明/§7 评级行),不构成「给出具体评级」——豁免条件:行内每个
+# 白名单词都邻接斜杠;任一裸出现的词(如「倾向买入」)即破豁免照常 FAIL。
+# 邻接前先把词典叠词(买卖/购买)归一,防「证券买卖推荐」这类通用词误判为评级词。
+RATING_ENUM_RE = re.compile(r"(?:买入|增持|中性|减持|卖出)/(?:买入|增持|中性|减持|卖出)")
+ANY_RATING_RE = re.compile(r"买入|增持|中性|减持|卖出")
+SLASH = "/"
+
+
+def _all_ratings_slash_adjacent(line):
+    probe = line.replace("买卖", "XX").replace("购买", "XX")
+    for m in ANY_RATING_RE.finditer(probe):
+        before = probe[m.start() - 1] if m.start() > 0 else ""
+        after = probe[m.end()] if m.end() < len(probe) else ""
+        if SLASH not in (before, after):
+            return False
+    return True
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SOURCE_REQUIRED_FIELDS = ("id", "kind", "ref", "claim", "confidence", "asof")
 
@@ -80,6 +97,9 @@ def check_pending(lines, index_exempt):
         has_kw = ("评级" in line) or ("目标价" in line)
         if not has_kw:
             continue
+        if has_kw and PENDING_RE.search(line) and RATING_ENUM_RE.search(line) \
+                and _all_ratings_slash_adjacent(line):
+            continue  # §4.3 模板占位句式:白名单词全部斜杠邻接且同行 [待人工];裸出现一词即破豁免
         if RATING_WORD_RE.search(line) or TARGET_VALUE_RE.search(line):
             fails.append(f"[待人工] 第 {i + 1} 行给出了具体评级/目标价：{line.strip()[:60]}")
         elif not PENDING_RE.search(line):

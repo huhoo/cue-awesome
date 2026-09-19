@@ -68,7 +68,7 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 
 | Boundary | Status |
 |---|---|
-| End-to-end field test | **not run yet** (v0.1.0 has no P1 test; until the record is backfilled, timings and channel hit-rates are design values, not measurements) |
+| End-to-end field test | **one run verified (P1)**: Midea Group 000333 / 2026H1 (2026-09-18, machine gates + manual acceptance all passed; record in `CHANGELOG.md` Verified). **Still untested**: multi-issuer batches, HK-listed issuers, annual-report basis — treat a first run of these three as unverified |
 | Market / valuation data flow | No — the `equity_market` domain is not open and nothing depends on it; intraday price, market cap and valuation percentiles are never fetched |
 | Consensus estimates | no market feed; beat/miss compares only against the company's own pre-announcement / flash report; without one it says "no baseline, no judgement" |
 | Excel model / DCF | No (see §1) |

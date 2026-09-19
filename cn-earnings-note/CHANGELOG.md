@@ -18,6 +18,17 @@
   实测边界诚实清单、双出处致谢。
 - `CHANGELOG.md`（本文件）。
 
+### Verified
+
+**P1 端到端实测（2026-09-18，美的集团 000333 / 2026H1）**——执行=干净 agent 姿势（gtm:2.1），验收=lead 机检探针+人工四项，**P1=VERIFIED**。台账与产物见 `../p1-run/earnings-000333-2026H1/`。
+
+- 全程约 18 分钟（resolve→check）；`sources.jsonl` 38 条 / 10 类 kind；正文数字行 45/45 带 `[L*]`。
+- 门禁 `check_note.py` 首跑 FAIL 8 条 → 按报告回改 → exit 0（首跑能拦=门禁有效，非摆设）。
+- 深研实际发起 1 次（同业对照，约 4.5 分钟落盘，live 直取、replay 未触发；风险面被直查覆盖，按最小消耗原则未发第 2 次并在台账申报偏离）。
+- data-mcp 约 18 次调用，返回体均无计费字段（契约如实）；omni 1 次解析遇 SPA 壳页——内容不可用仍产生服务端计费（其 billing 块返回 0.268，如实转述；「解析失败是否应计费」已作为产品政策问题提 lead/G7）。
+- 实测纪律回写：SKILL.md §3.1/§3.2/§3.3 三处（lead 执笔）；文档镜像=本条 Changed 的 data-channels §1「P1 实测补丁」与 skeleton §7「矛盾申报行」固定件。
+- 门禁侧配套：`check_note.py` §4.3 模板句豁免（实测逼出的最小补丁）+ 新回归 fixture `bad-norating-enum`，run_fixtures 9/9 exit 0（lead 追认）。
+
 ### Changed
 
 - F 评审裁决落地（C3，同日就地修，版本位随 SKILL.md 保持 0.1.0）：
@@ -25,13 +36,12 @@
   `data-channels.md` §0.4 补计费粒度句（omni 自带 billing 块可转述、data-mcp 单次调用无计费字段、累计以工作台账单为准、确认动作不豁免）；
   `README.md` 边界表加「图表 / 可视化不做（原版 matplotlib 环节有意移除）」、dao 致谢行补公开查阅方式。
 - 新增 `README.en.md`（中文权威 + 英文译文对，对齐仓内 i18n 约定）。
-
-### Verified
-
-- *P1 实测后回填*（真实主体端到端记录：通道实际调用序列、耗时、credits 消耗事实、缺数点）。
+- P1 教训落地（J，同保持 0.1.0）：`data-channels.md` §1 加「P1 实测补丁」四条（附注四项降级路径 / `extract_fulltext` integer 坑 / 互动问答 exact=0 纪律 / buyback 无单位推算注）；
+  `report-skeleton.md` §7 输出形式加固定件「矛盾申报行」（L3↔L1 冲突列两值、采信 L1、报位置；美的扣非方向案例注）；
+  本文件补上列 Verified；`README.md`/`README.en.md` 边界表「端到端未实测」行改为 P1 已实测+三类剩余未测面。
 
 ### 已知未做（有意留白）
 
-- `scripts/check_note.py` 四道门禁与 fixture 由并行工项在制，未随本条目入账。
+- `scripts/check_note.py` 四道门禁与 fixtures 已随包入账（工项 B；P1 终态 exit 0、回归 9/9）。
 - 合规词表为自写最小黑名单现状；是否升级致敬/复用 dao 词表待 D1 拍板（见 data-channels.md §4）。
 - 行情/估值数值流设计上不依赖（`equity_market` 未开放期间不承诺）。
