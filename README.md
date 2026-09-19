@@ -9,8 +9,36 @@ A personal collection of self-built agent skills for WorkBuddy / Cue. Each subdi
 | Directory | Name | Version | What it does |
 |---|---|---|---|
 | [`journal-draft/`](journal-draft/) | journal-draft | 0.15.3 | Draft generator for corporate journals / in-house magazines / client newsletters / investor letters / ESG reports / yearbook specials. It **measures** a publication's layout and editorial conventions out of a sample PDF and turns them into verifiable parameters (grid, type area, type scale, leading, color palette, section templates), then produces the next issue against those parameters. Includes the regulatory-dynamics section spec and CTA source-tracing. |
-| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.2.0 | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
-| [`competitive-brief/`](competitive-brief/) | competitive-brief | 0.1.0 | Competitive-analysis brief generator: turns competitor material scattered across web pages / PDFs / recordings / video into a traceable, comparable, updatable decision brief. Six-stage pipeline: ingest (omni-reader) → brief → comparison map → evidence (cue-research) → three-format delivery → QA gates. |
+| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.3.0 | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
+| [`competitive-brief/`](competitive-brief/) | competitive-brief | 0.2.0 | Competitive-analysis brief generator: turns competitor material scattered across web pages / PDFs / recordings / video into a traceable, comparable, updatable decision brief. Six-stage pipeline: ingest (omni-reader) → brief → comparison map → evidence (cue-research) → three-format delivery → QA gates. |
+| [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | 0.1.0 | A-share / HK-share earnings deep-dive note generator: turns a subject + reporting period into an 8–12 page AI draft at **research-report structure level** (an eight-section skeleton: four-period disclosure deltas, segment price/volume, earnings quality & cash-flow, footnote risk scan, guidance & catalysts, peer cross-check), with every figure traceable and ratings / target prices always marked `[待人工]` (human review). Evidence is gathered through the three Cue channels — structured disclosure via Cue data-MCP domains, source parsing via omni-reader, and horizontal deep research via cue-research. **Until P1 end-to-end testing is complete, the performance figures above are design values.** Base provenance: see [NOTICE.md](NOTICE.md) §financial-suite. |
+
+## Financial-research suite roadmap
+
+The financial-research skills are a Cue-native rewrite of the methodology base in **anthropics/financial-services** (Apache-2.0); localization practices (CAS terminology, compliance wording, `[待人工]` handling) are first referenced from **道以研究院 dao-financial-services v0.1.9** (MIT). We re-implement rather than copy — the data layer is entirely replaced by the three Cue channels: **deep research (cue-research) · data-MCP domains (Cue) · document parsing (omni-reader)**. Attribution details in [NOTICE.md](NOTICE.md).
+
+> **Status.** Only the vanguard below (`cn-earnings-note`) actually exists in this repository today; the rest is direction that has been scoped but **not built and not available**. **Until P1 end-to-end testing is complete, any performance figures are design values.** Nothing in this roadmap is promised as shipped beyond what the Skills table above lists.
+
+### Built — the vanguard (1 skill)
+
+- **Earnings deep-dive — [`cn-earnings-note/`](cn-earnings-note/)** (v0.1.0): A-share / HK-share earnings deep-dive notes — the only financial skill delivered so far. Full one-liner in the Skills table above.
+
+### Planned — batch 2 (direction set, not yet built)
+
+Scoped but **not implemented and not available**:
+
+- **Sector overview — 行业景气全景**: industry cycle & landscape briefing.
+- **Catalyst calendar — 催化剂日历**: unlock / pledge / buyback / margin event calendar.
+- **Company one-pager — 公司一页纸**: a fast tear-sheet built from public disclosures.
+- **Public-info pre-due-diligence — 公开信息预尽调**: checklist screen from regulatory / statute / IPO-in-review / entity data.
+
+### Deferred (blocked, not built)
+
+- morning-note, idea-generation / screening, comps-analysis — held until the `equity_market` domain goes live (its status is whatever `GET https://cuecue.cn/api/mcp-catalog` reports; a coming-soon domain is never promised).
+
+### Excluded by structure
+
+- Excel-model skills, fund-administration (private internal books), and anything that depends on private data such as accounts or CRM are out of scope — Cue channels are a complement to these, not an internal-ledger or valuation-model engine.
 
 ## Install
 
