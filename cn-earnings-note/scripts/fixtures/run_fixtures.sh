@@ -38,4 +38,23 @@ run 1 "bad-amendment(D4 变更却fulfilled)" "$PY" "$CHECK" note-good.md --ledge
 run 1 "bad-ledgerof(B2 互链断链)"        "$PY" "$CHECK" note-good.md --ledger bad-ledgerof.json --prev-ledger ledger-2025AR.json
 run 0 "help (--help)"                "$PY" "$CHECK" --help
 
+
+
+# --- M10/F3:送审就绪度附录两 case(报告内容断言,非仅退出码) ---
+AUD="$TMP.audit-good.md"; BADAUD="$TMP.audit-bad.md"
+"$PY" "$CHECK" note-good.md --sources sources.jsonl --audit-report "$AUD" >>"$TMP" 2>&1 \
+  && grep -q "^## 1\." "$AUD" && grep -q "^## 2\." "$AUD" && grep -q "^## 3\." "$AUD" \
+  && grep -q "^## 4\." "$AUD" && grep -q "^## 5\." "$AUD" \
+  && grep -q "零命中" "$AUD" && grep -q "✅ 通过" "$AUD" \
+  && echo "ok   audit good (五节齐+禁词零命中显式+声明核验)" \
+  || { echo "FAIL audit good"; sed 's/^/     | /' "$AUD"; fail=1; }
+"$PY" "$CHECK" bad-audit-word.md --audit-report "$BADAUD" >/dev/null 2>&1
+got=$?
+if [ "$got" -eq 1 ] && grep -q "稳赚" "$BADAUD" && grep -q "第 24 行\|命中词" "$BADAUD"; then
+  echo "ok   audit bad  (藏词被报告点名+exit 1)"
+else
+  echo "FAIL audit bad (exit $got;报告未点名或门禁未抓)"; sed 's/^/     | /' "$BADAUD"; fail=1
+fi
+rm -f "$AUD" "$BADAUD"
+
 exit "$fail"

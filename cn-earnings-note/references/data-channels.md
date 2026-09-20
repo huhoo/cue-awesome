@@ -93,6 +93,8 @@
 5. **stdout 技术行不转给用户**：`STARTED` / `▶ agent=` / `🔧 tool=` / `RESULT` 等行只用于 agent 内部判断启动/进度/完成；对用户用白话转述进度与结果。
 6. 结果落盘后入 `sources.jsonl`（`kind=research`、`ref=`conv_id + 落盘文件路径、`confidence=L3`），报告引用的横向数字全部进来源索引；L3 结论在 §7 复核清单里默认列出。
 
+**预期池登记制（F2，契约全文见 `expectation-pool.md`）**：beat/miss 判定前可发起 1 次 free-form research 取「评级分布 + 一致预期均值 + 目标价区间」的**公开汇总层**快照——结果按 `kind=pool` 行式登记入 `sources.jsonl`，每条**必含 `layer="公开汇总层"` 口径声明字段**、`ref=`平台名+真实取到的 URL+asof，`confidence` 恒 L3。二态规则：有锚（公司预告或池均值在场）则 §1 判定句强制带「基准+来源 id+幅度」；预告与池皆缺则逐字用「本期无公司自给基准亦无公开池均值——不做 beat/miss 判定」，**裸「符合预期」禁用**。成本与确认纪律同本节第 1 条：池占本 run 的 1 次 research 槽位、与横向合计 ≤2 不变，池空不重试烧额。
+
 ---
 
 ## 3A. 段 ↔ 通道对照（速查）

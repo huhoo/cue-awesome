@@ -322,6 +322,59 @@ def check_ledger(path, is_prev=False, prev_led=None):
     return fails
 
 
+GAP_RE = re.compile(r"未检索到|未披露|未获取|域面无项|缺数")
+
+
+def build_audit_report(args, lines, index_exempt, banned_fails, pending_note_fails,
+                       ledger_paths, ledger_data):
+    """送审就绪度附录(spec-0.2.0 F3)。五节恒在,无内容也显式写结论行。"""
+    import datetime
+    d = Path(args.note).resolve().parent
+    out = [f"# 送审就绪度附录 — {Path(args.note).name}",
+           f"生成：check_note.py --audit-report · {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} · 不构成合规意见，仅供送审前自检。", ""]
+    out.append("## 1. 禁止词命中表")
+    out.append("| 行号 | 命中词 | 原文截断 |")
+    out.append("| --- | --- | --- |")
+    if banned_fails:
+        for f in banned_fails:
+            m = re.match(r"\[禁用词\] 第 (\d+) 行命中「(.+?)」：(.*)", f)
+            out.append(f"| {m.group(1)} | {m.group(2)} | {m.group(3)[:40]} |" if m else f"| ? | ? | {f[:60]} |")
+        out.append(f"\n结论：**{len(banned_fails)} 处命中，送审前必须清零**。")
+    else:
+        out.append("| — | 零命中 | 全文黑名单未触发 |")
+        out.append("\n结论：**零命中**（黑名单 7 词逐行扫描，无例外区）。")
+    out.append("\n## 2. [待人工] 计数")
+    pend_lines = [i + 1 for i, l in enumerate(lines) if not index_exempt[i] and PENDING_RE.search(l)]
+    out.append(f"- note 内 [待人工] 标注行：{len(pend_lines)} 处（行号 {pend_lines[:12]}）")
+    out.append(f"- 第 2 道门禁违规（给出具体评级/目标价或缺 [待人工]）：{len(pending_note_fails)} 条")
+    for led, lp in zip(ledger_data, ledger_paths):
+        if isinstance(led, dict):
+            pend = led.get("pending", [])
+            ex = sum(1 for p in pend if p.get("exempt_from_gate"))
+            filled = sum(1 for p in pend if p.get("verdict") is not None and not p.get("exempt_from_gate"))
+            out.append(f"- ledger `{Path(lp).name}`：pending {len(pend)} 行，豁免 {ex} 行（D11 剥离），非豁免回填 {filled}/{len(pend)-ex}")
+    out.append("\n## 3. 缺数未回补清单")
+    gaps = [(i + 1, re.sub(r"\s+", " ", l.strip())[:56]) for i, l in enumerate(lines) if not index_exempt[i] and GAP_RE.search(l)]
+    out.append("| 行号 | 处所摘录 |")
+    out.append("| --- | --- |")
+    for ln, s in gaps:
+        out.append(f"| {ln} | {s} |")
+    out.append(f"\n结论：**{len(gaps)} 处**缺数/降级表述在场（送审时应随附回补计划或人工核对说明；无缺数则此计数为 0）。" if gaps else "\n结论：**0 处**——本期无缺数表述（若全量取到属实，可随附声明；缺数若有未写占位，门禁不兜，人工确认）。")
+    out.append("\n## 4. AI 声明与免责核验")
+    decl = check_declaration(lines)
+    out.append(f"- 标题后前 5 行「AI 初稿」+「不构成…投资建议」核验：{'✅ 通过' if not decl else '❌ ' + '；'.join(decl)}")
+    out.append(f"- 评级/目标价代填核验：{'✅ 无违规' if not pending_note_fails else '❌ 见第 2 节'}")
+    out.append("\n## 5. 送审包文件清单")
+    checks = [("note.md", Path(args.note)), ("sources.jsonl", Path(args.sources) if args.sources else None),
+              ("ledger(当期)", Path(args.ledger) if args.ledger else None),
+              ("ledger(上季)", Path(args.prev_ledger) if args.prev_ledger else None)]
+    for name, pth in checks:
+        out.append(f"- {name}: {'✅ ' + str(pth) if pth and pth.is_file() else ('未提供' if pth is None else '❌ 缺失 ' + str(pth))}")
+    bl = d / "baseline.json"
+    out.append(f"- baseline.json(同级): {'✅ 在场' if bl.is_file() else '— 同级无（首季或未启用基线则合法）'}")
+    return "\n".join(out) + "\n"
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(
         description="cn-earnings-note 交付前四道门禁：声明在场 / [待人工] 就位 / 禁用词 / 数字可回查。",
@@ -333,6 +386,7 @@ def main(argv=None):
     p.add_argument("--min-coverage", type=float, default=95.0, help="数字可回查覆盖率阈值（默认 95）")
     p.add_argument("--ledger", default=None, help="覆盖账本当期 JSON（spec-0.2.0 F1 八项校验，见 references/ledger-schema.md）")
     p.add_argument("--prev-ledger", default=None, help="上一期账本 JSON（同样过结构校验；linkage 断言在当期文件内自含）")
+    p.add_argument("--audit-report", default=None, help="输出「送审就绪度」五节附录到该 md 文件（F3；FAIL 时也照样产出）")
     args = p.parse_args(argv)
 
     try:
@@ -344,11 +398,13 @@ def main(argv=None):
     index_exempt = classify_lines(lines)
     fails = []
     fails += check_declaration(lines)
-    if not args.allow_pending:
-        fails += check_pending(lines, index_exempt)
-    fails += check_banned(lines)
+    pending_fails = [] if args.allow_pending else check_pending(lines, index_exempt)
+    fails += pending_fails
+    banned_fails = check_banned(lines)
+    fails += banned_fails
     num_fails, total, tagged = check_numbers(lines, index_exempt, args.sources, args.min_coverage)
     fails += num_fails
+    ledger_paths, ledger_data = [], []
     if args.ledger:
         prev_data = None
         if args.prev_ledger:
@@ -356,9 +412,25 @@ def main(argv=None):
                 prev_data = json.loads(Path(args.prev_ledger).read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 pass  # 失败由 prev 校验路径自行报
+        ledger_paths = [args.ledger, args.prev_ledger]
+        try:
+            cur_data = json.loads(Path(args.ledger).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            cur_data = None
+        ledger_data = [cur_data, prev_data]
         fails += check_ledger(args.ledger, prev_led=prev_data)
     if args.prev_ledger:
         fails += check_ledger(args.prev_ledger, is_prev=True)
+
+    if args.audit_report:
+        report = build_audit_report(args, lines, index_exempt, banned_fails,
+                                    pending_fails, ledger_paths, ledger_data)
+        try:
+            Path(args.audit_report).write_text(report, encoding="utf-8")
+            print(f"送审就绪度附录 → {args.audit_report}")
+        except OSError as e:
+            print(f"FAIL: --audit-report 无法写出 {args.audit_report}: {e}")
+            return 1
 
     if fails:
         print(f"FAIL: {args.note}（{len(fails)} 条）")
