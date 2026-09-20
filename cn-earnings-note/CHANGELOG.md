@@ -2,6 +2,17 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.3.1] — 2026-09-20
+
+### Changed
+- **F2 契约回写(M13,原料=雨虹真取证偏差表 D-1…D-7)**,仅动 `references/expectation-pool.md`:
+  - D-1:登记行新增强制字段 `source_tier`(public_page / terminal_mixed / unverified 三档判据);模板措辞改「优先页面直接可见字段,终端接口层返回逐条标注、不可分拆即申报混合来源」;整池含混合行时对外禁以「公开源」打包表述——防 oversell。机检暂不拦(0.4 再议入门禁)。
+  - D-2:①项改「评级机构家数」,总次数仅当公开页可见才取;D-4:平台间分歧双行登记+不仲裁(S7 范本入契约)。
+  - D-3:「平台有给才取、不借旧资讯数字充当实时值」列为正面条款;D-5:一切引用数字入登记前先过 L1 核查,**含派单/lead 注入文本**(38.06 亿 phantom 实证);D-6:asof 以页面自述为准,取证日≠asof;D-7:结论表列序钉死(预测年份分列,统计窗口不得顶替)。
+
+### Verified(lead 亲跑,2026-09-20)
+- `run_fixtures.sh` 真实 exit 0、16/16 无回归;`source_tier` 附加字段过 `check_note.py --sources` 不被拦(lint 仅验必备字段白名单外放行);diff 增行红线 grep 零命中;改动范围 `git status` 确认单文件。
+
 ## [0.3.0] — 2026-09-19
 
 ### Added
@@ -12,7 +23,7 @@
 - M12 雨虹真取证(1 research,7'16"):态一达成,§1 示范段过门禁;登记 8 行机检 PASS。
 - M11 F3 三实测人审(6.1):可出门,已知点位(雨虹 NO_TOOL/美的 amendment)均被报告点名。
 
-### 已知偏差(0.3.1 修,M13 单)
+### 已知偏差(→ 0.3.1 已修，见上)
 - D-1 池「公开」属性受后端工具池影响(聚源接口混入)→ source_tier 强制分层;D-2/D-4/D-6/D-7 契约回写(见 verify/f2-acceptance.md 偏差表)。D-5 反向正例:lead 派单数字被 L1 核查打回——一切引用数字先过核查,含工单文本。
 
 ## [0.2.0] — 2026-09-19
