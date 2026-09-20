@@ -2,6 +2,17 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.2.0] — 2026-09-19
+
+### Added
+- **F1 覆盖账本**：`+recall` 续账入口(§3.0)、`ledger-<period>.json` 对象模型(append-only 历史、anchors 六态+direction、events.amendment 断言、pending.carry_from、exempt_from_gate、`<run>:S##` 引用制)——字段规格逐条消化 f1-deskcheck D1–D11。
+- **linkage 机检(D5)**：`check_note.py --ledger/--prev-ledger` 断言「本期期初=上季期末」逐分不差，不等即不交付；`ledger-schema.md` 入 references/。
+- 单位换算规矩：亿值必附千元原值或保三位（M6/B3 教训，回放文内三处已按此执行）。
+
+### Verified
+- **M4 正式回放**（美的 2025AR→2026H1，零新查询）：机器表 vs 手工 f1-deskcheck 15 格 diff 全等或已归因等价；linkage 三断言 EQUAL；run_fixtures 14/14 无回归。
+- **M7 终审**（独立评审线①②③）：🟢 可封口——B1/B2/B3 全闭环，M4/M5 值域与 next_check 加密列 0.3.0 已知项。
+
 ## [0.1.1] — 2026-09-19
 
 0.1.1 修正包——源自 R1 双单（美的 P1/年报单 + 雨虹 R1-B 高风险实测）与「作者视角发现」的批量落地；仓已公开(push 后首个修正包),按 CONTRIBUTING 递增规则走 patch 版。
