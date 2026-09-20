@@ -2,7 +2,7 @@
 name: cn-earnings-note
 slug: cn-earnings-note
 displayName: A股财报深度点评
-version: 0.3.1
+version: 0.3.2
 summary: "A股/港股财报深度点评（8–12 页研报级 AI 初稿）：法定披露四期差异 + 附注风险扫描 + 同业交叉验证，逐数可回查，评级一律 [待人工]。"
 description: "A股/港股财报深度点评生成器。输入「主体+报告期」，产出研报级八节 AI 初稿：四期差异（累计/单季双口径）、分部量价、盈利质量与现金流含金量、附注风险扫描（关联方/受限资金/或有负债）、指引与催化剂、同业对照。取证走 Cue 通道：结构化披露（data-mcp）+ 原文解析（omni-reader）+ 横向深研（cue-research），每条数字带可信级标注。改造自 anthropics/financial-services earnings-analysis（Apache-2.0）的 A股化重实现，口径方法参考道以研究院 dao-financial-services（MIT）。Triggers: 深度点评XX财报 / XX半年报点评 / 季报分析 / 年报深度点评 / 给我出一份XX的财报底稿; A-share earnings analysis / analyze XX's annual results / post-earnings update / deep earnings review. 不用于：只要一页纸快评（直接用 cue-research 的「个股快评」搭子）、Excel 模型更新（用 anthropics 原版 model-builder）、行情/估值数值流（equity_market 通道未开放）。"
 tags: [投研, 财报点评, A股, 深度研究]
@@ -74,7 +74,7 @@ metadata:
 - 服务异常时按降级链：请用户给文本或换源，不硬闯。SPA 页面源先判断有无服务端渲染正文再决定 parse——实测「只取到导航壳」的解析**同样计费**且内容不可用；壳页命中即按缺数降级，勿复跑。
 
 ### 3.4 `+survey` 横向验证（cue-research，需确认）
-- 向用户报预计耗时与「将消耗 credits」，确认后后台发起深研，预算 ≤2 次：①同业对照（2–4 家可比公司同期关键指标与相对位置）②主体风险面快照（监管处罚/诉讼/股权质押/回购与激励动向；可被 `regulatory_cn` 等域直查替代以省槽）③预期池取证（按 `references/expectation-pool.md` 模板**原样**发起，取公开汇总层评级分布/一致预期均值；池占 1 槽必保，①②按剩余预算取舍）。§1 的 beat/miss 判定只允许两态：有锚（公司预告优先，池均值次之，均须标基准+来源）或如实「无基准不判定」，裸判断词违规。
+- 向用户报预计耗时与「将消耗 credits」，确认后后台发起深研，预算 ≤2 次：①同业对照（2–4 家可比公司同期关键指标与相对位置）②主体风险面快照（监管处罚/诉讼/回购与激励动向；**股权质押=域面外**，无结构化数据域可直查，只在本检索层以公开文本获取；可被 `regulatory_cn` 等域直查替代以省槽）③预期池取证（按 `references/expectation-pool.md` 模板**原样**发起，取公开汇总层评级分布/一致预期均值；池占 1 槽必保，①②按剩余预算取舍）。§1 的 beat/miss 判定只允许两态：有锚（公司预告优先，池均值次之，均须标基准+来源）或如实「无基准不判定」，裸判断词违规。
 - 结果按 replay/落盘取回，报告中的横向数字全部入来源索引（kind=research）。
 - 事件日历素材：`buyback` / `esop` / `margin` / `regulatory_cn` 域直查（工具级发现规则同上），进第 6 节。
 

@@ -2,6 +2,17 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.3.2] — 2026-09-20
+
+### Fixed（事实修正，无新能力）
+
+- **公开件去超售（Q3，原料=Q1 对账 + lead 独立复验；原则=文档只宣称实测可达的能力）**：
+  - `data-channels.md` §1 `fr_footnote` 行：「附注风险六项」拆**工具面可达**（关联方往来/对外担保/减值壳）vs **域面外 NO_TOOL**（受限资金/应收账龄/合同负债构成/商誉参数，三证=P1 九次试调用+I3 三主体+Q1 coverage 原文），四项指向「原文三级」补丁；
+  - 同文件 `margin` 行：能力面收口为「券商两融标的与担保品折算率」（live coverage 原文），股本担保/质押类公开信息标注不在本域、走 `+survey` 检索层；`SKILL.md` §3.4 风险面快照槽位同步注「股权质押=域面外」；
+  - `entity_data` 用途列按实况改写：LEI 法人档案（中文覆盖稀疏，**增强非闸**，在场判定挂 disclosure_cn）+主体名解析；
+  - `institutional` 行补 CFTC COT 持仓可用注（保守失真修正，原材料敏感主体的 §2 成本语境）。
+- 判定规则、管线、门禁均未动。
+
 ## [0.3.1] — 2026-09-20
 
 ### Changed
