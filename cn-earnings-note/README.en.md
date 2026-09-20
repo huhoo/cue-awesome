@@ -68,14 +68,14 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 
 | Boundary | Status |
 |---|---|
-| End-to-end field test | **one run verified (P1)**: Midea Group 000333 / 2026H1 (2026-09-18, machine gates + manual acceptance all passed; record in `CHANGELOG.md` Verified). **Still untested**: multi-issuer batches, HK-listed issuers, annual-report basis — treat a first run of these three as unverified |
+| End-to-end field test | **four runs across two issuers verified**: Midea 000333 (2026H1 interim + 2025 annual-report basis) + Oriental Yuhong 002271 (2026H1, high-risk sample), machine gates + manual acceptance all passed; record in `CHANGELOG.md` Verified. **Still untested**: HK-listed issuers, multi-issuer batches — treat a first run of these two as unverified |
 | Market / valuation data flow | No — the `equity_market` domain is not open and nothing depends on it; intraday price, market cap and valuation percentiles are never fetched |
-| Consensus estimates | no market feed; beat/miss compares only against the company's own pre-announcement / flash report; without one it says "no baseline, no judgement" |
+| Consensus estimates | paid terminals are neither fetched nor promised; since 0.3.0 beat/miss has a second anchor — the public-summary-layer expectation pool (`references/expectation-pool.md`: institution counts / consensus means / target-price range, with `source_tier` self-declaration, cross-platform divergence left un-arbitrated); judgement priority = company pre-announcement / flash report > pool mean > verbatim "no company baseline and no public pool mean — no beat/miss judgement" |
 | Excel model / DCF | No (see §1) |
 | Non-listed issuers | confirm the material form first; thin material → the ceiling is stated outright |
 | Ratings / target prices | always `[待人工]` — refusing to fill them is the feature |
 | Insider / non-public information | refused; public sources only |
-| Scanned-document parsing | depends on the omni channel; its URL path has an open server-side incident record — while down, degrade to "you paste the text" |
+| Scanned-document parsing | depends on the omni channel; the earlier server-side outage on its URL path is fixed (failed-parse-no-charge re-verified; the "completed-but-shell page still billed" edge case is fixed, pending final review) — while the channel is down, degrade to "you paste the text" |
 | Compliance word list | built-in minimal blacklist (self-written until ruling D1); **not a compliance opinion** — human review before publishing is still required |
 
 ## 7. Sources & credit
