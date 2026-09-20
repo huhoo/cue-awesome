@@ -2,6 +2,19 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.3.0] — 2026-09-19
+
+### Added
+- **F2 公开源预期池**:§3.4 扩三取数槽(池必保、≤2 research 预算)+§1 beat/miss 二态纪律(有锚标基准与来源/无锚不判定);契约 `references/expectation-pool.md`。
+- **F3 送审就绪度**:`check_note.py --audit-report` 五节输出(禁词点名/待人工计数含 exempt 剥离/缺数清单/声明核验/送审包)。
+
+### Verified
+- M12 雨虹真取证(1 research,7'16"):态一达成,§1 示范段过门禁;登记 8 行机检 PASS。
+- M11 F3 三实测人审(6.1):可出门,已知点位(雨虹 NO_TOOL/美的 amendment)均被报告点名。
+
+### 已知偏差(0.3.1 修,M13 单)
+- D-1 池「公开」属性受后端工具池影响(聚源接口混入)→ source_tier 强制分层;D-2/D-4/D-6/D-7 契约回写(见 verify/f2-acceptance.md 偏差表)。D-5 反向正例:lead 派单数字被 L1 核查打回——一切引用数字先过核查,含工单文本。
+
 ## [0.2.0] — 2026-09-19
 
 ### Added
