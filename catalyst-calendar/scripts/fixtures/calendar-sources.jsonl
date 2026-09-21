@@ -1,0 +1,6 @@
+{"id":"S1","kind":"disclosure_cn","ref":"AN202608281828644258","claim":"中期分红议案临时股东会排期","confidence":"L1","asof":"2026-10-15"}
+{"id":"S2","kind":"buyback","ref":"AN202609021828930348","claim":"回购进展月报节点","confidence":"L1","asof":"2026-11-03"}
+{"id":"S3","kind":"esop","ref":"AN202609021828930836","claim":"持股计划过户完成/归属节点","confidence":"L1","asof":"2026-12-02"}
+{"id":"S4","kind":"buyback","ref":"AN202603301820871252","claim":"回购预案 360 天期限(event 00033320260331P0010)","confidence":"L1","asof":"2027-03-31"}
+{"id":"S5","kind":"statute","ref":"https://www.cninfo.com.cn/ 信披管理办法定期报告条款","claim":"Q3 报告法定截止推导","confidence":"L1","asof":"2026-10-28"}
+{"id":"S6","kind":"research","ref":"conv_id=cue-research-d701602e9183","claim":"解禁/减持计划快照","confidence":"L3","asof":"2026-09-18"}

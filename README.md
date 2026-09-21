@@ -12,23 +12,24 @@ A personal collection of self-built agent skills for WorkBuddy / Cue. Each subdi
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.3.0 | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | 0.3.0 | Competitive-analysis brief generator: turns competitor material scattered across web pages / PDFs / recordings / video into a traceable, comparable, updatable decision brief. Six-stage pipeline: ingest (omni-reader) → brief → comparison map → evidence (cue-research) → three-format delivery → QA gates. |
 | [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | 0.3.3 | A-share / HK-share earnings deep-dive note generator: turns a subject + reporting period into an 8–12 page AI draft at **research-report structure level** (an eight-section skeleton: four-period disclosure deltas, segment price/volume, earnings quality & cash-flow, footnote risk scan, guidance & catalysts, peer cross-check), with every figure traceable and ratings / target prices always marked `[待人工]` (human review). Evidence is gathered through the three Cue channels — structured disclosure via Cue data-MCP domains, source parsing via omni-reader, and horizontal deep research via cue-research. **P1 end-to-end testing is complete** (2026-09-18/19: Midea 000333 across two seasons 2026H1+2025AR, and CNBM Yuhong 002271 2026H1; acceptance records in `cn-earnings-note/CHANGELOG.md` Verified); HK-share subjects and multi-subject batching remain untested. Base provenance: see [NOTICE.md](NOTICE.md) §financial-suite. |
+| [`catalyst-calendar/`](catalyst-calendar/) | catalyst-calendar | 0.1.0 | Catalyst calendar for a holdings set: subject list (≤10) + forward window (default 90 days) in; a date-sorted calendar out where **every event carries a disclosure anchor** (buyback nodes / equity-incentive vesting / unlock & reduction disclosures / regulatory reply deadlines / dividend dates / statutory filing deadlines by rule derivation). Events are stated, never judged — undisclosed events are excluded, bull/bear wording is banned, anchorless rows are deleted. Four machine checks target date hallucination specifically. **Freshly built: no end-to-end run yet; treat the first real subject as unverified.** Base provenance: see [NOTICE.md](NOTICE.md) §financial-suite. |
 
 ## Financial-research suite roadmap
 
 The financial-research skills are a Cue-native rewrite of the methodology base in **anthropics/financial-services** (Apache-2.0); localization practices (CAS terminology, compliance wording, `[待人工]` handling) are first referenced from **道以研究院 dao-financial-services v0.1.9** (MIT). We re-implement rather than copy — the data layer is entirely replaced by the three Cue channels: **deep research (cue-research) · data-MCP domains (Cue) · document parsing (omni-reader)**. Attribution details in [NOTICE.md](NOTICE.md).
 
-> **Status.** Only the vanguard below (`cn-earnings-note`) actually exists in this repository today; the rest is direction that has been scoped but **not built and not available**. **Except `cn-earnings-note`, which has completed P1 end-to-end runs (acceptance records in its CHANGELOG Verified); design values remain for all other scoped-but-unbuilt items.** Nothing in this roadmap is promised as shipped beyond what the Skills table above lists.
+> **Status.** Two financial-research skills now exist in this repository: `cn-earnings-note` (v0.3.3, P1 end-to-end verified) and `catalyst-calendar` (v0.1.0, machine checks green, no end-to-end run yet); the rest is direction that has been scoped but **not built and not available**. **Except `cn-earnings-note`, which has completed P1 end-to-end runs (acceptance records in its CHANGELOG Verified); design values remain for all other scoped-but-unbuilt items.** Nothing in this roadmap is promised as shipped beyond what the Skills table above lists.
 
-### Built — the vanguard (1 skill)
+### Built — the vanguard (2 skills)
 
 - **Earnings deep-dive — [`cn-earnings-note/`](cn-earnings-note/)** (v0.3.3): A-share / HK-share earnings deep-dive notes — the only financial skill delivered so far, P1-verified across 4 runs / 2 subjects. Full one-liner in the Skills table above.
+- **Catalyst calendar — [`catalyst-calendar/`](catalyst-calendar/)** (v0.1.0): second vanguard of batch 2; machine checks 8/8 green, end-to-end run not yet done.
 
 ### Planned — batch 2 (direction set, not yet built)
 
 Scoped but **not implemented and not available**:
 
 - **Sector overview — 行业景气全景**: industry cycle & landscape briefing.
-- **Catalyst calendar — 催化剂日历**: unlock / pledge / buyback / margin event calendar.
 - **Company one-pager — 公司一页纸**: a fast tear-sheet built from public disclosures.
 - **Public-info pre-due-diligence — 公开信息预尽调**: checklist screen from regulatory / statute / IPO-in-review / entity data.
 
