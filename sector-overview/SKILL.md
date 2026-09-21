@@ -1,0 +1,78 @@
+---
+name: sector-overview
+displayName: 行业景气全景-cn
+slug: sector-overview
+version: 0.1.0
+summary: "输入行业名（申万/中信一级或口语）+ 近 4 季窗口，产出判断必带可比序列锚的行业景气简报（六节，≤6 页）。趋势判断词与锚同行，无锚即逐字「无可比序列，不做景气判定」——本件命门。分析维度由深研动态生成，不套固定框架库。"
+description: "行业景气全景生成器（A股口径）。回答的问题是「说这个行业冷/热，凭什么」。产出 report.md 六节：画像与结论/量价与驱动/供需与产能/格局与代表公司/政策时间线/复核清单，每节带 [执行蓝图]（references/section-skeleton.md）。命门纪律：升|降|回暖|承压|走弱|拐点|高景气|低谷 等判断词出现在正文 ⇒ 同句必须挂可比序列锚（S<n>）或走态二逐字句「无可比序列，不做景气判定」——无锚即幻觉。取证通道：macro 行业量价序列为主 + statute/regulatory_cn 政策时间线（三件齐锚规格同 catalyst）+ disclosure_cn 代表公司聚合（只聚合不点评）+ cue-research ≤1（本件的分析维度由它在发起前动态生成，不背固定框架库；报成本后征询）+ omni 协会月报/白皮书。行业层亦不产投资建议：评级类词零容忍、无豁免区。与 journal-draft 连携：行业素材段可直接做企业期刊栏目底稿。改造自 anthropics/financial-services sector-overview（Apache-2.0）的 A股化重实现，数据层完全替换为 Cue 通道。Triggers: XX行业景气度 / 行业全景 / 这个行业是回暖还是承压 / 新能源化工半导体近况盘点 / 行业政策时间线; sector overview / industry outlook report / how is the XX sector doing. 不用于：个股财报深度点评（走 cn-earnings-note）、单页回客速览（走 tear-sheet）、标的持仓事件日历（走 catalyst-calendar）、推荐某个行业（本件不产投资建议）。"
+tags: [投研, 行业研究, A股, 景气度]
+license: MIT
+agent_created: true
+metadata:
+  requires:
+    bins: ["python3"]
+  optionalSkills: ["cue-data-mcp", "cue-research", "cue-omni-reader"]
+---
+
+# sector-overview — 行业景气全景-cn（AI 初稿）
+
+> 交付的是**带可比序列锚的行业冷热证据**，不是观点成品。本件与公开行业研报的差异不在篇幅，在纪律：
+> **每一个判断词都当场答得出「凭什么」——凭哪条序列、哪个口径、截至哪天**。
+> 分析维度不背框架库：每次运行先由深研按行业类型动态生成 2–4 个维度再取数（套件内核的行业镜像）。
+
+## 0. 什么时候用 / 不用
+
+| 你要 | 用什么 |
+|---|---|
+| 一个行业近 4 季的冷热证据简报（六节 ≤6 页） | **本 skill** |
+| 某家公司财报深度点评 | `cn-earnings-note` |
+| 见客户前 30 秒一页纸 | `tear-sheet` |
+| 持仓的日期表 | `catalyst-calendar` |
+| 「看好哪个行业」式建议 | 不做——评级词零容忍、无豁免区（铁律 3） |
+
+## 1. 铁律（全流程有效）
+
+1. **AI 初稿三声明**：标题后前 5 行内含「本页为 AI 初稿」+ 生成 asof + 本次通道用量（机检①）；不构成投资建议。
+2. **判断词-锚同行（本件命门）**：`升|降|回暖|承压|走弱|拐点|高景气|低谷` 出现在正文任何一句 ⇒ 同句挂可比序列锚 `S<n>`（序列名+口径+asof 在 sources 可解析）；挂不上即走**态二逐字句**：「无可比序列，不做景气判定」——不许改写、不许软接「据估计」。判断词无锚=日期幻觉的行业版（同族教训 catalyst v3-B11）。
+3. **评级词零容忍、豁免区=无**：行业层也不产「看好/推荐/减持某行业」表述；全族 BANNED 词表照旧。
+4. **缺数申报，禁补**：协会/产能口径无源即标「缺数」，禁「据估计/市场预期」类无源句；research 件标 L3 入复核清单；**行业均值的预期类数字默认不取**（高危 oversell，引用即走 expectation-pool 契约含 source_tier）。
+5. **花之前必问 + 维度动态生成**：research ≤1 次，发起前先报「预计耗时与消耗」再征询；**该次 deep-research 的产出之一是本行业 2–4 个分析维度**（如养殖看存栏/猪价，光伏看排产/组件价），维度写进台账再取数——不套上一个行业用过的清单。
+
+## 2. 输入契约（≤3 问）
+
+- **行业名**：申万/中信一级或口语名；歧义按 entity 消歧同款流程列候选拒猜（如「芯片」→半导体/芯片设计列选）；
+- **窗口**：缺省=近 4 个**完整**季度（未走完的当季不入序列比较）；
+- **角度**（可选）：`量价 | 政策 | 竞争格局`，缺省全六节；指定角度只缩详略、不放松铁律 2。
+
+## 3. 管线（五段+门禁，逐节追加同姊妹件；开工建 `progress.md`）
+
+- `+scope`：行业名消歧定分类口径（申万 vs 中信选一注明）；窗口落表。
+- `+series`：`macro` 域取行业量价序列（工具级发现同 `cn-earnings-note/references/data-channels.md` §1）；同比/环比/累计三 basis 标签制照姊妹件；**表必带 asof，图不做**。
+- `+research`：报成本征询后发起 ≤1 次——产出 ①本行业动态维度 ②协会口径数据/产能投放节奏（L3 入 sources）；零命中或用户拒发→相关节直接走态二/缺数句。
+- `+policy`：`statute`/`regulatory_cn` 建政策时间线（行规格见 `references/policy-timeline.md`；statute 锚三件齐口径引 `catalyst-calendar` spec §v3-A3，不复制正文）。
+- `+companies`：`disclosure_cn` 取 ≥3 家代表公司关键指标**聚合表**——只聚合、零点评，单司数字全走 `S<n>` 锚；成表后与 `+series` 互证（个体≠行业，背离要注记）。
+- `+check`（不过不交付）：`python3 scripts/check_sector.py <report.md> --sources <sources.jsonl> --window <YYYY-MM-DD~YYYY-MM-DD>`——四道：①声明行 ②**判断词-锚同行机检**（含态二逐字句白名单）③禁词+评级零容忍 ④数字列锚+双向可解析（锚型白名单/节名保留词封闭集/崩溃自由——catalyst v3 教训前置吸收）。机检要点详 `references/section-skeleton.md` 尾节。（脚本与 fixtures 由并行工项在制；出门=三审制：fixtures 含对方攻击样全绿+6.1 LGTM「构造不出下一枚」+push 单独候 Owner。）
+
+## 4. 输出契约
+
+```
+sector-<行业名>-<窗口>/
+├── report.md        交付物：三声明页眉+六节（每节带 [执行蓝图] 落位）+ 附录来源索引
+├── sources.jsonl    行式同姊妹件契约（序列行 kind=macro、ref=序列名+平台+asof；research 带 conv_id）
+└── progress.md      台账：消歧结论+动态维度清单+缺数/弃句记录
+```
+
+## 5. 套件连携
+
+本件的「行业素材段」（§2+§3 的带锚序列与政策时间线）可直接喂 `journal-draft` 做企业期刊栏目底稿（shortlist 既有定位）——连携时素材段的锚随行走，不得只搬结论。
+
+## 6. 边界与拒答
+
+- 「直接说这个行业能不能买」→ 拒绝并引铁律 3；
+- 行业无可比序列在场 → 允许全篇态二（薄简报合法）——**空结论合法，无锚判断违法**；
+- 窗口内协会数据断更 → 缺数申报+复核清单挂行，不回退旧值顶替。
+
+## 7. 出处
+
+- 基座：anthropics/financial-services `sector-overview`（Apache-2.0）——六节型任务结构来源。
+- 本包为**A股化重实现而非搬运**：数据层完全 Cue 通道化；判断词-锚同行纪律、维度动态生成、政策锚三件齐规格为本套件自建（对照同类公开件于此零处——§5-7 区隔点）。出处声明见仓库根 `NOTICE.md`。
