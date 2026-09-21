@@ -88,8 +88,9 @@ metadata:
 
 ### 3.6 `+check` 门禁（不过不交付）
 ```bash
-python3 scripts/check_note.py <note.md> --sources <sources.jsonl> [--allow-pending]
+python3 scripts/check_note.py <note.md> --sources <sources.jsonl> --ledger <ledger-本期.json> --prev-ledger <ledger-上季.json> [--allow-pending]
 ```
+续账 run 双 ledger 必带（§3.0 的 linkage 断言入口，本期期初≠上季期末即不交付）；**无续账场景（首季建账）的合法形状=只带 `--ledger` 单参**——linkage 无上游可对，台账注「首季无 prev」即可，不假造上季文件。
 四道：①AI 声明与 [待人工] 就位 ②数字行可回查覆盖率（阈值 95%）③口径纪律（同比/单季标注）④合规最小集词表。FAIL 则回改后复跑，通过后才把 note 交给用户。送审场景加 `--audit-report <path>` 出「送审就绪度」附录（禁词点名/待人工计数/缺数清单/声明核验/送审包清单），该报告不构成合规意见。
 
 ## 4. 输出契约
