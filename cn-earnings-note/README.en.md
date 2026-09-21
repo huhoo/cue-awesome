@@ -32,7 +32,7 @@ Two iron rules up front: **the output is an AI first draft** — views, ratings 
 2. **Ask**: "给我出一份 600519 的 2026H1 深度点评" — triggers work in Chinese or English (see the `SKILL.md` frontmatter). It aligns inputs in ≤5 questions (issuer / period / materials / focus / output dir, each with a default), then opens a `progress.md` ledger.
 3. **Collect**: the five stages run (`+resolve → +fetch → +parse → +survey → +draft`), then the gate `+check` — **no delivery without passing it**. You get `note.md` + `sources.jsonl` + the ledger; data gaps are marked "未检索到" (not found) in place.
 
-Any stage can be resumed: read the ledger first; questions already answered are never re-asked. Section generation is append-as-you-go (`SKILL.md` §3.5): one section per pass, concatenated into `note.md`.
+Resume = start from the ledger (read `progress.md` and upstream artifacts first), **re-check the gate's current checks before running** — contracts evolve with field tests, don't resume from stale memory; questions already answered are never re-asked. Section generation is append-as-you-go (`SKILL.md` §3.5): one section per pass, concatenated into `note.md`.
 
 ## 3. First-time Cue setup (three steps, skippable)
 
