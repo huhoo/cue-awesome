@@ -2,6 +2,11 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.1.1] — 2026-09-21
+
+### Added/Fixed
+- M43 机检合同对账+命令双向对齐;对抗审 LGTM(判词模板同 §v4-C);README 状态位改「审结待实跑」。
+
 ## [0.1.0] — 2026-09-21
 
 初始版本（第三批首发；契约=spec-tear-sheet-0.1.0，套件最低门槛回客件定位，与姊妹件共享铁律语法、通道契约与事件分类学）。

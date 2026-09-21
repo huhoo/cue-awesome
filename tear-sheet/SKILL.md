@@ -2,7 +2,7 @@
 name: tear-sheet
 displayName: 公司一页纸
 slug: tear-sheet
-version: 0.1.0
+version: 0.1.1
 summary: "见客户前 30 秒一张纸：主体（≤5）+ 用途语境，产出每行带披露锚、时效声明在场的一页纸（屏内 ≤40 行/主体）。五段形制钉死（身份/近四期速览/在场事件/风险/观点区），观点区永远 [待人工]，默认零深研、成本可预期。"
 description: "公司一页纸（tear sheet）生成器，套件里最低门槛的回客件——单次默认零深研、data-mcp 直查为主、摘要需要时才动 omni，每一次使用都真实展示 Cue 通道取证。输入「主体（≤5 个，超了拒绝并说明成本理由）+ 用途（会前速览|客户简报 二选一）+ 可选关注点一句话（只升排版，不引入新数据源）」。输出五段固定形制：身份三行（禁简介自造）→ 近四期速览表（营收/归母/扣非/经营现金流，累计+单季双口径带 basis 标签）→ 在场事件 ≤4 条（复用姊妹件 catalyst-calendar v2 入类第一闸：有明确日期的在场披露或可复算 statute 推导）→ 风险 1–3 条（仅直查命中项，无命中写『直查面内未命中≠无敞口』）→ 观点区 [待人工]×3 行（一句不代填）。页眉三声明必在场：生成 asof、数据截止日、本次通道用量。默认 0 次深研（超限即降级标注『深研未发起』）；全流程确认弹窗至多一次，成本可预期是回客件前提。改造自 anthropics/financial-services tear-sheet（Apache-2.0）的 A股化重实现，数据层完全替换为 Cue 通道。Triggers: 给我一页纸看看XX / 见客户前速览XX / 公司名片页 / 客户简报里加一节XX; one-pager on XX / quick company sheet before my meeting / tear sheet for XX. 不用于：需要 Excel/表格交付物（本件只产 md 回客页）、超过 5 个主体的批量（批量日历走 catalyst-calendar）、财报深度点评与兑现度对账（走 cn-earnings-note）、任何评级/目标价/买卖建议（观点区留白归人）。"
 tags: [投研, 一页纸, A股, 回客件]

@@ -2,7 +2,7 @@
 name: sector-overview
 displayName: 行业景气全景-cn
 slug: sector-overview
-version: 0.1.0
+version: 0.1.1
 summary: "输入行业名（申万/中信一级或口语）+ 近 4 季窗口，产出判断必带可比序列锚的行业景气简报（六节，≤6 页）。趋势判断词与锚同行，无锚即逐字「无可比序列，不做景气判定」——本件命门。分析维度由深研动态生成，不套固定框架库。"
 description: "行业景气全景生成器（A股口径）。回答的问题是「说这个行业冷/热，凭什么」。产出 report.md 六节：画像与结论/量价与驱动/供需与产能/格局与代表公司/政策时间线/复核清单，每节带 [执行蓝图]（references/section-skeleton.md）。命门纪律：升|降|回暖|承压|走弱|拐点|高景气|低谷 等判断词出现在正文 ⇒ 同句必须挂可比序列锚（S<n>）或走态二逐字句「无可比序列，不做景气判定」——无锚即幻觉。取证通道：macro 行业量价序列为主 + statute/regulatory_cn 政策时间线（三件齐锚规格同 catalyst）+ disclosure_cn 代表公司聚合（只聚合不点评）+ cue-research ≤1（本件的分析维度由它在发起前动态生成，不背固定框架库；报成本后征询）+ omni 协会月报/白皮书。行业层亦不产投资建议：评级类词零容忍、无豁免区。与 journal-draft 连携：行业素材段可直接做企业期刊栏目底稿。改造自 anthropics/financial-services sector-overview（Apache-2.0）的 A股化重实现，数据层完全替换为 Cue 通道。Triggers: XX行业景气度 / 行业全景 / 这个行业是回暖还是承压 / 新能源化工半导体近况盘点 / 行业政策时间线; sector overview / industry outlook report / how is the XX sector doing. 不用于：个股财报深度点评（走 cn-earnings-note）、单页回客速览（走 tear-sheet）、标的持仓事件日历（走 catalyst-calendar）、推荐某个行业（本件不产投资建议）。"
 tags: [投研, 行业研究, A股, 景气度]

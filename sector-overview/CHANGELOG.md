@@ -2,6 +2,11 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.1.1] — 2026-09-21
+
+### Added/Fixed
+- M47 check_sector 四道机检+48 断言对账;对抗审 LGTM(判词模板同 §v4-C);README 状态位改「审结待实跑」。
+
 ## [0.1.0] — 2026-09-21
 
 初始版本（套件管线第三格·行业镜像；契约=spec-sector-overview-0.1.0，铁律语法与通道契约承姊妹件）。
