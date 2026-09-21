@@ -6,7 +6,7 @@
 
 **Line up the *certain dates* behind your holdings as one forward-dated calendar — every date points back to a filed announcement or a statute, and nothing more. No judgments added.**
 
-It answers a plain question: **"In the next three months, what dates matter for each of my holdings?"** Buyback progress milestones, vesting days, ex-dividend dates, inquiry-response deadlines, statutory reporting cutoffs — scattered across announcement feeds, easy to miss by hand. The calendar pulls them from five data domains (`buyback` / `esop` / `disclosure_cn` / `regulatory_cn` / `statute`), adds at most one deep-research pass for lock-up/reduction schedules, and ships `calendar.md` plus a fully traceable source table.
+It answers a plain question: **"In the next three months, what dates matter for each of my holdings?"** Buyback deadlines (only when the announcement states a full date), vesting days, shareholder-meeting and briefing dates, ex-dividend dates, inquiry-response deadlines, ST effectivity or trading-resumption days, statutory reporting cutoffs — scattered across announcement feeds, easy to miss by hand. The calendar pulls them from five data domains (`buyback` / `esop` / `disclosure_cn` / `regulatory_cn` / `statute`), adds at most one deep-research pass for lock-up/reduction schedules, and ships `calendar.md` plus a fully traceable source table.
 
 **Input**: a set of issuers (official full names or codes, ≤10) + a horizon window (default: next 90 days)
 **Output**: `calendar-<date>-<n>issuers/` — `calendar.md` (forward-dated table + a "watch in the next 30 days" list + source appendix) · `sources.jsonl` · `progress.md` ledger
@@ -31,11 +31,14 @@ It answers a plain question: **"In the next three months, what dates matter for 
 
 ## 3. Built against one specific failure: invented dates
 
-The real risk here is not a wrong analysis — it's a date that never existed. Three hard constraints:
+The real risk here is not a wrong analysis — it's a date that never existed. The v2 taxonomy enforces a first gate:
 
-- every date resolves to one of: announcement index / URL / `conv_id`; a bare row FAILs the gate;
-- statutory deadlines are derived from the `statute` text fetched live at run time — rules are not hardcoded;
+- an entry enters only if either (a) a filed disclosure is on record **and states an explicit date**, or (b) a statutory derivation whose **applicability conditions are decidable inside the cited statute anchor** — anything else never reaches the table;
+- **no date arithmetic, period**: "announcement date + 360 days" style derivations were authorized once in v1 and are now revoked across the board (caught by adversarial review M21); a deadline enters only when the announcement itself writes the full date;
+- every date resolves to an announcement index / formal document number / URL / `conv_id`+path, checked column-by-column — digits in other columns cannot impersonate an anchor; statutory rules come from the `statute` text fetched live at run time, never hardcoded;
 - out-of-window entries must carry an inline "窗口外余档" (out-of-window carry-over) note, or they FAIL; a queried-but-absent item is marked "未检索到" — **an empty calendar is legal; an invented calendar is not**.
+
+Progress-style disclosures with no pre-known date (1%/2% buyback milestones) go to a trailing "已发生动态" (already-occurred updates) notes section — they never masquerade as upcoming events.
 
 ## 4. First-time Cue setup (three steps, skippable)
 
@@ -53,10 +56,10 @@ scripts/check_calendar.py       the four delivery gates (standalone, pure stdlib
 
 ## 6. Current status (the blunt list)
 
-- **v0.1.0, no end-to-end run yet**: docs and the gate script were built in parallel; until a real multi-issuer run over a real window is recorded, timings and coverage are design values, not measurements.
+- **v0.1.0: no end-to-end run yet, re-review not yet passed**: after adversarial review M21 returned BLOCK, docs (here) and the gate script are being rewritten to spec v2 — a real multi-issuer run has not happened, 6.1 re-review LGTM is outstanding, and the push stays frozen until both rewrites and the re-review close; until then, timings and coverage are design values, not measurements.
 - **Not submitted to any skill market**: publishing (P2) is frozen repo-wide, same gate as the sibling skill; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
-- Issuer set capped at 10; `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
-- No market-data flow (`equity_market` channel not open); no ratings or target prices — the concepts do not appear.
+- Issuer set capped at 10 (machine-checked); `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
+- No market-data flow (`equity_market` channel not open); **rating vocabulary is zero-tolerance by gate design** — ratings do not apply here, there is no blank left to fill.
 
 ## 7. Sources & credit
 
