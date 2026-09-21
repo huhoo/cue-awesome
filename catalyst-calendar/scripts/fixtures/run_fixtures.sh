@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# run_fixtures.sh —— catalyst-calendar v4 机检总探针(spec §v2-B+§v3-B+§v4-A/B;工单 M35/2.1)。
+# run_fixtures.sh —— catalyst-calendar v4 机检总探针(spec §v2-B+§v3-B+§v4-A/B;工单 M35/M40/2.1)。
 # 纪律:退出码直取 "$?",禁管道吞码;--window 全 case 显式(B6 反 wall-clock);
 #      S 系列带 runmark 断言「唯一目标」——命中的是 intended gate,且无 Traceback(B6)。
 # 账目:M27 十样+B11(M28 真实反哺)+M21 五样+v2 保留样(31)+M32 十样 S 系列
-#      (S1 双跑:无形制道可拦=v3 盲区如实;有证据层=断链)+good/partial 证据层对偶;共 44 断言。
+#      (S1 双跑:无形制道可拦=v3 盲区如实;有证据层=断链)+good/partial 证据层对偶
+#      +M40 T1 前缀撞号(M37-B1);共 45 断言。
 set -u
 cd "$(dirname "$0")"
 PY="${PYTHON:-python3}"
@@ -87,6 +88,8 @@ runmark 1 "动态区只准过去日" "bad-s6b-future-dongtai (S6b 已发生动�
 runmark 1 "自白词" "bad-s7-rhythm          (S7 按过往节奏/或将,v4-A⑥ 扩充)" "$PY" "$CHECK" bad-s7-rhythm.md $W --sources calendar-sources.jsonl
 runmark 1 "日期列为空或不可解析" "bad-s8-empty-date        (S8 空日期=行号化 FAIL 非 TypeError,v4-A⑤)" "$PY" "$CHECK" bad-s8-empty-date.md $W --sources calendar-sources.jsonl
 runmark 1 "不在主表日期集合" "bad-s10-summary-subset (S10 摘要⊄主表,v4-A④ 保留词定位)" "$PY" "$CHECK" bad-s10-summary-subset.md $W --sources calendar-sources.jsonl
+# ---- M37-B1/T1(M40 手术刀):前缀撞号须整词边界拦 ----
+runmark 1 "无原文匹配" "bad-t1-an-prefix     (T1 真 AN 少末位撞子串,整词边界断链)" "$PY" "$CHECK" bad-t1-an-prefix.md $W --sources bad-t1-sources.jsonl --evidence evidence-good
 # ---- B6 缺参与 help ----
 run 1 "no-window  (缺 --window)" "$PY" "$CHECK" good-calendar.md --sources calendar-sources.jsonl
 run 1 "no-sources (缺 --sources)" "$PY" "$CHECK" good-calendar.md $W

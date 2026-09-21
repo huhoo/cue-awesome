@@ -13,7 +13,8 @@ v4 变更(样号对应 M32 报告 §1):
   ④ 摘要 ⊆ 主表日期集合按保留词区定位实现,不依赖字面标题(S10)。
   ⑤ 空/不可解析日期列一律行号化 FAIL,零 traceback(S8)。
   ⑥ 自白词表扩充(或将|有望|估计|按过往节奏|拟+动词)——lint 性质,尽力而为(S7)。
-  ⑦ 证据层匹配道:主体/摘要/动态每条来源锚须在 --evidence 目录原文匹配;statute 锚
+  ⑦ 证据层匹配道:主体/摘要/动态每条锚须在 --evidence 目录原文整词命中(M40-B1:
+     锚型左右非 alnum 边界,禁前缀撞号——T1 真号少末位);statute 锚
      法名+条号+要点全串须在证据在场(裸编法名/引已删条文=断链 FAIL);要点含 快报|无条件
      直接拦(S1/S1b)。语义真值到此为止,再深归人审(§v4-B)。
 
@@ -113,6 +114,13 @@ def rating_offending(s):
     cleaned = OFFICIAL_USAGE_RE.sub("□", s)
     m = RATING_RE.search(cleaned)
     return m.group(0) if m else None
+
+
+def evidence_hit(text, probe):
+    """M40-B1:证据层按锚型整词边界匹配——探针左右须非 alnum,禁前缀撞号。
+    T1 样(真公告号 AN…44258 少末位 AN…4425)在子串 in 下假阳性放行;AN/函件号/
+    six/conv/url/statute 整段同界(CJK 相邻字符本非 alnum,天然安全)。"""
+    return re.search(r"(?<![0-9A-Za-z])" + re.escape(probe) + r"(?![0-9A-Za-z])", text) is not None
 
 
 def anchor_forms(cell):
@@ -389,7 +397,7 @@ def run(args):
                     fails.append(f"[锚] 第 {r['lineno']} 行 statute 锚无 sources kind=statute 同串承载(A3/N2)")
                 if evidence_text is not None:  # v4-B⑦:法名+条号须在当场取回证据原文中匹配
                     core = re.sub(r"^statute[:：]", "", s)
-                    if core and core not in evidence_text:
+                    if core and not evidence_hit(evidence_text, core):
                         fails.append(f"[证据] 第 {r['lineno']} 行 statute 锚不在 evidence 当场取回清单(断链;法名伪满/条文已删皆拦,v4-B⑦/S1)")
         if evidence_text is not None and sec_k in (
                 "subject", f"reserved:{SUMMARY_HEAD}", f"reserved:{DONGTAI_HEAD}"):
@@ -399,7 +407,7 @@ def run(args):
                     probe = probe.split(" ")[0]
                 if probe.startswith("statute:") or probe.startswith("statute："):
                     continue  # statute 由上段 core 专检,不重复报(证据里存的是条文原文非锚前缀)
-                if probe and probe not in evidence_text:
+                if probe and not evidence_hit(evidence_text, probe):
                     fails.append(f"[证据] 第 {r['lineno']} 行锚 {probe[:36]!r} 在 evidence/ 无原文匹配(v4-B⑦断链)")
 
         if sec_k in ("subject", f"reserved:{SUMMARY_HEAD}"):
