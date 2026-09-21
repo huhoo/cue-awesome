@@ -2,6 +2,19 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [Unreleased]（随下趟车收口）
+
+### Changed（文档同步，M29r2-K2 落地）
+
+### Added（证据层接入，M36a）
+
+- 新契约件 `references/evidence-format.md`（套件三件通用：命名/sha 台账行/断链语义/抽查清单位，零计费）；
+  本件 §3.2 挂管线义务句、§4 树补 `evidence/` 行、skeleton §7 新增「evidence 抽 3 对原文」固定复核行。
+
+- 续跑语义三镜像改写：`SKILL.md` §3 标题与 `README.md`/`README.en.md` 对应句，
+  由「可从任意段续跑」改为「**读表起手+跑前核对机检要点**」——真实动因：ledger 机检 v2.3.0 的「先落账再出门」
+  新增义务若被旧续跑句授权「凭记忆跳段」会直接 FAIL 交付件（K2 三问之一，lead 裁 A 改文档并另单落 v2.3.0 节）。
+
 ## [0.3.3] — 2026-09-20
 
 ### Added（预测脚手架与盈利分桶档，契约原文=spec-0.3.3，文档侧三件套）

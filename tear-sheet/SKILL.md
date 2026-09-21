@@ -49,11 +49,11 @@ metadata:
 - `data-mcp` 直查为主（域清单与工具发现规则同 `cn-earnings-note/references/data-channels.md` §1）；
 - **默认 0 次 cue-research**——一页纸的成立不以深研为前提；需要深研的诉求出现时，降级标注「深研未发起」并指路姊妹件，**不中途烧**；
 - `omni` 仅当需要摘要级原文且域面 section 全文不足时（三级路径同姊妹件）；
-- **全流程 confirm-before-spend 弹窗至多一次**：所有可能计费的调用合并预演、一次问齐——成本可预期=回客件的前提。
+- **页眉通道用量声明与 `evidence/` 快照数逐笔对账（缺快照=缺声明，写进台账注因）；全流程 confirm-before-spend 弹窗至多一次**：所有可能计费的调用合并预演、一次问齐——成本可预期=回客件的前提。
 
 ## 4. 管线（三段+门禁）
 
-`+scope`（消歧+用途定档）→ `+facts`（五段取数：身份/四期/事件闸内 ≤4/风险直查）→ `+render`（按 §2 形制落 `page.md`，逐节追加同姊妹件纪律）。
+`+scope`（消歧+用途定档）→ `+facts`（五段取数：身份/四期/事件闸内 ≤4/风险直查；**每笔域直查原始返回落 `evidence/`+台账 sha 行，零计费**）→ `+render`（按 §2 形制落 `page.md`，逐节追加同姊妹件纪律）。
 
 收尾门禁（不过不出）：
 ```bash
@@ -68,6 +68,7 @@ python3 scripts/check_page.py <page.md> --sources <sources.jsonl> --subjects <n>
 tearsheet-<日期>-<n>主体/
 ├── page.md          交付物：页眉三声明+每主体五段（≤40 行/主体）
 ├── sources.jsonl    行式同姊妹件契约（id/kind/ref/claim/confidence/asof）
+├── evidence/        域直查原始快照（契约=`cn-earnings-note/references/evidence-format.md`，只引用不复制；页眉通道用量与之对账）
 └── progress.md      台账：取数面+弃行记录+通道用量实况
 ```
 
