@@ -109,7 +109,7 @@ cd .. && zip -r journal-draft.zip journal-draft \
 
 ## 二、本土化实践参考：道以研究院 dao-financial-services v0.1.9（MIT）
 
-A股化过程中的 **CAS 术语、合规词表、`[待人工]`（评级 / 目标价一律人工复核）等本土化实践**，首创参考为道以研究院的 `dao-financial-services` 功能包（**v0.1.9**，**MIT**）。该功能包无公开代码仓，但可经官方端点公开下载查阅：<https://hzddyy.com/stdd/api/download/dao>（返回 `application/zip`，文件名 `Dao-financial-services-0.1.9.zip`，版本号与本文引用自证一致）。我方在 MIT 允许范围内做的是**不同交付物的重实现**（报告型 vs 其数字型），术语与合规commons 致敬在此声明。
+A股化过程中的 **CAS 术语、合规词表、`[待人工]`（评级 / 目标价一律人工复核）等本土化实践**，本土化实践参考为道以研究院的 `dao-financial-services` 功能包（**v0.1.9**，**MIT**）。该功能包无公开代码仓，但可经官方端点公开下载查阅：<https://hzddyy.com/stdd/api/download/dao>（返回 `application/zip`，文件名 `Dao-financial-services-0.1.9.zip`，版本号与本文引用自证一致）。我方在 MIT 允许范围内做的是**不同交付物的重实现**（报告型 vs 其数字型），术语与合规commons 致敬在此声明。
 
 ## 三、重实现，非拷贝
 

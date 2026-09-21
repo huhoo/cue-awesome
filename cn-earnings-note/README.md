@@ -89,6 +89,6 @@ scripts/check_note.py          四道门禁（声明与待人工/数字可回查
 
 - 基座：anthropics/financial-services `earnings-analysis`（Apache-2.0）——方法论与四期差异/beat-miss 框架的来源。
 - A股本土化实践参考：道以研究院 `dao-financial-services` v0.1.9（MIT）——CAS 口径、评级用语白名单、
-  `[待人工]` 与投毒防御等实践的首创者。查阅方式（公开可核）：功能包下载
-  <https://hzddyy.com/stdd/api/download/dao>；系列文章见其公众号「小以AI/道以研究院」《金融AI_Skill指南》。
+  `[待人工]` 与投毒防御等实践的本土化形态见于其功能包。查阅方式（公开可核）：功能包下载
+  <https://hzddyy.com/stdd/api/download/dao>。
 - 本包为**重实现而非搬运**：数据层完全替换为 Cue 通道，无上述两方代码。详见仓库根 `NOTICE.md`。

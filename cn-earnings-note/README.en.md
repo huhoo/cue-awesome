@@ -83,5 +83,5 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 ## 7. Sources & credit
 
 - Base: anthropics/financial-services `earnings-analysis` (Apache-2.0) — the methodology and the four-period / beat-miss framing.
-- China-market practice reference: 道以研究院 (Daoyi Research Institute) `dao-financial-services` v0.1.9 (MIT) — originator of the CAS conventions, the rating-word whitelist, and the `[待人工]` / prompt-injection defense practices. How to verify (public): package download at <https://hzddyy.com/stdd/api/download/dao>; the series《金融AI_Skill指南》on its WeChat account「小以AI/道以研究院」.
+- China-market practice reference: 道以研究院 (Daoyi Research Institute) `dao-financial-services` v0.1.9 (MIT) — the localization forms of the CAS conventions, the rating-word whitelist, and the `[待人工]` / prompt-injection defense practices are found in its package. How to verify (public): package download at <https://hzddyy.com/stdd/api/download/dao>.
 - This package is a **re-implementation, not a port**: the data layer is fully replaced by Cue channels; no code from either project. See the repo-root `NOTICE.md`.
