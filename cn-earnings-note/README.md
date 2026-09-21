@@ -66,6 +66,7 @@ references/data-channels.md    Cue 三通道调用契约 + 合规最小集词表
 references/report-skeleton.md  八节骨架，每节带 [执行蓝图]
 references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二锚、source_tier 分层、脚手架对照行）
 references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
+references/evidence-format.md  证据层契约（evidence/ 命名、sha 台账行、断链语义、抽查清单位；套件三件通用）
 scripts/check_note.py          四道门禁（声明与待人工/数字可回查/口径纪律/合规词表）
 ```
 

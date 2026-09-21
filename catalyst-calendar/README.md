@@ -56,12 +56,12 @@ SKILL.md                        主指令：铁律/输入契约/四段管线/输
 README.md / README.en.md        本文件（中文权威/英文译文）
 CHANGELOG.md                    版本记录
 references/event-taxonomy.md    六类事件分类学 + 拆行/余档/L3 判例
-scripts/check_calendar.py       机检 v2（spec §v2-B 十条，纯 stdlib，--help 可跑）
+scripts/check_calendar.py       机检 v4（§v2-B+§v3-B+§v4-A/B 全量，纯 stdlib，--help 可跑）
 ```
 
 ## 六、当前状态（诚实清单）
 
-- **v0.1.0 未实测、复审在途**：按 M27 复审 BLOCK 结论返工中；v3 落地（M30 文档+M29 机检）出门前需复审 LGTM，端到端未跑；跑通前耗时与覆盖度都是设计值。
+- **对抗审已闭（M42 四轮：6B→5→4→1→LGTM，含真实冒烟反哺三道闸），已随仓公开**；**满窗多主体端到端交付跑未回填**（M28 为冒烟非交付）——跑通前耗时与覆盖度按设计值对待。
 - **未提交技能市场**：上架（P2）整体冻结中，与姊妹件同闸，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 主体集上限 10 个（机检计数）；`margin`（两融折算率）有意不入列——与事件日历无关。
 - 日历不含行情数值流（`equity_market` 通道未开放）；**评级词汇零容忍是机检事实**——评级在本件根本不适用，没有留白位可填。

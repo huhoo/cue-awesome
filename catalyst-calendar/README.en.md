@@ -56,7 +56,7 @@ scripts/check_calendar.py       gate script v2 (spec §v2-B, ten checks; pure st
 
 ## 6. Current status (the blunt list)
 
-- **v0.1.0: no end-to-end run yet, re-review in flight**: rework is underway per the M27 re-review BLOCK verdict; before the v3 landing (M30 docs + M29 gate) exits, a re-review LGTM is required — end-to-end remains unrun, and until then timings and coverage are design values.
+- **Adversarial review closed (M42, four rounds 6B→5→4→1→LGTM, incl. three gates fed by the real smoke) and public with the repo**; a full multi-issuer end-to-end delivery run has not landed (M28 was a smoke, not a delivery) — until it does, timings and coverage remain design values.
 - **Not submitted to any skill market**: publishing (P2) is frozen repo-wide, same gate as the sibling skill; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer set capped at 10 (machine-checked); `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
 - No market-data flow (`equity_market` channel not open); **rating vocabulary is zero-tolerance by gate design** — ratings do not apply here, there is no blank left to fill.

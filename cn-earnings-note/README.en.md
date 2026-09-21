@@ -61,6 +61,7 @@ references/data-channels.md    Cue three-channel contracts + compliance minimum 
 references/report-skeleton.md  the eight-section skeleton, every section with an [执行蓝图] (play-by-play blueprint)
 references/expectation-pool.md public-summary-layer expectation pool contract (beat/miss second anchor, source_tier tiers, scaffold anchor line)
 references/coverage-ledger.md  coverage-ledger contract (ledger-<period>.json fields / six states / read-before-write / linkage assertions)
+references/evidence-format.md    evidence-layer contract (evidence/ naming, sha ledger rows, link-break semantics, spot-check line; shared by three tickets)
 scripts/check_note.py          the four delivery gates (statement & pending-human / traceability / period-basis / word list)
 ```
 

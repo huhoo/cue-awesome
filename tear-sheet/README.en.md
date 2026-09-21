@@ -50,13 +50,13 @@ SKILL.md          master instruction: input contract / five blocks / cost discip
 README.md         this file (Chinese source of truth)
 README.en.md      English translation
 CHANGELOG.md      version history
-scripts/          gate script check_page.py + fixtures (built by a parallel ticket; lands before exit)
+scripts/          gate script check_page.py + fixtures (landed; 77 assertions all green)
 ```
 
 ## 6. Current status (the blunt list)
 
 - **v0.1.0, design values**: no end-to-end run has happened yet; the 30-second promise, the single-digit cost, and coverage are all design values until measured records land.
-- **Gate & adversarial review open**: `scripts/` is in progress under a parallel ticket; exit requires 6.1 adversarial LGTM under the suite's new rule — **a green light does not prove the line holds; bad samples are designed first**.
+- **Review closed, shipped**: gate M43 (77/77, the question-list-as-contract reconciled 1:1) + adversarial M45 LGTM; public with the repo at 0.1.1. No end-to-end client-meeting run recorded — the 30-second/single-digit-cost wording stays a design-value claim.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 

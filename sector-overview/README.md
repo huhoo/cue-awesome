@@ -38,7 +38,7 @@
 1. **装**：本目录放进 agent 的 skills 目录。
 2. **说**：「光伏行业近况盘一下，重点看排产和价格」（触发词中英都行）。≤3 问补齐输入契约。
 3. **收**：五段管线（`+scope → +series → +research → +policy → +companies`）后过 `check_sector.py` 四道，**不过不出**。
-   机检脚本与 fixtures 由并行工项在制，出门条件含对抗审 LGTM（标准=审方构造不出下一枚坏样）。
+   机检 `check_sector.py` 已落地（49/49）；对抗审按新制度闭环（M46 审方出题→M48 判卷 LGTM），真实冒烟的形状教训由 M49 回哺入守护样。
 
 ## 四、首次开通 Cue（三步，可跳过）
 
@@ -53,13 +53,13 @@ README.md / README.en.md         本文件对
 CHANGELOG.md                     版本记录
 references/section-skeleton.md   六节骨架+每节 [执行蓝图]
 references/policy-timeline.md    政策时间线行规格（statute 三件齐锚口径引 catalyst，不复制）
-scripts/check_sector.py          四道机检（并行工项在制）
+scripts/check_sector.py          四道机检（已落地，49/49 全绿）
 ```
 
 ## 六、当前状态（诚实清单）
 
 - **v0.1.0 设计值**：端到端未跑——六节覆盖度、耗时、维度生成质量均为设计值；跑通前按「未验证」对待。
-- **三审未过**：坏样规格单由对抗审先出（写手不自造好人心证），机检实现候并行工项；LGTM 前 push 冻结。
+- **审结出门**：M48 对抗审 LGTM+M49 冒烟反哺已闭，0.1.1 随仓公开；端到端满量交付跑未回填（冒烟≠交付），跑通前按设计值对待。
 - **未提交技能市场**：P2 整体冻结中，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 图不做（表带 asof）；不含行情数值流与预期均值（`equity_market` 未开放+高危话术自缚）；个股只做聚合不做点评。
 
