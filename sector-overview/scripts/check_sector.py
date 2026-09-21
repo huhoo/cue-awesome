@@ -55,8 +55,9 @@ NUM_PROSE_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:万吨|亿吨|亿|万|%|个百分
 STATUTE_SPEC_RE = re.compile(
     r"^statute[:：]《[^《》]+》第[0-9一二三四五六七八九十百零]+条（[^（）]{2,}）$")
 LETTER_RE = re.compile(r"^\S*〔\d{4}〕\d+号$")
-KIND_ENUM = {"macro", "disclosure_cn", "statute", "regulatory_cn",
-             "research", "omni", "pool", "user"}
+KIND_ENUM = {"macro", "disclosure_cn", "statute", "regulatory_cn", "research",
+             "omni", "pool", "user", "fr_fact_index", "buyback", "esop",
+             "fr_footnote", "disclosure", "institutional"}  # M49 冒烟修:家族真 kind 面(fr_fact_index 等)入枚举
 RANK = {"portrait": 1, "series": 2, "supply": 3, "companies": 4, "policy": 5, "review": 6}
 KIND_CN = {"portrait": "画像", "series": "量价", "supply": "供需",
            "companies": "格局", "policy": "政策", "review": "复核"}
@@ -130,6 +131,8 @@ def classify(title, body_text):
         return "companies"
     if re.search(r"文件", joined) or re.search(r"政策|时间线|文件链", title):
         return "policy"
+    if re.search(r"量价", title):
+        return "series"  # M49 冒烟修:量价节只带缺数句(无 basis 表)时曾被 缺数→supply 抢走——薄简报合法形制
     if re.search(r"供需|供给|产能|缺数|断更", title + "\n" + body_text):
         return "supply"
     return "portrait"

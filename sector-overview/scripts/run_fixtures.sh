@@ -3,7 +3,7 @@
 # 断言口径(题单 §0):每题 3 断言=①exit 1 ②输出含目标道号 ③指定诊断关键词;
 # 第三路=唯一目标纯度(协议 2:其余三道标记不得并报)。good 族 3 枚(基线/改名族/语词族)。
 # 卫生 6 枚:证据 fail-closed×2(含 B09 无证据路)/窗口申报漂移/缺参×2/--help。
-# 合计 13×3+3+6 = 48 断言;合同分解与逐题映射见 verify/sector-coverage-m47.md。
+# 合计 13×3+4+6 = 49 断言;合同分解与逐题映射见 verify/sector-coverage-m47.md。
 # 纪律:退出码直取禁管道吞码;--window 全 case 显式。
 set -u
 cd "$(dirname "$0")"
@@ -65,6 +65,7 @@ done
 a 0 "" "good-sector     (六节全形基线)"     "$PY" "$CHECK" fixtures/good-sector.md     --sources fixtures/good-sources.jsonl $W $E
 a 0 "" "good-renamed    (六节全改名含把关清单,语义定位)" "$PY" "$CHECK" fixtures/good-renamed.md --sources fixtures/good-sources.jsonl $W $E
 a 0 "" "good-linguistic (同比上升/降幅不触发+带锚判断词过)" "$PY" "$CHECK" fixtures/good-linguistic.md --sources fixtures/good-sources.jsonl $W $E
+a 0 "" "good-datagap    (M49 薄简报形制:量价节缺数句不关闸,画像态二合法)" "$PY" "$CHECK" fixtures/good-datagap.md --sources fixtures/good-datagap-sources.jsonl $W
 # ---- M47 卫生:证据 fail-closed/窗口漂移/缺参/help ----
 a 1 "法定锚不可核:statute 行 S6 未提供 --evidence" "good 无证据=fail-closed(不放行,题单 B09 括号合同)" "$PY" "$CHECK" fixtures/good-sector.md --sources fixtures/good-sources.jsonl $W
 a 1 "法定锚不可核" "SO-B09 无证据路(伪满样双路皆死)" "$PY" "$CHECK" fixtures/SO-B09.md --sources fixtures/SO-B09.jsonl $W
