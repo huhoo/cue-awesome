@@ -1,0 +1,8 @@
+{"id":"S1","kind":"disclosure_cn","ref":"AN202608281828644258","claim":"卖方给予买入评级,目标价25元","confidence":"L1","asof":"2026-10-15"}
+{"id":"S2","kind":"buyback","ref":"AN202609021828930348","claim":"回购进展","confidence":"L1","asof":"2026-11-03"}
+{"id":"S3","kind":"esop","ref":"AN202609021828930836","claim":"持股计划归属","confidence":"L1","asof":"2026-12-02"}
+{"id":"S4","kind":"buyback","ref":"AN202603301820871252","claim":"回购预案期限","confidence":"L1","asof":"2027-03-31"}
+{"id":"S5","kind":"statute","ref":"statute:《上市公司信息披露管理办法》第十九条（定期报告披露期限，fixture 形制示例串）","claim":"法定期限锚形制示例","confidence":"L1","asof":"2026-09-21"}
+{"id":"S6","kind":"research","ref":"conv_id=cue-research-d701602e9183 reports/peer.md","claim":"快照","confidence":"L3","asof":"2026-12-15"}
+{"id":"S7","kind":"regulatory_cn","ref":"上证公函〔2026〕158号","claim":"回复期限","confidence":"L1","asof":"2026-10-20"}
+{"id":"S8","kind":"disclosure_cn","ref":"AN202609151829423536","claim":"辅锚","confidence":"L1","asof":"2026-10-20"}

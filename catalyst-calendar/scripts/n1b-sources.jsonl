@@ -6,3 +6,4 @@
 {"id":"S6","kind":"research","ref":"conv_id=cue-research-d701602e9183 reports/peer.md","claim":"解禁减持快照","confidence":"L3","asof":"2026-12-15"}
 {"id":"S7","kind":"regulatory_cn","ref":"上证公函〔2026〕158号","claim":"问询回复期限","confidence":"L1","asof":"2026-10-20"}
 {"id":"S8","kind":"disclosure_cn","ref":"AN202609151829423536","claim":"问询函关联公告辅锚","confidence":"L1","asof":"2026-10-20"}
+{"id":"S9","kind":"buyback","ref":"AN199901019999","claim":"只有附录引用","confidence":"L1","asof":"2026-01-01"}
