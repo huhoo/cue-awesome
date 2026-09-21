@@ -3,8 +3,10 @@
 """check_page.py —— tear-sheet 公司一页纸机检(spec-tear-sheet-0.1.0 §4 四道 + badspec 验收协议)。
 
 纯 stdlib、零网络、零崩溃(任何输入异常→FAIL 清单+exit 1)。
-CLI: check_page.py <page.md> [--sources sources.jsonl]
+CLI: check_page.py <page.md> --sources sources.jsonl --subjects <n>
      题单纪律:badspec 各题带 --sources;不传 sources 时 ②道仅做列级锚形制检查,双向账跳过。
+     --sources/--subjects 按 SKILL §4 正式命令式在场;缺 --subjects=[参数] FAIL(M43 双向对齐:
+     阈值不随申报走——spec §4「主体数 >5 FAIL」为硬闸,--subjects 只作申报↔机检对账项)。
 
 四道(spec §4 道号定义,诊断行以 [①][②][③][④] 前缀标注道号):
   ①身份/声明:页头区(文首至首个主体块前)须含 本页为AI初稿 / asof:日期 / 数据截止日:日期 /
@@ -49,7 +51,7 @@ def cells(line):
     return [c.strip() for c in line.strip().strip("|").split("|")]
 
 
-def scan_body(page_lines, src_recs):
+def scan_body(page_lines, src_recs, declared=None):
     fails = []
     text = "\n".join(page_lines)
 
@@ -73,6 +75,10 @@ def scan_body(page_lines, src_recs):
             blocks.append((title, s, e))
     if len(blocks) > 5:
         fails.append(f"[④] 主体数 {len(blocks)} > 5")
+    if declared is None:
+        fails.append("[参数] 缺 --subjects(声明主体数;SKILL §4 正式命令式,M43 双向对齐)")
+    elif declared != len(blocks):
+        fails.append(f"[④] --subjects 声明 {declared} ≠ 机检主体数 {len(blocks)}(少报多搭/顶替申报)")
 
     order_names = ["identity", "facts", "events", "risk", "view"]
     for bi, (bt, bs, be) in enumerate(blocks):
@@ -223,6 +229,8 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="tear-sheet 四道机检(spec §4)。")
     p.add_argument("page", help="page.md")
     p.add_argument("--sources", default=None, help="sources.jsonl(题单必传;不传则双向账跳过)")
+    p.add_argument("--subjects", type=int, default=None,
+                   help="申报主体数(SKILL §4 正式命令式;与机检数不符=FAIL,阈值 >5 不随申报走)")
     args = p.parse_args(argv)
     try:
         lines = Path(args.page).read_text(encoding="utf-8").splitlines()
@@ -245,7 +253,7 @@ def main(argv=None):
                     recs.append((ln, rec))
             except json.JSONDecodeError:
                 recs.append((ln, {}))
-    fails = scan_body(lines, recs)
+    fails = scan_body(lines, recs, args.subjects)
     if fails:
         print(f"FAIL: {args.page}（{len(fails)} 条）")
         for f in fails:
