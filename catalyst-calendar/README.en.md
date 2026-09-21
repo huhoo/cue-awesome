@@ -27,7 +27,7 @@ It answers a plain question: **"In the next three months, what dates matter for 
 
 1. **Install**: put this directory into your agent's skills folder.
 2. **Ask**: "我的持仓是美的集团、东方雨虹、宁德时代，给我排未来 90 天的催化剂日历" (triggers work in Chinese or English). It aligns inputs in ≤4 questions (issuer set / window / focus types / output dir, each with a default), then opens a `progress.md` ledger.
-3. **Collect**: after `+scope → +events → +derive → +build`, the gate `+check` runs `check_calendar.py` (four checks: statement line / per-row anchor / word list / date format & window) — **no delivery without passing**.
+3. **Collect**: after `+scope → +events → +derive → +build`, the gate `+check` runs `check_calendar.py` — v2 full spec of ten checks, with `--window` and `--sources` mandatory (see `SKILL.md` §3 for the list) — **no delivery without passing**.
 
 ## 3. Built against one specific failure: invented dates
 
@@ -36,7 +36,7 @@ The real risk here is not a wrong analysis — it's a date that never existed. T
 - an entry enters only if either (a) a filed disclosure is on record **and states an explicit date**, or (b) a statutory derivation whose **applicability conditions are decidable inside the cited statute anchor** — anything else never reaches the table;
 - **no date arithmetic, period**: "announcement date + 360 days" style derivations were authorized once in v1 and are now revoked across the board (caught by adversarial review M21); a deadline enters only when the announcement itself writes the full date;
 - every date resolves to an announcement index / formal document number / URL / `conv_id`+path, checked column-by-column — digits in other columns cannot impersonate an anchor; statutory rules come from the `statute` text fetched live at run time, never hardcoded;
-- out-of-window entries must carry an inline "窗口外余档" (out-of-window carry-over) note, or they FAIL; a queried-but-absent item is marked "未检索到" — **an empty calendar is legal; an invented calendar is not**.
+- out-of-window entries live in the dedicated 5th column "窗外余档" of the six-column format (the anchor column stays last and pure — notes never crowd out anchors); an empty carry-over column on an out-of-window row FAILs; a queried-but-absent item is marked "未检索到" — **an empty calendar is legal; an invented calendar is not**.
 
 Progress-style disclosures with no pre-known date (1%/2% buyback milestones) go to a trailing "已发生动态" (already-occurred updates) notes section — they never masquerade as upcoming events.
 
@@ -51,12 +51,12 @@ SKILL.md                        master instruction file: iron rules / input cont
 README.md / README.en.md        this pair (Chinese source of truth / English translation)
 CHANGELOG.md                    version history
 references/event-taxonomy.md    six event classes + case law on row-splitting, carry-over notes, L3 marking
-scripts/check_calendar.py       the four delivery gates (standalone, pure stdlib, --help works)
+scripts/check_calendar.py       gate script v2 (spec §v2-B, ten checks; pure stdlib, --help works)
 ```
 
 ## 6. Current status (the blunt list)
 
-- **v0.1.0: no end-to-end run yet, re-review not yet passed**: after adversarial review M21 returned BLOCK, docs (here) and the gate script are being rewritten to spec v2 — a real multi-issuer run has not happened, 6.1 re-review LGTM is outstanding, and the push stays frozen until both rewrites and the re-review close; until then, timings and coverage are design values, not measurements.
+- **v0.1.0: no end-to-end run yet, re-review in flight**: after adversarial review M21 returned BLOCK, both docs and the gate script landed the spec-v2 rewrite (ten checks) — but a real multi-issuer run has not happened and 6.1 re-review LGTM is outstanding; the push stays frozen until the re-review verdict lands. Until then, timings and coverage are design values, not measurements.
 - **Not submitted to any skill market**: publishing (P2) is frozen repo-wide, same gate as the sibling skill; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer set capped at 10 (machine-checked); `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
 - No market-data flow (`equity_market` channel not open); **rating vocabulary is zero-tolerance by gate design** — ratings do not apply here, there is no blank left to fill.
