@@ -375,6 +375,65 @@ def build_audit_report(args, lines, index_exempt, banned_fails, pending_note_fai
     return "\n".join(out) + "\n"
 
 
+SCAFFOLD_HEADING_RE = re.compile(r"^#{1,6}\s*预测脚手架")
+SCAFFOLD_ANCHOR_PREFIX = "对照锚（非本方观点）"
+SCAFFOLD_BORDER_PHRASE = "本 skill 不产前瞻值"
+SCAFFOLD_ROW3 = ("归母净利润", "每股收益（EPS）", "营业收入")
+SCAFFOLD_CELL_OK = re.compile(
+    r"^(?:\[待人工\]|约?\s*-?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:\s*[-–~至]\s*约?\d{1,3}(?:,\d{3})*(?:\.\d+)?)?(?:\s*(?:亿|万)?元?)|—|-)$")
+SCAFFOLD_OPINION_WORDS = ("预计", "上调", "下调", "看好", "乐观", "谨慎", "维持", "给予")
+YEAR_COL_RE = re.compile(r"^(?:<?Y\d?>?|\d{4})E$")
+
+
+def check_scaffold(lines):
+    """spec-0.3.3 §B 第⑤形制检查:标记触发,无标记不校验。"""
+    head = next((i for i, l in enumerate(lines) if SCAFFOLD_HEADING_RE.match(l)), None)
+    if head is None:
+        return []
+    end = next((i for i in range(head + 1, len(lines)) if HEADING_RE.match(lines[i])), len(lines))
+    sec = lines[head + 1:end]
+    body = "\n".join(sec)
+    fails = []
+
+    if SCAFFOLD_BORDER_PHRASE not in body:  # B4
+        fails.append("[脚手架] 缺边框注固定句「" + SCAFFOLD_BORDER_PHRASE + "」(N1 条件②机检化)")
+
+    anchor_rows = [l for l in sec if l.strip().startswith(SCAFFOLD_ANCHOR_PREFIX)]
+    if not anchor_rows:  # A1 固定形状:锚行必须在场
+        fails.append("[脚手架] 缺「对照锚（非本方观点）」行(固定形状;态二须写未检索到句)")
+    for l in anchor_rows:  # B3:非「未检索到」锚行须同行含 S<n>
+        if "未检索到" not in l and not re.search(r"S\d+", l):
+            fails.append(f"[脚手架] 锚行缺 S<n> 引用：{l.strip()[:60]}")
+
+    rows_seen = {r: False for r in SCAFFOLD_ROW3}
+    col_idx = None
+    for l in sec:
+        if not l.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in l.strip().strip("|").split("|")]
+        if not cells:
+            continue
+        if col_idx is None and any(YEAR_COL_RE.match(c) for c in cells):
+            col_idx = [j for j, c in enumerate(cells) if YEAR_COL_RE.match(c)][:3]
+            continue
+        first = cells[0]
+        if first in rows_seen and col_idx:
+            rows_seen[first] = True
+            for j in col_idx:  # B2:三格形态+禁判断词(词表复用门禁②精神)
+                if j >= len(cells):
+                    fails.append(f"[脚手架] 「{first}」行预测列缺格")
+                    continue
+                cell = cells[j]
+                if any(w in cell for w in SCAFFOLD_OPINION_WORDS):
+                    fails.append(f"[脚手架] 「{first}」格含判断词(观点归人,B2)：{cell[:24]}")
+                elif not SCAFFOLD_CELL_OK.match(cell):
+                    fails.append(f"[脚手架] 「{first}」单元格形态非法：{cell[:24]}(只许 [待人工]/数值/区间/约值)")
+    for r, seen in rows_seen.items():
+        if not seen:
+            fails.append(f"[脚手架] 三行固定指标缺「{r}」行(A1 形状)")
+    return fails
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(
         description="cn-earnings-note 交付前四道门禁：声明在场 / [待人工] 就位 / 禁用词 / 数字可回查。",
@@ -404,6 +463,7 @@ def main(argv=None):
     fails += banned_fails
     num_fails, total, tagged = check_numbers(lines, index_exempt, args.sources, args.min_coverage)
     fails += num_fails
+    fails += check_scaffold(lines)  # spec-0.3.3 §B 第⑤形制(标记触发)
     ledger_paths, ledger_data = [], []
     if args.ledger:
         prev_data = None

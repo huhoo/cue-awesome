@@ -11,7 +11,7 @@
 | [`journal-draft/`](journal-draft/) | journal-draft | 0.15.3 | 企业期刊 / 内刊 / 客户通讯 / ESG 报告 / 年鉴特刊的「底稿生成器」：把版式体例从 PDF 里量化成可校验参数（版面网格、版心、字号序列、行距、色板、栏目模板），再按这套参数生产新一期内容。含法规动态栏目规范、CTA 溯源机制。 |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.3.0 | 长篇外文（德 / 英 / 法 / 日等）学术专著、古籍、档案、译著的全文高质量中译流水线：解析 → 清洗切片 → 建体例与术语表 → 并行分批翻译 → 多维质检 → 合并交付带目录的阅读版。 |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | 0.3.0 | 竞品简报生成器：把散落在网页 / PDF / 录音 / 视频里的竞品素材，变成可溯源、可对比、可更新的决策简报。六阶段管线：素材摄入（omni-reader）→ 需求对齐 → 对比框架 → 取证（cue-research）→ 三件套出稿 → 门禁校订。 |
-| [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | 0.3.2 | A股 / 港股财报深度点评生成器：输入「主体 + 报告期」，产出 8–12 页、**研报结构级（八节骨架）**的 AI 初稿（四期披露差异、分部量价、盈利质量与现金流含金量、附注风险扫描、指引与催化剂、同业对照），逐数可回查，评级与目标价一律标注 `[待人工]`。取证走 Cue 三层通道——结构化披露（Cue 数据 MCP 域）+ 原文解析（omni-reader）+ 横向深研（cue-research）。**P1 端到端实测已完成**（2026-09-18/19：美的 000333 两季连跑 2026H1+2025AR、雨虹 002271 2026H1，验收记录见 `cn-earnings-note/CHANGELOG.md` Verified）；港股主体与多主体批量仍按「未验证」对待。基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
+| [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | 0.3.3 | A股 / 港股财报深度点评生成器：输入「主体 + 报告期」，产出 8–12 页、**研报结构级（八节骨架）**的 AI 初稿（四期披露差异、分部量价、盈利质量与现金流含金量、附注风险扫描、指引与催化剂、同业对照），逐数可回查，评级与目标价一律标注 `[待人工]`。取证走 Cue 三层通道——结构化披露（Cue 数据 MCP 域）+ 原文解析（omni-reader）+ 横向深研（cue-research）。**P1 端到端实测已完成**（2026-09-18/19：美的 000333 两季连跑 2026H1+2025AR、雨虹 002271 2026H1，验收记录见 `cn-earnings-note/CHANGELOG.md` Verified）；港股主体与多主体批量仍按「未验证」对待。基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
 
 ## 金融研究套件路线图
 
@@ -21,7 +21,7 @@
 
 ### 已建 —— 尖兵（1 件）
 
-- **财报深度点评 —— [`cn-earnings-note/`](cn-earnings-note/)**（v0.3.2）：A股 / 港股财报深度点评，目前唯一已交付的金融 skill，P1 实测四跑两标的已过验收。完整一句话见上表 Skills。
+- **财报深度点评 —— [`cn-earnings-note/`](cn-earnings-note/)**（v0.3.3）：A股 / 港股财报深度点评，目前唯一已交付的金融 skill，P1 实测四跑两标的已过验收。完整一句话见上表 Skills。
 
 ### 规划中 —— 批 2（方向已定、未建）
 

@@ -32,6 +32,10 @@ run 1 "bad-word    (命中禁用词)"      "$PY" "$CHECK" bad-word.md --sources 
 run 1 "bad-numbers(覆盖率不足)"      "$PY" "$CHECK" bad-numbers.md --sources sources.jsonl
 run 0 "good + --allow-pending"       "$PY" "$CHECK" note-good.md --allow-pending
 run 0 "ledger good (2026H1 vs 2025AR)"  "$PY" "$CHECK" note-good.md --ledger ledger-2026H1.json --prev-ledger ledger-2025AR.json
+run 0 "scaffold good    (B 全形状)"      "$PY" "$CHECK" good-scaffold.md --sources sources.jsonl
+run 1 "scaffold noborder(B4 缺边框注句)" "$PY" "$CHECK" bad-scaffold-noborder.md --sources sources.jsonl
+run 1 "scaffold anchor  (B3 锚行无 S)"   "$PY" "$CHECK" bad-scaffold-anchor.md --sources sources.jsonl
+run 1 "scaffold opinion (B2 格夹判断词)" "$PY" "$CHECK" bad-scaffold-opinion.md --sources sources.jsonl
 run 1 "bad-linkage  (D5 期初值被改)"     "$PY" "$CHECK" note-good.md --ledger bad-linkage.json --prev-ledger ledger-2025AR.json
 run 1 "bad-status    (D3 非法状态枚举)"   "$PY" "$CHECK" note-good.md --ledger bad-status.json --prev-ledger ledger-2025AR.json
 run 1 "bad-amendment(D4 变更却fulfilled)" "$PY" "$CHECK" note-good.md --ledger bad-amendment.json --prev-ledger ledger-2025AR.json

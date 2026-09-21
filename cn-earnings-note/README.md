@@ -64,6 +64,8 @@ README.en.md                   本文件英文译文
 CHANGELOG.md                   版本记录
 references/data-channels.md    Cue 三通道调用契约 + 合规最小集词表 + onboarding 判定表
 references/report-skeleton.md  八节骨架，每节带 [执行蓝图]
+references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二锚、source_tier 分层、脚手架对照行）
+references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
 scripts/check_note.py          四道门禁（声明与待人工/数字可回查/口径纪律/合规词表）
 ```
 

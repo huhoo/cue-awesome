@@ -2,6 +2,21 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [0.3.3] — 2026-09-20
+
+### Added（预测脚手架与盈利分桶档，契约原文=spec-0.3.3，文档侧三件套）
+
+- `report-skeleton.md` §1 末新增「预测脚手架」固定节（三行年度表全 `[待人工]`、对照锚行带 `S<n>`+`source_tier`、锚行与表物理分隔、边框注逐字含机检锚「本 skill 不产前瞻值」）；§7 增脚手架复核附行（亏损/微利主体回填并注话术）。
+- `SKILL.md` §3.5 +draft 追加脚手架生成纪律一行（默认在场、锚行只引本 run 池行、无池即固定「未检索到」句、边框注不得裁剪）。
+- `expectation-pool.md` 文末新增 §6 使用向节（锚=②项两行年度均值；态二走固定句；锚行不进 beat/miss 判定句，两形制不互用）。
+- `data-channels.md` 合规最小集挂 §4.4 盈利分桶并注话术（CAS 口径要点顺移 §4.5，全包交叉引用已对平）。
+- 机检扩展（spec §B 第⑤形制检查）归并行工项，不在本文档包内。
+
+### Checked
+
+- lead 收口亲跑（2026-09-20）：`run_fixtures.sh` 真实 exit 0、**20/20**（新四样 good-scaffold PASS／noborder·anchor·opinion 三坏样真 FAIL，旧 16 零回归）；机检扩展=并行工项 M16（2.1）同车出门；边框注机检锚三文件在场；`check_skills` 4/4 零警；红线 grep 净；版本四处+根 README 双语表齐 0.3.3。
+- **账本契约双件合并**：`coverage-ledger.md`（93 行，含边界声明/操作规程/美的两季实证）取代 `ledger-schema.md`，SKILL §引用当场改指（不留死链）；「16 槽」按可核算术落 15 格（A4+B6+C1+L3+R1），未造结论句——两笔查无之flag核实属实，记正例。
+
 ## [0.3.2] — 2026-09-20
 
 ### Fixed（事实修正，无新能力）
