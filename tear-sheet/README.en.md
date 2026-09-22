@@ -6,7 +6,7 @@
 
 **Thirty seconds before a client meeting — enough?** Enough. Hand it an issuer + a use case and you get a one-page sheet where **every line traces to a disclosure anchor** (readable on one screen) — and an opinions column that honestly stays blank.
 
-This is the suite's **lowest-barrier entry piece**: zero deep research by default, built on structured-disclosure lookups, cost kept to single-digit credits and printed in the page header. It does not decide for you; it lays out what is certain within 30 seconds — three identity lines, a four-period snapshot (cumulative + single-quarter, basis-tagged), on-record events (only those with an explicit disclosed date), risk items that actually hit, and three `[待人工]` slots for a human's view.
+This is the suite's **lowest-barrier entry piece**: zero deep research by default, built on structured-disclosure lookups, per-run cost magnitude has no measured evidence (consumption is whatever the server returns; the page header prints this run's channel usage). It does not decide for you; it lays out what is certain within 30 seconds — three identity lines, a four-period snapshot (cumulative + single-quarter, basis-tagged), on-record events (only those with an explicit disclosed date), risk items that actually hit, and three `[待人工]` slots for a human's view.
 
 **Input**: issuer(s) (official name or code, ≤5) + purpose (pre-meeting glance / client brief) + optional one-line focus
 **Output**: `tearsheet-<date>-<n>issuers/` — `page.md` (the five-block sheet) · `sources.jsonl` · `progress.md` ledger
@@ -56,7 +56,7 @@ scripts/          gate script check_page.py + fixtures (landed; 77 assertions al
 ## 6. Current status (the blunt list)
 
 - **Five-issuer boundary run landed (M52, 2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
-- **Review closed, shipped**: gate M43 (77/77, the question-list-as-contract reconciled 1:1) + adversarial M45 LGTM; public with the repo at 0.1.1. The 30-second wall time and the single-digit cost have no measured evidence yet (data-mcp returns no per-call billing; cumulative follows the workbench statement) — both wordings stay design-value claims.
+- **Review closed, shipped**: gate M43 (guard samples green, the question-list-as-contract reconciled 1:1; count per the latest acceptance line in CHANGELOG) + adversarial M45 LGTM; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). Neither the 30-second wall time nor the per-run cost magnitude has measured evidence; consumption is whatever the server returns.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 

@@ -30,8 +30,8 @@
 1. **装**：本目录放进 agent 的 skills 目录。
 2. **说**：「我的持仓是美的集团、东方雨虹、宁德时代，给我排未来 90 天的催化剂日历」（中英触发词都行）。
    ≤4 问补齐输入契约（主体集/窗口/关注类/输出目录，逐条带默认值），开工建台账。
-3. **收**：`+scope → +events → +derive → +build` 后过门禁 `+check`（`check_calendar.py` 机检 v2 全量十条，
-   `--window` 与 `--sources` 必传；要点清单见 `SKILL.md` §3），**不过不交付**。
+3. **收**：`+scope → +events → +derive → +build` 后过门禁 `+check`（`check_calendar.py` 机检 v4，
+   §v2-B+§v3-B+§v4-A/B 全量；正式调用参数以 `SKILL.md` §3 命令式为准），**不过不交付**。
 
 ## 三、防的就是日期幻觉
 

@@ -27,7 +27,7 @@ It answers a plain question: **"In the next three months, what dates matter for 
 
 1. **Install**: put this directory into your agent's skills folder.
 2. **Ask**: "我的持仓是美的集团、东方雨虹、宁德时代，给我排未来 90 天的催化剂日历" (triggers work in Chinese or English). It aligns inputs in ≤4 questions (issuer set / window / focus types / output dir, each with a default), then opens a `progress.md` ledger.
-3. **Collect**: after `+scope → +events → +derive → +build`, the gate `+check` runs `check_calendar.py` — v2 full spec of ten checks, with `--window` and `--sources` mandatory (see `SKILL.md` §3 for the list) — **no delivery without passing**.
+3. **Collect**: after `+scope → +events → +derive → +build`, the gate `+check` runs `check_calendar.py` — gate v4 (§v2-B + §v3-B + §v4-A/B in full; invocation flags per the formal command in `SKILL.md` §3) — **no delivery without passing**.
 
 ## 3. Built against one specific failure: invented dates
 

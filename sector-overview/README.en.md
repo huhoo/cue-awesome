@@ -34,7 +34,7 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 1. **Install**: put this directory into your agent's skills folder.
 2. **Ask**: "光伏行业近况盘一下，重点看排产和价格" (Chinese or English triggers). ≤3 questions to align inputs.
-3. **Collect**: after `+scope → +series → +research → +policy → +companies`, `check_sector.py` runs four gates — **no delivery without passing**. The gate script has landed (49/49); the adversarial review ran the new loop (M46 questions authored by the reviewer, M48 LGTM), and the real smoke's shape lessons were back-locked as guard samples by M49.
+3. **Collect**: after `+scope → +series → +research → +policy → +companies`, `check_sector.py` runs four gates — **no delivery without passing**. The gate script has landed (all guard samples green; count per the latest acceptance line in CHANGELOG); the adversarial review ran the new loop (M46 questions authored by the reviewer, M48 LGTM), and the real smoke's shape lessons were back-locked as guard samples by M49.
 
 ## 4. First-time Cue setup (three steps, skippable)
 
@@ -49,13 +49,13 @@ README.md / README.en.md         this pair (Chinese source of truth / English tr
 CHANGELOG.md                     version history
 references/section-skeleton.md   six sections with an [执行蓝图] each
 references/policy-timeline.md    policy-timeline row spec (statute anchor cites catalyst's v3-A3, not copied)
-scripts/check_sector.py          four gates (landed; 49/49 green)
+scripts/check_sector.py          four gates (landed; guard samples green, count per CHANGELOG)
 ```
 
 ## 6. Current status (the blunt list)
 
 - **Building-materials half-course run landed (M53, 2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to anchor-what-you-can (seven sourced L3 rows, dual-source conflicts kept un-arbitrated in review) — but continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
-- **review closed, shipped**: M48 adversarial LGTM and the M49 smoke rework are closed; 0.1.1 is public with the repo. a full end-to-end delivery run has not landed (half-course and smoke both ≠ full delivery) — until it does, treat coverage as design values; domain expansion awaits engineering (P-9 half-mitigated, P-14 open);
+- **review closed, shipped**: M48 adversarial LGTM and the M49 smoke rework are closed; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). a full end-to-end delivery run has not landed (half-course and smoke both ≠ full delivery) — until it does, treat coverage as design values; domain expansion awaits engineering (P-9 half-mitigated, P-14 open);
 - **Not submitted to any skill market** (P2 frozen repo-wide; timing is the Owner's call);
 - no charts (tables carry as-of dates); no market-data flow, no expectation means; companies appear only as anchored aggregates, never as commentary.
 

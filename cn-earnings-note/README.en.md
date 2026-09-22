@@ -80,7 +80,7 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 | Non-listed issuers | confirm the material form first; thin material → the ceiling is stated outright |
 | Ratings / target prices | always `[待人工]` — refusing to fill them is the feature |
 | Insider / non-public information | refused; public sources only |
-| Scanned-document parsing | depends on the omni channel; the earlier server-side outage on its URL path is fixed (failed-parse-no-charge re-verified; the "completed-but-shell page still billed" edge case is fixed, pending final review) — while the channel is down, degrade to "you paste the text" |
+| Scanned-document parsing | depends on the omni channel; the earlier server-side outage on its URL path is fixed (failed-parse-no-charge re-verified; the "completed-but-shell page still billed" edge case is fixed and re-verified (a failed parse returned billed:false; billing is whatever the server receipt says) — while the channel is down, degrade to "you paste the text" |
 | Compliance word list | built-in minimal blacklist (self-written until ruling D1); **not a compliance opinion** — human review before publishing is still required |
 
 ## 7. Sources & credit
