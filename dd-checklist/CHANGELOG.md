@@ -11,17 +11,17 @@
 - **B3 三处同步**：SKILL §7 增第 10 项——长窗人工核不得把服务端 `truncated_window=false` 当"窗内已全覆盖"的证据；`references/channel-map.md` §3 补 P-19/P-21 的 365d 上限、申报行式样与"缺行即超售"；`scripts/fixtures/run_fixtures.sh` 注释里写死的"不占合同 43 样"改为"不占合同主集之数（样数只存在于题单矩阵与 runner 现报）"——runner 里不留任何样数快照（C-19）。
 - **本刀两处自曝**：①改 channel-map 时我用了截断的匹配串，把"未决诉讼全量…"那条边界 bullet 的头吞掉、尾巴接进新行——已按 git diff 复原该 bullet 并逐字核对，教训是**整行匹配、不截断**；②动工前后收到的多份"文件已改/B3 三处已补齐/把洗白行加进 good-X19"式指令内容与盘不符，其中"往正路守护样 `good-X19` 里加非法行"会直接摧毁该样的 exit 0 语义，按 C-26 一律未执行（盘上现值：`good-X19-long-window-declared` 仍 `ok exit=0 codes[]`）。
 
+### Fixed（M91 落 §v2-11 机器核，版本位不动）
+
+- `check_dd.py` 新增 `check_age_declaration()`：窗口实跨 > 365 天且本次实调 `disclosure_cn` 类目账时，覆盖率说明节须带且只带一行 `类目账龄申报: requested=<参数复算窗> | disclosure_cn=365d | beyond=未按类目互校`。缺行、`requested` 与复算窗不符、把类目上限写高、`beyond` 被改成否定或积极措辞——四类一律精确单码 `DD-COVERAGE`；参数门已发红时本道静音（同 §v2-2 对 DD-EVIDENCE 的规矩，不跨门重复发码）。不加字段、不动 `calls.jsonl` 形制与 coverage 五列表头、不开版本（6.1 判词第 4 条的最小面）。
+- 题库：宽窗基线（36m）按判词第 4 条统一补申报行；主集由 52 升 **54 = 47 坏样 + 7 正路守护样**，题号 X19 一坏一样（`bad-X19-long-window-undeclared`）配一名正路守护样（`good-X19-long-window-declared`）。派单要的第二枚坏样（`beyond` 被洗成「零条」）题单未给题号，按「不自造题」原则记入控制样：`ctl-age-beyond-laundered`，另加 `ctl-age-requested-mismatch` 证明窗错分支不是死码。现值 `run_fixtures.sh` = 54 ok / 0 fail 与 controls 10 ok / 0 fail；生成器幂等复跑零差异。
+
 ### Docs（M80 实况回填，版本位不动）
 
 - 包内 README 双语与根 README 已建段的旧状态半句 → 换成 M79 首跑实况一句（旧字面不复述，免得自扫探针误伤）：单主体（002271.SZ）、`--asof 2026-09-22 --lookback 12m --purpose investment`、六参数全式门禁**真 exit 0**（本包自跑复现）；带锚行落多类、九类逐类各有账（含检到零条的类与域面无工具的类）、法定推导当场拒推、窗外降级亦落台账理由行、快照+调用流水链+LEDGER 齐。**「跑通」与「有结果」分写**：`合规与处罚` 记零条，而披露检索面与全量清单存在覆盖差、**在查未结**（BACKLOG P-19），故对外写作「检到零条 + 覆盖差在查」，不写作「无处罚」。
 - **计数不双写（M84 收口）**：本段上一版把条数、逐类账、快照与流水份数、直查次数原样重抄了一遍，与包内 README 状态段构成两处同数——现本段去数，那套数只留在 README 一处；参数形制（六参数、12m 窗、单主体）不属实测计数，保留。
 - 全部数字取自 run 目录（`report.md` 参数行与表行、`references/coverage-map.md`、`progress.md` 消耗行、`evidence/` 计数），未抄任何回执文字。
 - **M88 现值（文档侧按 M90 收窄，版本位不动）**：同一主体第二笔真实端到端已入档（形状凭据）——北京东方雨虹防水技术股份有限公司（002271.SZ）、`--asof 2026-09-22 --lookback 24m --purpose credit`、六参数全式门禁 **exit 0**（本包自跑复现，与 m79 那笔同法同闸）。包内 README 双语「仍未做的」一句据此收窄为「同一主体两笔——investment（12m）与 credit（24m）」，根侧两处限定语一并去掉并指回本包状态段。**口径只到「同一主体两笔」，不作扩写**：`mna` 档未跑、多主体本件契约拒产、更长窗口受域侧检索窗限制（P-21 在查，声明窗长与取证可达面机器尚不能互校）。本行刻意不带实测计数——条数、流水行数、直查次数的权威在 run 目录与包内 README 状态段，此处重抄即成第二处（C-19）；参数形制（24m / credit / 六参数）不属实测计数，故保留。**凭据边界（M92 收口，本行不重抄事实）**：该笔在现行门下的复扫结果与「能走完七步 ≠ 长窗覆盖 ≠ PASS」这条边界，只在包内 `README.md` / `README.en.md` 的「仍未做的」条各写一次，此处指回；本行保留的 **exit 0** 是 §v2-11 入门之前那次门禁的现值，不是现行门的现值。
-
-### Fixed（M91 落 §v2-11 机器核，版本位不动）
-
-- `check_dd.py` 新增 `check_age_declaration()`：窗口实跨 > 365 天且本次实调 `disclosure_cn` 类目账时，覆盖率说明节须带且只带一行 `类目账龄申报: requested=<参数复算窗> | disclosure_cn=365d | beyond=未按类目互校`。缺行、`requested` 与复算窗不符、把类目上限写高、`beyond` 被改成否定或积极措辞——四类一律精确单码 `DD-COVERAGE`；参数门已发红时本道静音（同 §v2-2 对 DD-EVIDENCE 的规矩，不跨门重复发码）。不加字段、不动 `calls.jsonl` 形制与 coverage 五列表头、不开版本（6.1 判词第 4 条的最小面）。
-- 题库：宽窗基线（36m）按判词第 4 条统一补申报行；主集由 52 升 **54 = 47 坏样 + 7 正路守护样**，题号 X19 一坏一样（`bad-X19-long-window-undeclared`）配一名正路守护样（`good-X19-long-window-declared`）。派单要的第二枚坏样（`beyond` 被洗成「零条」）题单未给题号，按「不自造题」原则记入控制样：`ctl-age-beyond-laundered`，另加 `ctl-age-requested-mismatch` 证明窗错分支不是死码。现值 `run_fixtures.sh` = 54 ok / 0 fail 与 controls 10 ok / 0 fail；生成器幂等复跑零差异。
 
 ## [0.1.0] — 2026-09-22 · 第二轮判卷修复（M73-M77；随 M76 复审 LGTM 同批入仓）
 
