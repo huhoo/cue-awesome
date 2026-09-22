@@ -2,6 +2,14 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [Unreleased]
+
+### Docs（M80 实况回填，版本位不动）
+
+- 包内 README 双语与根 README 已建段的旧状态半句 → 换成 M79 首跑实况一句（旧字面不复述，免得自扫探针误伤）：单主体（002271.SZ）、`--asof 2026-09-22 --lookback 12m --purpose investment`、六参数全式门禁**真 exit 0**（本包自跑复现）；带锚 12 行落 4 类、九类逐类账（3 类零条、2 类域面无工具）、法定推导当场拒推 1 处、窗外降级 1 条、20 份快照 + 15 行流水链 + LEDGER、直查 21 次零计费。**「跑通」与「有结果」分写**，且 `合规与处罚` 的零条与披露检索面/全量清单的覆盖差**在查未结**，故写作「检到零条 + 覆盖差在查（BACKLOG P-19）」而非「无处罚」。
+- 计数单点：数字只写在包内 README（权威）与根 README 的等义短句（不重抄），符合 C-19。
+- 全部数字取自 run 目录（`report.md` 参数行与表行、`references/coverage-map.md`、`progress.md` 消耗行、`evidence/` 计数），未抄任何回执文字。
+
 ## [0.1.0] — 2026-09-22 · 第二轮判卷修复（M73-M77；随 M76 复审 LGTM 同批入仓）
 
 判词=`logs/pr-review-m70.md`（6.1 判 BLOCK，4 blocker，四条均如实标「未自跑=按可达输入推演」）；题单已扩 `DD-X15a–c / X16a–c / X17 / X18` 与 `good-X16-downgrade-accounted`，合同升为 **46 bad + 6 good = 52 样**（控制样另计，现 8 枚）。逐条：
