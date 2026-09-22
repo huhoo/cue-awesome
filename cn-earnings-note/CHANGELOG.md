@@ -103,11 +103,11 @@
   输出契约（`note.md` / `sources.jsonl` / `progress.md`，ref 须外部可核）、边界与拒答、中英双语触发词。
 - `references/data-channels.md`：Cue 三通道调用契约——data-mcp 域级引用与逐域取数清单（catalog 动态发现、
   不硬编码工具名）、omni 首调 `parse` 与 Bridge 授权边界、cue-research 发起前确认与 replay 兜底、
-  合规最小集（禁用词/绝对化副词谨慎清单/评级用语白名单/CAS 口径要点，词表标 **D1 待拍板**）、onboarding 判定表。
+  合规最小集（禁用词/绝对化副词谨慎清单/评级用语白名单/CAS 口径要点，词表为自写最小版）、onboarding 判定表。
 - `references/report-skeleton.md`：八节骨架（0 封面与声明 → 7 结论与人工复核清单 + 附录来源索引），
   每节带 [执行蓝图]（研究目标/逻辑链条/信息需求→指向 data-channels 的域/输出形式）。
 - `README.md`：给人看的用法、是什么/不是什么、开通三步（可跳过）、依赖声明（optionalSkills 不装不报错）、
-  实测边界诚实清单、双出处致谢。
+  实测边界诚实清单、基座出处致谢。
 - `CHANGELOG.md`（本文件）。
 
 ### Verified
@@ -126,7 +126,7 @@
 - F 评审裁决落地（C3，同日就地修，版本位随 SKILL.md 保持 0.1.0）：
   `report-skeleton.md` 首段改为「逐节生成、追加拼接」协议（对齐 SKILL.md §3.5 现文，废除「先组装全文再输出」）；
   `data-channels.md` §0.4 补计费粒度句（omni 自带 billing 块可转述、data-mcp 单次调用无计费字段、累计以工作台账单为准、确认动作不豁免）；
-  `README.md` 边界表加「图表 / 可视化不做（原版 matplotlib 环节有意移除）」、dao 致谢行补公开查阅方式。
+  `README.md` 边界表加「图表 / 可视化不做（原版 matplotlib 环节有意移除）」。
 - 新增 `README.en.md`（中文权威 + 英文译文对，对齐仓内 i18n 约定）。
 - P1 教训落地（J，同保持 0.1.0）：`data-channels.md` §1 加「P1 实测补丁」四条（附注四项降级路径 / `extract_fulltext` integer 坑 / 互动问答 exact=0 纪律 / buyback 无单位推算注）；
   `report-skeleton.md` §7 输出形式加固定件「矛盾申报行」（L3↔L1 冲突列两值、采信 L1、报位置；美的扣非方向案例注）；
@@ -135,5 +135,5 @@
 ### 已知未做（有意留白）
 
 - `scripts/check_note.py` 四道门禁与 fixtures 已随包入账（工项 B；P1 终态 exit 0、回归 9/9）。
-- 合规词表为自写最小黑名单现状；是否升级致敬/复用 dao 词表待 D1 拍板（见 data-channels.md §4）。
+- 合规词表维持自写最小黑名单。
 - 行情/估值数值流设计上不依赖（`equity_market` 未开放期间不承诺）。

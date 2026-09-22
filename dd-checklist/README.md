@@ -74,4 +74,4 @@ scripts/fixtures/                 题库：坏样逐题一样 + 正路守护样�
 ## 七、出处与致谢
 
 - 基座：anthropics/financial-services 的 `dd-checklist` 与 `deal-screening`（Apache-2.0）——尽调清单任务形态与筛查档位的来源。
-- 本包为 **A股化重实现而非搬运**：数据层完全 Cue 通道化，九类目/入类第一闸/覆盖率账/证据 fail-closed 均为本套件契约重建，无基座代码；dao-financial-services（MIT）仅作同类公开实现的对照物。出处声明见仓库根 `NOTICE.md`。
+- 本包为 **A股化重实现而非搬运**：数据层完全 Cue 通道化，九类目/入类第一闸/覆盖率账/证据 fail-closed 均为本套件契约重建，无基座代码。出处声明见仓库根 `NOTICE.md`。

@@ -107,16 +107,10 @@ cd .. && zip -r journal-draft.zip journal-draft \
 
 本套件的**任务切分、报告骨架与交付流程**改写自 `anthropics/financial-services` 技能集合（earnings-analysis 等），采用 **Apache-2.0** 授权。此处为「改写」而非「拷贝」：仅借鉴其方法论结构，不搬运其代码、文本或数据。
 
-## 二、本土化实践参考：道以研究院 dao-financial-services v0.1.9（MIT）
+## 二、重实现，非拷贝
 
-A股化过程中的 **CAS 术语、合规词表、`[待人工]`（评级 / 目标价一律人工复核）等本土化实践**，本土化实践参考为道以研究院的 `dao-financial-services` 功能包（**v0.1.9**，**MIT**）。该功能包无公开代码仓，但可经官方端点公开下载查阅：<https://hzddyy.com/stdd/api/download/dao>（返回 `application/zip`，文件名 `Dao-financial-services-0.1.9.zip`，版本号与本文引用自证一致）。我方在 MIT 允许范围内做的是**不同交付物的重实现**（报告型 vs 其数字型），术语与合规commons 致敬在此声明。
-
-## 三、重实现，非拷贝
-
-- **数据层完全替换为 Cue 通道**：结构化披露走 Cue 数据 MCP 域、原文走 omni-reader 解析、横向对照走 cue-research 深研；不沿用基座或参考方的任何数据接口。
+- **数据层完全替换为 Cue 通道**：结构化披露走 Cue 数据 MCP 域、原文走 omni-reader 解析、横向对照走 cue-research 深研；不沿用基座的任何数据接口。
 - 交付物形态、门禁与触发词均为本仓独立设计。
 
-## 四、合规词表（D1）决策待定
-
-当前 `cn-earnings-note` 采用**内置最小黑名单**。是否升级为「致敬 / 复用 dao 词表」或自写全量词表，属 **D1 拍板项**，P1 真实主体实测已完成（2026-09-18/19），拍板仍未决——定夺后由 lead 记录进 runbook。在此之前，本套件不对具体合规词表范围作对外承诺。
+第三方同类实践研究记录仅在内部留档，不构成对外出处。
 

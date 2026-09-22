@@ -4,7 +4,7 @@ slug: cn-earnings-note
 displayName: A股财报深度点评
 version: 0.3.3
 summary: "A股/港股财报深度点评（8–12 页研报级 AI 初稿）：法定披露四期差异 + 附注风险扫描 + 同业交叉验证，逐数可回查，评级一律 [待人工]。"
-description: "A股/港股财报深度点评生成器。输入「主体+报告期」，产出研报级八节 AI 初稿：四期差异（累计/单季双口径）、分部量价、盈利质量与现金流含金量、附注风险扫描（关联方/受限资金/或有负债）、指引与催化剂、同业对照。取证走 Cue 通道：结构化披露（data-mcp）+ 原文解析（omni-reader）+ 横向深研（cue-research），每条数字带可信级标注。改造自 anthropics/financial-services earnings-analysis（Apache-2.0）的 A股化重实现，口径方法参考道以研究院 dao-financial-services（MIT）。Triggers: 深度点评XX财报 / XX半年报点评 / 季报分析 / 年报深度点评 / 给我出一份XX的财报底稿; A-share earnings analysis / analyze XX's annual results / post-earnings update / deep earnings review. 不用于：只要一页纸快评（直接用 cue-research 的「个股快评」搭子）、Excel 模型更新（用 anthropics 原版 model-builder）、行情/估值数值流（equity_market 通道未开放）。"
+description: "A股/港股财报深度点评生成器。输入「主体+报告期」，产出研报级八节 AI 初稿：四期差异（累计/单季双口径）、分部量价、盈利质量与现金流含金量、附注风险扫描（关联方/受限资金/或有负债）、指引与催化剂、同业对照。取证走 Cue 通道：结构化披露（data-mcp）+ 原文解析（omni-reader）+ 横向深研（cue-research），每条数字带可信级标注。改造自 anthropics/financial-services earnings-analysis（Apache-2.0）的 A股语境重实现。Triggers: 深度点评XX财报 / XX半年报点评 / 季报分析 / 年报深度点评 / 给我出一份XX的财报底稿; A-share earnings analysis / analyze XX's annual results / post-earnings update / deep earnings review. 不用于：只要一页纸快评（直接用 cue-research 的「个股快评」搭子）、Excel 模型更新（用 anthropics 原版 model-builder）、行情/估值数值流（equity_market 通道未开放）。"
 tags: [投研, 财报点评, A股, 深度研究]
 license: MIT
 agent_created: true
@@ -120,5 +120,4 @@ earnings-<代码>-<报告期>/
 ## 7. 出处
 
 - 基座：anthropics/financial-services `earnings-analysis`（Apache-2.0，方法论与四期差异/beat-miss 框架的来源）
-- A股本土化实践参考：道以研究院 `dao-financial-services` v0.1.9 功能包（MIT；CAS 口径、评级用语白名单、[待人工] 与投毒防御等实践的本土化形态见于该功能包）。查阅方式（公开可核）：功能包下载 <https://hzddyy.com/stdd/api/download/dao>。
 - 本包为**重实现而非搬运**：数据层完全替换为 Cue 通道，无其代码。

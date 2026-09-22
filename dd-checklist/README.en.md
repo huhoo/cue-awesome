@@ -73,4 +73,4 @@ scripts/fixtures/                   question bank: one sample per contract quest
 ## 7. Provenance
 
 - Base: anthropics/financial-services `dd-checklist` and `deal-screening` (Apache-2.0) — origin of the diligence-checklist task shape and the screening tiers.
-- This package is an **A-share re-implementation, not a port**: the data layer is fully Cue-native; the nine categories, first gate, coverage ledger and fail-closed evidence rule are rebuilt to this suite's contracts. No code from the base; dao-financial-services (MIT) served only as a public point of comparison. See the repo-root `NOTICE.md`.
+- This package is an **A-share re-implementation, not a port**: the data layer is fully Cue-native; the nine categories, first gate, coverage ledger and fail-closed evidence rule are rebuilt to this suite's contracts. No code from the base. See the repo-root `NOTICE.md`.

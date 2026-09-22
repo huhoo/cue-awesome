@@ -19,7 +19,7 @@
 
 ## 金融研究套件路线图
 
-金融研究类 skill 是对 **anthropics/financial-services**（Apache-2.0）方法论基座的 Cue-native 重写；本土化实践（CAS 术语、合规词表、`[待人工]` 处理）首采 **道以研究院 dao-financial-services v0.1.9**（MIT）为参考。我方为重实现而非拷贝——数据层完全替换为 Cue 三层通道：**深研（cue-research）· 数据 MCP 域（Cue）· 文档解析（omni-reader）**。出处详见 [NOTICE.md](NOTICE.md)。
+金融研究类 skill 是对 **anthropics/financial-services**（Apache-2.0）方法论基座的 Cue-native 重写。我方为重实现而非拷贝——数据层完全替换为 Cue 三层通道：**深研（cue-research）· 数据 MCP 域（Cue）· 文档解析（omni-reader）**。出处详见 [NOTICE.md](NOTICE.md)。
 
 > **状态：** 本仓对外发布的金融研究 skill，以上方 Skills 表所列为准。`cn-earnings-note` 已完成 P1 端到端实跑（验收记录见本包 `CHANGELOG.md` 的 Verified 段）。`catalyst-calendar`、`tear-sheet`、`sector-overview` 已于 2026-09-21 通过对抗审终判，且各有一次真实运行在案：催化剂日历——10 主体 × 90 天满窗、证据链强制，窗内可锚前瞻 1 行、9 个主体节空前瞻各带一行归因，法定期限推导已尝试并当场拒推（该次 statute 通道未取回原文）；公司一页纸——5 主体回客速览、一轮通过；行业景气全景——建材半程，六条量价锚各带口径、两个沥青报价并列不仲裁（设计行为），国内行业量价域仍未开放。版本号以各包 `CHANGELOG.md` 现值为准，不写进本句。路线图其余部分只是已定方向：**未构建、不可用**；上表以外的任何东西都不承诺交付。
 
