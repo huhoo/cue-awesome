@@ -47,6 +47,7 @@ SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 # Readers scan a table row from the end, so a status clause must come BEFORE the
 # provenance clause in the same row; otherwise the last thing they see is a link,
 # not the state. Rule is shape-only (marker families), never content judgement.
+# Marker families are constants, not a search: reword a README clause and edit the matching family here, or the row silently stops being covered.
 STATUS_CLAUSE = ("status section", "状态段")
 PROVENANCE_CLAUSE = ("Base provenance:", "基座出处见")
 SKIP_DIRS = ARTIFACT_DIRS | {"fixtures"}
