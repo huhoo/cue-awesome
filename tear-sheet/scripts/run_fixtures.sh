@@ -2,7 +2,7 @@
 # run_fixtures.sh —— tear-sheet check_page 总探针(工单 M34/2.1;题单=verify/tear-sheet-badspec.md M26+M31 共 22 题)。
 # 断言口径(验收协议):每题 3 断言=①exit 1 ②输出含目标道号 [①..④] ③输出含指定诊断关键词;
 # good 基线+三个字面改名族(段名同义/去「主体」字面/观点改「观察」)各 PASS=字面形状零依赖。
-# 合计 22×3+4+7 = 77 断言;合同分解与逐题映射见 verify/tear-sheet-coverage-m43.md(≥64 口径要证)。纪律:退出码直取禁管道吞码;--sources 每题配对专用自洽 jsonl。
+# 断言总数与构成不写死在本注释(M65 去写死,M61b 同病灶):全数以 verify/tear-sheet-coverage-m43.md 逐题对账表为准。纪律:退出码直取禁管道吞码;--sources 每题配对专用自洽 jsonl。
 set -u
 cd "$(dirname "$0")"
 PY="${PYTHON:-python3}"

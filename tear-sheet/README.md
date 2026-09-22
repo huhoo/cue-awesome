@@ -50,7 +50,7 @@ SKILL.md          主指令：输入契约/五段形制/成本纪律/管线与�
 README.md         本文件（中文权威）
 README.en.md      英文译文
 CHANGELOG.md      版本记录
-scripts/          机检 check_page.py 与 fixtures（已落地，77 断言全绿）
+scripts/          机检 check_page.py 与 fixtures（已落地，守护样全绿；数量以本包 CHANGELOG.md 最近验收行为准）
 ```
 
 ## 六、当前状态（诚实清单）

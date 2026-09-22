@@ -50,7 +50,7 @@ SKILL.md          master instruction: input contract / five blocks / cost discip
 README.md         this file (Chinese source of truth)
 README.en.md      English translation
 CHANGELOG.md      version history
-scripts/          gate script check_page.py + fixtures (landed; 77 assertions all green)
+scripts/          gate script check_page.py + fixtures (landed; guard samples green — count per the latest acceptance line in this package's CHANGELOG.md)
 ```
 
 ## 6. Current status (the blunt list)
