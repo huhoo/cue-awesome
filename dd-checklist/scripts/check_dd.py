@@ -111,6 +111,17 @@ TITLE_WINDOW = re.compile(r"窗口\s*(\d{4}-\d{2}-\d{2})\s*[~～]\s*(\d{4}-\d{2}
 SECTION_DOMAIN_LINE = re.compile(r"本节检索域[:：]\s*(.*?)\s*(\d+)\s*域\s*/\s*无工具项[:：]\s*(\d+)")
 PARAM_LINE = re.compile(r"^-\s*(subject|asof|lookback|purpose)\s*[:：]\s*(\S.*?)\s*$")
 
+# §v2-11（M89 裁定①，M91 落机器核）：长窗的类目账龄可达面不得静默冒充标题窗。
+# 触发=窗口跨度 > 类目检索面已知上限 且 本次实调 disclosure_cn 类目账；发码 DD-COVERAGE。
+AGE_CAP_DAYS = 365
+AGE_REQUIRED_BEYOND = "未按类目互校"
+AGE_LAUNDER = ("已覆盖", "全覆盖", "零条", "不存在", "无异常", "无风险")
+AGE_DECL_LINE = re.compile(
+    r"^\s*(?:[-*>]\s*)?类目账龄申报\s*[:：]\s*requested=(\d{4}-\d{2}-\d{2})\s*[~～]\s*(\d{4}-\d{2}-\d{2})"
+    r"\s*\|\s*disclosure_cn=(\d{1,4})d\s*\|\s*beyond=(.+?)\s*$"
+)
+COVERAGE_HEADING = re.compile(r"^#{1,4}\s.*(?:覆盖率|未检到)")
+
 
 DECL_TOKENS = ("本页为AI初稿", "依据公开披露与法定原文整理", "不构成投资建议", "不构成法律意见", "判断位[待人工]")
 
@@ -780,6 +791,54 @@ def check_calls_ledger(ev, finds: Findings) -> None:
             finds.add("DD-OMISSION", f"流水第 {i} 行的快照哈希与 {snap} 现值不符——流水与证据被分开改过即不可信")
 
 
+def coverage_section_lines(lines: list[str]) -> list[str]:
+    """覆盖率说明节的正文行（到下一个标题为止）。"""
+    out: list[str] = []
+    seen = False
+    for ln in lines:
+        if ln.startswith("#"):
+            if seen:
+                break
+            seen = bool(COVERAGE_HEADING.match(ln))
+            continue
+        if seen:
+            out.append(ln)
+    return out
+
+
+def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
+    """§v2-11：窗口跨度超过类目检索面已知上限、且本次实调 disclosure_cn 类目账时，
+    覆盖率说明节必须带且只带一行可复算的账龄申报；缺行、窗错写或 beyond 被洗成否定=DD-COVERAGE。"""
+    span = (ctx["asof"] - ctx["start"]).days
+    if span <= AGE_CAP_DAYS or "disclosure_cn" not in calls:
+        return
+    if finds.has_code("DD-INPUT"):
+        # 参数/形制门优先：标题窗与参数本就不一致时，requested 无从两头对齐，不在此重复发码（同 §v2-2 对 DD-EVIDENCE 的静音规矩）
+        return
+    want = f"{ctx['start'].isoformat()}~{ctx['asof'].isoformat()}"
+    body = coverage_section_lines(ctx["lines"]) or ctx["lines"]
+    decls = [m for ln in body if (m := AGE_DECL_LINE.match(ln))]
+    template = f"类目账龄申报: requested={want} | disclosure_cn={AGE_CAP_DAYS}d | beyond={AGE_REQUIRED_BEYOND}"
+    if not decls:
+        finds.add("DD-COVERAGE", f"窗口实跨 {span} 天 > 本件已知类目检索面 {AGE_CAP_DAYS} 天，且本次实调 disclosure_cn 类目账，但覆盖率节无账龄申报行——短类目账不得静默冒充标题长窗账（§v2-11）；应带：{template}")
+        return
+    if len(decls) > 1:
+        finds.add("DD-COVERAGE", f"覆盖率节有 {len(decls)} 行账龄申报——§v2-11 要求带且只带一行（多行=同一窗口的可达面被反复改写）")
+    m = decls[0]
+    req = f"{m.group(1)}~{m.group(2)}"
+    if req != want:
+        finds.add("DD-COVERAGE", f"账龄申报 requested={req} 与参数复算窗 {want} 不一致（§v2-11：标题窗是用户请求窗，申报行不得改写过窗）")
+    cap = int(m.group(3))
+    if cap > AGE_CAP_DAYS:
+        finds.add("DD-COVERAGE", f"账龄申报写 disclosure_cn={cap}d，高于本件已知类目上限 {AGE_CAP_DAYS}d——无回包凭据不得放宽上限（§v2-11）")
+    beyond = norm_cell(m.group(4))
+    laundered = [w for w in AGE_LAUNDER if w in beyond]
+    if laundered:
+        finds.add("DD-COVERAGE", f"账龄申报 beyond={beyond!r} 命中否定/积极措辞（{('、'.join(laundered))}）——把「机器尚不能互校」写成结论即洗白（§v2-11）")
+    elif beyond != AGE_REQUIRED_BEYOND:
+        finds.add("DD-COVERAGE", f"账龄申报 beyond={beyond!r} 偏离权威式样（须逐字 {AGE_REQUIRED_BEYOND!r}，§v2-11）")
+
+
 def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
     cov_path = report.parent / "references" / "coverage-map.md"
     text = read_text(cov_path)
@@ -835,6 +894,7 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
                     finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 evidence 内无 {called} 域的原始结果快照——零条目亦须可核（§v2-2②）")
                 elif not any(cat in b for b in bound.values()):
                     finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 {called} 域快照内未标出该类目——调用与账目对不上（§v2-2②）")
+    check_age_declaration(ctx, calls, report, finds)
     counts: dict[str, int] = {}
     for t in tables:
         for r in t["rows"]:

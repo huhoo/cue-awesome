@@ -14,4 +14,6 @@
 
 本节检索域: regulatory_cn、statute、disclosure_cn 3 域 / 无工具项: 0
 
+类目账龄申报: requested=2023-09-21~2026-09-21 | disclosure_cn=365d | beyond=未按类目互校
+
 推导条件: AN202603310000000009（报告期 2026-03-31 在场披露）

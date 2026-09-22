@@ -50,24 +50,31 @@ def row(date, category, fact, impact, status, carry, anchor):
 BASE_ROW = row(D, "合规与处罚", FACT, "关注", "已披露", "—", ANCHOR)
 
 
+def age_decl(start, end, cap="365d", beyond="未按类目互校"):
+    """§v2-11 账龄申报行（6.1 判词第 4 条：宽窗基线一律带；删它=DD-X19 唯一缺陷，改 beyond=ctl 洗白样）。"""
+    return f"类目账龄申报: requested={start}~{end} | disclosure_cn={cap} | beyond={beyond}"
+
+
 def report(rows=(BASE_ROW,), title_start=START, title_end=ASOF, title_subject=SUBJECT, extra="",
            domain_line="regulatory_cn 1 域 / 无工具项: 0", asof=ASOF, subject_line=SUBJECT, cond_line=None,
-           no_decl=False, decl_late=False, decl_split=None):
+           no_decl=False, decl_late=False, decl_split=None, lookback="36m",
+           age_start=None, age_beyond="未按类目互校", no_age=False):
     if domain_line and not domain_line.startswith("本节检索域"):
         domain_line = "本节检索域: " + domain_line
+    age = [] if no_age else ["", age_decl(age_start or title_start, title_end, beyond=age_beyond)]
     if decl_split:
         head = [f"# {title_subject}公开信息预尽调清单 · 窗口 {title_start}~{title_end}", ""] + decl_split
         if not no_decl:
             head += ["", DECL]
-        head += ["", f"- subject: {subject_line}", f"- asof: {asof}", "- lookback: 36m", "- purpose: investment", "", HDR, SEP]
-        return "\n".join(head + [*(rows or [BASE_ROW]), "", domain_line]) + "\n"
+        head += ["", f"- subject: {subject_line}", f"- asof: {asof}", f"- lookback: {lookback}", "- purpose: investment", "", HDR, SEP]
+        return "\n".join(head + [*(rows or [BASE_ROW]), "", domain_line, *age]) + "\n"
     lines = [
         f"# {title_subject}公开信息预尽调清单 · 窗口 {title_start}~{title_end}",
         "",
         *([] if (no_decl or decl_late) else [DECL, ""]),
         f"- subject: {subject_line}",
         f"- asof: {asof}",
-        "- lookback: 36m",
+        f"- lookback: {lookback}",
         "- purpose: investment",
         "",
         HDR,
@@ -75,6 +82,7 @@ def report(rows=(BASE_ROW,), title_start=START, title_end=ASOF, title_subject=SU
         *rows,
         "",
         domain_line,
+        *age,
     ]
     if cond_line:
         lines += ["", cond_line]
@@ -362,7 +370,7 @@ build("bad-B10-multi-subject", report(extra=B10_EXTRA),
       {**BASE_EVID, "regulatory_cn-S2.json": evid(anchor="AN202605100000000002", subjects=("海岳股份有限公司（600002.SH）",))},
       cov(cov_set({"合规与处罚": ("检到 2", "两主体各一条带锚事项")})), cmd(), 1, ("DD-INPUT",))
 build("bad-B11-naked-row", "\n".join([f"# {SUBJECT}公开信息预尽调清单 · 窗口 {START}~{ASOF}", "", DECL, "", f"- subject: {SUBJECT}", f"- asof: {ASOF}",
-                                      "- lookback: 36m", "- purpose: investment", "", BASE_ROW, "", "本节检索域: regulatory_cn 1 域 / 无工具项: 0"]) + "\n",
+                                      "- lookback: 36m", "- purpose: investment", "", BASE_ROW, "", "本节检索域: regulatory_cn 1 域 / 无工具项: 0", "", age_decl(START, ASOF)]) + "\n",
       [src()], BASE_EVID, cov(), cmd(), 1, ("DD-TABLE",))
 build("bad-B12-date-order", report(rows=B12_ROWS),
       [src(), src("S2", ref="AN202505100000000001", claim="北辰股份有限公司历史问询事项，见公告原文", asof="2025-05-10")],
@@ -558,6 +566,19 @@ build("bad-X18-condition-other-subject", X18_REP,
       [src(), src("S2", domain="statute", ref=STAT_AN, claim="合成示例披露规则第三条载明报告期后30日", asof="2026-04-30"),
        src("S3", domain="disclosure_cn", ref=COND_ANCHOR, claim="2026 年第一季度报告期截止 2026-03-31", asof="2026-03-31")],
       X18_EV, cov(cov_set({"财务与披露质量": ("检到 1", STAT_AN, "statute", "statute")})), cmd(), 1, ("DD-STATUTE",))
+
+# ---- M91（§v2-11；题单 X19）：长窗的类目账龄可达面不得静默冒充标题窗 ----
+X19_START = "2024-09-21"
+X19_CMD = cmd(lookback="24m")
+build("bad-X19-long-window-undeclared", report(title_start=X19_START, lookback="24m", no_age=True),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+build("good-X19-long-window-declared", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, cov(), X19_CMD, 0, ())
+# 两枚控制样（题单未给题号，不占主集）：beyond 被洗成否定 / requested 与参数复算窗不符
+build("ctl-age-beyond-laundered", report(title_start=X19_START, lookback="24m", age_beyond="零条"),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+build("ctl-age-requested-mismatch", report(title_start=X19_START, lookback="24m", age_start=START),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,

@@ -17,3 +17,5 @@
 | 2026-08-05 | 关联交易与资金占用 | 董事会审议通过关联交易议案，所载为金额与对手方 | 关注 | 已披露 | — | AN202608050000000003 |
 
 本节检索域: disclosure_cn、regulatory_cn、entity_data、research 4 域 / 无工具项: 0
+
+类目账龄申报: requested=2023-09-21~2026-09-21 | disclosure_cn=365d | beyond=未按类目互校

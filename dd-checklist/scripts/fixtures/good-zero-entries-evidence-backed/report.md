@@ -11,3 +11,5 @@
 |---|---|---|---|---|---|---|
 
 本节检索域: regulatory_cn、entity_data、disclosure_cn、fr_fact_index、ipo 5 域 / 无工具项: 0
+
+类目账龄申报: requested=2023-09-21~2026-09-21 | disclosure_cn=365d | beyond=未按类目互校
