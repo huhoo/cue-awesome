@@ -7,7 +7,7 @@
 # 每个样目录自带 cmd.txt（一行完整命令，在该目录内执行）与 expect.txt：
 #   exit=<期望退出码>  need=<允许的诊断码，可多行>  [must-not=<禁止出现的码>]  [verdict=must-fail]
 # 判据（题单 §0.7 / 契约 §v2-6）：**实际 DD-* 码集合必须与声明集合精确相等**，多码=FAIL；
-# ctl-* 是 runner 自证样（负控与边界），单列计数、不占合同 43 样之数；崩溃一律不算命中（题单 §0.1）。
+# ctl-* 是 runner 自证样（负控与边界），单列计数、不占合同主集之数（样数只存在于题单矩阵与本 runner 现报，C-19）；崩溃一律不算命中（题单 §0.1）。
 set -uo pipefail
 
 FIXROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

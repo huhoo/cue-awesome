@@ -58,10 +58,12 @@ def age_decl(start, end, cap="365d", beyond="未按类目互校"):
 def report(rows=(BASE_ROW,), title_start=START, title_end=ASOF, title_subject=SUBJECT, extra="",
            domain_line="regulatory_cn 1 域 / 无工具项: 0", asof=ASOF, subject_line=SUBJECT, cond_line=None,
            no_decl=False, decl_late=False, decl_split=None, lookback="36m",
-           age_start=None, age_beyond="未按类目互校", no_age=False):
+           age_start=None, age_beyond="未按类目互校", age_cap="365d", no_age=False, age_extra=None):
     if domain_line and not domain_line.startswith("本节检索域"):
         domain_line = "本节检索域: " + domain_line
-    age = [] if no_age else ["", age_decl(age_start or title_start, title_end, beyond=age_beyond)]
+    age = [] if no_age else ["", age_decl(age_start or title_start, title_end, cap=age_cap, beyond=age_beyond)]
+    if age_extra:
+        age.append(age_extra)
     if decl_split:
         head = [f"# {title_subject}公开信息预尽调清单 · 窗口 {title_start}~{title_end}", ""] + decl_split
         if not no_decl:
@@ -570,14 +572,22 @@ build("bad-X18-condition-other-subject", X18_REP,
 # ---- M91（§v2-11；题单 X19）：长窗的类目账龄可达面不得静默冒充标题窗 ----
 X19_START = "2024-09-21"
 X19_CMD = cmd(lookback="24m")
+X21_PSEUDO = "类目账龄申报: requested=2024-09-21~2026-09-21 | disclosure_cn=730日 | beyond=已覆盖"
 build("bad-X19-long-window-undeclared", report(title_start=X19_START, lookback="24m", no_age=True),
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 build("good-X19-long-window-declared", report(title_start=X19_START, lookback="24m"),
       [src()], BASE_EVID, cov(), X19_CMD, 0, ())
-# 两枚控制样（题单未给题号，不占主集）：beyond 被洗成否定 / requested 与参数复算窗不符
-build("ctl-age-beyond-laundered", report(title_start=X19_START, lookback="24m", age_beyond="零条"),
+build("bad-X20-beyond-laundered", report(title_start=X19_START, lookback="24m", age_beyond="零条"),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+build("bad-X21-double-declared-variant", report(title_start=X19_START, lookback="24m", age_extra=X21_PSEUDO),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+# 控制样（题单未给题号的同族等价攻击，不占主集）：beyond 的另一形「不存在」、申报窗≠复算窗
+build("ctl-age-beyond-nonexistent", report(title_start=X19_START, lookback="24m", age_beyond="不存在"),
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 build("ctl-age-requested-mismatch", report(title_start=X19_START, lookback="24m", age_start=START),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+# 单行形制不合法（只有伪行、无合法行）：走「唯一申报行不可解析」分支，防死码
+build("ctl-age-single-malformed", report(title_start=X19_START, lookback="24m", age_cap="730日"),
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 
 # 反向计数控制样：账写「检到 1」而正文零行

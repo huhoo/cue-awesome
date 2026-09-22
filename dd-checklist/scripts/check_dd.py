@@ -121,6 +121,8 @@ AGE_DECL_LINE = re.compile(
     r"\s*\|\s*disclosure_cn=(\d{1,4})d\s*\|\s*beyond=(.+?)\s*$"
 )
 COVERAGE_HEADING = re.compile(r"^#{1,4}\s.*(?:覆盖率|未检到)")
+# 「先收后判」用：凡带权威前缀的原始行都先收进来（伪行单位写成「日」、beyond 被改写也要收），再核数量与语法
+DECL_PREFIX_LOOSE = re.compile(r"^\s*(?:[-*>]\s*)?类目账龄申报\s*[:：]")
 
 
 DECL_TOKENS = ("本页为AI初稿", "依据公开披露与法定原文整理", "不构成投资建议", "不构成法律意见", "判断位[待人工]")
@@ -817,14 +819,26 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
         return
     want = f"{ctx['start'].isoformat()}~{ctx['asof'].isoformat()}"
     body = coverage_section_lines(ctx["lines"]) or ctx["lines"]
-    decls = [m for ln in body if (m := AGE_DECL_LINE.match(ln))]
+    # 先收：按归一前缀收集**全部**原始申报行（伪行也要被收进来），再判数量，最后才解析唯一一行
+    raw = [ln.strip() for ln in body if DECL_PREFIX_LOOSE.match(ln) or _norm(ln).startswith("类目账龄申报:")]
     template = f"类目账龄申报: requested={want} | disclosure_cn={AGE_CAP_DAYS}d | beyond={AGE_REQUIRED_BEYOND}"
-    if not decls:
+    if not raw:
         finds.add("DD-COVERAGE", f"窗口实跨 {span} 天 > 本件已知类目检索面 {AGE_CAP_DAYS} 天，且本次实调 disclosure_cn 类目账，但覆盖率节无账龄申报行——短类目账不得静默冒充标题长窗账（§v2-11）；应带：{template}")
         return
-    if len(decls) > 1:
-        finds.add("DD-COVERAGE", f"覆盖率节有 {len(decls)} 行账龄申报——§v2-11 要求带且只带一行（多行=同一窗口的可达面被反复改写）")
-    m = decls[0]
+    if len(raw) > 1:
+        unparsed = [ln for ln in raw if not AGE_DECL_LINE.match(ln)]
+        dirty = [ln for ln in raw if any(w in ln for w in AGE_LAUNDER)]
+        note = ""
+        if unparsed:
+            note += f"；形制不合法的一行：{unparsed[0][:64]}"
+        if dirty:
+            note += f"；带否定/积极措辞的一行：{dirty[0][:64]}"
+        finds.add("DD-COVERAGE", f"覆盖率节出现 {len(raw)} 行账龄申报，§v2-11 要求带且只带一行——伪行不得借「解析失败所以不算」出门（先收后判：按归一前缀收原始行，行数须恰为 1）{note}")
+        return
+    m = AGE_DECL_LINE.match(raw[0])
+    if not m:
+        finds.add("DD-COVERAGE", f"唯一申报行形制不合法：{raw[0][:70]}——须逐字承载 requested=<复算窗>、disclosure_cn=<数字>d、beyond=<措辞> 三段，单位只认数字+d 形制（写成「日」等变体不认，§v2-11）；应带：{template}")
+        return
     req = f"{m.group(1)}~{m.group(2)}"
     if req != want:
         finds.add("DD-COVERAGE", f"账龄申报 requested={req} 与参数复算窗 {want} 不一致（§v2-11：标题窗是用户请求窗，申报行不得改写过窗）")
