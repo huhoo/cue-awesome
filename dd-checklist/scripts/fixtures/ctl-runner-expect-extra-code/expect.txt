@@ -1,0 +1,5 @@
+exit=1
+need=DD-TABLE
+must-not=DD-REDLINE DD-ROW
+verdict=must-fail
+note=故意含多缺陷：runner 须因未声明的额外码判 FAIL（M63-M2 负控）

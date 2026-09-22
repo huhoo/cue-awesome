@@ -1,0 +1,2 @@
+{"id": "S1", "kind": "regulatory_cn", "ref": "AN202605100000000001", "claim": "北辰股份有限公司收到监管函，事项见公告原文", "confidence": "L1", "asof": "2026-05-10"}
+{"id": "S2", "kind": "statute", "ref": "statute:《合成示例披露规则（守护样专用）》第三条（报告期后30日）", "claim": "合成示例披露规则第三条载明报告期后30日", "confidence": "L1", "asof": "2026-04-30"}

@@ -1,0 +1,3 @@
+exit=1
+need=DD-TABLE
+need=DD-REDLINE

@@ -1,0 +1,6 @@
+{"id": "S1", "kind": "disclosure_cn", "ref": "（2024）京0108民初12345号", "claim": "北辰股份有限公司诉讼与仲裁事项：披露所载一起民事诉讼立案，案号见原文", "confidence": "L1", "asof": "2024-03-15"}
+{"id": "S2", "kind": "entity_data", "ref": "https://disclosure.invalid/2025-06-20-001", "claim": "北辰股份有限公司股权与控制权事项：公告所载控股股东持股比例变动", "confidence": "L1", "asof": "2025-06-20"}
+{"id": "S3", "kind": "regulatory_cn", "ref": "上证监管函〔2026〕12号", "claim": "北辰股份有限公司合规与处罚事项：交易所出具监管函，披露所载为问询事项", "confidence": "L1", "asof": "2026-02-10"}
+{"id": "S4", "kind": "regulatory_cn", "ref": "AN202605100000000001", "claim": "北辰股份有限公司合规与处罚事项：交易所出具监管函，披露所载为问询事项", "confidence": "L1", "asof": "2026-05-10"}
+{"id": "S5", "kind": "research", "ref": "conv_id:op_synthetic0001", "claim": "北辰股份有限公司上市与在审状态事项：研究件转述在审状态，原文见会话记录", "confidence": "L1", "asof": "2026-07-01", "conv_id": "op_synthetic0001"}
+{"id": "S6", "kind": "disclosure_cn", "ref": "AN202608050000000003", "claim": "北辰股份有限公司关联交易与资金占用事项：董事会审议通过关联交易议案，所载为金额与对手方", "confidence": "L1", "asof": "2026-08-05"}

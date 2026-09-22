@@ -1,0 +1,1 @@
+python3 ../../check_dd.py report.md --subject '北辰股份有限公司（600001.SH）' --asof 2026-09-21 --lookback 36m --purpose investment --sources sources.jsonl
