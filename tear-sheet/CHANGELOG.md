@@ -2,6 +2,13 @@
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
+## [Unreleased]
+
+### Docs（M83 现值句，版本位不动）
+
+- 后续实况：打满主体上限的会前速览端到端已跑通（一轮 PASS、门禁全式 exit 0）。**计数不双写（M84）**：本段刻意不带数——主体数、通道次数与逐格账以本包 `README.md`/`README.en.md` 状态段为唯一权威，根 README 中英两处一并去数指回。
+- 下方 0.1.0 段「出门条件未闭（设计值声明）：端到端真实跑未发生」是 2026-09-21 出门当时的真话，按「历史行不改」原样留着；本条是它的现值；本段数字取自该次 run 的台账与机检回包，未抄任何回执文字。
+
 ## [0.1.1] — 2026-09-21
 
 ### Added/Fixed
