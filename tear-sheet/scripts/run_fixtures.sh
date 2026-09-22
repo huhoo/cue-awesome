@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # run_fixtures.sh —— tear-sheet check_page 总探针(工单 M34/2.1;题单=verify/tear-sheet-badspec.md M26+M31 共 22 题)。
-# 断言口径(验收协议):每题 3 断言=①exit 1 ②输出含目标道号 [①..④] ③输出含指定诊断关键词;
+# 断言口径(验收协议):每题 3 断言=①exit 1 ②输出含目标节号 [①..④] ③输出含指定诊断关键词;
 # good 基线+三个字面改名族(段名同义/去「主体」字面/观点改「观察」)各 PASS=字面形状零依赖。
 # 断言总数与构成不写死在本注释(M65 去写死,M61b 同病灶):全数以 verify/tear-sheet-coverage-m43.md 逐题对账表为准。纪律:退出码直取禁管道吞码;--sources 每题配对专用自洽 jsonl。
 set -u
@@ -24,7 +24,7 @@ a() { # a <期望exit> <期望子串(可空)> <说明> <命令...>
 }
 fail=0
 
-# 题单:ID|目标道号|诊断关键词
+# 题单:ID|目标节号|诊断关键词
 QS=(
 "TS-B01|①|缺声明字段「通道用量声明」|1"
 "TS-B02|②|来源锚为空/不在白名单|1"
@@ -49,16 +49,16 @@ QS=(
 "TS-B21|③|sources 第|1"
 "TS-B22|④|在场事件 5 > 4|1"
 )
-ALL_DAOS="① ② ③ ④"
+ALL_SECTIONS="① ② ③ ④"
 for entry in "${QS[@]}"; do
-  IFS='|' read -r qid dao kw nsub <<< "$entry"
-  a 1 "[$dao]"  "$qid exit+道号" "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" --subjects "$nsub"
+  IFS='|' read -r qid sec kw nsub <<< "$entry"
+  a 1 "[$sec]"  "$qid exit+节号" "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" --subjects "$nsub"
   a 1 "$kw"     "$qid 诊断关键词" "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" --subjects "$nsub"
   # 第三断言:唯一目标纯度——其余三道标记不得出现在输出中(跨道冒充=误杀,协议 2)
   "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" --subjects "$nsub" >"$TMP.x" 2>&1
   total=$((total+1)); cross=0
-  for d in $ALL_DAOS; do
-    [ "$d" = "$dao" ] && continue
+  for d in $ALL_SECTIONS; do
+    [ "$d" = "$sec" ] && continue
     grep -qF -- "[$d]" "$TMP.x" && cross=1
   done
   if [ "$cross" -eq 0 ]; then pass=$((pass+1)); else echo "FAIL $qid 跨道并报"; sed 's/^/     | /' "$TMP.x"; fail=1; fi

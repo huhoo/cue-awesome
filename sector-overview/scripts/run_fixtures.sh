@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # run_fixtures.sh —— sector-overview check_sector 总探针(工单 M47/2.1;题单=verify/sector-badspec.md M46 共 13 题)。
-# 断言口径(题单 §0):每题 3 断言=①exit 1 ②输出含目标道号 ③指定诊断关键词;
+# 断言口径(题单 §0):每题 3 断言=①exit 1 ②输出含目标节号 ③指定诊断关键词;
 # 第三路=唯一目标纯度(协议 2:其余三道标记不得并报)。good 族 3 枚(基线/改名族/语词族)。
 # 卫生 6 枚:证据 fail-closed×2(含 B09 无证据路)/窗口申报漂移/缺参×2/--help。
 # 合计 13×3+4+6 = 49 断言;合同分解与逐题映射见 verify/sector-coverage-m47.md。
@@ -29,7 +29,7 @@ a() { # a <期望exit> <期望子串(可空)> <说明> <命令...>
   fi
 }
 
-# 题单:ID|目标道号|诊断关键词
+# 题单:ID|目标节号|诊断关键词
 QS=(
 "SO-B01|①|缺声明字段「通道用量」"
 "SO-B02|②|判断词「回暖」无锚"
@@ -45,16 +45,16 @@ QS=(
 "SO-B12|③|sources 第 1 行"
 "SO-B13|④|代表公司 2 < 3"
 )
-ALL_DAOS="① ② ③ ④"
+ALL_SECTIONS="① ② ③ ④"
 for entry in "${QS[@]}"; do
-  IFS='|' read -r qid dao kw <<< "$entry"
-  a 1 "[$dao]" "$qid exit+道号"   "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" $W $E
+  IFS='|' read -r qid sec kw <<< "$entry"
+  a 1 "[$sec]" "$qid exit+节号"   "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" $W $E
   a 1 "$kw"    "$qid 诊断关键词"  "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" $W $E
   # 第三断言:唯一目标纯度——其余三道标记不得出现在输出中(协议 2)
   "$PY" "$CHECK" "fixtures/$qid.md" --sources "fixtures/$qid.jsonl" $W $E >"$TMP.x" 2>&1
   total=$((total+1)); cross=0
-  for d in $ALL_DAOS; do
-    [ "$d" = "$dao" ] && continue
+  for d in $ALL_SECTIONS; do
+    [ "$d" = "$sec" ] && continue
     grep -qF -- "[$d]" "$TMP.x" && cross=1
   done
   if [ "$cross" -eq 0 ]; then pass=$((pass+1)); else echo "FAIL $qid 跨道并报"; sed 's/^/     | /' "$TMP.x"; fail=1; fi
