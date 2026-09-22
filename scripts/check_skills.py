@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Repo lint for cue-awesome — run before you commit, and again in CI.
 
+Also enforces one shape rule over markdown table rows: where a row carries both a
+status clause and a provenance clause, status must come first (readers scan row
+ends). The rule self-tests on every run, so it cannot pass by matching nothing.
+
 Stdlib only (PyYAML is used when available, otherwise a minimal fallback
 parser handles the flat frontmatter keys we care about).
 
@@ -38,6 +42,69 @@ ARTIFACT_PATTERNS = ("*.zip", "*.pyc")
 ARTIFACT_DIRS = {"__pycache__", "dist", "build", "node_modules", ".venv"}
 
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+
+# --------------------------------------------------------- table row order rule
+# Readers scan a table row from the end, so a status clause must come BEFORE the
+# provenance clause in the same row; otherwise the last thing they see is a link,
+# not the state. Rule is shape-only (marker families), never content judgement.
+STATUS_CLAUSE = ("status section", "状态段")
+PROVENANCE_CLAUSE = ("Base provenance:", "基座出处见")
+SKIP_DIRS = ARTIFACT_DIRS | {"fixtures"}
+
+
+def row_clause_positions(line: str) -> tuple[int, int] | None:
+    """Return (status_idx, provenance_idx) when a row carries both clauses, else None."""
+    if not line.startswith("| ["):
+        return None
+    hits_s = [line.index(m) for m in STATUS_CLAUSE if m in line]
+    hits_p = [line.index(m) for m in PROVENANCE_CLAUSE if m in line]
+    if not hits_s or not hits_p:
+        return None
+    return min(hits_s), min(hits_p)
+
+
+def check_table_row_order(rep: Report) -> tuple[int, int]:
+    """Scan every markdown table row in the repo; status clause must precede provenance."""
+    checked = violations = 0
+    for path in sorted(ROOT.rglob("*.md")):
+        if set(path.relative_to(ROOT).parts[:-1]) & SKIP_DIRS:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        rel = path.relative_to(ROOT)
+        for lineno, line in enumerate(text.split("\n"), 1):
+            positions = row_clause_positions(line)
+            if positions is None:
+                continue
+            checked += 1
+            s, p = positions
+            if s > p:
+                violations += 1
+                rep.error(
+                    f"repo: {rel}:{lineno} provenance clause (col {p}) precedes the "
+                    f"status clause (col {s}) — status must come first in a table row"
+                )
+    return checked, violations
+
+
+def selftest_row_order_rule(rep: Report) -> bool:
+    """The rule must fire on a reversed row and stay silent on a correct one.
+
+    Without both directions a green lint proves nothing (a vacuous check is green).
+    """
+    provenance = "Base provenance: see [NOTICE.md](NOTICE.md) §financial-suite."
+    status = "**Run on record — counts in this package's README status section.**"
+    good = f"| [`demo/`](demo/) | demo | 0.1.0 | Description. {status} {provenance} |"
+    bad = f"| [`demo/`](demo/) | demo | 0.1.0 | Description. {provenance} {status} |"
+    both_seen = row_clause_positions(good) is not None and row_clause_positions(bad) is not None
+    ok = both_seen and row_clause_positions(good)[0] < row_clause_positions(good)[1] \
+        and row_clause_positions(bad)[0] > row_clause_positions(bad)[1]
+    if not ok:
+        rep.error(
+            "repo: row-order self-test failed — the rule did not separate the reversed "
+            "sample from the correct one, so a green run would be meaningless"
+        )
+    return ok
+
 
 
 # ---------------------------------------------------------------- frontmatter
@@ -206,6 +273,12 @@ def main() -> int:
         if not (ROOT / required).is_file():
             rep.warn(f"repo: missing {required}")
 
+    repo_rep = Report()
+    selftest_ok = selftest_row_order_rule(repo_rep)
+    rows_checked, row_violations = check_table_row_order(repo_rep)
+    rep.errors.extend(repo_rep.errors)
+    rep.warnings.extend(repo_rep.warnings)
+
     skills = discover_skills()
     if not skills:
         rep.error("repo: no skill directories found")
@@ -228,6 +301,11 @@ def main() -> int:
             print(f"  {status:<4} {d.name:<24} v{ver or '?'}")
             for msg in sub.errors + sub.warnings:
                 print(f"        {msg}")
+        status = "FAIL" if repo_rep.errors else ("WARN" if repo_rep.warnings else "OK")
+        print(f"  {status:<4} {'table row order':<24} self-test={'ok' if selftest_ok else 'FAILED'}")
+        print(f"        rows with status+provenance: {rows_checked} checked, {row_violations} mis-ordered")
+        for msg in repo_rep.errors + repo_rep.warnings:
+            print(f"        {msg}")
 
     total_err = len(rep.errors)
     total_warn = len(rep.warnings)
