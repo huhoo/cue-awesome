@@ -55,8 +55,8 @@ scripts/          gate script check_page.py + fixtures (landed; 77 assertions al
 
 ## 6. Current status (the blunt list)
 
-- **v0.1.0, design values**: no end-to-end run has happened yet; the 30-second promise, the single-digit cost, and coverage are all design values until measured records land.
-- **Review closed, shipped**: gate M43 (77/77, the question-list-as-contract reconciled 1:1) + adversarial M45 LGTM; public with the repo at 0.1.1. No end-to-end client-meeting run recorded — the 30-second/single-digit-cost wording stays a design-value claim.
+- **Five-issuer boundary run landed (M52, 2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
+- **Review closed, shipped**: gate M43 (77/77, the question-list-as-contract reconciled 1:1) + adversarial M45 LGTM; public with the repo at 0.1.1. The 30-second wall time and the single-digit cost have no measured evidence yet (data-mcp returns no per-call billing; cumulative follows the workbench statement) — both wordings stay design-value claims.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 

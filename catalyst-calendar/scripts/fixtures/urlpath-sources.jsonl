@@ -1,0 +1,8 @@
+{"id":"S1","kind":"disclosure_cn","ref":"AN202608281828644258","claim":"临时股东会通知(中期分红议案)","confidence":"L1","asof":"2026-10-15"}
+{"id":"S2","kind":"buyback","ref":"AN202609021828930348","claim":"回购实施进展/月报","confidence":"L1","asof":"2026-11-03"}
+{"id":"S3","kind":"esop","ref":"AN202609021828930836","claim":"持股计划归属","confidence":"L1","asof":"2026-12-02"}
+{"id":"S4","kind":"buyback","ref":"AN202603301820871252","claim":"回购预案期限(公告明写)","confidence":"L1","asof":"2027-03-31"}
+{"id":"S5","kind":"statute","ref":"statute:《上市公司信息披露管理办法》第十九条（定期报告披露期限，fixture 形制示例串）","claim":"定期报告法定期限锚(fixture 形制示例,非真实条文引用)","confidence":"L1","asof":"2026-09-21"}
+{"id":"S7","kind":"regulatory_cn","ref":"上证公函〔2026〕158号","claim":"问询回复期限","confidence":"L1","asof":"2026-10-20"}
+{"id":"S8","kind":"disclosure_cn","ref":"AN202609151829423536","claim":"问询函关联公告辅锚","confidence":"L1","asof":"2026-10-20"}
+{"id":"S9","kind":"disclosure","ref":"http://static.cninfo.com.cn/finalpage/2026-09-08/1225551661.PDF · 2026年第一次临时股东会通知","claim":"股东会决议事项(取数路径含2026-09-08为路径日期非事件日期)","confidence":"L1","asof":"2026-09-08"}

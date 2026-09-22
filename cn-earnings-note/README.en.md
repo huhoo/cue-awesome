@@ -71,7 +71,9 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 
 | Boundary | Status |
 |---|---|
-| End-to-end field test | **four runs across two issuers verified**: Midea 000333 (2026H1 interim + 2025 annual-report basis) + Oriental Yuhong 002271 (2026H1, high-risk sample), machine gates + manual acceptance all passed; record in `CHANGELOG.md` Verified. **Still untested**: HK-listed issuers, multi-issuer batches — treat a first run of these two as unverified |
+| End-to-end field test | **five runs across three issuers verified**: Midea 000333 (2026H1 + 2025AR) + Oriental Yuhong 002271 (2026H1) + Gudi Technology 002694 (*ST high-risk first case, M54), machine gates + manual acceptance passed; record in `CHANGELOG.md` Verified. **Still untested**: HK-listed issuers, multi-issuer batches — treat a first run of these two as unverified |
+| High-risk issuers (ST/*ST) | **first case run (M54, 2026-09-21)**: Gudi — research 2/2 full slots + omni 1 (shell-page billed 0.268 per server receipt, product discarded) + 11 direct lookups; pre-announcement range, going-concern uncertainty and fund-occupancy items all handled strictly by "no anchor, no judgement" |
+| Forecast scaffold (0.3.3) | **first flight = gate layer proven** (M54): three `[待人工]` year rows + border note + anchor row passed; two rounds of gate rejects (12+2) were the line working — not an endorsement of judgement quality |
 | Market / valuation data flow | No — the `equity_market` domain is not open and nothing depends on it; intraday price, market cap and valuation percentiles are never fetched |
 | Consensus estimates | paid terminals are neither fetched nor promised; since 0.3.0 beat/miss has a second anchor — the public-summary-layer expectation pool (`references/expectation-pool.md`: institution counts / consensus means / target-price range, with `source_tier` self-declaration, cross-platform divergence left un-arbitrated); judgement priority = company pre-announcement / flash report > pool mean > verbatim "no company baseline and no public pool mean — no beat/miss judgement" |
 | Excel model / DCF | No (see §1) |

@@ -432,7 +432,8 @@ def run(args):
             if bad:
                 fails.append(f"[评级] 第 {r['lineno']} 行「{col}」列含评级/目标价词「{bad}」(A4 无豁免区在列)")
             if sec_k in ("subject", f"reserved:{SUMMARY_HEAD}"):  # v4-B①/S2 前瞻账行非日期列藏日期
-                for dd in DATE_RE.findall(r[col]):
+                for dd in DATE_RE.findall(re.sub(r"https?://\S+", "", r[col])):
+                    # M51 冒烟修:URL 段先剥——路径日期(cninfo /finalpage/2026-09-08/)是取数路径非事件日期,不构成藏日期
                     if dd != r["date"]:
                         fails.append(f"[日期] 第 {r['lineno']} 行「{col}」列藏日期 {dd},与日期列 {r['date']!r} 不一致(v4-B①/S2)")
 
@@ -448,7 +449,7 @@ def run(args):
     for t_, _lv_, s0_, s1_ in sections:
         if t_.startswith(SUMMARY_HEAD):
             for i_ in range(s0_ + 1, s1_):
-                for dd in DATE_RE.findall(lines[i_]):
+                for dd in DATE_RE.findall(re.sub(r"https?://\S+", "", lines[i_])):  # M51:URL 路径日期不入户账比对
                     if lines[i_].strip().startswith("|") and dd not in main_date_set:
                         fails.append(f"[摘要] 第 {i_ + 1} 行 {dd} 不在主表日期集合(v4-B④/S10)")
     for t, ds in subj_dates.items():

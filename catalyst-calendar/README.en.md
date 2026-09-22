@@ -56,7 +56,7 @@ scripts/check_calendar.py       gate script v2 (spec §v2-B, ten checks; pure st
 
 ## 6. Current status (the blunt list)
 
-- **Adversarial review closed (M42, four rounds 6B→5→4→1→LGTM, incl. three gates fed by the real smoke) and public with the repo**; a full multi-issuer end-to-end delivery run has not landed (M28 was a smoke, not a delivery) — until it does, timings and coverage remain design values.
+- **Adversarial review closed (M42, four rounds 6B→5→4→1→LGTM, incl. three gates fed by the real smoke) and public with the repo**; **the full multi-issuer end-to-end delivery run has landed (M51, 2026-09-21)**: 10 issuers × 90-day window with the evidence chain enforced end to end, check_calendar v4 full form exit 0 — a single anchorable upcoming event in-window is the domain's actual state (negative lock-up/reduction search), not a pipeline defect.
 - **Not submitted to any skill market**: publishing (P2) is frozen repo-wide, same gate as the sibling skill; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer set capped at 10 (machine-checked); `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
 - No market-data flow (`equity_market` channel not open); **rating vocabulary is zero-tolerance by gate design** — ratings do not apply here, there is no blank left to fill.

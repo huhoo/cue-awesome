@@ -4,7 +4,7 @@
 #      S 系列带 runmark 断言「唯一目标」——命中的是 intended gate,且无 Traceback(B6)。
 # 账目:M27 十样+B11(M28 真实反哺)+M21 五样+v2 保留样(31)+M32 十样 S 系列
 #      (S1 双跑:无形制道可拦=v3 盲区如实;有证据层=断链)+good/partial 证据层对偶
-#      +M40 T1 前缀撞号(M37-B1);共 45 断言。
+#      +M40 T1 前缀撞号(M37-B1)+M51 urlpath 守卫;共 46 断言。
 set -u
 cd "$(dirname "$0")"
 PY="${PYTHON:-python3}"
@@ -46,6 +46,7 @@ run 0 "good-statute     (N2 对偶正样:形制合规 statute)" "$PY" "$CHECK" g
 run 0 "good-meeting     (说明会/股东大会新类)" "$PY" "$CHECK" good-meeting.md $W --sources meeting-sources.jsonl
 run 0 "good-letter      (函件号必配样)" "$PY" "$CHECK" good-letter.md $W --sources letter-sources.jsonl
 run 0 "good-boundary-10 (10 主体=过,N3 前界)" "$PY" "$CHECK" good-boundary-10.md $W --sources boundary-sources.jsonl
+run 0 "good-urlpath     (M51 冒烟修:URL 路径日期藏日期不冤,v4-B①边界)" "$PY" "$CHECK" good-urlpath.md $W --sources urlpath-sources.jsonl --evidence evidence-urlpath
 # ---- M27 攻击样(7) ----
 run 1 "bad-n2-statute   (N2 编造法条锚)" "$PY" "$CHECK" bad-n2-statute.md $W --sources calendar-sources.jsonl
 run 1 "bad-n3-companies (N3 公司名 11 节)" "$PY" "$CHECK" bad-n3-companies.md $W --sources n3-sources.jsonl

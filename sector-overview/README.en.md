@@ -54,8 +54,8 @@ scripts/check_sector.py          four gates (landed; 49/49 green)
 
 ## 6. Current status (the blunt list)
 
-- **v0.1.0, design values**: no end-to-end run yet — coverage, timings, and dimension quality are design values until measured;
-- **review closed, shipped**: M48 adversarial LGTM and the M49 smoke rework are closed; 0.1.1 is public with the repo. A full end-to-end delivery run has not landed (smoke ≠ delivery) — until it does, treat coverage as design values;
+- **Building-materials half-course run landed (M53, 2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to anchor-what-you-can (seven sourced L3 rows, dual-source conflicts kept un-arbitrated in review) — but continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
+- **review closed, shipped**: M48 adversarial LGTM and the M49 smoke rework are closed; 0.1.1 is public with the repo. a full end-to-end delivery run has not landed (half-course and smoke both ≠ full delivery) — until it does, treat coverage as design values; domain expansion awaits engineering (P-9 half-mitigated, P-14 open);
 - **Not submitted to any skill market** (P2 frozen repo-wide; timing is the Owner's call);
 - no charts (tables carry as-of dates); no market-data flow, no expectation means; companies appear only as anchored aggregates, never as commentary.
 
