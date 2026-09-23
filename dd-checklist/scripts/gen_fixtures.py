@@ -10,7 +10,8 @@
 
     python3 scripts/gen_fixtures.py --badspec <题单.md 路径>
 
-脚本会按题单 §4 覆盖矩阵做**题号↔样号双向断言**（缺题或多样即报错不出货），并保证跑一次字节级复现当前成品（幂等）。
+脚本会按题单 §4 覆盖矩阵做**题号↔样号双向断言**（缺题或多样即报错不出货），并对控制样做**题单点名→盘上在场**的单向断言
+（题单以行内代码点名的每一枚控制都必须在盘上，缺席即报错不出货；盘上历史控制可多于点名，计数如实分开报出），并保证跑一次字节级复现当前成品（幂等）。
 """
 import argparse
 import hashlib
@@ -22,12 +23,21 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent / "fixtures"
 MATRIX_ROW = re.compile(r"^\|\s*(DD-[BX]\d{1,2}[a-c]?)\s*\|")
+CTL_ID = re.compile(r"`(ctl-[a-z][a-z0-9-]*)`")
 
 
 def matrix_ids(badspec: pathlib.Path) -> set:
     """从题单 §4 覆盖矩阵反读题号集合（双向断言用）。"""
     return {m.group(1) for ln in badspec.read_text(encoding="utf-8").splitlines()
             if (m := MATRIX_ROW.match(ln))}
+
+
+def matrix_ctl_names(badspec: pathlib.Path) -> set:
+    """从题单反读**带反引号**的控制样号（控制缺席不背书用）。
+
+    题单只在「控制」题面里以行内代码写出样号，散文提法（如裸 `ctl-` 前缀）不算一名。
+    """
+    return {m.group(1) for ln in badspec.read_text(encoding="utf-8").splitlines() for m in CTL_ID.finditer(ln)}
 SUBJECT = "北辰股份有限公司（600001.SH）"
 SUBJ_FULL, SUBJ_CODE = "北辰股份有限公司", "600001.SH"
 ASOF = "2026-09-21"
@@ -40,6 +50,10 @@ DECL = "> 本页为 AI 初稿，依据公开披露与法定原文整理，不构
 
 HDR = "| 日期 | 类目 | 事实(≤40字,只写披露所载) | 影响档位 | 状态 | 窗外余档 | 来源锚 |"
 SEP = "|---|---|---|---|---|---|---|"
+# 五列覆盖账的固定文法（§v2-15②/§v2-16①）：与上面七列风险表是两张表，不得互相顶名
+LEDGER_HDR = "| 类目 | 所需域/工具 | 本次实际调用 | 结果 | 注记 |"
+LEDGER_SEP = "|---|---|---|---|---|"
+LEDGER_ROW_EQ = "| 股权与控制权 | entity_data | entity_data | 检到 0 | 无新增带锚事项 |"
 D = "2026-05-10"
 
 
@@ -155,7 +169,7 @@ def zero_snapshots(queried=(), asof=ASOF, start=START):
 
 
 def cov(rows=COV_ROWS):
-    lines = ["| 类目 | 所需域/工具 | 本次实际调用 | 结果 | 注记 |", "|---|---|---|---|---|"]
+    lines = [LEDGER_HDR, LEDGER_SEP]
     lines += [f"| {a} | {b} | {c} | {d} | {e} |" for a, b, c, d, e in rows]
     return "\n".join(lines) + "\n"
 
@@ -696,6 +710,62 @@ build("bad-X31-duplicate-domain-line", report(title_start=X19_START, lookback="2
 build("bad-X32-asof-not-a-calendar-day", report(title_start=X19_START, lookback="24m"),
       [src(asof="2026-02-30")], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-EVIDENCE",))
 
+# ---- M102（§v2-16；题单 M101 节十二枚控制）：X27/X28/X29 三格按审方闭包补全 ----
+def sub_once(text, old, new, tag):
+    assert text.count(old) >= 1, f"控制样改造锚点丢失：{tag}"
+    return text.replace(old, new, 1)
+
+GOOD_REP24 = report(title_start=X19_START, lookback="24m")
+LEDGER24 = cov()
+
+# ①X27 五列账固定文法（五枚，均只动账表一处，预期单码 DD-COVERAGE）
+build("ctl-ledger-header-order", GOOD_REP24, [src()], BASE_EVID,
+      sub_once(LEDGER24, LEDGER_HDR, "| 类目 | 本次实际调用 | 所需域/工具 | 结果 | 注记 |", "header-order"),
+      X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+build("ctl-ledger-header-width", GOOD_REP24, [src()], BASE_EVID,
+      sub_once(LEDGER24, LEDGER_HDR, LEDGER_HDR + " 额外列 |", "header-width"),
+      X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+build("ctl-ledger-separator-width", GOOD_REP24, [src()], BASE_EVID,
+      sub_once(LEDGER24, LEDGER_SEP, "|---|---|", "separator-width"),
+      X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+build("ctl-ledger-row-width", GOOD_REP24, [src()], BASE_EVID,
+      sub_once(LEDGER24, LEDGER_ROW_EQ, LEDGER_ROW_EQ + " 隐形备注 |", "row-width"),
+      X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+build("ctl-ledger-second-header", GOOD_REP24, [src()], BASE_EVID,
+      sub_once(LEDGER24, LEDGER_HDR, LEDGER_HDR + "\n" + LEDGER_SEP + "\n" + LEDGER_HDR, "second-header"),
+      X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+
+# ②X28 域相等（账内域 ≠ 该类流水域，两者都属合法枚举；足行同步改，避免借 §v2-2③ 代打）
+LEDGER_DOMAIN_SWAP = sub_once(LEDGER24, "| 合规与处罚 | regulatory_cn | regulatory_cn |",
+                              "| 合规与处罚 | regulatory_cn | entity_data |", "ledger-domain")
+build("ctl-flow-ledger-domain-mismatch",
+      sub_once(GOOD_REP24, "本节检索域: regulatory_cn 1 域", "本节检索域: entity_data 1 域", "footer-domain"),
+      [src()], BASE_EVID, LEDGER_DOMAIN_SWAP, X19_CMD, 1, ("DD-OMISSION",), flow_from=LEDGER24)
+
+# ③X29 围栏词法与掩码作用面（六枚；两枚是"现 1→应 0"的反向形状）
+build("ctl-fence-longer-close-good",
+      report(title_start=X19_START, lookback="24m", no_age=True)
+      + "\n```md\n## 覆盖率与未检到\n（示例块：四反引号收尾才是合法闭栏）\n````\n"
+      + X24_HEAD + X23_AGE + "\n",
+      [src()], BASE_EVID, LEDGER24, X19_CMD, 0, ())
+build("ctl-fence-four-space-not-open",
+      report(title_start=X19_START, lookback="24m", no_age=True)
+      + X24_HEAD + X23_AGE + "\n    ```md\n" + X23_AGE + "\n",
+      [src()], BASE_EVID, LEDGER24, X19_CMD, 1, ("DD-COVERAGE",))
+build("ctl-ledger-entirely-fenced", GOOD_REP24, [src()], BASE_EVID,
+      "```md\n" + LEDGER24 + "```\n", X19_CMD, 1, ("DD-COVERAGE",), flow_from=LEDGER24)
+build("ctl-fence-domain-footer-example-good",
+      GOOD_REP24 + "\n```md\n本节检索域: bogus 1 域 / 无工具项: 0\n```\n",
+      [src()], BASE_EVID, LEDGER24, X19_CMD, 0, ())
+build("ctl-fence-authority-only",
+      sub_once(report(title_start=X19_START, lookback="24m", no_decl=True),
+               f"# {SUBJECT}公开信息预尽调清单 · 窗口 {X19_START}~{ASOF}",
+               f"# {SUBJECT}公开信息预尽调清单 · 窗口 {X19_START}~{ASOF}\n\n```md\n{DECL}\n```",
+               "authority-in-fence"),
+      [src()], BASE_EVID, LEDGER24, X19_CMD, 1, ("DD-INPUT",))
+build("ctl-fence-redline-still-scanned", GOOD_REP24 + "\n~~~\n可投\n~~~\n",
+      [src()], BASE_EVID, LEDGER24, X19_CMD, 1, ("DD-REDLINE",))
+
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,
       cov([r if r[0] != "合规与处罚" else ("合规与处罚", "regulatory_cn", "regulatory_cn", "检到 1", ANCHOR) for r in COV_ROWS]),
@@ -709,11 +779,12 @@ if not _badspec.is_file():
     print(f"题单不可读：{_badspec}——本脚本不做默认路径，也不产出题单", file=sys.stderr)
     sys.exit(2)
 
+build("ctl-declaration-missing", report(no_decl=True), [src()], BASE_EVID, cov(), cmd(), 1, ("DD-INPUT",))
+
 names = sorted(x.name for x in ROOT.iterdir() if x.is_dir())
 bad = [n for n in names if n.startswith("bad-")]
 good = [n for n in names if n.startswith("good-")]
 ctl = [n for n in names if n.startswith("ctl-")]
-build("ctl-declaration-missing", report(no_decl=True), [src()], BASE_EVID, cov(), cmd(), 1, ("DD-INPUT",))
 
 print(f"fixtures 重铺完成：{len(bad)} bad + {len(good)} good + {len(ctl)} ctl = {len(names)} 目录")
 want = matrix_ids(_badspec)
@@ -721,5 +792,14 @@ have = {"DD-" + re.match(r"^bad-([BX]\d{1,2}[a-c]?)-", n).group(1) for n in bad}
 if want != have:
     print(f"题号↔样号双向断言失败：缺题 {sorted(want - have)}；多样 {sorted(have - want)}", file=sys.stderr)
     sys.exit(2)
-print(f"题单 {len(want)} 题 ↔ 样 {len(have)} 个，双向断言通过。")
+print(f"题单 {len(want)} 题 ↔ 主集样 {len(have)} 个（bad 族），双向断言通过。")
+
+# 控制样：题单只以行内代码点名它出过题的控制；盘上另有历史控制不写进题单（不做缺席背书也不做全覆盖宣称）。
+cw = matrix_ctl_names(_badspec)
+ch = set(ctl)
+if cw - ch:
+    print(f"题单控制名↔盘上控制样断言失败：题单点名而盘上缺席 {sorted(cw - ch)}", file=sys.stderr)
+    sys.exit(2)
+print(f"控制样：题单点名 {len(cw)} 枚全数在盘；盘上控制共 {len(ch)} 枚"
+      f"（其中 {len(ch - cw)} 枚为历史控制、题单未点名，只随 runner 复跑）。")
 print("提醒：判卷与复现以 run_fixtures.sh 为准；本脚本幂等，跑完应无差异（见文件头派生纪律）。")

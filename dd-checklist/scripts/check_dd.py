@@ -37,6 +37,8 @@ CATEGORIES = (
     "其他已披露重大事项",
 )
 IMPACTS = ("重大", "关注", "背景")
+# §v2-16①：覆盖率账的固定文法——恰五列、顺序精确；集合包含不证明顺序，也不证明宽度
+LEDGER_HEADER = ("类目", "所需域/工具", "本次实际调用", "结果", "注记")
 PURPOSES = ("investment", "credit", "mna")
 KINDS = (
     "entity_data",
@@ -253,23 +255,32 @@ def read_text(path: Path) -> str | None:
 
 
 def fence_mask(lines: list[str]) -> list[bool]:
-    """§v2-15④：标记每行是否落在 ``` / ~~~ 围栏内。围栏内的 ## 是示例文本、申报是示例、管道行不是账。
-    只处理代码围栏这一类可词法判定的结构，不做任意 Markdown 语义解释器；红线扫描不使用本掩码（全篇照扫）。"""
+    """§v2-15④ / §v2-16：按 CommonMark 词法标记"落在代码围栏内"的行。
+    开栏：至多 3 个前导空格 + 连续 ≥3 个 ` 或 ~；四空格缩进的 ``` 是缩进代码行，不开栏。
+    闭栏：至多 3 个前导空格 + 同种字符、长度 ≥ 开栏、行内无其它内容。
+    围栏内 ## 是示例文本、申报是示例、管道行不是账；红线扫描不用本掩码（全篇照扫）。"""
     mask: list[bool] = []
-    fence: re.Pattern | None = None
+    open_char = ""
+    open_len = 0
     for ln in lines:
+        lead = len(ln) - len(ln.lstrip(" "))
         stripped = ln.strip()
-        if fence is None:
+        if not open_char:
             m = FENCE_OPEN.match(stripped)
-            if m:
-                fence = re.compile(r"^ {0,3}" + re.escape(m.group(1)) + r"\s*$")
-                mask.append(True)  # 围栏起始行本身不是交付正文
-                continue
+            if m and lead <= 3:
+                run = m.group(1)
+                info = stripped[len(run):].strip()
+                if run[0] != "`" or "`" not in info:   # 反引号围栏的信息串不得再含反引号
+                    open_char, open_len = run[0], len(run)
+                    mask.append(True)
+                    continue
             mask.append(False)
-        else:
+            continue
+        if lead <= 3 and stripped and set(stripped) == {open_char} and len(stripped) >= open_len:
             mask.append(True)
-            if fence.match(stripped):
-                fence = None
+            open_char, open_len = "", 0
+            continue
+        mask.append(True)
     return mask
 
 
@@ -356,12 +367,15 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
     if ti is None:
         finds.add("DD-INPUT", "交付物无 H1 标题行——声明行窗口无处可核（§1 铁律 1）")
     else:
-        win = lines[ti + 1:ti + 6]
-        body = lines[ti + 6:]
+        # §v2-16③：窗口与兜底都只认「可交付正文行」——围栏内的示例声明不满足在场，也不满足位置
+        after = [i for i in range(ti + 1, len(lines)) if not fence[i]]
+        win = [lines[i] for i in after[:5]]
+        body = [lines[i] for i in after[5:]]
+        deliverable = [ln for i, ln in enumerate(lines) if not fence[i]]
         if not any(is_authoritative(l) for l in win):
             if any(is_authoritative(l) for l in body):
                 finds.add("DD-INPUT", "AI 初稿权威声明行不在标题后前 5 行内（§1 铁律 1；越界即不认）")
-            elif not any("AI 初稿" in _norm(l) for l in lines):
+            elif not any("AI 初稿" in _norm(l) for l in deliverable):
                 finds.add("DD-INPUT", "缺 AI 初稿声明行（§1 铁律 1；权威句式见 §3）")
             else:
                 finds.add("DD-INPUT", "标题后前 5 行内的声明不是权威句式单行——须同一行完整承载「本页为 AI 初稿 / 依据公开披露与法定原文整理 / 不构成投资建议 / 不构成法律意见 / 判断位 [待人工]」，跨行拼凑与笼统免责不认")
@@ -850,9 +864,16 @@ def check_omission(ledger_rows, ev, finds: Findings) -> None:
         if dom and snap and not re.sub(r"\.json$", "", snap).startswith(dom + "-"):
             finds.add("DD-OMISSION", f"流水第 {i} 行 domain={dom} 与快照 {snap} 的域前缀不互证——调用与被称的原始件对不上（§v2-15③）")
     flow_cats = {str(c.get("category") or "") for c in calls}
+    flow_domains: dict[str, set[str]] = {}
+    for c in calls:
+        flow_domains.setdefault(str(c.get("category") or ""), set()).add(str(c.get("domain") or ""))
     for cat, v in ledger_rows.items():
         if cat in flow_cats and v["called"] not in KINDS:
             finds.add("DD-OMISSION", f"「{cat}」流水内有该类原始调用，账却写「本次实际调用={v['called']}、结果={v['result']}」——真实调用不能事后抹成无工具/未发起（§v2-15③）")
+            continue
+        # §v2-16②：三角最后一条边——账内域须**等于**该类流水的 domain 集；"属合法枚举"不等于"就是它调的那个域"
+        if v["called"] in KINDS and cat in flow_domains and {v["called"]} != flow_domains[cat]:
+            finds.add("DD-OMISSION", f"「{cat}」账记本次实际调用={v['called']}，而该类流水的 domain 集是 {('、'.join(sorted(flow_domains[cat])))}——域与域必须相等，合法域之间的错配也是断链（§v2-16②，只判结构相等，不判来源真假）")
     for cat, v in ledger_rows.items():
         res = v["result"]
         m = re.fullmatch(r"检到\s*(\d+)", res)
@@ -1010,35 +1031,64 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
     if text is None:
         finds.add("DD-COVERAGE", f"覆盖率对账表缺失或不可读：{cov_path}（§5 随 run 交，机器可核）")
         return
-    wanted = {"类目", "所需域/工具", "本次实际调用", "结果", "注记"}
+    ledger_lines = text.splitlines()
+    ledger_mask = fence_mask(ledger_lines)  # §v2-16③：独立账文件同用一把尺——整表被围栏包住＝没有真账
     rows: dict[str, dict] = {}
     dupes: list[str] = []
     header_seen = sep_seen = False   # §v2-15②：先认表（五列表头+分隔行），再认九类
+    header_hits: list[int] = []
+    near_headers: list[str] = []
+    bad_sep: list[str] = []
+    bad_rows: list[str] = []
     stray: list[str] = []
-    for ln in text.splitlines():
+    for n, ln in enumerate(ledger_lines, start=1):
+        if ledger_mask[n - 1]:
+            continue        # §v2-16③：围栏内的账表行是示例文本，独立账文件同此口径
         if not ln.strip().startswith("|"):
             continue
         cells = [norm_cell(c) for c in split_pipe(ln)]
-        if set(cells) >= wanted and "结果" in cells:
+        looks_like_header = "类目" in cells and "结果" in cells
+        if looks_like_header and len(cells) >= 5 and cells[0] == "类目":
+            header_hits.append(n)
+            if cells != list(LEDGER_HEADER):
+                near_headers.append(f"第 {n} 行列数 {len(cells)}、列名 {cells}")
+                continue
             header_seen, sep_seen = True, False
+            continue
+        if looks_like_header and cells != list(LEDGER_HEADER):
+            near_headers.append(f"第 {n} 行（列序或列名不符，实为 {cells}）")
             continue
         if is_sep_row(cells):
             if header_seen:
-                sep_seen = True
+                if len(cells) != len(LEDGER_HEADER):
+                    bad_sep.append(f"第 {n} 行 {len(cells)} 列")
+                else:
+                    sep_seen = True
             continue
         if len(cells) < 5:
             continue
         if not (header_seen and sep_seen):
             stray.append(cells[0])   # §v2-15②：没先认表就把管道行当账——不猜
             continue
+        if len(cells) != len(LEDGER_HEADER):
+            bad_rows.append(f"「{cells[0]}」行 {len(cells)} 列")   # §v2-16①：不静默截断第六格
+            cells = cells[:len(LEDGER_HEADER)]
         if cells[0] in rows:
             dupes.append(cells[0])
             continue
         rows[cells[0]] = {"need": cells[1], "called": cells[2], "result": cells[3], "note": cells[4]}
-    if not header_seen:
+    if len(header_hits) > 1:
+        finds.add("DD-COVERAGE", f"覆盖率账出现 {len(header_hits)} 张表头（第 {'、'.join(str(h) for h in header_hits)} 行）——一交付须恰一张完整五列账表，第二表头不得重置识别状态（§v2-16①）")
+    for msg in near_headers:
+        finds.add("DD-COVERAGE", f"覆盖率账表头不合法：{msg}——须恰为五列且顺序精确「{' | '.join(LEDGER_HEADER)}」，集合包含不证明顺序与宽度（§v2-16①）")
+    for msg in bad_sep:
+        finds.add("DD-COVERAGE", f"分隔行与表头列数不等：{msg}（表头 {len(LEDGER_HEADER)} 列）——每个 cell 像分隔符不等于同列数（§v2-16①）")
+    for msg in bad_rows:
+        finds.add("DD-COVERAGE", f"数据行列数不等于表头：{msg}——多出的列不得被静默忽略（§v2-16①）")
+    if not header_hits and not near_headers:
         finds.add("DD-COVERAGE", "覆盖率账不是合法的一张表：缺固定五列表头行（类目/所需域·工具/本次实际调用/结果/注记）——先认表再认类（§v2-15②）")
-    elif not sep_seen:
-        finds.add("DD-COVERAGE", "覆盖率账缺分隔行：五列表头后必须有分隔行，否则数据行不具表身份（§v2-15②）")
+    elif header_seen and not sep_seen and not bad_sep:
+        finds.add("DD-COVERAGE", "覆盖率账缺分隔行：五列表头后必须有同列数的分隔行，否则数据行不具表身份（§v2-15②）")
     if stray:
         finds.add("DD-COVERAGE", f"表身份未成立却有 {len(stray)} 行账数据行（{'、'.join(stray[:3])}）——散落管道行不猜成合法账（§v2-15②）")
     for cat in sorted(c for c in rows if c not in CATEGORIES):
@@ -1094,10 +1144,12 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
                 finds.add("DD-COVERAGE", f"「{cat}」对账表记「检到 {m.group(1)}」而正文实有 {n_body} 行——两侧逐类必比（§v2-10 反向计数）")
             if v["result"] in ("无工具", "零条") and n_body:
                 finds.add("DD-COVERAGE", f"「{cat}」对账表记 {v['result']} 但正文有 {n_body} 行——无工具/零条项禁入正文断言")
-    found = list(SECTION_DOMAIN_LINE.finditer(ctx["text"]))
-    # §v2-15⑥：足行按"表所在节"核唯一——每节恰一行，同节堆两行互相竞争、或拿他节那一行抵本节，都 FAIL
     fence_c = ctx.get("fence") or fence_mask(ctx["lines"])
-    dom_lines = [i for i, ln in enumerate(ctx["lines"]) if not fence_c[i] and SECTION_DOMAIN_LINE.search(ln)]
+    body_rows = [i for i, inside in enumerate(fence_c) if not inside]
+    # §v2-16③：足行只在可交付正文里认——围栏内的示例足行既不抵真足行，也不该被拿去做未知域诊断
+    found = [m for m in (SECTION_DOMAIN_LINE.search(ctx["lines"][i]) for i in body_rows) if m]
+    dom_lines = [i for i in body_rows if SECTION_DOMAIN_LINE.search(ctx["lines"][i])]
+    # §v2-15⑥：足行按"表所在节"核唯一——每节恰一行，同节堆两行互相竞争、或拿他节那一行抵本节，都 FAIL
     for t in tables:
         lo, hi = section_range(ctx["lines"], max(0, t["start"] - 1))
         n = sum(1 for i in dom_lines if lo <= i < hi)
