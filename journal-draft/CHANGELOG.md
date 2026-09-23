@@ -14,6 +14,10 @@
 
 ## [Unreleased]
 
+### Fixed（外部版本硬嵌清面：一处 bridge 活版本号改回过去时，版本位不动）
+
+- `references/omni-channel.md` 在「本机 Bridge（…）实测只被下发 text 档」那句的括注里嵌了 Bridge 的产品版本号——那条本身是**当时**的实测记录，但把外部活版本号写进了公开文件：上游一升版，这行就从事实变成噪声。现改为「本机 Bridge（当时现值）实测」，过去时事实原样保留、外部版本号去嵌（五个字符位的替换，句子其余一字未动）。全仓按「bridge / npx / @cueai 邻近 semver」复扫＝0 命中；仓内其余提及外部件的行（34 处）都不带版本号，无需改。自家包的版本历史陈述与 CHANGELOG 版本节属稳定事实，不在清理面。
+
 ### Fixed（搭子模板草案补齐上游新规则的一处形制，版本位不动）
 
 - `assets/templates/buddy.region-policy-scan.json` 的 `input_form_spec` 里，需提供段变量 `[目标_政策_区域]` 原缺 `(示例: …)` 括注——上游 `cue-buddy` 校验器新增该规则后，本包那份模板草案实测 **1 error**，于是 `SKILL.md` 表内「已过 `+validate`：0 error / 0 warning」这句**在盘上不为真**。现按形制补为 `[目标_政策_区域](示例: 欧盟)`（示例值不含「默认/缺省/需提供/可提供」四个后端误提触发词），`examples/journal-hengshi-observation/` 与 `examples/journal-qiming-regional/` 两份同名副本同步改，三份改后逐字节相同。

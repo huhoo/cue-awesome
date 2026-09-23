@@ -40,7 +40,7 @@
 | `omni.direct_text_billing.v1` | `text` | 仅 Markdown（保标题/列表/表格） |
 | `omni.direct_grounding_billing.v1` | `grounded`, `layout` | `omni.result_bundle.v1` + `omni.grounding.v1`，带 grounding/layout sidecar |
 
-本机 Bridge（v1.8.0）实测**只被下发 text 档**，所以 `detail="layout"` 会返回：
+本机 Bridge（当时现值）实测**只被下发 text 档**，所以 `detail="layout"` 会返回：
 
 ```
 DETAIL_CAPABILITIES_UNAVAILABLE  retryable=false  billed=false
