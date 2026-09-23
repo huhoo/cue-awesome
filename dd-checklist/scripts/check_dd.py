@@ -120,11 +120,25 @@ AGE_DECL_LINE = re.compile(
     r"^\s*(?:[-*>]\s*)?类目账龄申报\s*[:：]\s*requested=(\d{4}-\d{2}-\d{2})\s*[~～]\s*(\d{4}-\d{2}-\d{2})"
     r"\s*\|\s*disclosure_cn=(\d{1,4})d\s*\|\s*beyond=(.+?)\s*$"
 )
-COVERAGE_HEADING = re.compile(r"^ {0,3}#{1,4}\s.*(?:覆盖率|未检到)")
-# §v2-12（M94 复审 blocker）：ATX 标题允许 0–3 个前导空格（CommonMark 合法），
-# 只认 line.startswith("#") 会让缩进标题隐身，节定位失败后若回退全文就等于把别节当本节。
+# §v2-14（M98 复审）：一把识别器判级别——H1=文档标题、H2–H4=节、H5/H6=节内附注。
+# 覆盖率节因此只在 H2–H4 层级认（H1 标题里带「未检到」不算节、不参与计数）。
+COVERAGE_HEADING = re.compile(r"^ {0,3}#{2,4}(?:\s|$).*(?:覆盖率|未检到)")
+# ATX 标题允许 0–3 个前导空格（CommonMark 合法）；只认 startswith("#") 会让缩进标题隐身，
+# 节定位失败后若回退全文，就等于把别节当本节（§v2-12）。
 ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
+HEADING_LEVEL = re.compile(r"^ {0,3}(#{1,6})(?:\s|$)")
 SECTION_HEADING = re.compile(r"^ {0,3}#{2,4}(?:\s|$)")
+
+
+def heading_level(line: str) -> int:
+    """0=不是标题；1=文档标题；2-4=节；5-6=节内附注（不结束节、不另起节）。"""
+    m = HEADING_LEVEL.match(line)
+    return len(m.group(1)) if m else 0
+
+
+def ends_section(line: str) -> bool:
+    """节到哪结束：只有 H2–H4 才结束当前节；H5/H6 属节内附注，H1 是文档标题。"""
+    return bool(SECTION_HEADING.match(line))
 
 
 def is_heading(line: str) -> bool:
@@ -280,7 +294,7 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
         finds.add("DD-INPUT", f"--subject 无法解析（合法形制二选一：「全称（6位代码.SH|.SZ|.BJ）」或纯「6位代码.SH|.SZ|.BJ」）：{ns.subject!r}")
 
     # 铁律 1 机器面（M71，M73 按 DD-X15 收严）：权威句式须由**标题后前 5 行内的同一行**完整承载，跨行拼凑不算
-    ti = next((i for i, ln in enumerate(lines) if ln.startswith("# ")), None)
+    ti = next((i for i, ln in enumerate(lines) if heading_level(ln) == 1), None)  # §v2-14：H1 用同一把识别器认（含 0–3 前导空格）
     if ti is None:
         finds.add("DD-INPUT", "交付物无 H1 标题行——声明行窗口无处可核（§1 铁律 1）")
     else:
@@ -325,7 +339,7 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
             finds.add("DD-INPUT", f"正文 `- {key}: {got}` 与命令行 --{key} {want} 不一致")
 
     # 一单一主体（§1）：不采信命令行，须从正文标题面识别
-    heads = [ln for ln in lines if re.match(r"^#{1,3} ", ln)]
+    heads = [ln for ln in lines if 1 <= heading_level(ln) <= 4]  # §v2-14：H1–H4 参与主体计数，H5/H6 是节内附注不追加主体
     subjects: list[str] = []
     for ln in heads:
         for tok in SUBJECT_TOKEN.finditer(ln):
@@ -367,8 +381,11 @@ def parse_tables(lines: list[str], finds: Findings) -> list[dict]:
             i += 1
         head_subject = None
         for prev in reversed(lines[:block_start]):
-            if ATX_HEADING.match(prev):
-                # §v2-12：缩进 1–3 空格的标题也是合法标题，漏认会一路回溯到上层标题、取错节主体
+            lvl = heading_level(prev)
+            if lvl >= 5:
+                continue  # §v2-14：H5/H6 是节内附注，不改变归属，继续向上找真正的节标题
+            if lvl >= 1:
+                # 缩进 1–3 空格的标题同样是合法标题，漏认会一路回溯到上层标题、取错节主体
                 tok = SUBJECT_TOKEN.search(prev)
                 head_subject = f"{tok.group(1)}（{tok.group(2)}）" if tok else None
                 break
@@ -819,7 +836,8 @@ def coverage_section_lines(lines: list[str]) -> tuple[list[str], str]:
     out: list[str] = []
     seen = False
     for ln in lines:
-        if ATX_HEADING.match(ln):
+        if ends_section(ln):
+            # §v2-14：只有 H2–H4 结束本节；H5/H6 是节内附注，其后的申报仍属本节
             if seen:
                 break
             seen = bool(COVERAGE_HEADING.match(ln))

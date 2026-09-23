@@ -58,20 +58,20 @@ def age_decl(start, end, cap="365d", beyond="未按类目互校"):
 def report(rows=(BASE_ROW,), title_start=START, title_end=ASOF, title_subject=SUBJECT, extra="",
            domain_line="regulatory_cn 1 域 / 无工具项: 0", asof=ASOF, subject_line=SUBJECT, cond_line=None,
            no_decl=False, decl_late=False, decl_split=None, lookback="36m",
-           age_start=None, age_beyond="未按类目互校", age_cap="365d", no_age=False, age_extra=None):
+           age_start=None, age_beyond="未按类目互校", age_cap="365d", no_age=False, age_extra=None, title_mid=""):
     if domain_line and not domain_line.startswith("本节检索域"):
         domain_line = "本节检索域: " + domain_line
     age = [] if no_age else ["", age_decl(age_start or title_start, title_end, cap=age_cap, beyond=age_beyond)]
     if age_extra:
         age.append(age_extra)
     if decl_split:
-        head = [f"# {title_subject}公开信息预尽调清单 · 窗口 {title_start}~{title_end}", ""] + decl_split
+        head = [f"# {title_subject}公开信息预尽调清单{title_mid} · 窗口 {title_start}~{title_end}", ""] + decl_split
         if not no_decl:
             head += ["", DECL]
         head += ["", f"- subject: {subject_line}", f"- asof: {asof}", f"- lookback: {lookback}", "- purpose: investment", "", HDR, SEP]
         return "\n".join(head + [*(rows or [BASE_ROW]), "", domain_line, *age]) + "\n"
     lines = [
-        f"# {title_subject}公开信息预尽调清单 · 窗口 {title_start}~{title_end}",
+        f"# {title_subject}公开信息预尽调清单{title_mid} · 窗口 {title_start}~{title_end}",
         "",
         *([] if (no_decl or decl_late) else [DECL, ""]),
         f"- subject: {subject_line}",
@@ -613,6 +613,21 @@ build("ctl-age-sectioned-declared",
       report(title_start=X19_START, lookback="24m", no_age=True) + f"\n## 覆盖率与未检到\n{X23_AGE}\n",
       [src()], BASE_EVID, cov(), X19_CMD, 0, ())
 build("ctl-age-cap-overclaim", report(title_start=X19_START, lookback="24m", age_cap="730d"),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+
+# ---- M99（§v2-14；题单 X24/X25）：一把识别器判级别——H1 永不作覆盖率节，H5/H6 不结束当前节 ----
+X24_HEAD = "\n## 覆盖率与未检到\n"
+build("bad-X24-h5-insection-duplicate",
+      report(title_start=X19_START, lookback="24m", no_age=True)
+      + f"{X24_HEAD}{X23_AGE}\n##### 补充说明\n{X23_AGE}\n",
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+build("good-X24-sectioned-h5-before-declaration",
+      report(title_start=X19_START, lookback="24m", no_age=True)
+      + X24_HEAD + "##### 补充说明\n本节按类目逐条留账，说明不改变节的归属与范围。\n" + X23_AGE + "\n",
+      [src()], BASE_EVID, cov(), X19_CMD, 0, ())
+build("bad-X25-h1-title-masquerade",
+      report(title_start=X19_START, lookback="24m", title_mid="（未检到项说明见后）")
+      + "\n## 其他说明\n本件不设覆盖率说明节（申报行仍在标题后的紧凑正文里）。\n",
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 
 # 反向计数控制样：账写「检到 1」而正文零行
