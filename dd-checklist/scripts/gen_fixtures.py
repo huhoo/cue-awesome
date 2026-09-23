@@ -206,8 +206,17 @@ def cmd(asof=ASOF, lookback="36m", purpose="investment", subject=SUBJECT, drop=(
     return " ".join(parts) + "\n"
 
 
+def cell_tokens(called):
+    """§v2-16② 生成器侧镜像：把「本次实际调用」格解析成域记号序列（单记号或顿号连记号）。
+
+    与门内 `parse_called()` 同形制；非集合拼接（逗号/空格/斜杠）留在原串里，由门判非法域。
+    """
+    toks = [t.strip() for t in called.split("、")] if "、" in called else [called.strip()]
+    return [t for i, t in enumerate(toks) if t in KINDS and t not in toks[:i]]
+
+
 def queried_ledger_rows(coverage):
-    """账表里「本次实际调用」是合法域的行（即声称查过）——这些行都要有流水。"""
+    """账表里「本次实际调用」是合法域的行（即声称查过）——这些行都要有流水；多域格逐域各一行。"""
     out = []
     for ln in coverage.splitlines():
         if not ln.strip().startswith("|"):
@@ -215,13 +224,13 @@ def queried_ledger_rows(coverage):
         cells = [c.strip() for c in ln.strip().strip("|").split("|")]
         if len(cells) < 5 or cells[0] == "类目" or set(cells[3]) <= {"-"}:
             continue
-        if cells[2] in KINDS and re.fullmatch(r"检到\s*\d+|零条", cells[3]):
-            out.append((cells[0], cells[2]))
+        if re.fullmatch(r"检到\s*\d+|零条", cells[3]):
+            out += [(cells[0], dom) for dom in cell_tokens(cells[2])]
     return out
 
 
 def ledger_zero_rows(coverage):
-    """读账表本身：凡 结果=检到 0/零条 且「本次实际调用」是合法域 的行，都要有对应零结果快照。"""
+    """读账表本身：凡 结果=检到 0/零条 且「本次实际调用」是合法域 的行，都要有对应零结果快照（多域格逐域各一份）。"""
     out = []
     for ln in coverage.splitlines():
         if not ln.strip().startswith("|"):
@@ -229,13 +238,13 @@ def ledger_zero_rows(coverage):
         cells = [c.strip() for c in ln.strip().strip("|").split("|")]
         if len(cells) < 5 or cells[0] in ("类目", "") or set(cells[3]) <= {"-"}:
             continue
-        if cells[2] in KINDS and re.fullmatch(r"检到\s*0", cells[3]):
-            out.append((cells[0], cells[2]))
+        if re.fullmatch(r"检到\s*0", cells[3]):
+            out += [(cells[0], dom) for dom in cell_tokens(cells[2])]
     return out
 
 
 def build(case, rep, sources, evidence, coverage, command, expect, need, empty_evidence=False, progress=None, flow=None,
-          flow_from=None, flow_drop_field=None, flow_set_domain=None):
+          flow_from=None, flow_drop_field=None, flow_set_domain=None, flow_extra=()):
     # §v2-15③ 用：真实查过的账（flow_from）与被洗过的账（coverage）可以是两份——流水照真实那份生成，快照齐备
     truth = flow_from or coverage
     missing = [(cat, dom) for cat, dom in ledger_zero_rows(truth)
@@ -279,6 +288,13 @@ def build(case, rep, sources, evidence, coverage, command, expect, need, empty_e
                 "hits": hits, "snapshot": snap,
                 "snapshot_sha256": hashlib.sha256(evidence[snap].encode("utf-8")).hexdigest() if snap in evidence else "",
             })
+        for extra in flow_extra:      # §v2-16② 双域正路：账格合法但 truth 账只记单域时，多出的那次真实调用手动补在链尾
+            dom, cat = extra["domain"], extra["category"]
+            snap = extra.get("snapshot") or next((n for n, b in evidence.items()
+                                                  if n.startswith(dom + "-") and json.loads(b).get("category") == cat), "")
+            calls.append({"category": cat, "domain": dom, "query": extra.get("query", f"{SUBJECT} {cat} {START}~{ASOF}"),
+                          "hits": extra.get("hits", 0), "snapshot": snap,
+                          "snapshot_sha256": hashlib.sha256(evidence[snap].encode("utf-8")).hexdigest() if snap in evidence else ""})
         if calls:
             chained, prev = [], "0" * 64
             for i, c in enumerate(calls, start=1):
@@ -765,6 +781,21 @@ build("ctl-fence-authority-only",
       [src()], BASE_EVID, LEDGER24, X19_CMD, 1, ("DD-INPUT",))
 build("ctl-fence-redline-still-scanned", GOOD_REP24 + "\n~~~\n可投\n~~~\n",
       [src()], BASE_EVID, LEDGER24, X19_CMD, 1, ("DD-REDLINE",))
+
+# ---- M104-a（题单 :681/:682）：§v2-16② 多域集合的正反配对，唯一差别=账格写不写全两个域 ----
+X28_FOOT = "regulatory_cn、disclosure_cn 2 域 / 无工具项: 0"
+X28_REP = report(title_start=X19_START, lookback="24m", domain_line=X28_FOOT)
+X28_COV_TWO = cov(cov_set({"合规与处罚": ("检到 1", ANCHOR, "regulatory_cn", "regulatory_cn、disclosure_cn")}))
+X28_ZERO = json.dumps({"domain": "disclosure_cn", "category": "合规与处罚", "asof": ASOF,
+                       "window": f"{X19_START}~{ASOF}", "query": f"{SUBJECT} 合规与处罚 {X19_START}~{ASOF}",
+                       "records": [], "结果": "检到 0"}, ensure_ascii=False, indent=2) + "\n"
+X28_EVID = {**BASE_EVID, "disclosure_cn-Z-合规与处罚.json": X28_ZERO}
+X28_FLOW = ({"category": "合规与处罚", "domain": "disclosure_cn", "hits": 0,
+             "snapshot": "disclosure_cn-Z-合规与处罚.json"},)
+build("good-X28-two-domains-booked", X28_REP, [src()], X28_EVID, X28_COV_TWO, X19_CMD, 0, (),
+      flow_from=GOOD_COV, flow_extra=X28_FLOW)
+build("ctl-flow-two-domains-one-omitted", X28_REP, [src()], X28_EVID, GOOD_COV, X19_CMD, 1, ("DD-OMISSION",),
+      flow_from=GOOD_COV, flow_extra=X28_FLOW)
 
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,

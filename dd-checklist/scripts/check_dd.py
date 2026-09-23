@@ -56,6 +56,34 @@ KINDS = (
 )
 CONFIDENCES = ("L1", "L2", "L3")
 
+# §v2-16②（契约 spec 第 16 条②钉定）：「本次实际调用」格=单记号、或以中文顿号紧连的记号集
+LEDGER_SET_SEP = "、"
+
+
+def parse_called(cell: str) -> tuple[set, str]:
+    """把「本次实际调用」格解析成域记号集合。返回 (集合, 缺陷说明)，缺陷说明为空即形制合法。
+
+    只判形制与集合相等，不判来源真假（§7.8）。逗号/空格/斜杠拼接、或把两域写成一个新域名，
+    都不算连记号，按非法域计——合法的多域只有一种写法。
+    """
+    raw = (cell or "").strip()
+    if not raw:
+        return set(), "为空"
+    if LEDGER_SET_SEP in raw:
+        toks = raw.split(LEDGER_SET_SEP)
+        if any(t != t.strip() or not t for t in toks):
+            return set(), f"连记号内含空格或空项（须以中文顿号「{LEDGER_SET_SEP}」紧连、不空格）：{cell!r}"
+        if len(set(toks)) != len(toks):
+            return set(), f"连记号内有重复域：{cell!r}"
+        bad = [t for t in toks if t not in KINDS]
+        if bad:
+            return set(), f"含不在本件域枚举内的记号 {('、'.join(bad))}：{cell!r}"
+        return set(toks), ""
+    if raw in KINDS:
+        return {raw}, ""
+    return set(), f"不在本件域枚举内（多域只认中文顿号「{LEDGER_SET_SEP}」相连，逗号/空格/斜杠拼接按非法域计）：{cell!r}"
+
+
 HEADER_COLS = ("日期", "类目", "事实(≤40字,只写披露所载)", "影响档位", "状态", "窗外余档", "来源锚")
 
 FACT_MAX = 40
@@ -868,18 +896,21 @@ def check_omission(ledger_rows, ev, finds: Findings) -> None:
     for c in calls:
         flow_domains.setdefault(str(c.get("category") or ""), set()).add(str(c.get("domain") or ""))
     for cat, v in ledger_rows.items():
-        if cat in flow_cats and v["called"] not in KINDS:
+        domains, _defect = parse_called(v["called"])
+        if cat in flow_cats and not domains:
             finds.add("DD-OMISSION", f"「{cat}」流水内有该类原始调用，账却写「本次实际调用={v['called']}、结果={v['result']}」——真实调用不能事后抹成无工具/未发起（§v2-15③）")
             continue
-        # §v2-16②：三角最后一条边——账内域须**等于**该类流水的 domain 集；"属合法枚举"不等于"就是它调的那个域"
-        if v["called"] in KINDS and cat in flow_domains and {v["called"]} != flow_domains[cat]:
-            finds.add("DD-OMISSION", f"「{cat}」账记本次实际调用={v['called']}，而该类流水的 domain 集是 {('、'.join(sorted(flow_domains[cat])))}——域与域必须相等，合法域之间的错配也是断链（§v2-16②，只判结构相等，不判来源真假）")
+        # §v2-16②：三角最后一条边——账内域集合须**等于**该类流水的 domain 集；"属合法枚举"不等于"就是它调的那个域"
+        if domains and cat in flow_domains and domains != flow_domains[cat]:
+            finds.add("DD-OMISSION", f"「{cat}」账记本次实际调用={('、'.join(sorted(domains)))}，而该类流水的 domain 集是 {('、'.join(sorted(flow_domains[cat])))}——域集合必须相等，合法域之间的错配与漏记都是断链（§v2-16②，只判结构相等，不判来源真假）")
     for cat, v in ledger_rows.items():
         res = v["result"]
         m = re.fullmatch(r"检到\s*(\d+)", res)
         if not m and res != "零条":
             continue                       # 「无工具」与非法写法各有别的门
-        if v["called"] not in KINDS:       # 未发起/无工具：进门归 §v2-2，不在这里重复发码
+        if v["called"] not in KINDS and not parse_called(v["called"])[0]:
+            # 未发起/无工具：进门归 §v2-2，不在这里重复发码。合法连记号集合同样放行——
+            # 否则「写两个域」反而绕过 §v2-10 的 M↔N 反证，多域登记就成了漏报的后门
             continue
         n = int(m.group(1)) if m else 0
         mine_calls = [c for c in calls if c.get("category") == cat]
@@ -1114,19 +1145,21 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
         if called in ("", "—", "-", "－"):
             finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但「本次实际调用」为空——未发起不得写成零条（§v2-2①，闭 B1 空门）")
             continue
-        if called not in KINDS:
-            finds.add("DD-COVERAGE", f"「{cat}」的本次实际调用 {called!r} 不在本件域枚举内（§v2-2①）")
+        domains, defect = parse_called(called)
+        if defect:
+            finds.add("DD-COVERAGE", f"「{cat}」的本次实际调用 {defect}（§v2-16②：只认单记号或以中文顿号紧连的不重复记号集，逐记号须∈域枚举）")
             continue
-        calls.add(called)
+        calls |= domains
         m0 = re.fullmatch(r"检到\s*(\d+)", v["result"])
         if (m0 and int(m0.group(1)) == 0) or v["result"] == "零条":
             # §v2-2②：零条目也须有对应域的原始快照；哈希类缺陷已由 DD-EVIDENCE 承担，不在此重复发码
             if not finds.has_code("DD-EVIDENCE"):
-                bound = {n: b for n, b in ev_texts.items() if re.sub(r"\.json$", "", n).split("-", 1)[0] == called}
-                if not bound:
-                    finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 evidence 内无 {called} 域的原始结果快照——零条目亦须可核（§v2-2②）")
-                elif not any(cat in b for b in bound.values()):
-                    finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 {called} 域快照内未标出该类目——调用与账目对不上（§v2-2②）")
+                for dom in sorted(domains):   # 多域登记=每域各须有自己的原始件，写两个域不能只交一份快照
+                    bound = {n: b for n, b in ev_texts.items() if re.sub(r"\.json$", "", n).split("-", 1)[0] == dom}
+                    if not bound:
+                        finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 evidence 内无 {dom} 域的原始结果快照——零条目亦须可核（§v2-2②）")
+                    elif not any(cat in b for b in bound.values()):
+                        finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 {dom} 域快照内未标出该类目——调用与账目对不上（§v2-2②）")
     # §v2-15③：长窗触发源不得仅采可被改成「无工具」的账表——流水里真实调过的域并入触发集（洗成无工具也照样要求申报）
     flow_domains = {str(c.get("domain") or "") for c in (ev or {}).get("calls", [])}
     check_age_declaration(ctx, calls | flow_domains, report, finds)
