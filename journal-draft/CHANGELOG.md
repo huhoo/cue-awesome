@@ -12,6 +12,14 @@
 
 ---
 
+## [Unreleased]
+
+### Fixed（搭子模板草案补齐上游新规则的一处形制，版本位不动）
+
+- `assets/templates/buddy.region-policy-scan.json` 的 `input_form_spec` 里，需提供段变量 `[目标_政策_区域]` 原缺 `(示例: …)` 括注——上游 `cue-buddy` 校验器新增该规则后，本包那份模板草案实测 **1 error**，于是 `SKILL.md` 表内「已过 `+validate`：0 error / 0 warning」这句**在盘上不为真**。现按形制补为 `[目标_政策_区域](示例: 欧盟)`（示例值不含「默认/缺省/需提供/可提供」四个后端误提触发词），`examples/journal-hengshi-observation/` 与 `examples/journal-qiming-regional/` 两份同名副本同步改，三份改后逐字节相同。
+- 改后复跑上游校验器：三份均 **errors: 0 / warnings: 0 →「校验完全通过。可 +create。」**，SKILL 那句自此重新为真（**现在时**，无需改成过去时）。**这条不是把旧断言描圆**：动的是模板本体，不是那句话。
+- 校验器与 Bridge 的产品版本号一律不写进本包任何公开文件（对外引用只到「上游 `cue-buddy` 校验器」这一层）；本轮实测时上游侧的版本值不入库。
+
 ## [0.15.3] — 2026-09-18
 
 把「法规动态」栏目的写法沉淀为可复用规范，避免每期重新发明格式。
