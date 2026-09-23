@@ -590,6 +590,14 @@ build("ctl-age-requested-mismatch", report(title_start=X19_START, lookback="24m"
 build("ctl-age-single-malformed", report(title_start=X19_START, lookback="24m", age_cap="730日"),
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 
+# ---- M95（§v2-12；题单 X22）：三空格 ATX 标题让节定位隐身、申报串到别节，禁止回退全文 ----
+X22_TAIL = ("\n## 其他说明\n"
+            + age_decl(X19_START, ASOF)
+            + "\n\n   ## 覆盖率与未检到\n本节无账龄申报行（合法申报在上一节里）。\n")
+build("bad-X22-section-lookup-bypass",
+      report(title_start=X19_START, lookback="24m", no_age=True) + X22_TAIL,
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,
       cov([r if r[0] != "合规与处罚" else ("合规与处罚", "regulatory_cn", "regulatory_cn", "检到 1", ANCHOR) for r in COV_ROWS]),

@@ -120,7 +120,15 @@ AGE_DECL_LINE = re.compile(
     r"^\s*(?:[-*>]\s*)?类目账龄申报\s*[:：]\s*requested=(\d{4}-\d{2}-\d{2})\s*[~～]\s*(\d{4}-\d{2}-\d{2})"
     r"\s*\|\s*disclosure_cn=(\d{1,4})d\s*\|\s*beyond=(.+?)\s*$"
 )
-COVERAGE_HEADING = re.compile(r"^#{1,4}\s.*(?:覆盖率|未检到)")
+COVERAGE_HEADING = re.compile(r"^ {0,3}#{1,4}\s.*(?:覆盖率|未检到)")
+# §v2-12（M94 复审 blocker）：ATX 标题允许 0–3 个前导空格（CommonMark 合法），
+# 只认 line.startswith("#") 会让缩进标题隐身，节定位失败后若回退全文就等于把别节当本节。
+ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
+SECTION_HEADING = re.compile(r"^ {0,3}#{2,4}(?:\s|$)")
+
+
+def is_heading(line: str) -> bool:
+    return bool(ATX_HEADING.match(line))
 # 「先收后判」用：凡带权威前缀的原始行都先收进来（伪行单位写成「日」、beyond 被改写也要收），再核数量与语法
 DECL_PREFIX_LOOSE = re.compile(r"^\s*(?:[-*>]\s*)?类目账龄申报\s*[:：]")
 
@@ -359,7 +367,8 @@ def parse_tables(lines: list[str], finds: Findings) -> list[dict]:
             i += 1
         head_subject = None
         for prev in reversed(lines[:block_start]):
-            if prev.startswith("#"):
+            if ATX_HEADING.match(prev):
+                # §v2-12：缩进 1–3 空格的标题也是合法标题，漏认会一路回溯到上层标题、取错节主体
                 tok = SUBJECT_TOKEN.search(prev)
                 head_subject = f"{tok.group(1)}（{tok.group(2)}）" if tok else None
                 break
@@ -793,19 +802,24 @@ def check_calls_ledger(ev, finds: Findings) -> None:
             finds.add("DD-OMISSION", f"流水第 {i} 行的快照哈希与 {snap} 现值不符——流水与证据被分开改过即不可信")
 
 
-def coverage_section_lines(lines: list[str]) -> list[str]:
-    """覆盖率说明节的正文行（到下一个标题为止）。"""
+def coverage_section_lines(lines: list[str]) -> tuple[list[str], str]:
+    """定位覆盖率说明节，返回 (节内正文行, 形态)。
+    形态三值：section=定位到该节 / compact=整篇无 H2-H4 的紧凑交付（可全文扫）/
+    missing=有分节但没有覆盖率节（§v2-12 禁止回退全文，调用方须直接判缺节）。"""
+    sectioned = any(ATX_HEADING.match(ln) and not re.match(r"^ {0,3}#\s", ln) for ln in lines)
     out: list[str] = []
     seen = False
     for ln in lines:
-        if ln.startswith("#"):
+        if ATX_HEADING.match(ln):
             if seen:
                 break
             seen = bool(COVERAGE_HEADING.match(ln))
             continue
         if seen:
             out.append(ln)
-    return out
+    if seen:
+        return out, "section"
+    return out, ("compact" if not sectioned else "missing")
 
 
 def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
@@ -818,8 +832,14 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
         # 参数/形制门优先：标题窗与参数本就不一致时，requested 无从两头对齐，不在此重复发码（同 §v2-2 对 DD-EVIDENCE 的静音规矩）
         return
     want = f"{ctx['start'].isoformat()}~{ctx['asof'].isoformat()}"
-    body = coverage_section_lines(ctx["lines"]) or ctx["lines"]
-    # 先收：按归一前缀收集**全部**原始申报行（伪行也要被收进来），再判数量，最后才解析唯一一行
+    body, kind = coverage_section_lines(ctx["lines"])
+    if kind == "missing":
+        # §v2-12（M94 blocker）：有分节却没定位到覆盖率节 → 禁止回退全文；申报写在别节＝本节缺失
+        finds.add("DD-COVERAGE", f"交付物有分节却未定位到「覆盖率与未检到」节（0–3 前导空格的 ATX 标题已按 CommonMark 识别），且窗口实跨 {span} 天 > 类目检索面 {AGE_CAP_DAYS} 天——不回退全文扫申报行：申报放在别的节里等于本节缺失（§v2-12）")
+        return
+    if kind == "compact":
+        body = ctx["lines"]
+    # 先收：按归一前缀收集**本节内全部**原始申报行（伪行也要被收进来），再判数量，最后才解析唯一一行
     raw = [ln.strip() for ln in body if DECL_PREFIX_LOOSE.match(ln) or _norm(ln).startswith("类目账龄申报:")]
     template = f"类目账龄申报: requested={want} | disclosure_cn={AGE_CAP_DAYS}d | beyond={AGE_REQUIRED_BEYOND}"
     if not raw:
