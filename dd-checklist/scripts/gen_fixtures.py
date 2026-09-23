@@ -220,10 +220,13 @@ def ledger_zero_rows(coverage):
     return out
 
 
-def build(case, rep, sources, evidence, coverage, command, expect, need, empty_evidence=False, progress=None, flow=None):
-    missing = [(cat, dom) for cat, dom in ledger_zero_rows(coverage)
+def build(case, rep, sources, evidence, coverage, command, expect, need, empty_evidence=False, progress=None, flow=None,
+          flow_from=None, flow_drop_field=None, flow_set_domain=None):
+    # §v2-15③ 用：真实查过的账（flow_from）与被洗过的账（coverage）可以是两份——流水照真实那份生成，快照齐备
+    truth = flow_from or coverage
+    missing = [(cat, dom) for cat, dom in ledger_zero_rows(truth)
                if not any(re.sub(r"\.json$", "", n).startswith(dom + "-") and cat in b for n, b in evidence.items())]
-    evidence = {**zero_snapshots(tuple(cat for cat, _ in ledger_zero_rows(coverage))), **evidence,
+    evidence = {**zero_snapshots(tuple(cat for cat, _ in ledger_zero_rows(truth))), **evidence,
                 **{f"{dom}-Z-{cat}.json": json.dumps({"domain": dom, "category": cat, "asof": ASOF, "window": f"{START}~{ASOF}",
                                                       "query": f"{SUBJECT} {cat}", "records": [], "结果": "检到 0"}, ensure_ascii=False, indent=2) + "\n"
                    for cat, dom in missing}}
@@ -253,7 +256,7 @@ def build(case, rep, sources, evidence, coverage, command, expect, need, empty_e
             cells = [c.strip() for c in ln.strip().strip("|").split("|")] if ln.strip().startswith("|") else []
             if len(cells) == 7 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", cells[0]):
                 rows_by_cat[cells[1]] = rows_by_cat.get(cells[1], 0) + 1
-        for cat, dom in queried_ledger_rows(coverage):
+        for cat, dom in queried_ledger_rows(truth):
             hits = (flow or {}).get(cat, rows_by_cat.get(cat, 0))
             snap = next((n for n, b in evidence.items()
                          if n.startswith(dom + "-") and json.loads(b).get("category") == cat), next(iter(evidence), ""))
@@ -268,6 +271,10 @@ def build(case, rep, sources, evidence, coverage, command, expect, need, empty_e
                 row = dict(c)
                 row["seq"] = i
                 row["prev_sha256"] = prev
+                if flow_drop_field and row.get("category") == flow_drop_field[1]:
+                    row.pop(flow_drop_field[0], None)      # 例：("hits", "合规与处罚") 删正命中流水的 M 再重算链
+                if flow_set_domain and i == len(calls):
+                    row["domain"] = flow_set_domain        # 末条改域、快照不动 → 域↔快照前缀失配
                 raw = json.dumps(row, ensure_ascii=False, sort_keys=True)
                 chained.append(raw)
                 prev = hashlib.sha256(raw.encode("utf-8")).hexdigest()
@@ -629,6 +636,65 @@ build("bad-X25-h1-title-masquerade",
       report(title_start=X19_START, lookback="24m", title_mid="（未检到项说明见后）")
       + "\n## 其他说明\n本件不设覆盖率说明节（申报行仍在标题后的紧凑正文里）。\n",
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+
+# ---- M100（§v2-15；题单 X26–X32）：七条结构根因一单合治，一题一形 ----
+GOOD_COV = cov()                      # 真实查过的九类账（流水与快照按它生成）
+WASHED = ("诉讼与仲裁", "关联交易与资金占用", "业务资质与许可", "其他已披露重大事项")
+
+
+def cov_wash(cats):
+    """把若干 disclosure_cn 账行改写成「本次实际调用=—、结果=无工具」，流水与快照保持真实调用。"""
+    return cov(cov_set({c: ("无工具", "域面外，需人工", "disclosure_cn", "—") for c in cats}))
+
+
+# ①X26 账龄三段须核等值：写低 1d 与写高 730d 同罪（既有 ctl-age-cap-overclaim 只挡写高）
+build("bad-X26-age-cap-underclaim", report(title_start=X19_START, lookback="24m", age_cap="1d"),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+
+# ②X27 九类账必须是一封闭集表：第十类行、以及"没先认表"的无表头形（同根控制）
+build("bad-X27-ledger-tenth-category", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, cov(COV_ROWS + [("虚构第十类", "—", "—", "无工具", "域面外，需人工")]), X19_CMD, 1, ("DD-COVERAGE",))
+build("ctl-ledger-no-header", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, "\n".join(GOOD_COV.split("\n")[2:]) + "\n", X19_CMD, 1, ("DD-COVERAGE",))
+
+# ③X28 流水↔账↔三角闭合（主样 + 三枚同根控制，代码集按题面精确）
+# flow_from=GOOD_COV：真实查过的九类照样进流水与快照，只有交付的账被改写——这才是"事后抹成无工具"的形状
+build("bad-X28-called-washed-to-no-tool", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, cov_wash(("诉讼与仲裁",)), X19_CMD, 1, ("DD-OMISSION",), flow_from=GOOD_COV)
+build("ctl-flow-missing-hits", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-OMISSION",), flow_from=GOOD_COV, flow_drop_field=("hits", "合规与处罚"))
+build("ctl-flow-domain-snapshot-mismatch", report(title_start=X19_START, lookback="24m"),
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-OMISSION",), flow_from=GOOD_COV, flow_set_domain="entity_data")
+build("ctl-flow-age-trigger-launder", report(title_start=X19_START, lookback="24m", no_age=True),
+      [src()], BASE_EVID, cov_wash(WASHED), X19_CMD, 1, ("DD-OMISSION", "DD-COVERAGE"), flow_from=GOOD_COV)
+
+# ④X29 围栏内一切按示例文本：节定位、申报计数都不从围栏借；红线仍全篇扫
+build("bad-X29-fenced-fake-section", report(title_start=X19_START, lookback="24m", no_age=True)
+      + "\n```md\n## 覆盖率与未检到\n" + X23_AGE + "\n```\n\n## 其他说明\n本节与覆盖率账无关。\n",
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-COVERAGE",))
+build("good-X29-fenced-heading-example", report(title_start=X19_START, lookback="24m", no_age=True)
+      + X24_HEAD + X23_AGE + "\n\n```md\n## 覆盖率与未检到\n（示例标题，非交付节，也不含第二条申报）\n```\n",
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 0, ())
+
+# ⑤X30 输入权威单值：主体串不得抓首个；两行回显、两个 H1 各为一枚同根控制
+DUAL = "北辰股份有限公司（600001.SH）；海岳股份有限公司（600002.SH）"
+build("bad-X30-dual-subject-in-param", report(title_start=X19_START, lookback="24m", subject_line=DUAL),
+      [src()], BASE_EVID, GOOD_COV, cmd(lookback="24m", subject=DUAL), 1, ("DD-INPUT",))
+build("ctl-input-double-echo", report(title_start=X19_START, lookback="24m")
+      .replace("- lookback: 24m", "- lookback: 12m\n- lookback: 24m", 1),
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-INPUT",))
+build("ctl-input-double-h1", report(title_start=X19_START, lookback="24m")
+      + f"\n# {SUBJECT}公开信息预尽调清单 · 窗口 2025-09-21~2026-09-21\n",
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-INPUT",))
+
+# ⑥X31 足行按表节唯一：同节复制一行即竞争（合法紧凑一表一行不受影响）
+build("bad-X31-duplicate-domain-line", report(title_start=X19_START, lookback="24m")
+      .replace("本节检索域: regulatory_cn 1 域 / 无工具项: 0", "本节检索域: regulatory_cn 1 域 / 无工具项: 0\n本节检索域: regulatory_cn 1 域 / 无工具项: 0", 1),
+      [src()], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-COVERAGE",))
+
+# ⑦X32 sources 的 asof 须是真实日历日（B17 管词法，本题管日历）
+build("bad-X32-asof-not-a-calendar-day", report(title_start=X19_START, lookback="24m"),
+      [src(asof="2026-02-30")], BASE_EVID, GOOD_COV, X19_CMD, 1, ("DD-EVIDENCE",))
 
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,

@@ -127,6 +127,8 @@ COVERAGE_HEADING = re.compile(r"^ {0,3}#{2,4}(?:\s|$).*(?:覆盖率|未检到)")
 # 节定位失败后若回退全文，就等于把别节当本节（§v2-12）。
 ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:\s|$)")
 HEADING_LEVEL = re.compile(r"^ {0,3}(#{1,6})(?:\s|$)")
+# §v2-15④：代码围栏起始行（``` 或 ~~~，允许 0–3 前导空格）——围栏内一切按示例文本处理
+FENCE_OPEN = re.compile(r"^(`{3,}|~{3,})")
 SECTION_HEADING = re.compile(r"^ {0,3}#{2,4}(?:\s|$)")
 
 
@@ -250,6 +252,57 @@ def read_text(path: Path) -> str | None:
         return None
 
 
+def fence_mask(lines: list[str]) -> list[bool]:
+    """§v2-15④：标记每行是否落在 ``` / ~~~ 围栏内。围栏内的 ## 是示例文本、申报是示例、管道行不是账。
+    只处理代码围栏这一类可词法判定的结构，不做任意 Markdown 语义解释器；红线扫描不使用本掩码（全篇照扫）。"""
+    mask: list[bool] = []
+    fence: re.Pattern | None = None
+    for ln in lines:
+        stripped = ln.strip()
+        if fence is None:
+            m = FENCE_OPEN.match(stripped)
+            if m:
+                fence = re.compile(r"^ {0,3}" + re.escape(m.group(1)) + r"\s*$")
+                mask.append(True)  # 围栏起始行本身不是交付正文
+                continue
+            mask.append(False)
+        else:
+            mask.append(True)
+            if fence.match(stripped):
+                fence = None
+    return mask
+
+
+def body_indices(lines: list[str]) -> list[int]:
+    return [i for i, inside in enumerate(fence_mask(lines)) if not inside]
+
+
+def section_range(lines: list[str], idx: int) -> tuple[int, int]:
+    """含第 idx 行的那一节：以 H1–H4 为界（§v2-14 一把尺），围栏内标题不算界（§v2-15④）。"""
+    mask = fence_mask(lines)
+    def is_bound(i: int) -> bool:
+        return not mask[i] and 1 <= heading_level(lines[i]) <= 4
+    lo = 0
+    for i in range(idx - 1, -1, -1):
+        if is_bound(i):
+            lo = i + 1
+            break
+    hi = len(lines)
+    for i in range(idx + 1, len(lines)):
+        if is_bound(i):
+            hi = i
+            break
+    return lo, hi
+
+
+def _date_or_none(text: str) -> date | None:
+    """把 YYYY-MM-DD 真解析成日历日；不存在的日子（2026-02-30）返回 None（§v2-15⑦）。"""
+    try:
+        return date.fromisoformat(text.strip())
+    except ValueError:
+        return None
+
+
 # ---------------------------------------------------------------- main checks
 def check_inputs(ns, report: Path, finds: Findings) -> dict:
     missing = [f for f in ("subject", "asof", "lookback", "purpose", "sources", "evidence") if getattr(ns, f, None) in (None, "")]
@@ -283,18 +336,23 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
         return {}
 
     lines = text.splitlines()
+    fence = fence_mask(lines)  # §v2-15④：正文语境一次算好，标题/节/回显/表提取共用
+    subject_raw = (ns.subject or "").strip()
     subject_full = subject_code = None
-    m = SUBJECT_TOKEN.search(ns.subject)
+    m = SUBJECT_TOKEN.fullmatch(subject_raw)  # §v2-15⑤：完整匹配，不再 search() 抓首个主体
     if m:
         subject_full, subject_code = m.group(1), m.group(2)
-    elif CODE_ONLY_SUBJECT.match((ns.subject or "").strip()):
+    elif CODE_ONLY_SUBJECT.fullmatch(subject_raw):
         # §v2-4：纯「6 位代码+上市地」是合法输入形态；归属改由正文/证据内「全称+代码」双标完成（见 check_anchor_chain）
-        subject_code = ns.subject.strip().upper()
+        subject_code = subject_raw.upper()
     else:
-        finds.add("DD-INPUT", f"--subject 无法解析（合法形制二选一：「全称（6位代码.SH|.SZ|.BJ）」或纯「6位代码.SH|.SZ|.BJ」）：{ns.subject!r}")
+        finds.add("DD-INPUT", f"--subject 不是单一合法形制（二选一：「全称（6位代码.SH|.SZ|.BJ）」或纯「6位代码.SH|.SZ|.BJ」；含两个主体的串不取首个，§v2-15⑤）：{ns.subject!r}")
 
     # 铁律 1 机器面（M71，M73 按 DD-X15 收严）：权威句式须由**标题后前 5 行内的同一行**完整承载，跨行拼凑不算
-    ti = next((i for i, ln in enumerate(lines) if heading_level(ln) == 1), None)  # §v2-14：H1 用同一把识别器认（含 0–3 前导空格）
+    h1s = [i for i, ln in enumerate(lines) if not fence[i] and heading_level(ln) == 1]
+    if len(h1s) > 1:
+        finds.add("DD-INPUT", f"文档 H1 标题有 {len(h1s)} 个（第 {h1s[0] + 1}、{h1s[1] + 1} 行…）——输入权威元数据须单值，不取首个也不取末个（§v2-15⑤）")
+    ti = h1s[0] if h1s else None
     if ti is None:
         finds.add("DD-INPUT", "交付物无 H1 标题行——声明行窗口无处可核（§1 铁律 1）")
     else:
@@ -319,12 +377,19 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
         if f"{t_start}~{t_end}" != want:
             finds.add("DD-INPUT", f"标题窗口与参数不一致：应为 {want}（--asof {ns.asof} --lookback {ns.lookback}），实为 {t_start}~{t_end}")
 
-    # 参数回显行一致性
-    echo = {}
-    for ln in lines:
+    # 参数回显行一致性（§v2-15⑤：四条回显各须恰一个，围栏内不算，也不许 first/last-wins）
+    echo_all: dict[str, list[str]] = {}
+    for i, ln in enumerate(lines):
+        if fence[i]:
+            continue
         pm = PARAM_LINE.match(ln)
         if pm:
-            echo[pm.group(1)] = pm.group(2)
+            echo_all.setdefault(pm.group(1), []).append(pm.group(2))
+    for key in ("subject", "asof", "lookback", "purpose"):
+        vals = echo_all.get(key, [])
+        if len(vals) > 1:
+            finds.add("DD-INPUT", f"正文参数回显 `- {key}:` 有 {len(vals)} 行（{'、'.join(vals)}）——回显须单值，矛盾的两行不取首个也不取末个（§v2-15⑤）")
+    echo = {k: v[0] for k, v in echo_all.items()}
     for key, want in (("subject", ns.subject), ("asof", ns.asof), ("lookback", ns.lookback), ("purpose", ns.purpose)):
         got = echo.get(key)
         if got is None:
@@ -339,7 +404,7 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
             finds.add("DD-INPUT", f"正文 `- {key}: {got}` 与命令行 --{key} {want} 不一致")
 
     # 一单一主体（§1）：不采信命令行，须从正文标题面识别
-    heads = [ln for ln in lines if 1 <= heading_level(ln) <= 4]  # §v2-14：H1–H4 参与主体计数，H5/H6 是节内附注不追加主体
+    heads = [ln for i, ln in enumerate(lines) if not fence[i] and 1 <= heading_level(ln) <= 4]  # §v2-14 一把尺 + §v2-15④ 围栏内不作数
     subjects: list[str] = []
     for ln in heads:
         for tok in SUBJECT_TOKEN.finditer(ln):
@@ -357,6 +422,7 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
     return {
         "text": text,
         "lines": lines,
+        "fence": fence_mask(lines),  # §v2-15④：可交付正文语境，一次算给标题/节/申报/表四处共用
         "asof": asof,
         "start": start,
         "subject_full": subject_full,
@@ -368,19 +434,23 @@ def check_inputs(ns, report: Path, finds: Findings) -> dict:
 def parse_tables(lines: list[str], finds: Findings) -> list[dict]:
     """返回 [{rows:[{...}], subject, start}]；表头状态机=固定七列名+分隔行（§3，B1 教训）。"""
     tables = []
+    mask = fence_mask(lines)  # §v2-15④：围栏内的管道行是示例表格，不作七列表提取
     i = 0
     while i < len(lines):
         ln = lines[i]
-        if not ln.strip().startswith("|"):
+        if mask[i] or not ln.strip().startswith("|"):
             i += 1
             continue
         block_start = i
         block = []
-        while i < len(lines) and lines[i].strip().startswith("|"):
+        while i < len(lines) and not mask[i] and lines[i].strip().startswith("|"):
             block.append((i + 1, lines[i]))
             i += 1
         head_subject = None
-        for prev in reversed(lines[:block_start]):
+        for prev_i in range(block_start - 1, -1, -1):
+            if mask[prev_i]:
+                continue  # §v2-15④：围栏内标题是示例文本，不参与节归属
+            prev = lines[prev_i]
             lvl = heading_level(prev)
             if lvl >= 5:
                 continue  # §v2-14：H5/H6 是节内附注，不改变归属，继续向上找真正的节标题
@@ -537,6 +607,9 @@ def check_sources(path: Path, finds: Findings) -> dict:
         asof = obj.get("asof")
         if not isinstance(asof, str) or not DATE_RE.match(asof):
             finds.add("DD-EVIDENCE", f"sources:{lineno}({sid}) asof 非 YYYY-MM-DD：{asof!r}")
+        elif _date_or_none(asof) is None:
+            # §v2-15⑦：十个字符的"数字形状"不证明这一天存在（2026-02-30 过词法、不过日历）
+            finds.add("DD-EVIDENCE", f"sources:{lineno}({sid}) asof={asof!r} 不是真实存在的日历日（词法形制已过、日历校验不过，§v2-15⑦）——只判形制有效，不判披露事件本身真伪")
         if not isinstance(obj.get("claim"), str) or not obj.get("claim").strip():
             finds.add("DD-EVIDENCE", f"sources:{lineno}({sid}) 缺 claim")
         if kind == "research" and not obj.get("conv_id"):
@@ -754,6 +827,7 @@ def check_statute(ctx, ev, src, finds: Findings) -> None:
 
 # §v2-10：调用流水与降级理由行的形制
 CALLS_NAME = "calls.jsonl"
+CALL_FIELDS = ("seq", "category", "domain", "query", "hits", "snapshot", "snapshot_sha256", "prev_sha256")  # §v2-15③
 REASON_LINE = re.compile(r"^-?\s*降级[:：]\s*([^|，,]+?)\s*[|，,]\s*([^|，,]+?)\s*[|，,]\s*(\S.*)$")
 
 
@@ -763,6 +837,22 @@ def check_omission(ledger_rows, ev, finds: Findings) -> None:
     每类「检到 N/零条」不得低于流水原始命中 M，N<M 须逐条降级理由行（窗外/归属不判/非本主体）进 progress.md。"""
     calls = ev.get("calls", [])
     reasons = ev.get("reasons", [])
+    # §v2-15③：三角闭合的结构面——流水八字段齐、hits 为非负整数、domain↔快照文件名域前缀互证。
+    # 边界照 §7.8：这里只证结构与哈希自洽，不宣称能挡"整链重写"（外部锚是服务端回执与人工抽 3 对原文）。
+    for i, c in enumerate(calls, start=1):
+        lack = [k for k in CALL_FIELDS if k not in c or c.get(k) in (None, "")]
+        if lack:
+            finds.add("DD-OMISSION", f"流水第 {i} 行缺字段 {('、'.join(lack))}——八字段缺一即三角不可核（§v2-15③）")
+        h = c.get("hits")
+        if not isinstance(h, int) or isinstance(h, bool) or h < 0:
+            finds.add("DD-OMISSION", f"流水第 {i} 行 hits={h!r} 非非负整数——原始命中 M 缺失或被改写成文本，M↔N 无从互校（§v2-15③）")
+        dom, snap = str(c.get("domain") or ""), str(c.get("snapshot") or "")
+        if dom and snap and not re.sub(r"\.json$", "", snap).startswith(dom + "-"):
+            finds.add("DD-OMISSION", f"流水第 {i} 行 domain={dom} 与快照 {snap} 的域前缀不互证——调用与被称的原始件对不上（§v2-15③）")
+    flow_cats = {str(c.get("category") or "") for c in calls}
+    for cat, v in ledger_rows.items():
+        if cat in flow_cats and v["called"] not in KINDS:
+            finds.add("DD-OMISSION", f"「{cat}」流水内有该类原始调用，账却写「本次实际调用={v['called']}、结果={v['result']}」——真实调用不能事后抹成无工具/未发起（§v2-15③）")
     for cat, v in ledger_rows.items():
         res = v["result"]
         m = re.fullmatch(r"检到\s*(\d+)", res)
@@ -820,8 +910,10 @@ def check_calls_ledger(ev, finds: Findings) -> None:
 
 
 def coverage_head_count(lines: list[str]) -> int:
-    """§v2-13：全文同名覆盖率节计数（0 / 1 / ≥2）——升级成计数，不再"取第一个"。"""
-    return sum(1 for ln in lines if COVERAGE_HEADING.match(ln))
+    """§v2-13：全文同名覆盖率节计数（0 / 1 / ≥2）——升级成计数，不再"取第一个"。
+    §v2-15④：围栏内的同名标题是示例文本，不参与计数。"""
+    mask = fence_mask(lines)
+    return sum(1 for i, ln in enumerate(lines) if not mask[i] and COVERAGE_HEADING.match(ln))
 
 
 def coverage_section_lines(lines: list[str]) -> tuple[list[str], str]:
@@ -831,11 +923,15 @@ def coverage_section_lines(lines: list[str]) -> tuple[list[str], str]:
     duplicate=同名覆盖率节 ≥2（§v2-13 不做首节歧义解决，直接判不可唯一）。"""
     if coverage_head_count(lines) > 1:
         return [], "duplicate"
+    mask = fence_mask(lines)
     # 只有 H2-H4 算"分节"；H5/H6 属节内附注——误把 H5/H6 当分节会打死紧凑正路（good-X23 guard）
-    sectioned = any(SECTION_HEADING.match(ln) for ln in lines)
+    sectioned = any(not mask[i] and SECTION_HEADING.match(ln) for i, ln in enumerate(lines))
     out: list[str] = []
     seen = False
-    for ln in lines:
+    for i, ln in enumerate(lines):
+        if mask[i]:
+            # §v2-15④：围栏内文本既不作节边界、也不作本节交付行——示例里的申报不是交付申报
+            continue
         if ends_section(ln):
             # §v2-14：只有 H2–H4 结束本节；H5/H6 是节内附注，其后的申报仍属本节
             if seen:
@@ -867,7 +963,8 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
         finds.add("DD-COVERAGE", f"交付物有分节却未定位到「覆盖率与未检到」节（0–3 前导空格的 ATX 标题已按 CommonMark 识别），且窗口实跨 {span} 天 > 类目检索面 {AGE_CAP_DAYS} 天——不回退全文扫申报行：申报放在别的节里等于本节缺失（§v2-12）")
         return
     if kind == "compact":
-        body = ctx["lines"]
+        # 紧凑件全文扫，但围栏内仍是示例文本，不算交付申报（§v2-15④）
+        body = [ctx["lines"][i] for i in body_indices(ctx["lines"])]
     # 先收：按归一前缀收集**本节内全部**原始申报行（伪行也要被收进来），再判数量，最后才解析唯一一行
     raw = [ln.strip() for ln in body if DECL_PREFIX_LOOSE.match(ln) or _norm(ln).startswith("类目账龄申报:")]
     template = f"类目账龄申报: requested={want} | disclosure_cn={AGE_CAP_DAYS}d | beyond={AGE_REQUIRED_BEYOND}"
@@ -892,8 +989,9 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
     if req != want:
         finds.add("DD-COVERAGE", f"账龄申报 requested={req} 与参数复算窗 {want} 不一致（§v2-11：标题窗是用户请求窗，申报行不得改写过窗）")
     cap = int(m.group(3))
-    if cap > AGE_CAP_DAYS:
-        finds.add("DD-COVERAGE", f"账龄申报写 disclosure_cn={cap}d，高于本件已知类目上限 {AGE_CAP_DAYS}d——无回包凭据不得放宽上限（§v2-11）")
+    if cap != AGE_CAP_DAYS:
+        # §v2-15①：三段一律核**等值**，「不高于」不能替代「等于」——写低到 1d 与写高到 730d 同罪
+        finds.add("DD-COVERAGE", f"账龄申报写 disclosure_cn={cap}d，本件契约常量为恰好 {AGE_CAP_DAYS}d——写高是凭据不足，写低是把已知上限伪装成更小事实（§v2-15①）；应逐字为 disclosure_cn={AGE_CAP_DAYS}d")
     beyond = norm_cell(m.group(4))
     laundered = [w for w in AGE_LAUNDER if w in beyond]
     if laundered:
@@ -915,18 +1013,36 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
     wanted = {"类目", "所需域/工具", "本次实际调用", "结果", "注记"}
     rows: dict[str, dict] = {}
     dupes: list[str] = []
+    header_seen = sep_seen = False   # §v2-15②：先认表（五列表头+分隔行），再认九类
+    stray: list[str] = []
     for ln in text.splitlines():
         if not ln.strip().startswith("|"):
             continue
         cells = [norm_cell(c) for c in split_pipe(ln)]
         if set(cells) >= wanted and "结果" in cells:
+            header_seen, sep_seen = True, False
             continue
-        if is_sep_row(cells) or len(cells) < 5:
+        if is_sep_row(cells):
+            if header_seen:
+                sep_seen = True
+            continue
+        if len(cells) < 5:
+            continue
+        if not (header_seen and sep_seen):
+            stray.append(cells[0])   # §v2-15②：没先认表就把管道行当账——不猜
             continue
         if cells[0] in rows:
             dupes.append(cells[0])
             continue
         rows[cells[0]] = {"need": cells[1], "called": cells[2], "result": cells[3], "note": cells[4]}
+    if not header_seen:
+        finds.add("DD-COVERAGE", "覆盖率账不是合法的一张表：缺固定五列表头行（类目/所需域·工具/本次实际调用/结果/注记）——先认表再认类（§v2-15②）")
+    elif not sep_seen:
+        finds.add("DD-COVERAGE", "覆盖率账缺分隔行：五列表头后必须有分隔行，否则数据行不具表身份（§v2-15②）")
+    if stray:
+        finds.add("DD-COVERAGE", f"表身份未成立却有 {len(stray)} 行账数据行（{'、'.join(stray[:3])}）——散落管道行不猜成合法账（§v2-15②）")
+    for cat in sorted(c for c in rows if c not in CATEGORIES):
+        finds.add("DD-COVERAGE", f"覆盖率账出现类目集合外的「{cat}」——九类须恰为九项、每项一次，无第十项（§v2-15②）")
     for cat in sorted(set(dupes)):
         finds.add("DD-COVERAGE", f"「{cat}」在对账表里出现多行——九类须逐类唯一（§v2-2）")
     for cat in CATEGORIES:
@@ -961,7 +1077,9 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
                     finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 evidence 内无 {called} 域的原始结果快照——零条目亦须可核（§v2-2②）")
                 elif not any(cat in b for b in bound.values()):
                     finds.add("DD-COVERAGE", f"「{cat}」记 {v['result']} 但 {called} 域快照内未标出该类目——调用与账目对不上（§v2-2②）")
-    check_age_declaration(ctx, calls, report, finds)
+    # §v2-15③：长窗触发源不得仅采可被改成「无工具」的账表——流水里真实调过的域并入触发集（洗成无工具也照样要求申报）
+    flow_domains = {str(c.get("domain") or "") for c in (ev or {}).get("calls", [])}
+    check_age_declaration(ctx, calls | flow_domains, report, finds)
     counts: dict[str, int] = {}
     for t in tables:
         for r in t["rows"]:
@@ -977,6 +1095,16 @@ def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
             if v["result"] in ("无工具", "零条") and n_body:
                 finds.add("DD-COVERAGE", f"「{cat}」对账表记 {v['result']} 但正文有 {n_body} 行——无工具/零条项禁入正文断言")
     found = list(SECTION_DOMAIN_LINE.finditer(ctx["text"]))
+    # §v2-15⑥：足行按"表所在节"核唯一——每节恰一行，同节堆两行互相竞争、或拿他节那一行抵本节，都 FAIL
+    fence_c = ctx.get("fence") or fence_mask(ctx["lines"])
+    dom_lines = [i for i, ln in enumerate(ctx["lines"]) if not fence_c[i] and SECTION_DOMAIN_LINE.search(ln)]
+    for t in tables:
+        lo, hi = section_range(ctx["lines"], max(0, t["start"] - 1))
+        n = sum(1 for i in dom_lines if lo <= i < hi)
+        if n > 1:
+            finds.add("DD-COVERAGE", f"同一节内出现 {n} 行「本节检索域」（该节第 {lo + 1}–{hi} 行）——每节恰一行，两行竞争即本节口径不可唯一（§v2-15⑥）")
+        elif n == 0:
+            finds.add("DD-COVERAGE", f"第 {t['start']} 行起的七列表所在节内没有「本节检索域」行——别节的足行不能抵本节（§v2-15⑥）")
     if not found:
         finds.add("DD-COVERAGE", "正文缺「本节检索域:X 域 / 无工具项:Y」行（§3 每节末必带，与 §5 对账表互校）")
     for m in found:
