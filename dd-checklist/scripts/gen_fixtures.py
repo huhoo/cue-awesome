@@ -598,6 +598,23 @@ build("bad-X22-section-lookup-bypass",
       report(title_start=X19_START, lookback="24m", no_age=True) + X22_TAIL,
       [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
 
+# ---- M97（§v2-13；题单 X23）：同名覆盖率节须恰为 1 个，≥2 直接判不可唯一（不做首节歧义解决）----
+X23_AGE = age_decl(X19_START, ASOF)
+build("bad-X23-duplicate-coverage-sections",
+      report(title_start=X19_START, lookback="24m", no_age=True)
+      + f"\n## 覆盖率与未检到\n{X23_AGE}\n\n## 覆盖率与未检到\n{X23_AGE}\n",
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+build("good-X23-compact-h5-note",
+      report(title_start=X19_START, lookback="24m")
+      + "\n##### 附注\n本附注是节内级说明，不构成 H2-H4 分节（§v2-12 的 compact 合法形）。\n",
+      [src()], BASE_EVID, cov(), X19_CMD, 0, ())
+# 两枚控制样（审方 M96-A 判）：分节且申报在被识别节内（正路形，防新门恒红）；上限写高 730d（M94 欠的持久样）
+build("ctl-age-sectioned-declared",
+      report(title_start=X19_START, lookback="24m", no_age=True) + f"\n## 覆盖率与未检到\n{X23_AGE}\n",
+      [src()], BASE_EVID, cov(), X19_CMD, 0, ())
+build("ctl-age-cap-overclaim", report(title_start=X19_START, lookback="24m", age_cap="730d"),
+      [src()], BASE_EVID, cov(), X19_CMD, 1, ("DD-COVERAGE",))
+
 # 反向计数控制样：账写「检到 1」而正文零行
 build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,
       cov([r if r[0] != "合规与处罚" else ("合规与处罚", "regulatory_cn", "regulatory_cn", "检到 1", ANCHOR) for r in COV_ROWS]),

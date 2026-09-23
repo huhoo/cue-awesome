@@ -802,11 +802,20 @@ def check_calls_ledger(ev, finds: Findings) -> None:
             finds.add("DD-OMISSION", f"流水第 {i} 行的快照哈希与 {snap} 现值不符——流水与证据被分开改过即不可信")
 
 
+def coverage_head_count(lines: list[str]) -> int:
+    """§v2-13：全文同名覆盖率节计数（0 / 1 / ≥2）——升级成计数，不再"取第一个"。"""
+    return sum(1 for ln in lines if COVERAGE_HEADING.match(ln))
+
+
 def coverage_section_lines(lines: list[str]) -> tuple[list[str], str]:
     """定位覆盖率说明节，返回 (节内正文行, 形态)。
-    形态三值：section=定位到该节 / compact=整篇无 H2-H4 的紧凑交付（可全文扫）/
-    missing=有分节但没有覆盖率节（§v2-12 禁止回退全文，调用方须直接判缺节）。"""
-    sectioned = any(ATX_HEADING.match(ln) and not re.match(r"^ {0,3}#\s", ln) for ln in lines)
+    形态四值：section=唯一该节已定位 / compact=整篇无 H2-H4 的紧凑交付（可全文扫）/
+    missing=有 H2-H4 分节却无覆盖率节（§v2-12 禁止回退全文）/
+    duplicate=同名覆盖率节 ≥2（§v2-13 不做首节歧义解决，直接判不可唯一）。"""
+    if coverage_head_count(lines) > 1:
+        return [], "duplicate"
+    # 只有 H2-H4 算"分节"；H5/H6 属节内附注——误把 H5/H6 当分节会打死紧凑正路（good-X23 guard）
+    sectioned = any(SECTION_HEADING.match(ln) for ln in lines)
     out: list[str] = []
     seen = False
     for ln in lines:
@@ -833,6 +842,8 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
         return
     want = f"{ctx['start'].isoformat()}~{ctx['asof'].isoformat()}"
     body, kind = coverage_section_lines(ctx["lines"])
+    if kind == "duplicate":
+        return  # 同名节 ≥2 由 check_coverage() 统一发码（§v2-13），此处不重复出码
     if kind == "missing":
         # §v2-12（M94 blocker）：有分节却没定位到覆盖率节 → 禁止回退全文；申报写在别节＝本节缺失
         finds.add("DD-COVERAGE", f"交付物有分节却未定位到「覆盖率与未检到」节（0–3 前导空格的 ATX 标题已按 CommonMark 识别），且窗口实跨 {span} 天 > 类目检索面 {AGE_CAP_DAYS} 天——不回退全文扫申报行：申报放在别的节里等于本节缺失（§v2-12）")
@@ -874,6 +885,10 @@ def check_age_declaration(ctx, calls, report: Path, finds: Findings) -> None:
 
 
 def check_coverage(report: Path, ctx, tables, finds: Findings, ev=None) -> None:
+    dup = coverage_head_count(ctx["lines"])
+    if dup > 1:
+        # §v2-13：同名覆盖率节须恰为 1；≥2 不做"取首节"的歧义解决，整类跨节重复/首节遮蔽一次封掉
+        finds.add("DD-COVERAGE", f"交付物内有 {dup} 个同名覆盖率节（§v2-13：计数须恰为 1）——不取首节、不作歧义解决：重复节让「带且只带一行」失去唯一作用域，第二节既可藏洗白行也可逃节内计数")
     cov_path = report.parent / "references" / "coverage-map.md"
     text = read_text(cov_path)
     if text is None:
