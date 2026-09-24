@@ -55,8 +55,8 @@ scripts/          gate script check_page.py + fixtures (landed; guard samples gr
 
 ## 6. Current status (the blunt list)
 
-- **Five-issuer boundary run landed (M52, 2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
-- **Review closed, shipped**: gate M43 (guard samples green, the question-list-as-contract reconciled 1:1; count per the latest acceptance line in CHANGELOG) + adversarial M45 LGTM; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). Neither the 30-second wall time nor the per-run cost magnitude has measured evidence; consumption is whatever the server returns.
+- **Five-issuer boundary run landed (2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
+- **Review closed, shipped**: the gate layer (guard samples green, the question-list-as-contract reconciled 1:1; count per the latest acceptance line in CHANGELOG) + adversarial review passed; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). Neither the 30-second wall time nor the per-run cost magnitude has measured evidence; consumption is whatever the server returns.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 

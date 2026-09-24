@@ -51,7 +51,7 @@ metadata:
 - `+research`：报成本征询后发起 ≤1 次——产出 ①本行业动态维度 ②协会口径数据/产能投放节奏（L3 入 sources）；零命中或用户拒发→相关节直接走态二/缺数句。
 - `+policy`：`statute`/`regulatory_cn` 建政策时间线（行规格见 `references/policy-timeline.md`；statute 锚三件齐口径引 `catalyst-calendar` spec §v3-A3，不复制正文）。
 - `+companies`：`disclosure_cn` 取 ≥3 家代表公司关键指标**聚合表**——只聚合、零点评，单司数字全走 `S<n>` 锚；成表后与 `+series` 互证（个体≠行业，背离要注记）。
-- `+check`（不过不交付）：`python3 scripts/check_sector.py <report.md> --sources <sources.jsonl> --window <YYYY-MM-DD~YYYY-MM-DD>`——四道：①声明行 ②**判断词-锚同行机检**（含态二逐字句白名单）③禁词+评级零容忍 ④数字列锚+双向可解析（锚型白名单/节名保留词封闭集/崩溃自由——catalyst v3 教训前置吸收）。机检要点详 `references/section-skeleton.md` 尾节。（脚本与 fixtures 由并行工项在制；出门=三审制：fixtures 含对方攻击样全绿+6.1 LGTM「构造不出下一枚」+push 单独候 Owner。）
+- `+check`（不过不交付）：`python3 scripts/check_sector.py <report.md> --sources <sources.jsonl> --window <YYYY-MM-DD~YYYY-MM-DD>`——四道：①声明行 ②**判断词-锚同行机检**（含态二逐字句白名单）③禁词+评级零容忍 ④数字列锚+双向可解析（锚型白名单/节名保留词封闭集/崩溃自由——catalyst v3 教训前置吸收）。机检要点详 `references/section-skeleton.md` 尾节。（脚本与 fixtures 由并行工项在制；出门=三道验收：夹具含对抗样全绿 + 独立评审方给出「构造不出下一枚」的判词 + push 单独候 Owner 批示。）
 
 ## 4. 输出契约
 

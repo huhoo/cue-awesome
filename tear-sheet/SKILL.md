@@ -60,7 +60,7 @@ metadata:
 python3 scripts/check_page.py <page.md> --sources <sources.jsonl> --subjects <n>
 ```
 四道：①声明行（AI 初稿+asof+通道用量，缺任一 FAIL）②数字行列级锚+正文↔sources 双向（锚型白名单同 check_calendar v2）③禁词=BANNED 全集+`利好|利空|买入|增持|目标价|建议` **零容忍**（本页无评级概念）④形制闸=五段顺序+每主体 ≤40 行+事件条目全过第一闸封闭枚举；主体数 >5 即 FAIL。
-（机检脚本与 fixtures 由并行工项在制；出门条件=lint 0 error+fixtures 全绿+红线 grep+6.1 对抗审 LGTM——catalyst 的教训：**绿灯不证防线**，坏样设计先行。）
+（机检脚本与 fixtures 由并行工项在制；出门条件=lint 0 error+fixtures 全绿+红线 grep+独立评审方对抗审判词通过——catalyst 的教训：**绿灯不证防线**，坏样设计先行。）
 
 ## 5. 输出契约
 

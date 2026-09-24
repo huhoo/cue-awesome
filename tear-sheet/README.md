@@ -55,8 +55,8 @@ scripts/          机检 check_page.py 与 fixtures（已落地，守护样全�
 
 ## 六、当前状态（诚实清单）
 
-- **五主体上限实跑已回填（M52，2026-09-21）**：会前速览×5 主体、data-mcp 直查 26 次、research 0、omni 0，check_page 全式（含 `--subjects 5`）一轮 PASS exit 0。
-- **审结出门**：机检 M43（守护样全绿、题单=合同对账 1:1；数量以 CHANGELOG 最近验收行为准）+对抗审 M45 LGTM，已随仓公开（版本现值以本包 `CHANGELOG.md` 与 frontmatter 为准）；30 秒墙钟与单次消耗量级均无实测凭据；消耗一律以服务端返回为准。
+- **五主体上限实跑已回填（2026-09-21）**：会前速览×5 主体、data-mcp 直查 26 次、research 0、omni 0，check_page 全式（含 `--subjects 5`）一轮 PASS exit 0。
+- **审结出门**：机检（守护样全绿、题单=合同对账 1:1；数量以 CHANGELOG 最近验收行为准）+对抗审通过，已随仓公开（版本现值以本包 `CHANGELOG.md` 与 frontmatter 为准）；30 秒墙钟与单次消耗量级均无实测凭据；消耗一律以服务端返回为准。
 - **未提交技能市场**：上架（P2）整体冻结中，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 主体上限 5 个（机检计数）；不含行情数值流（`equity_market` 通道未开放）；评级词汇零容忍是机检事实——本页不存在评级概念。
 
