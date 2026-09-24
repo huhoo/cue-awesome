@@ -33,7 +33,7 @@ The financial-research skills are a Cue-native rewrite of the methodology base i
 
 ### Planned — batch 2 (direction set, not yet built)
 
-Two items formerly listed here are now built and reviewed — `sector-overview` and `tear-sheet` (see the Built section above). What remains scoped here, none of it available today: **initiating coverage** (first-coverage note; valuation/model steps hand off to a human as `[待人工]`), **thesis tracker** (periodic re-run of a stored thesis against fresh public disclosure), **funding digest** (primary-market raise summary from IPO and disclosure domains). Each depends on data paths that are either already listed as available or explicitly deferred below; none is promised as shipped.
+Two items formerly listed here are now built and reviewed — `sector-overview` and `tear-sheet` (see the Built section above). What remains scoped here, none of it available yet: **initiating coverage** (first-coverage note; valuation/model steps hand off to a human as `[待人工]`), **thesis tracker** (periodic re-run of a stored thesis against fresh public disclosure), **funding digest** (primary-market raise summary from IPO and disclosure domains). Each depends on data paths that are either already listed as available or explicitly deferred below; none is promised as shipped.
 
 ### Deferred (blocked, not built)
 
