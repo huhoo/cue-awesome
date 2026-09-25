@@ -2,9 +2,9 @@
 name: cn-earnings-note
 slug: cn-earnings-note
 displayName: A股财报深度点评
-version: 0.3.3
-summary: "A股/港股财报深度点评（8–12 页研报级 AI 初稿）：法定披露四期差异 + 附注风险扫描 + 同业交叉验证，逐数可回查，评级一律 [待人工]。"
-description: "A股/港股财报深度点评生成器。输入「主体+报告期」，产出研报级八节 AI 初稿：四期差异（累计/单季双口径）、分部量价、盈利质量与现金流含金量、附注风险扫描（关联方/受限资金/或有负债）、指引与催化剂、同业对照。取证走 Cue 通道：结构化披露（data-mcp）+ 原文解析（omni-reader）+ 横向深研（cue-research），每条数字带可信级标注。改造自 anthropics/financial-services earnings-analysis（Apache-2.0）的 A股语境重实现。Triggers: 深度点评XX财报 / XX半年报点评 / 季报分析 / 年报深度点评 / 给我出一份XX的财报底稿; A-share earnings analysis / analyze XX's annual results / post-earnings update / deep earnings review. 不用于：只要一页纸快评（直接用 cue-research 的「个股快评」搭子）、Excel 模型更新（用 anthropics 原版 model-builder）、行情/估值数值流（equity_market 通道未开放）。"
+version: 0.3.4
+summary: "A股/港股财报深度点评初稿：四期差异、科目勾稽、预告对照逐条回锚原文；评级与目标价留白 [待人工]。"
+description: "给你一家公司 + 报告期，产出八节财报点评初稿：四期差异、科目勾稽（收入到现金）、指引与兑现对照、盈利质量分桶——每个数字带锚回指披露原文。 机器面拦：无锚数字、未来预测、投资评级与目标价（判断位一律 [待人工]）；一致预期只引公开汇总层并自声明层级，不编付费终端数据。 适合：财报后快速复盘、投研底稿、晨会材料。不适合：出具买卖评级、监管申报文件、无公开披露渠道的公司。"
 tags: [投研, 财报点评, A股, 深度研究]
 license: MIT
 agent_created: true

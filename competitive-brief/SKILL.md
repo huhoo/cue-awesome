@@ -2,8 +2,8 @@
 name: competitive-brief
 slug: competitive-brief
 displayName: 竞品简报
-version: 0.3.0
-summary: "给一个决策问题和竞品清单，先填证据表，再渲染成可读简报。"
+version: 0.3.1
+summary: "竞对/竞品对比简报：先证据表后简报，每行带来源、采集日期与可信级；结论位留白，不出评级建议。"
 tags:
   - 竞品分析
   - 决策简报
@@ -11,7 +11,7 @@ tags:
   - battlecard
   - 产品策略
   - 市场情报
-description: "先填 evidence table，再渲染简报——约束比流程重要。证据表每一行标注 fact/inference + 来源 + 置信度，填不满的维度不写进简报。支持网页、PDF（含扫描件）、音频（财报会/演示/播客）、视频四种来源。Triggers: 竞品分析 / 竞品简报 / 竞品对比 / 对标 / battlecard / 这个市场要不要进 / 对手怎么样; competitive analysis / competitive brief / competitor comparison / battlecard / market entry research."
+description: "给你主体 + 竞品清单，产出结构化简报：产品与定位、融资与股东、关键指标逐格对比——每格来自证据表先行，带 URL 或披露锚、采集日期与可信级标注。 机器面拦：证据行不存的结论、无日期的旧数据冒充当今；平台间口径分歧并列呈现、不代裁决。 适合：尽调背景、会前准备、内部策略讨论。不适合：法律合规结论、非公开数据推断、评级与目标价输出。"
 license: MIT
 agent_created: true
 metadata:

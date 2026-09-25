@@ -2,9 +2,9 @@
 name: catalyst-calendar
 displayName: 持仓催化剂日历
 slug: catalyst-calendar
-version: 0.1.0
-summary: "输入主体集（≤10）+ 前瞻窗口（默认 90 天），产出一张日期正排、逐事件带披露锚的催化剂日历：回购期限（公告明写）/激励归属/解禁减持披露/监管回复期限/分红除权/股东大会与说明会/风险警示生效/停复牌/定期报告法定期限。入类第一闸=有明确日期的在场披露，或适用条件可判的 statute 推导；只陈述事件，不判利好利空。"
-description: "持仓催化剂日历生成器。回答的真实问题是「未来三个月，这些持仓各自有什么确定的日子要盯？」。产出 calendar.md：主体节=日期正排表（日期|事件|类型|状态|窗外余档|来源锚，六列形制）+ 未来 30 天要盯摘要 + 已发生动态附注区 + 附录来源。入类第一闸二选一：已有披露在场且含明确 YYYY-MM-DD，或 statute 规则推导且适用条件在锚内可判——未披露推测与任何日期算术（如公告日+期限推算截止日）一律不入表；无锚即删条。取证走 Cue 通道：buyback/esop/disclosure_cn/regulatory_cn/statute 域直查 + cue-research ≤1 次（解禁/减持原表，可零）+ omni 仅公告原文需要时；margin 域不入列（其能力面=券商两融折算率，与事件日历无关）。评级类词汇零容忍是机检事实（正文非引用区出现即 FAIL，严于姊妹件）。改造自 anthropics/financial-services catalyst-calendar（Apache-2.0）的 A股化重实现，数据层完全替换为 Cue 通道。Triggers: 催化剂日历 / 事件日历 / 我的持仓未来三个月有什么日子 / 解禁和分红日程表 / 股东会与说明会日程盘点; catalyst calendar / upcoming disclosures / earnings dates tracker / what dates should I watch for my holdings. 不用于：选股或择时建议（本件不判利好利空，事件只陈述）、标的池发现（主体集由用户给）、预测未披露事件（只收在场披露+条件可判的法定推导）、财报深度点评（用姊妹件 cn-earnings-note）。"
+version: 0.1.1
+summary: "未来三个月持仓里哪些确定的日子要盯：业绩披露、解禁、股东大会逐条列出，条条有公告或日程锚；不猜价、不给择时建议。"
+description: "给你一份持仓列表 + 时间窗，产出一张按日期排的盯盘日历：每条标日期类型（业绩披露日/解禁/股东大会/除权除息等）、确定度与锚来源——没有公开公告或交易所日程依据的日期进不了表。 机器面拦：无锚条目、投机性日期（如「可能发公告」）一律禁入；前瞻判断位一律留白 [待人工]。 适合：财报季前置准备、组合盯盘节奏、投研会材料。不适合：涨跌预测、买卖与择时建议、组合估值（转对应件）。"
 tags: [投研, 事件日历, A股, 催化剂]
 license: MIT
 agent_created: true
