@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### 0.1.3 — 2026-09-25（对外 listing 文案重写：从审计员视角改为用户视角）
+
+- summary 191字→57字；description 1300字9句→245字三段（拿到什么 / 机器挡什么 / 适合与不适合）。原合规细节全部仍在 CONTRACT.md 与 SKILL 正文，listing 字段不再当契约容器。
+- 门禁、夹具、checker 语义零变化（runner 71+32 全绿为证）。
+
 ### 0.1.2 — 2026-09-24（渠道 slug 定名，门禁与语义零变化）
 
 - 渠道 slug 按 Owner 令改为 `cue-dd-checklist`（frontmatter `name`/`slug` 两行；与 cue-omni-reader/cue-research 品牌线一致，避开渠道裸名 `dd-checklist` 被他件占位的路由歧义）。GitHub 仓库目录与克隆路径不变；版本经 frontmatter 单源递增（渠道版本单调闸）。
