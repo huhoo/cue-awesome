@@ -4,7 +4,7 @@
 
 **基座与出处**：改写自 anthropics/financial-services `dd-checklist` + `deal-screening`（Apache-2.0；改写非拷贝，出处声明见仓根 `../NOTICE.md`）。
 **差异化（一句话）**：把「公开信息里能查到的风险」逐条带锚摊开，**缺什么、查不到什么同样写清楚**；不产投资判断、不出法律意见。
-**开发过程**：本包经多轮独立对抗评审（每轮先判卷后修卷），全部轮次与门禁演进记录在公开 git 历史与 `CHANGELOG.md`；夹具 71 主集 + 32 控制样随包在场（`scripts/fixtures/`），任何人可复跑复核——`bash scripts/fixtures/run_fixtures.sh`。
+**开发过程**：本包经多轮独立对抗评审（每轮先判卷后修卷），全部轮次与门禁演进记录在公开 git 历史与 `CHANGELOG.md`；夹具全量（71 主集 + 32 控制样）在公开仓库本目录 `scripts/fixtures/`：git 克隆者一条 `bash scripts/fixtures/run_fixtures.sh` 即可复跑复核；经技能渠道安装的消费者包因渠道单包体积闸（实测 107KB 过、1121KB 拒）不含夹具目录与 runner，但包内 `check_dd.py` 对任何交付件仍可独立运行。
 
 ## 0A. §v2 修订条款（与下文冲突处以本节为准）
 
