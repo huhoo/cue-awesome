@@ -46,7 +46,7 @@ evidence table 是一个简单的 markdown 表格。**简报从这个表渲染�
 
 | 竞品 | 维度 | 主张 | 证据级别 | 来源 | 日期 | 置信度 |
 |---|---|---|---|---|---|---|
-| Cursor | 定价 | Individual $20/月/人，Teams $40/用户/月，Enterprise 定制 | fact | cursor.com/pricing（omni-reader 解析） | 2026-09-18 | 高 |
+| Cursor | 定价 | 按 Individual / Teams / Enterprise 分档订阅制 | fact | cursor.com/pricing（omni-reader 解析） | 2026-09-18 | 高 |
 | Claude Code | 上下文 | Up to 1M token，视模型而定 | fact | claude.com/pricing（omni-reader 解析） | 2026-09-18 | 高 |
 | OpenCode | 开源 | ✅ MIT 开源，Go 开发 | fact | github.com/opencode-ai/opencode（omni-reader 解析） | 2026-09-18 | 高 |
 | OpenCode | 成熟度 | 项目已归档，转移至 Crush | fact | github repo README（omni-reader 解析） | 2026-09-18 | 高 |
