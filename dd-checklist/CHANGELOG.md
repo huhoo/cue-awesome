@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 0.1.2 — 2026-09-24（渠道 slug 定名，门禁与语义零变化）
+
+- 渠道 slug 按 Owner 令改为 `cue-dd-checklist`（frontmatter `name`/`slug` 两行；与 cue-omni-reader/cue-research 品牌线一致，避开渠道裸名 `dd-checklist` 被他件占位的路由歧义）。GitHub 仓库目录与克隆路径不变；版本经 frontmatter 单源递增（渠道版本单调闸）。
+
 ### 0.1.1 — 2026-09-24（渠道打包修订，门禁与夹具零变化）
 
 - 唯一实质变化=CONTRACT「夹具在何处/谁能复跑」句改如实（渠道体积闸实测 107KB 过、1121KB 拒；渠道包不含 fixtures 与 runner，克隆本仓可全量复跑，checker 渠道包内可独立运行）。

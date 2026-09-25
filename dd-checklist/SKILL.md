@@ -1,8 +1,8 @@
 ---
 name: dd-checklist
 displayName: 公开信息预尽调清单
-slug: dd-checklist
-version: 0.1.1
+slug: cue-dd-checklist
+version: 0.1.2
 summary: "单一主体的公开信息预尽调清单：把「公开面能查到的风险事项」逐条带锚摊开，缺什么、查不到什么同样写清楚。输入唯一主体 + asof + 回看窗口 + 用途档位（investment|credit|mna），输出固定七列风险表 + 九类覆盖率对账表 + 全链证据快照。入类第一闸=有在场锚 + 在场日期 + 归属可判，三条任一不满足即不入表；不产投资判断、不出法律意见、不做完备性断言。"
 description: "公开信息预尽调清单（due diligence checklist，A股语境）：输入「唯一主体（全称或 6 位代码+上市地）+ --asof + --lookback（必传，如 36m）+ --purpose（investment|credit|mna 封闭三值）」，输出固定七列风险事实表（日期|类目|事实|影响档位|状态|窗外余档|来源锚）+ 九类覆盖率对账表 + 证据快照目录。本件命门=风险条目幻觉，入类第一闸三条同时满足才进表：①完整在场锚（URL / 公告 AN 号 / 函件号 / 裁判文书号 / conv_id 研究件 / statute 原文锚）且能在 sources.jsonl 唯一解析 ②在场日期在 [asof-lookback, asof] 闭窗口内 ③归属可判（简称/全称双标须核，判不明进「待核」不进「风险」）。三条任一不满足即不入表，写进「未检到/域面外」账；禁以「惯例/通常/预计/大概率」补条目，禁日期算术（无 statute 原文锚即拒推不落行）。红线高于其余各件：投资建议词、法律意见句、完备性断言（已覆盖全部/无风险/尽调完成）全表零豁免，「域面无工具」禁写成「该公司无诉讼」。一单一主体（≤1，批量必然逐条锚失守），不用 wall clock 默认窗。机检 scripts/check_dd.py 八道分层诊断码：DD-INPUT（形制与前置）、DD-TABLE（账与表的形制）、DD-ROW（单行第一闸）、DD-REDLINE（红线）、DD-COVERAGE（覆盖率账的形制与账↔正文计数）、DD-EVIDENCE（证据与 sources 形状）、DD-STATUTE（法定推导三元绑定）、DD-OMISSION（反沉默漏报：调用流水原始命中 M 与交付 N 的因果断链），六参数全必传、evidence fail-closed。改造自 anthropics/financial-services 的 dd-checklist 与 deal-screening（Apache-2.0）的 A股化重实现，数据层完全替换为 Cue 通道。Triggers: 公开信息预尽调XX / 帮我拉一份XX的风险事项清单 / XX 三年内的处罚与诉讼带锚清单 / 投前初筛XX的公开面风险（含并购史与资金占用）; public-record diligence checklist on XX / preliminary risk list from disclosures for XX / what does the public record show on XX. 不用于：任何投资结论（可投/回避/通过/否决/估值/目标价，判断位一律留白 [待人工]）、法律定性意见（构成违法/应被处罚/不触及重大违法）、无工具域的反向断言（域面查不到≠该公司没有）、多主体批量尽调（转 tear-sheet 或 catalyst-calendar）、财报深度点评与兑现度对账（转 cn-earnings-note）、前瞻事件日历（转 catalyst-calendar）。"
 tags: [尽调, 风险清单, A股, 带锚披露]
