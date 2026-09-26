@@ -62,7 +62,8 @@ references/report-skeleton.md  the eight-section skeleton, every section with an
 references/expectation-pool.md public-summary-layer expectation pool contract (beat/miss second anchor, source_tier tiers, scaffold anchor line)
 references/coverage-ledger.md  coverage-ledger contract (ledger-<period>.json fields / six states / read-before-write / linkage assertions)
 references/evidence-format.md    evidence-layer contract (evidence/ naming, sha ledger rows, link-break semantics, spot-check line; shared by three tickets)
-scripts/check_note.py          the four delivery gates (statement & pending-human / traceability / period-basis / word list)
+scripts/check_note.py          the four delivery gates (statement & pending-human / per-line evidence-level tags on prose numeric lines whose unit is in the machine set % / 亿元 / 万元 / 倍 / 个百分点, plus a 95% aggregate coverage floor / ledger basis fields / word list)
+                                 note: units outside that set (元, 千元, 股) are not seen by the gate, and a list line that carries its own [S<n>] reference is exempt by design
 ```
 
 ## 6. Honest boundaries (the blunt list)
