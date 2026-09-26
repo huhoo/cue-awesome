@@ -4,6 +4,10 @@
 
 ## [Unreleased]（随下趟车收口）
 
+### 0.3.8 — 2026-09-26（M124：listing 字段把机器范围写如实）
+
+- 四处同治（`SKILL.md` summary / description / 门禁清单句 / `README.md` 门禁行）：原话「数字行逐条回查」「口径标注（同比/单季）」把机检范围写大了。现按 `scripts/check_note.py` 实况写：带单位数字行须有 `[L1]/[L2]/[L3]` 证据级标注，**逐条拦**并另设 95% 汇总覆盖率阈值；账本侧机检的是数值对象有没有 `basis` 口径字段；`--sources` 只在给出时校验 JSONL 形制与文中**自写** `[S]` 可解析——不逐条要求带锚、不回查披露原文；「同比/单季」措辞属出稿纪律，靠人守。依据 :131-162、:290-293 与两枚复跑探针（见 dispatch 回执）。
+
 ### 0.3.7 — 2026-09-26（渠道统一:slug 改 cue- 品牌线,首批上 skillhub）
 
 - frontmatter slug=渠道裸名,与 cue-omni-reader/cue-research/cue-dd-checklist 同族,避开裸名占位路由歧义。门禁与内容语义零变化。
