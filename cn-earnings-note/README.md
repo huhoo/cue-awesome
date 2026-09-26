@@ -67,7 +67,7 @@ references/report-skeleton.md  八节骨架，每节带 [执行蓝图]
 references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二锚、source_tier 分层、脚手架对照行）
 references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
 references/evidence-format.md  证据层契约（evidence/ 命名、sha 台账行、断链语义、抽查清单位；套件三件通用）
-scripts/check_note.py          四道门禁（声明与待人工/证据级标注逐条+95% 汇总/账本 basis 字段/合规词表）
+scripts/check_note.py          四道门禁（声明与待人工/命中机器单位集(%/亿元/万元/倍/个百分点)的数字行逐条要标注+95% 汇总/账本 basis 字段/合规词表）
 ```
 
 ## 六、实测边界（诚实清单）
