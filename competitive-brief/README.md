@@ -35,4 +35,4 @@
 
 ## 版本
 
-当前：**0.3.0**。版本历史见 [`CHANGELOG.md`](CHANGELOG.md)。
+版本以本包 `SKILL.md` frontmatter 为唯一权威，历史见 [`CHANGELOG.md`](CHANGELOG.md)。

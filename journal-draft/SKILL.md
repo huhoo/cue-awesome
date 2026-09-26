@@ -18,7 +18,6 @@ description: "给你栏目 + 本期素材（或先做公开检索），产出可
 license: MIT
 agent_created: true
 metadata:
-  version: "0.15.3"
   layer: "framework"
   children: "journal-<企业>-<类型> 由 +spec 派生"
   examples: "examples/<技能名>/ 为成品样例技能，可直接安装或照着改造"

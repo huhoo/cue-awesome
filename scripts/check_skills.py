@@ -193,6 +193,18 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
     elif not SEMVER.match(version):
         rep.error(f"{name}: version {version!r} is not x.y.z")
 
+    # single-source version rule: a nested `metadata.version` is a second
+    # authority that naive line-based consumers (e.g. skillhub CLI) read as
+    # the real version -- last-wins silently ships stale numbers.
+    try:
+        _fm_text = skill_md.read_text(encoding="utf-8").split("---", 2)[1]
+    except Exception:
+        _fm_text = ""
+    import re as _re
+    if _re.search(r"^\s{2,}version:", _fm_text, _re.M):
+        rep.error(f"{name}: nested metadata.version found in frontmatter -- keep ONE version key at top level "
+                  "(flat parsers let the last line silently overwrite the real one)")
+
     # --- README ---
     if not (skill_dir / "README.md").is_file():
         rep.error(f"{name}: missing README.md")

@@ -15,7 +15,6 @@ description: "给你主体 + 竞品清单，产出简报：结论先行（一页
 license: MIT
 agent_created: true
 metadata:
-  version: "0.3.0"
   requires:
     recommendedSkills: ["cue-omni-reader", "cue-research"]
 ---

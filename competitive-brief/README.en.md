@@ -37,4 +37,4 @@ Both are free. The skill still runs without them, with reduced capability.
 
 ## Version
 
-Current: **0.3.0**. See [`CHANGELOG.md`](CHANGELOG.md) for history.
+The `SKILL.md` frontmatter `version` is the single source of truth; see [`CHANGELOG.md`](CHANGELOG.md) for history.
