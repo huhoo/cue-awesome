@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 0.1.5 — 2026-09-26（渠道统一:slug 改 cue- 品牌线,首批上 skillhub）
+
+- frontmatter slug=渠道裸名,与 cue-omni-reader/cue-research/cue-dd-checklist 同族,避开裸名占位路由歧义。门禁与内容语义零变化。
+
 ### 0.1.4 — 2026-09-25（M122 复判三修）
 
 - 深研路径改正文原义：出现深研诉求标注「深研未发起」并转姊妹件,本件不中途发起——删「经你确认后发起」歧义句。

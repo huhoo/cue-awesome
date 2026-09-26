@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### 1.3.3 — 2026-09-26（渠道统一:slug 改 cue- 品牌线,首批上 skillhub）
+
+- frontmatter slug=渠道裸名,与 cue-omni-reader/cue-research/cue-dd-checklist 同族,避开裸名占位路由歧义;补 slug/displayName/version 顶层三项(CLI 硬闸,此前 version 藏 metadata 块——双写隐患同除)。门禁与内容语义零变化。
+
 ### 1.3.2 — 2026-09-25（listing 二修：按 M121 第一读者对照,文案逐句退回正文有依据的宣称）
 
 - 首轮重写复述过关但 8/8 存在无依据或夸大机器承诺处,本条为其修正:机器面话术与正文/门禁脚本逐句对齐,正文没有的（如固定判断位、逐数必拦、固定七维、TTM）一律从对外字段删除或改写为正文实际机制。

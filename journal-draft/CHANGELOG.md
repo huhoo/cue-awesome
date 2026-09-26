@@ -14,6 +14,10 @@
 
 ## [Unreleased]
 
+### 0.15.7 — 2026-09-26（渠道统一:slug 改 cue- 品牌线,首批上 skillhub）
+
+- frontmatter slug=渠道裸名,与 cue-omni-reader/cue-research/cue-dd-checklist 同族,避开裸名占位路由歧义。门禁与内容语义零变化。
+
 ### 0.15.6 — 2026-09-25（M122 复判三修）
 
 - 脚本门禁职责改正文实际六类（定位/字数/读者动作/句长/taboo 自填/术语密度）；「没出处的数字与绝对化用语被机器点」收回——该项在 QA 清单人工步骤。

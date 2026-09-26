@@ -1,10 +1,12 @@
 ---
 name: long-doc-translation
+slug: cue-long-doc-translation
+displayName: 长文档全文翻译流水线
+version: "1.3.3"
 summary: "外文长篇（专著/古籍/档案/译著参考）全文中译流水线：主稿+阅读版+逐段备查+术语总表，拿不准的进存疑清单不硬翻。"
 description: "给你一本授权可访问的外文长文（德/英/法/日等），产出四类交付：单一主稿 .md、自包含阅读版 .html（左侧目录、可直发）、逐段译文备查、全书新术语总表（按拼音排序）。流程纪律：分段清单先行、脚注 id 唯一、页边码正则从宽覆盖 OCR 变体；拿不准的术语进存疑清单交人工，不强译成通顺的假话。适合：内部研究、翻译参考、学术资料消化。不适合：受版权保护文本的直接公开出版、法律与医疗文书的执业级承诺。"
 license: MIT
 metadata:
-  version: "1.3.2"
   requires:
     bins: ["python3"]
     pypi: ["markdown", "pypinyin"]
