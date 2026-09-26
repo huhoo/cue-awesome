@@ -2,7 +2,7 @@
 name: competitive-brief
 slug: cue-competitive-brief
 displayName: 竞品简报
-version: 0.3.4
+version: "0.3.4"
 summary: "竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。"
 tags:
   - 竞品分析

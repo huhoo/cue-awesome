@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: 0.15.7
+version: "0.15.7"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
