@@ -65,7 +65,7 @@ references/evidence-format.md    evidence-layer contract (evidence/ naming, sha 
 scripts/check_note.py          the four delivery gates (statement & pending-human / per-line evidence-level tags on prose numeric lines whose unit is in the machine set % / 亿元 / 万元 / 倍 / 个百分点, plus a 95% aggregate coverage floor / ledger basis fields / word list)
                                  note: three boundaries stated plainly — units outside that set (元, 千元, 股) are not seen by the gate; a list line carrying its own [S<n>] reference
                                      is exempt and excluded from the denominator; a section whose heading contains 「来源索引」 (source index) is not checked at all (human review).
-                                     This text names only the boundaries that affect use: the codes actually emitted follow check_note.py as it stands, and the fixtures prove only the examples listed here — they do not exhaust the exemptions.
+                                     This text names only the boundaries that affect use: the codes actually emitted follow check_note.py as it stands, and the fixtures demonstrate only cases they actually exercise, not an exhaustive list of exemptions.
 ```
 
 ## 6. Honest boundaries (the blunt list)
