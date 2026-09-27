@@ -27,8 +27,8 @@
 
 五段顺序钉死，页眉三声明必在场（生成 asof / 数据截止日 / 本次通道用量）——这几条不是审美，是机检：
 
-- **每行可锚**：数字回指公告索引号/URL/域 ref，列级校验，别的列拿数字冒充锚即 FAIL；
-- **事件先过闸**：在场事件条目直接复用 `catalyst-calendar` 的 v2 入类第一闸（只引用不复制，防双事实源）——没有明确披露日期的「事」不上页；
+- **每行可锚**：速览表**只校验末列**，该列须落在 `ANCHOR_OK_RE` 现值白名单内（公告索引号 / URL / 域 ref / `[S<n>]` 等形）；白名单里有接受纯数字的形（六位以上，索引号与证券代码族），**所以"页上有数字"不等于"这行有锚"**——读者要核的是那一列指不指得回披露；
+- **事件先过闸**：在场事件条目复用姊妹件 `catalyst-calendar/references/event-taxonomy.md` 的入类第一闸（只引用不复制，防双事实源），日期列的推测词族=`check_page.py` 里 `ESTIMATE_RE` 现值（常见例命中即拦，例不穷尽）——没有明确披露日期的「事」不上页；
 - **风险不装干净**：直查没命中就写「直查面内未命中≠无敞口」，这句话本身是必选动作；
 - **宁缺毋滥**：取不到的行删掉并记台账，空行合法，编行违法。
 
@@ -50,13 +50,19 @@ SKILL.md          主指令：输入契约/五段形制/成本纪律/管线与�
 README.md         本文件（中文权威）
 README.en.md      英文译文
 CHANGELOG.md      版本记录
-scripts/          机检 check_page.py 与 fixtures（已落地，守护样全绿；数量以本包 CHANGELOG.md 最近验收行为准）
+scripts/          机检 check_page.py 与 fixtures（词面域与守护样清单=脚本与夹具现值，两条命令现跑见下）
+                                 注：哪些词算禁词 / 哪些词算推测词 / 哪些形算锚，本文一律不列全量——判定=checker 现值，任意目录整行粘贴即可自查（命令自带安装后路径）：
+                                     grep -n -A3 "BANNED_RE = \|ESTIMATE_RE = \|ANCHOR_OK_RE = \|PERIOD_RE = \|BASIS_ENUM = " ~/.workbuddy/skills/tear-sheet/scripts/check_page.py
+                                     bash ~/.workbuddy/skills/tear-sheet/scripts/run_fixtures.sh（守护样清单与通过态，本包夹具现跑）
+                                     装在别处：把 ~/.workbuddy/skills/ 换成你的技能安装目录；Windows：C:\Users\<用户名>\.workbuddy\skills\tear-sheet\scripts\check_page.py
+                                     两条命令都走 POSIX 工具（grep / bash），Windows 请在 Git Bash 或 WSL 内跑。上条输出=那五处形状定义本身（含上下文行），是规则定义面，不替你逐句判稿；
+                                     锚列白名单含接受纯数字的形（六位以上），因此"有数字"不等于"有锚"；本文所举词例不作穷尽断言。
 ```
 
 ## 六、当前状态（诚实清单）
 
 - **五主体上限实跑已回填（2026-09-21）**：会前速览×5 主体、data-mcp 直查 26 次、research 0、omni 0，check_page 全式（含 `--subjects 5`）一轮 PASS exit 0。
-- **审结出门**：机检（守护样全绿、题单=合同对账 1:1；数量以 CHANGELOG 最近验收行为准）+对抗审通过，已随仓公开（版本现值以本包 `CHANGELOG.md` 与 frontmatter 为准）；30 秒墙钟与单次消耗量级均无实测凭据；消耗一律以服务端返回为准。
+- **能力现状**：本包随仓公开，版本现值以 `CHANGELOG.md` 与 frontmatter 为准；机检与守护样都在包内，**域清单与守护样条数一律现跑自证**（两条命令见 §五 注行，本文不抄）。**「30 秒读完」没有实测凭据**，单次消耗量级也不写——耗时看你的通道、消耗一律以服务端返回为准。
 - **未提交技能市场**：上架（P2）整体冻结中，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 主体上限 5 个（机检计数）；不含行情数值流（`equity_market` 通道未开放）；评级词汇零容忍是机检事实——本页不存在评级概念。
 

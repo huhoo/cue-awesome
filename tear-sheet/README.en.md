@@ -27,8 +27,8 @@ This is the suite's **lowest-barrier entry piece**: zero deep research by defaul
 
 Five blocks in fixed order; three header declarations mandatory (generation asof / data cutoff / this run's channel usage). These are gate checks, not aesthetics:
 
-- **every line anchors**: numbers resolve to announcement indexes / URLs / domain refs, validated column-by-column — digits in other columns cannot impersonate an anchor;
-- **events pass a gate first**: on-record events reuse `catalyst-calendar`'s v2 first-gate contract by reference (cited, never copied — no second source of truth); "events" without an explicit disclosed date never reach the page;
+- **every line anchors**: only the **last column** of the snapshot table is validated, and it must match the `ANCHOR_OK_RE` whitelist as it now stands (announcement index / URL / domain ref / `[S<n>]` and kin); that whitelist accepts bare numeric strings of six-plus digits (index and issuer-code shapes), "so a number on the page" is not "an anchored line" — what you verify is whether that column leads back to a disclosure;
+- **events pass a gate first**: on-record events reuse the first-gate contract in `catalyst-calendar/references/event-taxonomy.md` by reference (cited, never copied — no second source of truth); the estimated-date word family is `ESTIMATE_RE` as it now stands in `check_page.py` (common examples get caught, the list here is not exhaustive) — "events" without an explicit disclosed date never reach the page;
 - **no fake all-clears**: if the direct lookup hits nothing, the page must carry the fixed line "no hits within the direct-lookup surface ≠ no exposure";
 - **better empty than invented**: an unresolvable line is deleted and logged — an empty line is legal, an invented line is not.
 
@@ -50,13 +50,19 @@ SKILL.md          master instruction: input contract / five blocks / cost discip
 README.md         this file (Chinese source of truth)
 README.en.md      English translation
 CHANGELOG.md      version history
-scripts/          gate script check_page.py + fixtures (landed; guard samples green — count per the latest acceptance line in this package's CHANGELOG.md)
+scripts/          gate script check_page.py + fixtures (word sets and guard inventory = the script and fixtures as they now stand; run the two lines below)
+                                 note: which words are banned, which count as estimates, and which shapes pass as anchors is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
+                                     grep -n -A3 "BANNED_RE = \|ESTIMATE_RE = \|ANCHOR_OK_RE = \|PERIOD_RE = \|BASIS_ENUM = " ~/.workbuddy/skills/tear-sheet/scripts/check_page.py
+                                     bash ~/.workbuddy/skills/tear-sheet/scripts/run_fixtures.sh (guard inventory and pass state, run in this package)
+                                     Installed elsewhere: replace ~/.workbuddy/skills/ with your own skills directory; on Windows: C:\Users\<username>\.workbuddy\skills\tear-sheet\scripts\check_page.py
+                                     Both lines use POSIX tooling (grep / bash) — on Windows run them in Git Bash or WSL. The first prints those five shape definitions with context: the rule source itself, not a per-sentence classifier;
+                                     the anchor whitelist does accept bare six-plus-digit strings, so "a number on the page" is not "an anchored line". Word examples here are not an exhaustive claim.
 ```
 
 ## 6. Current status (the blunt list)
 
 - **Five-issuer boundary run landed (2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
-- **Review closed, shipped**: the gate layer (guard samples green, the question-list-as-contract reconciled 1:1; count per the latest acceptance line in CHANGELOG) + adversarial review passed; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). Neither the 30-second wall time nor the per-run cost magnitude has measured evidence; consumption is whatever the server returns.
+- **Capability state**: public with the repo (current version per this package's `CHANGELOG.md` and frontmatter); the gate script and its guard samples ship together and **the word sets and guard count are self-checked by running them, not quoted here** (two commands in §5). **The "30 seconds" claim has no measured evidence**, and no per-run cost magnitude is stated — time depends on your channels and consumption is whatever the server returns.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 
