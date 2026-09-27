@@ -10,7 +10,8 @@
                       [待人工]；--allow-pending 关闭本项。
   3. 禁用词        —— 合规最小集黑名单（内置），命中即 FAIL。
                       与 references/data-channels.md §合规最小集 冲突时以先 VERIFIED 者对齐。
-  4. 数字可回查    —— 含「数字+%/亿元/万元/倍/个百分点」的正文行须带 [L1]/[L2]/[L3]；
+  4. 数字可回查    —— 含「数字+集内单位」的正文行须带 [L1]/[L2]/[L3]；集内单位=%/percent/
+                      个百分点/亿元/万元/千元/百万/万股/亿股/亿/元(负向预查防「元年」)/倍/股。
                       标题行、列表引导行（以 - * 或数字序号引导且自身不含数字单位）、
                       「来源索引」节内豁免；覆盖率 < --min-coverage（默认 95%）FAIL。
                       给了 --sources 时另验 JSONL 契约（id/kind/ref/claim/confidence/asof
@@ -31,7 +32,7 @@ from pathlib import Path
 BANNED_WORDS = ["必涨", "稳赚", "零风险", "保证收益", "内幕", "无风险套利", "历史最佳"]
 BANNED_RE = re.compile("|".join(BANNED_WORDS))
 
-NUM_UNIT_RE = re.compile(r"\d(?:[.,]\d+)?\s*(?:%|percent|亿元|万元|倍|个百分点)", re.IGNORECASE)
+NUM_UNIT_RE = re.compile(r"\d(?:[.,]\d+)?\s*(?:%|percent|个百分点|亿元|万元|千元|百万|万股|亿股|亿|元(?!年)|倍|股)", re.IGNORECASE)
 LEVEL_RE = re.compile(r"\[L[123]\]")
 SRC_REF_RE = re.compile(r"\[S(\d+)\]")
 HEADING_RE = re.compile(r"^#{1,6}\s")
