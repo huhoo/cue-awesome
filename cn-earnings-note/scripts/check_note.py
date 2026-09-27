@@ -11,7 +11,10 @@
   3. 禁用词        —— 合规最小集黑名单（内置），命中即 FAIL。
                       与 references/data-channels.md §合规最小集 冲突时以先 VERIFIED 者对齐。
   4. 数字可回查    —— 含「数字+集内单位」的正文行须带 [L1]/[L2]/[L3]；集内单位=%/percent/
-                      个百分点/亿元/万元/千元/百万/万股/亿股/亿/元(负向预查防「元年」)/倍/股。
+                      个百分点/亿元/万元/千元/百万/万股/亿股/亿/元(负向预查防「元年」)/倍/股；
+                      汉字形=确数(一二三四五六七八九十百两)+量级(万|亿)+尾(元[防年]/股)或
+                      确数+倍——不定数(数亿/十几亿)、裸万+量词(五万份)、口语「三个百分点」、
+                      二〇二六纪年形在机器视野外,归人工与文案纪律(清单见 M139 设计句 v1)。
                       标题行、列表引导行（以 - * 或数字序号引导且自身不含数字单位）、
                       「来源索引」节内豁免；覆盖率 < --min-coverage（默认 95%）FAIL。
                       给了 --sources 时另验 JSONL 契约（id/kind/ref/claim/confidence/asof
@@ -33,6 +36,7 @@ BANNED_WORDS = ["必涨", "稳赚", "零风险", "保证收益", "内幕", "无�
 BANNED_RE = re.compile("|".join(BANNED_WORDS))
 
 NUM_UNIT_RE = re.compile(r"\d(?:[.,]\d+)?\s*(?:%|percent|个百分点|亿元|万元|千元|百万|万股|亿股|亿|元(?!年)|倍|股)", re.IGNORECASE)
+CN_NUM_UNIT_RE = re.compile(r"[一二三四五六七八九十百两]+(?:万|亿)(?:元(?!年)|股)|[一二三四五六七八九十百两]+倍")
 LEVEL_RE = re.compile(r"\[L[123]\]")
 SRC_REF_RE = re.compile(r"\[S(\d+)\]")
 HEADING_RE = re.compile(r"^#{1,6}\s")
@@ -142,7 +146,7 @@ def check_numbers(lines, index_exempt, sources_path, min_coverage):
                 refs.add(int(rid))
         if index_exempt[i] or HEADING_RE.match(line):
             continue
-        has_num = bool(NUM_UNIT_RE.search(line))
+        has_num = bool(NUM_UNIT_RE.search(line) or CN_NUM_UNIT_RE.search(line))
         if not has_num:
             continue
         if LIST_LEAD_RE.match(line) and not LEVEL_RE.search(line) and SRC_REF_RE.search(line):

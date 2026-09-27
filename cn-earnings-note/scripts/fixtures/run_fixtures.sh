@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # run_fixtures.sh —— check_note.py 总探针：good→exit 0、各 bad exit 1、--help→exit 0,全对 exit 0。
 # M135-A:P-27 三道豁免按现行行为固化守护样 6 项入册(20→26 项,零行为变更,check_note.py 一字未动)。
-# M135-B:P-25 裁准并码——NUM_UNIT_RE 扩千元/元/亿/百万/万股/亿股/股(元(?!年) 防「元年」);千元守护样翻转(mv→bad-qty-qianyuan,断言 0→1),7 单位正反对+「元年/公元」防误中直证+「吨」集外哨兵代管(26→42 项)。
+# M135-B:P-25 裁准并码——NUM_UNIT_RE 扩千元/元/亿/百万/万股/亿股/股(元(?!年) 防「元年」);千元守护样翻转(mv→bad-qty-qianyuan,断言 0→1),7 单位正反对+「元年/公元」防误中直证+「吨」集外哨兵代管(26→41 项,实测;原注 42 系设计期预估计项重复,本行随 M139 修正——注释数字亦须实测,病灶同 M61b)。
+# M139:P-28 汉字确数形 CN_NUM_UNIT_RE 并码(设计句 v1 照裁):6 对正反+15 形误中反例合样(41→实测见现跑);阿拉伯层 NUM_UNIT_RE 与三道豁免分支零触碰。
 # 注意(M5 防吞码教训):探针判定一律直取 "$?" 再展示;管道 tail 会把退出码换成 tail 的——
 # 任何复现行如需展示退出码,必须 `cmd; echo exit=$?` 形态,勿 `cmd | tail`。
 set -u
@@ -78,6 +79,21 @@ runout 1 "含数字结论但无" "bad-qty-gu      (股无L→拦)"    "$PY" "$CH
 runout 0 "数字行 1/1" "good-qty-gu       (股带L→放)"    "$PY" "$CHECK" good-qty-gu.md
 runout 0 "数字行 0/0" "good-misfire-yuanian (「2020元年/公元2026年」防误中直证:误中必 exit 1,不恒真)" "$PY" "$CHECK" good-misfire-yuanian.md
 runout 0 "数字行 0/0" "good-outunit-ton  (集外哨兵代管:20,000吨 无L仍0/0)" "$PY" "$CHECK" good-outunit-ton.md
+
+# --- M139(P-28 汉字确数形:CN_NUM_UNIT_RE 并码,6 对正反+15 形误中反例合样;阿拉伯层与豁免分支零触碰) ---
+runout 0 "数字行 0/0" "good-cn-misfire   (15 形误中反例合样:第三季度/三元组/亿万股东/千万不能/五万份…任一被闸必翻 1)" "$PY" "$CHECK" good-cn-misfire.md
+runout 1 "含数字结论但无" "bad-cn-yiyuan   (三亿元 无L→拦)"  "$PY" "$CHECK" bad-cn-yiyuan.md
+runout 0 "数字行 1/1" "good-cn-yiyuan  (三亿元 带L→放)" "$PY" "$CHECK" good-cn-yiyuan.md
+runout 1 "含数字结论但无" "bad-cn-wangu    (五万股 无L→拦)"  "$PY" "$CHECK" bad-cn-wangu.md
+runout 0 "数字行 1/1" "good-cn-wangu   (五万股 带L→放)" "$PY" "$CHECK" good-cn-wangu.md
+runout 1 "含数字结论但无" "bad-cn-yigu     (三十亿股 无L→拦)" "$PY" "$CHECK" bad-cn-yigu.md
+runout 0 "数字行 1/1" "good-cn-yigu    (三十亿股 带L→放)" "$PY" "$CHECK" good-cn-yigu.md
+runout 1 "含数字结论但无" "bad-cn-liangbai (两百亿元 叠字 无L→拦)" "$PY" "$CHECK" bad-cn-liangbai.md
+runout 0 "数字行 1/1" "good-cn-liangbai(两百亿元 叠字 带L→放)" "$PY" "$CHECK" good-cn-liangbai.md
+runout 1 "含数字结论但无" "bad-cn-qianwan  (一千二百万元 嵌套 无L→拦)" "$PY" "$CHECK" bad-cn-qianwan.md
+runout 0 "数字行 1/1" "good-cn-qianwan (一千二百万元 嵌套 带L→放)" "$PY" "$CHECK" good-cn-qianwan.md
+runout 1 "含数字结论但无" "bad-cn-bei      (三倍 无L→拦)"    "$PY" "$CHECK" bad-cn-bei.md
+runout 0 "数字行 1/1" "good-cn-bei     (三倍 带L→放)"   "$PY" "$CHECK" good-cn-bei.md
 
 run 0 "help (--help)"                "$PY" "$CHECK" --help
 
