@@ -52,7 +52,7 @@ SKILL.md                         主指令：命门纪律/输入契约/五段管
 README.md / README.en.md         本文件对
 CHANGELOG.md                     版本记录
 references/section-skeleton.md   六节骨架+每节 [执行蓝图]
-references/policy-timeline.md    政策时间线行规格（statute 三件齐锚口径引 catalyst，不复制）
+references/policy-timeline.md    政策时间线行规格（statute 三件齐锚口径见 `catalyst-calendar/references/event-taxonomy.md`，不复制）
 scripts/check_sector.py          四道机检（词面域与守护样清单=脚本与夹具现值，两条命令现跑见下）
                                  注：哪些词算判断词 / 哪些词是禁词，本文一律不列全量——判定=checker 现值，任意目录整行粘贴即可自查（命令自带安装后路径）：
                                      grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py
@@ -65,7 +65,7 @@ scripts/check_sector.py          四道机检（词面域与守护样清单=脚�
 ## 六、当前状态（诚实清单）
 
 - **建材量价半程实跑已回填（2026-09-21）**：research 1 次（约 13 分钟）+直查 7 次+omni 0；画像/量价/供需三节由全态二升到逐行带源（深研二手快照一律标 L3、挂人工复核）。**全仓唯一权威计数，口径写死：量价与驱动节 6 行——每行同时带「口径」列与来源锚；这个数只是量价节的表行数，不是全报告带源行数，也不等于 L3 层行数。** 同价双源（沥青两个报价）并列不仲裁=契约设计；连续周频序列仍不可得（五项「未检索到」在案）：**半程锚通≠量价序列能力可宣**，维度生成质量维持设计值口径。
-- **审结出门**：对抗审通过与真实冒烟反哺均已闭，随仓公开（版本现值以本包 `CHANGELOG.md` 与 frontmatter 为准）；端到端满量交付跑未回填（半程与冒烟均≠满量交付），跑通前按设计值对待；域扩容候工程（两条内部跟踪项：一条已半缓解、一条新账在途）。
+- **能力现状**：本包随仓公开，版本现值以 `CHANGELOG.md` 与 frontmatter 为准；**端到端满量交付尚未跑过**（上一条是半程、另加一次冒烟，两者都≠满量交付），跑通前六节覆盖度、耗时与维度质量一律按设计值对待，不作已验证能力宣称。
 - **未提交技能市场**：P2 整体冻结中，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 图不做（表带 asof）；不含行情数值流与预期均值（`equity_market` 未开放+高危话术自缚）；个股只做聚合不做点评。
 

@@ -48,7 +48,7 @@ SKILL.md                         master instruction: lifeblood rule / input cont
 README.md / README.en.md         this pair (Chinese source of truth / English translation)
 CHANGELOG.md                     version history
 references/section-skeleton.md   six sections with an [执行蓝图] each
-references/policy-timeline.md    policy-timeline row spec (statute anchor cites catalyst's v3-A3, not copied)
+references/policy-timeline.md    policy-timeline row spec (statute anchor cites `catalyst-calendar/references/event-taxonomy.md`, not copied)
 scripts/check_sector.py          four gates (word sets and guard inventory = the script and fixtures as they now stand; run the two lines below)
                                  note: which words count as verdict words, and which words are banned, is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
                                      grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py
@@ -61,7 +61,7 @@ scripts/check_sector.py          four gates (word sets and guard inventory = the
 ## 6. Current status (the blunt list)
 
 - **Building-materials half-course run landed (2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to line-by-line sourcing (research-second-hand rows all carry L3 and sit in the review checklist). **Single authoritative count for the whole repo, scope fixed: the volume-price & drivers section holds 6 table rows, each carrying both a scope column and its source anchor — that number is this section's row count only, not the report-wide sourced-row count and not the L3-tier count.** Competing asphalt quotes from two sources stay un-arbitrated by design; continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
-- **review closed, shipped**: the adversarial review passed and the smoke rework is closed; public with the repo (current version per this package's `CHANGELOG.md` and frontmatter). a full end-to-end delivery run has not landed (half-course and smoke both ≠ full delivery) — until it does, treat coverage as design values; domain expansion awaits engineering (two internal items: one half-mitigated, one newly opened);
+- **capability state**: public with the repo (current version per this package's `CHANGELOG.md` and frontmatter); **a full end-to-end delivery run has not landed** (the half-course run and the smoke are both ≠ full delivery) — until it does, section coverage, runtime and dimension quality stay design values and are not claimed as verified;
 - **Not submitted to any skill market** (P2 frozen repo-wide; timing is the Owner's call);
 - no charts (tables carry as-of dates); no market-data flow, no expectation means; companies appear only as anchored aggregates, never as commentary.
 

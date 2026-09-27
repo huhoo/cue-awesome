@@ -2,7 +2,7 @@
 name: sector-overview
 displayName: 行业景气全景-cn
 slug: cue-sector-overview
-version: "0.1.5"
+version: "0.1.6"
 summary: "行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。"
 description: "给你行业名 + 时间窗，产出六节固定的景气度报告：分析维度不背框架库，每次由深研按行业类型动态生成 2–4 个再取数；交付的是带可比序列锚的行业冷热证据，不是观点成品——判断词当场可答凭哪条序列、哪个口径、截至哪天，附代表 A 股公司清单与覆盖缺口。「看好哪个行业」式建议不做：评级词零容忍。适合：行业研究开题、会前准备、尽调的行业章节（与 dd-checklist 公司维度互补）。不适合：荐股择时、承诺非公开数据覆盖。"
 tags: [投研, 行业研究, A股, 景气度]
@@ -49,7 +49,7 @@ metadata:
 - `+scope`：行业名消歧定分类口径（申万 vs 中信选一注明）；窗口落表。
 - `+series`：`macro` 域取行业量价序列（工具级发现同 `cn-earnings-note/references/data-channels.md` §1）；同比/环比/累计三 basis 标签制照姊妹件；**表必带 asof，图不做**。
 - `+research`：报成本征询后发起 ≤1 次——产出 ①本行业动态维度 ②协会口径数据/产能投放节奏（L3 入 sources）；零命中或用户拒发→相关节直接走态二/缺数句。
-- `+policy`：`statute`/`regulatory_cn` 建政策时间线（行规格见 `references/policy-timeline.md`；statute 锚三件齐口径引 `catalyst-calendar` spec §v3-A3，不复制正文）。
+- `+policy`：`statute`/`regulatory_cn` 建政策时间线（行规格见 `references/policy-timeline.md`；statute 锚三件齐口径见姊妹件包内文件 `catalyst-calendar/references/event-taxonomy.md` 的法定锚值规格段，不复制正文）。
 - `+companies`：`disclosure_cn` 取 ≥3 家代表公司关键指标**聚合表**——只聚合、零点评，单司数字全走 `S<n>` 锚；成表后与 `+series` 互证（个体≠行业，背离要注记）。
 - `+check`（不过不交付）：`python3 scripts/check_sector.py <report.md> --sources <sources.jsonl> --window <YYYY-MM-DD~YYYY-MM-DD>`——四道：①声明行 ②**判断词-锚同行机检**（含态二逐字句白名单）③禁词+评级零容忍 ④数字行锚+双向可解析+六节语义定位与顺序（锚型枚举=`KIND_ENUM`、保留节名=`RESERVED_H2`、数字形状=`NUM_CELL_RE` 与 `NUM_PROSE_RE`，一律以现值为准）。机检要点详 `references/section-skeleton.md` 尾节。（词面域一条命令自查，任意目录整行粘贴即可跑、命令自带安装后路径；装在别处把 `~/.workbuddy/skills/` 换成你的技能安装目录，Windows 路径形如 `C:\Users\<用户名>\.workbuddy\skills\sector-overview\scripts\check_sector.py`，两条命令都走 POSIX 工具，Windows 请在 Git Bash/WSL 内跑）：`grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py`；守护样清单同形现跑：`bash ~/.workbuddy/skills/sector-overview/scripts/run_fixtures.sh`——本文不抄域清单也不抄条数，跑什么是什么。
 

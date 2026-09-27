@@ -1,7 +1,8 @@
 # 政策时间线行规格（sector-overview）
 
-statute 锚的**三件齐规格以 `catalyst-calendar` 的 spec §v3-A3 为唯一定义源**（`statute:<法名>第N条(<要点短引>)`，
-名称+条号+短引、禁裸串）——本文件只规定行业简报里的时间线行怎么用，不复制该规格正文。
+statute 锚的**三件齐规格以姊妹件包内文件 `catalyst-calendar/references/event-taxonomy.md` 的法定锚值规格段为定义源**
+（形如 `statute:<法名>第N条(<要点短引>)`：名称+条号+短引、禁裸串）；机器侧实际判据=`check_sector.py` 里 `STATUTE_SPEC_RE` 现值，
+本文件只规定行业简报里的时间线行怎么用，不复制规格正文、也不另立第二份清单。
 
 ## 1. 时间线行形制
 
