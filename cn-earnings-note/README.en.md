@@ -62,8 +62,8 @@ references/report-skeleton.md  the eight-section skeleton, every section with an
 references/expectation-pool.md public-summary-layer expectation pool contract (beat/miss second anchor, source_tier tiers, scaffold anchor line)
 references/coverage-ledger.md  coverage-ledger contract (ledger-<period>.json fields / six states / read-before-write / linkage assertions)
 references/evidence-format.md    evidence-layer contract (evidence/ naming, sha ledger rows, link-break semantics, spot-check line; shared by three tickets)
-scripts/check_note.py          the four delivery gates (statement & pending-human / per-line evidence-level tags on prose numeric lines whose unit is in the machine set % / 亿元 / 万元 / 倍 / 个百分点, plus a 95% aggregate coverage floor / ledger basis fields / word list)
-                                 note: three boundaries stated plainly — units outside that set (元, 千元, 股) are not seen by the gate; a list line carrying its own [S<n>] reference
+scripts/check_note.py          the four delivery gates (statement & pending-human / per-line evidence-level tags on prose numeric lines whose unit is in the machine set (current value below), plus a 95% aggregate coverage floor / ledger basis fields / word list)
+                                 note: the machine unit set is currently %／percent／个百分点／亿元／万元／千元／百万／万股／亿股／亿／元（后接「年」字者不中）／倍／股; three boundaries stated plainly — units outside that set (吨, 万吨, 万台, 万户, 公里) are not seen by the gate, nor is 元 immediately followed by 年 (a list line carrying its own [S<n>] reference
                                      is exempt and excluded from the denominator; a section whose heading contains 「来源索引」 (source index) is not checked at all (human review).
                                      This text names only the boundaries that affect use: the codes actually emitted follow check_note.py as it stands, and the fixtures demonstrate only cases they actually exercise, not an exhaustive list of exemptions.
 ```

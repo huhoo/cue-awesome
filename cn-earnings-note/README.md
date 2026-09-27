@@ -67,8 +67,8 @@ references/report-skeleton.md  八节骨架，每节带 [执行蓝图]
 references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二锚、source_tier 分层、脚手架对照行）
 references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
 references/evidence-format.md  证据层契约（evidence/ 命名、sha 台账行、断链语义、抽查清单位；套件三件通用）
-scripts/check_note.py          四道门禁（声明与待人工/命中机器单位集(%/亿元/万元/倍/个百分点)的散文数字行逐条要标注+95% 汇总/账本 basis 字段/合规词表）
-                                 注：三道边界如实——千元/元/股不在该单位集；带自写 [S] 的列表行不进分母；
+scripts/check_note.py          四道门禁（声明与待人工/命中机器单位集（现值见下行）的散文数字行逐条要标注+95% 汇总/账本 basis 字段/合规词表）
+                                 注：单位集现值 = %／percent／个百分点／亿元／万元／千元／百万／万股／亿股／亿／元（后接「年」字者不中）／倍／股；三道边界如实——集外单位（吨/万台/万户等）与「元+年」字样不中；带自写 [S] 的列表行不进分母；
                                      标题含「来源索引」的那一节整节不验（人工核）。发码以 check_note.py 现值为准；夹具仅验证自身实际覆盖的用例、不保证豁免穷尽
 ```
 
