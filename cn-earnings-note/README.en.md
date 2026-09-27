@@ -63,8 +63,10 @@ references/expectation-pool.md public-summary-layer expectation pool contract (b
 references/coverage-ledger.md  coverage-ledger contract (ledger-<period>.json fields / six states / read-before-write / linkage assertions)
 references/evidence-format.md    evidence-layer contract (evidence/ naming, sha ledger rows, link-break semantics, spot-check line; shared by three tickets)
 scripts/check_note.py          the four delivery gates (statement & pending-human / per-line evidence-level tags on prose numeric lines, plus a 95% aggregate coverage floor / ledger basis fields / word list)
-                                 note: which lines count as numeric lines is the union of NUM_UNIT_RE and CN_NUM_UNIT_RE as they currently stand in check_note.py — self-check it in one command:
-                                     grep -n "NUM_UNIT_RE\|CN_NUM_UNIT_RE" scripts/check_note.py
+                                 note: which lines count as numeric lines is the union of NUM_UNIT_RE and CN_NUM_UNIT_RE as they currently stand in check_note.py — self-check it from any directory (the command carries the installed path):
+                                     grep -n "NUM_UNIT_RE\|CN_NUM_UNIT_RE" ~/.workbuddy/skills/cn-earnings-note/scripts/check_note.py
+                                     Installed elsewhere: replace ~/.workbuddy/skills/ with your own skills directory; on Windows: C:\Users\<username>\.workbuddy\skills\cn-earnings-note\scripts\check_note.py
+                                     The output is three lines: those two live regex definitions plus the one line in the checker that calls them — the rule source itself, not a per-sentence classifier.
                                      fixtures carry positive and negative guards. The shapes named here are common examples, not an exhaustive claim — intercepted e.g.
                                      三亿元 / 五百万元 / 三千万元 / 20,000千元; not intercepted e.g. 千万元 (no leading numeral), 数亿元, 五万份, 二〇二六年, 230吨.
                                      A list line carrying its own [S<n>] reference is exempt and out of the denominator; a section headed 来源索引 is not checked at all (human review).

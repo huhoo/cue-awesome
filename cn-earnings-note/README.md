@@ -68,8 +68,10 @@ references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二
 references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
 references/evidence-format.md  证据层契约（evidence/ 命名、sha 台账行、断链语义、抽查清单位；套件三件通用）
 scripts/check_note.py          四道门禁（声明与待人工/散文数字行逐条要证据级标注+95% 汇总/账本 basis 字段/合规词表）
-                                 注：哪些行算数字行 = check_note.py 里 NUM_UNIT_RE ∪ CN_NUM_UNIT_RE 两条现值的并集，包内一条命令即可自查：
-                                     grep -n "NUM_UNIT_RE\|CN_NUM_UNIT_RE" scripts/check_note.py；夹具含正反守护样。本文所举只是常见例、不作穷尽断言——
+                                 注：哪些行算数字行 = check_note.py 里 NUM_UNIT_RE ∪ CN_NUM_UNIT_RE 两条现值的并集，任意目录整行粘贴即可自查（命令自带安装后路径）：
+                                     grep -n "NUM_UNIT_RE\|CN_NUM_UNIT_RE" ~/.workbuddy/skills/cn-earnings-note/scripts/check_note.py
+                                     装在别处：把 ~/.workbuddy/skills/ 换成你的技能安装目录；Windows：C:\Users\<用户名>\.workbuddy\skills\cn-earnings-note\scripts\check_note.py
+                                     输出三条 = 那两条正则的定义行 + checker 里调用它们的那一行；是规则定义面，不逐句替你判稿。夹具含正反守护样。本文所举只是常见例、不作穷尽断言——
                                      拦如 三亿元／五百万元／三千万元／20,000千元，不拦如 千万元（无数字前导）／数亿元／五万份／二〇二六年／230吨；
                                      带自写 [S] 的列表行不进分母、标题含「来源索引」的整节不验（人工核）。
                                      发码以 check_note.py 现值为准；夹具仅验证自身实际覆盖的用例、不保证豁免穷尽
