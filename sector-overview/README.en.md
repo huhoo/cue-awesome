@@ -6,7 +6,7 @@
 
 "This sector is recovering." — on what evidence?
 
-Most sector reports can't answer that: verdicts fly, and nowhere in the text is a comparable series cited. This piece does the opposite: **give it an industry name + a window, get back a six-section brief (≤6 pages) in which every word like rising / falling / recovering / under pressure carries, in the very same sentence, the series it relies on** (an `S<n>` anchor with basis and as-of date) — and every sentence that can't, honestly reads "no comparable series, no conjuncture judgement". Thin is fine. Unanchored verdicts are not.
+Most sector reports can't answer that: verdicts fly, and nowhere in the text is a comparable series cited. This piece does the opposite: **give it an industry name + a window, get back a six-section brief (≤6 pages) in which every verdict word (rising / falling / recovering / under pressure are common examples — which words count is set by the checker as it now stands, not by this list) carries, in the very same sentence, the series it relies on** (an `S<n>` anchor with basis and as-of date) — and every sentence that can't, honestly reads "no comparable series, no conjuncture judgement". Thin is fine. Unanchored verdicts are not.
 
 **Input**: an industry (Shenwan/CITIC L1 or a colloquial name; ambiguity → candidate list, never a guess) + window (default: last 4 complete quarters) + optional focus
 **Output**: `sector-<industry>-<window>/` — `report.md` (portrait & takeaways / volume-price & drivers / supply-demand & capacity / landscape & representatives / policy timeline / review checklist) · `sources.jsonl` · ledger
@@ -26,7 +26,7 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 ## 2. Why it's worth it (three hard lines)
 
-- **Verdict-anchor co-location is the lifeblood, and literally gate ②**: verdict words (rising / falling / recovering / under pressure / weakening / inflection / high boom / trough) appearing in the body ⇒ the same sentence must carry `S<n>`, or the verbatim second-state sentence applies — an unanchored "inflection" is, by this suite's definition, a hallucination (the sector analogue of catalyst's invented dates);
+- **Verdict-anchor co-location is the lifeblood, and literally gate ②**: which words count as verdict words is not listed here — **the judgement is the union of `JUDGE_PHRASE` and `JUDGE_SINGLE` as they currently stand in `check_sector.py`** (the English words above translate common examples; the machine matches the Chinese strings, examples are not exhaustive — one command prints the live sets, see §5) ⇒ a hit must carry `S<n>` in the same sentence, or the sentence must be the verbatim second-state line (a reworded one still fails while it keeps a verdict word or a second-state hint; a hedge carrying neither is invisible to the machine and sits in the human-review lane) — an unanchored verdict is, by this suite's definition, a hallucination (the sector analogue of the sister ticket's invented dates);
 - **No recycled templates**: each run first derives 2–4 analysis dimensions for *this* industry via one deep-research pass (hogs look at inventory, PV looks at production schedules) — the framework is asked anew, never memorized;
 - **Association-sourced numbers are all L3** and land in the review checklist; sector-mean expectation data is off by default (high-risk oversell, refused at the source).
 
@@ -34,7 +34,7 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 1. **Install**: put this directory into your agent's skills folder.
 2. **Ask**: "光伏行业近况盘一下，重点看排产和价格" (Chinese or English triggers). ≤3 questions to align inputs.
-3. **Collect**: after `+scope → +series → +research → +policy → +companies`, `check_sector.py` runs four gates — **no delivery without passing**. The gate script has landed (all guard samples green; count per the latest acceptance line in CHANGELOG); the adversarial review ran the new loop (questions authored by the independent reviewer, the grading passed), and the real smoke's shape lessons were back-locked as guard samples.
+3. **Collect**: after `+scope → +series → +research → +policy → +companies`, `check_sector.py` runs four gates — **no delivery without passing**. The gate script and its guard samples both ship in the package; **the word sets and the guard count are self-checked by running them, not quoted here** (two commands in §5), and the real smoke's shape lessons were back-locked as guard samples.
 
 ## 4. First-time Cue setup (three steps, skippable)
 
@@ -49,7 +49,13 @@ README.md / README.en.md         this pair (Chinese source of truth / English tr
 CHANGELOG.md                     version history
 references/section-skeleton.md   six sections with an [执行蓝图] each
 references/policy-timeline.md    policy-timeline row spec (statute anchor cites catalyst's v3-A3, not copied)
-scripts/check_sector.py          four gates (landed; guard samples green, count per CHANGELOG)
+scripts/check_sector.py          four gates (word sets and guard inventory = the script and fixtures as they now stand; run the two lines below)
+                                 note: which words count as verdict words, and which words are banned, is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
+                                     grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py
+                                     bash ~/.workbuddy/skills/sector-overview/scripts/run_fixtures.sh (guard inventory and pass state, run in this package)
+                                     Installed elsewhere: replace ~/.workbuddy/skills/ with your own skills directory; on Windows: C:\Users\<username>\.workbuddy\skills\sector-overview\scripts\check_sector.py
+                                     Both lines use POSIX tooling (grep / bash) — on Windows run them in Git Bash or WSL. The first prints those four word-set definitions with context: the rule source itself, not a per-sentence classifier;
+                                     the only carve-out the machine makes is the "not investment advice" disclaimer phrase itself (gate ③); a reworded second-state sentence still fails while it keeps a verdict word or a hint token, and one that keeps neither is invisible to the machine. Word examples here are not an exhaustive claim.
 ```
 
 ## 6. Current status (the blunt list)
