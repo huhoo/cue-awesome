@@ -82,5 +82,5 @@ a 1 "sources 孤儿记录未被正文引用" "TS-B04 方向二(协议3:双向各
 
 echo "----"
 echo "assertions: $pass/$total"
-[ "$fail" -eq 0 ] && [ "$pass" -eq "$total" ] && { echo "ALL GREEN (对账表 verify/tear-sheet-coverage-m43.md:$total 断言)"; exit 0; }
+[ "$fail" -eq 0 ] && [ "$pass" -eq "$total" ] && { echo "ALL GREEN (assertions: $pass/$total)"; exit 0; }
 echo "NOT GREEN"; exit 1

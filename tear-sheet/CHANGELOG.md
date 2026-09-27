@@ -1,4 +1,8 @@
-# 更新日志
+# 更
+### 0.1.7 — 2026-09-27（机器面 · M150，lead 代记）
+
+- `scripts/run_fixtures.sh` 成功行不再打印仓外对账路径（P-29）：ALL GREEN 行改为包内自解释计数 `assertions: 77/77`。断言逻辑零碰，77/77 实测全绿。
+新日志
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
