@@ -30,7 +30,7 @@
 - 解禁、减持原表与横向验证类问题按缺口决定是否发起 cue-research（≤1 次，发起前报告耗时与消耗；研究件锚 `conv_id`，`sources` 记 `kind=research`+`conv_id`，置信标 L3）。
 - omni 只用于**用户明确提供的材料路径或公开 URL**；域面 section 全文优先，三级取原文路径同姊妹件（`data-channels.md` §「原文三级」）。
 
-## 2A. 类目映射的机器面（§v2-5）
+## 2A. 类目映射的机器面（`CONTRACT.md` 0A 第 5 条；映射表=`CATEGORY_BY_KIND` 现值，本表为镜像）
 
 上表的「首选域→类目」里，**一对一且无歧义的那几条已被 checker 机检**：`regulatory_cn` 的监管函/问询函/警示/处罚 → `合规与处罚`（此类行写档位「背景」亦 FAIL）、`ipo` → `上市与在审状态`、`fr_fact_index`/`fr_footnote` → `财务与披露质量`。
 判据取**该行锚在 `sources.jsonl` 里的 `kind`** 与事实列的触发词，不接受「先归到其他类再解释」：已知映射命中而类目不符 = `DD-TABLE`。
