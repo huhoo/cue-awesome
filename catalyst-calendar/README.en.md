@@ -27,15 +27,15 @@ It answers a plain question: **"In the next three months, what dates matter for 
 
 1. **Install**: put this directory into your agent's skills folder.
 2. **Ask**: "我的持仓是美的集团、东方雨虹、宁德时代，给我排未来 90 天的催化剂日历" (triggers work in Chinese or English). It aligns inputs in ≤4 questions (issuer set / window / focus types / output dir, each with a default), then opens a `progress.md` ledger.
-3. **Collect**: after `+scope → +events → +derive → +build`, the gate `+check` runs `check_calendar.py` — gate v4 (§v2-B + §v3-B + §v4-A/B in full; invocation flags per the formal command in `SKILL.md` §3) — **no delivery without passing**.
+3. **Collect**: after `+scope → +events → +derive → +build`, `+check` runs the full gate set of `check_calendar.py` — every judgement is the script as it now stands (two self-check commands in §5); invocation flags per the formal command in `SKILL.md` §3 — **no delivery without passing**.
 
 ## 3. Built against one specific failure: invented dates
 
-The real risk here is not a wrong analysis — it's a date that never existed. The v2 taxonomy enforces a first gate:
+The real risk here is not a wrong analysis — it's a date that never existed. The first gate in `references/event-taxonomy.md` §1 enforces it:
 
 - an entry enters only if either (a) a filed disclosure is on record **and states an explicit date**, or (b) a statutory derivation whose **applicability conditions are decidable inside the cited statute anchor** — anything else never reaches the table;
-- **no date arithmetic, period**: "announcement date + 360 days" style derivations were authorized once in v1 and are now revoked across the board (caught by adversarial review); a deadline enters only when the announcement itself writes the full date;
-- every date resolves to an announcement index / formal document number / URL / `conv_id`+path, checked column-by-column — digits in other columns cannot impersonate an anchor; statutory rules come from the `statute` text fetched live at run time, never hardcoded;
+- **no date arithmetic, period**: "announcement date + 360 days" style derivations never produce a row — the start date, calendar versus trading days, inclusive endpoints and amendment overrides are all undefined, so a derived date cannot be checked against anything; a deadline enters only when the announcement itself writes the full date;
+- every date resolves to an announcement index / formal document number / URL / `conv_id`+path / a `statute:` spec string, checked row by row against the type×anchor-kind mapping as it now stands in the script (the kind list is not reproduced here); bare numerals of six-plus digits are themselves one accepted anchor kind (index and issuer-code shapes), so "a number on the page" is not "an anchored line" — what you verify is whether that column leads back to a disclosure; statutory rules come from the `statute` text fetched live at run time, never hardcoded;
 - out-of-window entries live in the dedicated 5th column "窗外余档" of the six-column format (the anchor column stays last and pure — notes never crowd out anchors); an empty carry-over column on an out-of-window row FAILs; a queried-but-absent item is marked "未检索到" — **an empty calendar is legal; an invented calendar is not**.
 
 Progress-style disclosures with no pre-known date (1%/2% buyback milestones) go to a trailing "已发生动态" (already-occurred updates) notes section — they never masquerade as upcoming events.
@@ -50,14 +50,20 @@ Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily —
 SKILL.md                        master instruction file: iron rules / input contract / pipeline / output / degradation / boundaries (must read)
 README.md / README.en.md        this pair (Chinese source of truth / English translation)
 CHANGELOG.md                    version history
-references/event-taxonomy.md    six event classes + case law on row-splitting, carry-over notes, L3 marking
-scripts/check_calendar.py       gate script v2 (spec §v2-B, ten checks; pure stdlib, --help works)
+references/event-taxonomy.md    event taxonomy (the closed type set is the checker as it now stands; the table is a human-readable mirror) + case law on row-splitting, carry-over notes, L3 marking
+scripts/check_calendar.py       the full gate set (pure stdlib, --help works; word sets and guard inventory = the script and fixtures as they now stand, run the two lines below)
+                                 note: which words count as rating words, banned words or self-confession words, and which event types are in the closed set, is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
+                                     grep -n -A3 "BANNED_RE = \|RATING_RE = \|HALLUCINATION_RE = \|OFFICIAL_USAGE_RE = \|EVENT_TYPES = \|TYPE_ANCHORS = \|SIX_RE = " ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py
+                                     bash ~/.workbuddy/skills/catalyst-calendar/scripts/fixtures/run_fixtures.sh (guard inventory and pass state, run in this package)
+                                     Installed elsewhere: replace ~/.workbuddy/skills/ with your own skills directory; on Windows: C:\Users\<username>\.workbuddy\skills\catalyst-calendar\scripts\check_calendar.py
+                                     Both lines use POSIX tooling (grep / bash) — on Windows run them in Git Bash or WSL. The first prints those seven judgement definitions with context: the rule source itself, not a per-sentence classifier;
+                                     the only two exemptions are the type column (never scanned) and official-disclosure word shapes (a bare "increase/decrease of holdings" is not exempted). Word and type examples here are not an exhaustive claim.
 ```
 
 ## 6. Current status (the blunt list)
 
-- **Adversarial review closed (four rounds: blocking items cut from 6 down to 1, then the independent reviewer passed it, incl. three gates fed by the real smoke) and public with the repo**; **the full multi-issuer end-to-end delivery run has landed (back-filled 2026-09-21)**: 10 issuers × 90-day window with the evidence chain enforced end to end, check_calendar v4 full form exit 0; full-window reality: 1 anchorable upcoming row inside 10 issuers × 90 days (an extraordinary shareholders' meeting whose notice states the date), the other 9 issuers carry an empty forward section **with an attribution line**; the statutory Q3-report deadline 2026-10-31 is derivable in principle but the statute channel returned no source text in this run, so nothing was entered (no anchor, no entry) — skipping the `+derive` step on the first pass was a pipeline gap, now back-filled and turned into a required disclosure line.
-- **Not submitted to any skill market**: publishing (P2) is frozen repo-wide, same gate as the sibling skill; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
+- **Public with the repo**; **the full multi-issuer end-to-end delivery run has landed (back-filled 2026-09-21)**: 10 issuers × 90-day window with the evidence chain enforced end to end, the full-form check_calendar exit 0; full-window reality: 1 anchorable upcoming row inside 10 issuers × 90 days (an extraordinary shareholders' meeting whose notice states the date), the other 9 issuers carry an empty forward section **with an attribution line**; the statutory Q3-report deadline 2026-10-31 is derivable in principle but the statute channel returned no source text in this run, so nothing was entered (no anchor, no entry) — skipping the `+derive` step on the first pass was a pipeline gap, now back-filled and turned into a required disclosure line.
+- **Release surface**: repo visibility is governed by the root README and `CHANGELOG.md`; whether this package reaches any skill marketplace is not decided by the package documents themselves.
 - Issuer set capped at 10 (machine-checked); `margin` (broker margin ratios) deliberately excluded — irrelevant to an event calendar.
 - No market-data flow (`equity_market` channel not open); **rating vocabulary is zero-tolerance by gate design** — ratings do not apply here, there is no blank left to fill.
 
