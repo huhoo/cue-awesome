@@ -67,10 +67,12 @@ references/report-skeleton.md  八节骨架，每节带 [执行蓝图]
 references/expectation-pool.md 公开源预期池取证契约（beat/miss 第二锚、source_tier 分层、脚手架对照行）
 references/coverage-ledger.md  覆盖账本契约（ledger-<period>.json 字段/六态/先读账后落笔/linkage 断言）
 references/evidence-format.md  证据层契约（evidence/ 命名、sha 台账行、断链语义、抽查清单位；套件三件通用）
-scripts/check_note.py          四道门禁（声明与待人工/命中机器单位集（现值见下行）的散文数字行逐条要标注+95% 汇总/账本 basis 字段/合规词表）
-                                 注：行制现版认「阿拉伯数字+单位」与汉字确数（三亿元／三十亿股／一千二百万元）两形；仍不覆盖四形——数亿元·十几亿（不定数）、五万份（裸万+量词）、三个百分点（口语）、二〇二六年（〇 形纪年）；
-                                     单位集现值 = %／percent／个百分点／亿元／万元／千元／百万／万股／亿股／亿／元（后接「年」字者不中）／倍／股；三道边界如实——集外单位（吨/万台/万户等）与「元+年」字样不中；带自写 [S] 的列表行不进分母；
-                                     标题含「来源索引」的那一节整节不验（人工核）。发码以 check_note.py 现值为准；夹具仅验证自身实际覆盖的用例、不保证豁免穷尽
+scripts/check_note.py          四道门禁（声明与待人工/散文数字行逐条要证据级标注+95% 汇总/账本 basis 字段/合规词表）
+                                 注：哪些行算数字行 = check_note.py 里 NUM_UNIT_RE ∪ CN_NUM_UNIT_RE 两条现值的并集，包内一条命令即可自查：
+                                     grep -n "NUM_UNIT_RE\|CN_NUM_UNIT_RE" scripts/check_note.py；夹具含正反守护样。本文所举只是常见例、不作穷尽断言——
+                                     拦如 三亿元／五百万元／三千万元／20,000千元，不拦如 千万元（无数字前导）／数亿元／五万份／二〇二六年／230吨；
+                                     带自写 [S] 的列表行不进分母、标题含「来源索引」的整节不验（人工核）。
+                                     发码以 check_note.py 现值为准；夹具仅验证自身实际覆盖的用例、不保证豁免穷尽
 ```
 
 ## 六、实测边界（诚实清单）
