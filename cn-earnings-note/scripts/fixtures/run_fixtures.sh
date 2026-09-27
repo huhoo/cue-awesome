@@ -81,7 +81,15 @@ runout 0 "数字行 0/0" "good-misfire-yuanian (「2020元年/公元2026年」�
 runout 0 "数字行 0/0" "good-outunit-ton  (集外哨兵代管:20,000吨 无L仍0/0)" "$PY" "$CHECK" good-outunit-ton.md
 
 # --- M139(P-28 汉字确数形:CN_NUM_UNIT_RE 并码,6 对正反+15 形误中反例合样;阿拉伯层与豁免分支零触碰) ---
-runout 0 "数字行 0/0" "good-cn-misfire   (15 形误中反例合样:第三季度/三元组/亿万股东/千万不能/五万份…任一被闸必翻 1)" "$PY" "$CHECK" good-cn-misfire.md
+runout 0 "数字行 0/0" "good-cn-misfire   (18 形误中反例合样:含 M143 万元户/万元以上/万元以下;任一被闸必翻 1)" "$PY" "$CHECK" good-cn-misfire.md
+runout 1 "含数字结论但无" "bad-cn-wubaiwan  (五百万元 百+万 无L→拦·钉桩)" "$PY" "$CHECK" bad-cn-wubaiwan.md
+runout 0 "数字行 1/1" "good-cn-wubaiwan (五百万元 带L→放)" "$PY" "$CHECK" good-cn-wubaiwan.md
+runout 1 "含数字结论但无" "bad-cn-sanqianwan (三千万元 千+万 无L→拦·真漏形)" "$PY" "$CHECK" bad-cn-sanqianwan.md
+runout 0 "数字行 1/1" "good-cn-sanqianwan(三千万元 带L→放)" "$PY" "$CHECK" good-cn-sanqianwan.md
+runout 1 "含数字结论但无" "bad-cn-sanqianyuan(三千元 裸千 无L→拦)" "$PY" "$CHECK" bad-cn-sanqianyuan.md
+runout 0 "数字行 1/1" "good-cn-sanqianyuan(三千元 带L→放)" "$PY" "$CHECK" good-cn-sanqianyuan.md
+runout 1 "含数字结论但无" "bad-cn-wugangu   (五千股 裸千+股 无L→拦)" "$PY" "$CHECK" bad-cn-wugangu.md
+runout 0 "数字行 1/1" "good-cn-wugangu  (五千股 带L→放)" "$PY" "$CHECK" good-cn-wugangu.md
 runout 1 "含数字结论但无" "bad-cn-yiyuan   (三亿元 无L→拦)"  "$PY" "$CHECK" bad-cn-yiyuan.md
 runout 0 "数字行 1/1" "good-cn-yiyuan  (三亿元 带L→放)" "$PY" "$CHECK" good-cn-yiyuan.md
 runout 1 "含数字结论但无" "bad-cn-wangu    (五万股 无L→拦)"  "$PY" "$CHECK" bad-cn-wangu.md
