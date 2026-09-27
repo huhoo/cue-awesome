@@ -38,7 +38,18 @@ parse → clean & slice → build style guide + glossary → parallel batched tr
 ## Getting started
 
 ```bash
-python scripts/init_project.py --help    # every script supports --help
+python scripts/init_project.py --help        # of the six scripts, only this one accepts --help
+python scripts/qa_check.py                  # the others print their usage when run bare (missing args exit 1, not a crash)
+python scripts/build_reader.py               # these two carry default paths: a missing directory **errors out with checks to try**
+# Measured: a nonexistent directory always exits 1 with guidance — it never prints "0 segments" and a row of green ticks.
 ```
 
-See [`SKILL.md`](SKILL.md) for the full flow, hard rules and measured parameters; see [`CHANGELOG.md`](CHANGELOG.md) for version history. Current version **1.3.0**.
+See [`SKILL.md`](SKILL.md) for the full flow, hard rules and measured parameters; see [`CHANGELOG.md`](CHANGELOG.md) and the `SKILL.md` header for the current version — **this file states no version number** (one written here would be lying forever).
+
+One command prints the constants the three QA scripts actually judge with, including their per-project "change this here" CONFIG blocks, runnable from any directory:
+
+```bash
+grep -n "CONFIG\|^[A-Z_]\{2,\} *=" ~/.workbuddy/skills/long-doc-translation/scripts/qa_check.py ~/.workbuddy/skills/long-doc-translation/scripts/overlap_check.py ~/.workbuddy/skills/long-doc-translation/scripts/dedup_boundary.py
+```
+
+The gates come in two kinds: **fixed in-package gates** (a missing directory errors out rather than printing zero segments, segment-count reconciliation, TOC depth, page-number continuity) and **project-configured domains** (page-mark regex, the OCR typo table, the three note section names, which files/sections are skipped, grouping patterns and the default thresholds). Every number in this file, in `SKILL.md` and in `references/qa-checklist.md` is a mirror and a common example, **not an exhaustive claim** — the scripts as they now stand govern.

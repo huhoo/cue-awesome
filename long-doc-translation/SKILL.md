@@ -2,7 +2,7 @@
 name: long-doc-translation
 slug: cue-long-doc-translation
 displayName: 长文档全文翻译流水线
-version: "1.3.3"
+version: "1.3.4"
 summary: "外文长篇（专著/古籍/档案/译著参考）全文中译流水线：主稿+阅读版+逐段备查+术语总表，拿不准的进存疑清单不硬翻。"
 description: "给你一本授权可访问的外文长文（德/英/法/日等），产出四类交付：单一主稿 .md、自包含阅读版 .html（左侧目录、可直发）、逐段译文备查、全书新术语总表（按拼音排序）。流程纪律：分段清单先行、脚注 id 唯一、页边码正则从宽覆盖 OCR 变体；拿不准的术语进存疑清单交人工，不强译成通顺的假话。适合：内部研究、翻译参考、学术资料消化。不适合：受版权保护文本的直接公开出版、法律与医疗文书的执业级承诺。"
 license: MIT
@@ -97,10 +97,9 @@ python scripts/init_project.py <项目目录> --src en         # 指定源语言
 - 选项缺值（如只写 `--expect`）→ 提示正确写法；
 - 依赖缺失 → 提醒安装命令，并说明不装的降级后果。
 
-**一条重要保证**：目录路径写错时，脚本会**报错退出**，
-而不会打印「0 个片段」再给一排全绿 ✅。
-也就是说——**你看到质检报告全绿，那就是真的检查过了。**
-（早期版本会在目录不存在时静默假通过，已在 `scripts/_common.py` 中统一修复。）
+**一条重要保证（范围要说清，别读成万能保证）**：目录路径写错时，脚本会**报错退出**，
+而不会打印「0 个片段」再给一排全绿 ✅——**这一类静默假通过已统一封在 `scripts/_common.py` 里**。
+但"全绿"只覆盖**这一类**失效：另有几类"判定根本没发生"的静默跳过（分组命名不匹配、短句低于 `MINLEN` 不参判、只有一片时无相邻可比），见硬规则 8 与 `references/pitfalls.md` §1c——所以报告全绿不等于逐项都成立，**报告明细里的每一行跳过提示都要人过一眼再放行**。
 
 ---
 
@@ -173,12 +172,14 @@ python scripts/qa_check.py output/chunks
 | 1 | 片段完整性 | 译文片段数 == 切片数（或差异有 `_redundant` 解释） |
 | 2 | 体例三节 | 每个片段含 `#### 原注` / `#### 译注` / `#### 新术语` |
 | 3 | 未译残留 | 正文无「>60 字符且无中文」的整行外文（书目/广告页除外，应保留原文） |
-| 4 | OCR 残痕 | **正文区**错字数 == 0（注释区豁免） |
+| 4 | OCR 残痕 | **正文区错字数 == 0**（注释区豁免）——**错字表是项目级配置**（`OCR_TYPOS` 现值，当前装的是本包样例那部德文书的实测残留），换一部书若没重填，这一项会近乎空判：它是**配置域**，不是包内固定闸 |
 | 5 | 页边码连续 | 全稿页码无断档（罗马/阿拉伯分段各自连续） |
 | 6 | 重复段 | 正文关键句出现次数 == 1（术语表/附录内重复属正常） |
 | 7 | 目录干净 | HTML TOC 仅含 2–3 级标题，无 `原注/译注` 杂项 |
 
-脚本阈值口径（`MINLEN=15`、占位文件 < 15 行、未译残留 > 60 字符无中文、页边码断档分级）与逐项修复动作见 [`references/qa-checklist.md`](references/qa-checklist.md)。
+脚本阈值口径与逐项修复动作见 [`references/qa-checklist.md`](references/qa-checklist.md)；**本文与那份清单里的数字都是镜像**，判定=各脚本 `CONFIG` 区现值，一条命令原地打出来（自带安装后路径，任意目录整行粘贴可跑；装在别处把 ~/.workbuddy/skills/ 换成你的技能安装目录；命令用 grep（POSIX 工具），Windows 请在 Git Bash 或 WSL 内跑，路径写作 C:\Users\<用户名>\.workbuddy\skills\long-doc-translation\scripts\qa_check.py）：
+`grep -n "CONFIG\|^[A-Z_]\{2,\} *=" ~/.workbuddy/skills/long-doc-translation/scripts/qa_check.py ~/.workbuddy/skills/long-doc-translation/scripts/overlap_check.py ~/.workbuddy/skills/long-doc-translation/scripts/dedup_boundary.py`
+**闸分两性质**：包内固定闸（缺目录即报错、片段数对账、TOC 层级、页码连续算法）不随项目变；配置域（页边码正则、OCR 错字表、体例三节命名、跳过哪些文件/章节、分组模式与各阈值默认值）**按项目重填才成立**——所举数字一律不作穷尽断言。
 
 ---
 
@@ -196,7 +197,7 @@ python scripts/qa_check.py output/chunks
 
 推荐顺序：`init_project.py` → `overlap_check.py` → 翻译 → `qa_check.py` → `dedup_boundary.py` → `merge_build.py` → `build_reader.py`。
 
-脚本顶部均有 `CONFIG` 区（页边码正则、错字映射表、标题层级、目录深度、是否跳过索引/书目），按新项目改配置即可复用。
+脚本顶部均有 `CONFIG` 区（页边码正则、错字映射表、标题层级、目录深度、是否跳过索引/书目），按新项目改配置即可复用——**上面这些是配置域，不是包内已验证能力**：改了配置，报告里对应那一项的判别力跟着变，别把默认值当承诺。
 
 ---
 

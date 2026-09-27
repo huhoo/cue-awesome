@@ -38,7 +38,18 @@
 ## 上手
 
 ```bash
-python scripts/init_project.py --help    # 每个脚本都支持 --help
+python scripts/init_project.py --help        # 六个脚本里只有这一个支持 --help
+python scripts/qa_check.py                  # 其余脚本不带参数即打印用法（缺参数按错误退 1，不是崩）
+python scripts/build_reader.py               # 这两个有内置默认路径，路径不存在时**报错退出并给检查提示**
+# 实测：目录不存在一律退 1 并提示查路径 / 先跑 init_project，不会「打印 0 个片段再给一排全绿」。
 ```
 
-完整流程、硬规则与实测参数见 [`SKILL.md`](SKILL.md)；版本历史见 [`CHANGELOG.md`](CHANGELOG.md)。当前版本 **1.3.0**。
+完整流程、硬规则与实测参数见 [`SKILL.md`](SKILL.md)；版本历史与当前版本见 [`CHANGELOG.md`](CHANGELOG.md) 与 `SKILL.md` 头部——**本文件不写版本号**（写过一次就永远在说谎）。
+
+三道质检脚本的判定常数（含"按项目改这里"的 CONFIG 区）一条命令原地打出，任意目录整行粘贴可跑：
+
+```bash
+grep -n "CONFIG\|^[A-Z_]\{2,\} *=" ~/.workbuddy/skills/long-doc-translation/scripts/qa_check.py ~/.workbuddy/skills/long-doc-translation/scripts/overlap_check.py ~/.workbuddy/skills/long-doc-translation/scripts/dedup_boundary.py
+```
+
+闸分两性质：**包内固定闸**（缺目录即报错退出、片段数对账、TOC 层级、页码连续算法）与**项目配置域**（页边码正则、OCR 错字表、体例三节命名、跳过范围、分组模式与各阈值默认值）。README 与 `SKILL.md`、`references/qa-checklist.md` 里的数字都是镜像与常见例，**不作穷尽断言**——以脚本现值为准。
