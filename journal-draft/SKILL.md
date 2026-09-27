@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.7"
+version: "0.15.8"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -644,10 +644,13 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 13. **中文文案不许带「数字与汉字之间」的空格，也不许两端对齐。**「2026 年 4 月 10 日」排版引擎会把空格当断词点，两端对齐时每个空格被拉到极限，一行字散成碎块。`inline()` 已统一收紧为「2026年4月10日」；结构字段（如「2026.04.10 香港金融管理局」）的间隔空格是有意的，用 `esc()` 不走清理。
 14. **付印前必跑 `check_freshness.py`**，窗口默认 6 个月：出现 FUTURE（写了还没发生的事）直接拦下，STALE（旧闻充新刊）要么删、要么在 `meta.freshness_exceptions` 里写明理由。对相对时间词（"近日""日前"）的处理见 [references/freshness.md](references/freshness.md)。
 15. **三件套出完必跑 `crosscheck.py`，不允许 HTML 有而 PDF 没有。**
+    机检的边界要说清（否则这句会被读成"跑过=齐了"）：**命令省略哪个参数，那个介质就不检**；
+    文字稿另有一组纯版面字段按设计豁免（豁免表=`crosscheck.py` 里 `MD_SKIP` 现值，同一条命令可见）；过程标记只报 WARN 不判失败。
+    所以"三份介质都传了、缺的字段是不是真该缺"这一判断仍是**人工勾项**（见 `references/qa-checklist.md`）。
     三个渲染器各自实现，字段口径会漂移，而且**丢了不报错**。实测抓到过的四类静默丢失：
     封底 `contacts` vs `groups`、分隔页 `subtitle` vs `sub`、封面 meta 拼了一个 schema 里没有的
     `issue_date`、文字稿不导出 `abstract`。
-    **改任何一个渲染脚本后都要重跑**，占位态看不出来的东西，填上真内容就会暴露。
+    **改任何一个渲染脚本后都要重跑**，占位态看不出来的东西，填上真内容就会暴露。上面四类是**历史实测案例**、不是穷尽清单：脚本比的是"字段有没有落地"，新增字段照样可能漏，判定以脚本现值为准。
 
 16. **article 类（法规解读 / 洞察）稿件的全部可核查论断，付印前必须打包过一次 `cue-research` 的核验搭子。**
     `crosscheck.py` 只保证三个渲染器一致，不保证内容是真的。
@@ -819,8 +822,12 @@ python scripts/derive_skill.py --spec ./stylespec.json \
     框高 20pt 出 7.69pt，框高 8pt 出 3.08pt）——请求与实得不一致时脚本一声不吭。
     渲染器已加两道防线（框高留 `FIT_SLACK` 余量 + 行高按 `LINEBOX` 真实口径估算），
     **但每次改渲染脚本、每次换样刊后仍要重跑这道门禁**，不要靠「上次是好的」推断。
-    门槛：正文字号/样刊 <0.85 或 >1.18 判 FAIL；中文空格 >0 判 FAIL；
-    行距 >2.05、每行字数 >45、字号主峰占比 <50%、密度偏差 >25% 判 WARN。
+    门槛按脚本现值判（本节是**读码纠正版**，与旧文案的四处差异记在 CHANGELOG）：正文字号/样刊 **<0.85 判 FAIL，>1.18 只判 WARN**（偏大不拦下）；
+    中文空格 >0 判 FAIL；行距 **>2.05 与 <1.35 双向判 WARN**（偏挤也报）；每行字数 **>45 与 <18 双向判 WARN**；
+    字号主峰占比 <50% 判 WARN，**且只在正文区 ≥3000 字时才判**（薄样本不判，免得拿短刊误伤）；密度偏差**不对称：低于基线 25% 或高于 35% 判 WARN**。
+    **本节列的检查名与阈值都是镜像**——判定=`audit_layout.py` / `audit_editorial.py` 现值，一条命令把两道门禁的检查清单与三件套的豁免表一并打出来：
+    `grep -n "^  [0-9] \|MD_SKIP = " ~/.workbuddy/skills/journal-draft/scripts/audit_layout.py ~/.workbuddy/skills/journal-draft/scripts/audit_editorial.py ~/.workbuddy/skills/journal-draft/scripts/crosscheck.py`
+    （任意目录整行粘贴可跑，命令自带安装后路径；装在别处把 ~/.workbuddy/skills/ 换成你的技能安装目录；Windows 走 Git Bash 或 WSL（命令用 grep，属 POSIX 工具）。）所举阈值与检查名一律不作穷尽断言：改了脚本就以脚本为准，本节随之重写。
     缺 pymupdf 时它明确 exit 2，不假装检查过。
 
 30. **内容不许停在 L0（纯事实）。** 每条快讯至少一句 L1（点名受影响的主体与环节），
@@ -869,7 +876,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 | `scripts/enrich_from_omni.py` | 语义层：把 Omni 富文本解析结果转成 StyleSpec 的 `semantic` 补丁（目录与栏目树 / 单元边界 / 字数分布 / 题头日期+作者 / 段落型重复条目 / 固定件 / 术语种子）。见 [references/omni-channel.md](references/omni-channel.md) |
 | `scripts/build_draft.py` | 由 StyleSpec + content.json 渲染 mm 级定位的 HTML 底稿（**版面稿**）；`--stats` 出量级达成率 |
 | `scripts/export_pdf.py` | 同份内容自绘 **PDF 版面稿**（PyMuPDF，不依赖浏览器，也不受无头渲染策略限制），务必一并交付 |
-| `scripts/crosscheck.py` | **三件套一致性校验**：content.json 每条文本是否在 html / md / pdf 里都出现。三个渲染器各自实现，字段口径漂移时**不报错只丢内容**，靠肉眼发现不了。另扫 `⟨待确认⟩` 这类过程标记——它们会直接印进成品（硬规则 28） |
+| `scripts/crosscheck.py` | **三件套一致性校验**：content.json 每条文本是否在 html / md / pdf 里都出现（**只检命令里传进来的介质**；文字稿的纯版面字段按 `MD_SKIP` 现值豁免）。三个渲染器各自实现，字段口径漂移时**不报错只丢内容**，靠肉眼发现不了。另扫 `⟨待确认⟩` 这类过程标记——它们会直接印进成品（硬规则 28） |
 | `scripts/check_freshness.py` | 时效门禁：未来日期 / 超窗口旧闻 / 相对时间词。见 [references/freshness.md](references/freshness.md) |
 | `scripts/export_editable.py` | 同份内容导出 `draft.docx` / `draft.md`（**文字稿**）；docx 的页边距即版心网格，字体色板取自 spec。见 [references/editable-output.md](references/editable-output.md) |
 | `scripts/import_docx.py` | 把编辑改过的 docx 回填成 content.json，并打出改动清单；必带 `--base` 保住毫米定位 |
@@ -877,7 +884,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 | `scripts/plan_images.py` | 配图计划：四类决策（skip/reuse/manual/gen）+ 尺寸换算 + prompt 组装 + 一致性分组。见 [references/imagery.md](references/imagery.md) |
 | `scripts/adopt_images.py` | 收录 agent 出好的图并做印前校验（裁切 / 300dpi / 亮度 / 主色距离）＋按索引回填 content.json；**本地跑，不发请求、不需要 key** |
 | `scripts/derive_skill.py` | 从样例目录派生出**独立可安装**的场景技能：瘦身 spec / 抽固定件与术语 / 生成 last-issue 基线 / 自带渲染脚本。见 [references/instantiation.md](references/instantiation.md) |
-| `scripts/audit_layout.py` | **版面质量门禁**：量成品 PDF 的正文字号 / 字号碎裂度 / 行距倍数 / 每行字数 / 字体是否兜底 / 中文空格残留 / 页面密度，与 spec 的实测值比对。专治「门禁全绿但难看」（硬规则 29）。`--sample <样刊PDF>` 可直接拿样刊当基准，`--strict` 让 WARN 也判失败 |
+| `scripts/audit_layout.py` | **版面质量门禁**：量成品 PDF 的正文字号 / 字号碎裂度 / 行距倍数 / 每行字数 / 字体是否兜底 / 中文空格残留 / 页面密度，与 spec 的实测值比对。专治「门禁全绿但难看」（硬规则 29）。本节所列是其镜像，判定与阈值以脚本现值为准（定位命令见硬规则 29 末）。`--sample <样刊PDF>` 可直接拿样刊当基准，`--strict` 让 WARN 也判失败 |
 | `scripts/audit_editorial.py` | **编辑定位门禁**：读 `positioning.json` + `content.json`，判定位卡完整度 / 单条字数是否落在调性派生的字带 / 兑现「读者要做什么」的条目覆盖率（<50% FAIL）/ 纯 L0 占比（>50% FAIL）/ 句长中位 / 术语密度与行业忌讳词。专治「写得没错但不对路」（硬规则 31）。缺定位卡时 FAIL，`--no-positioning-gate` 可跳过 |
 | `assets/templates/positioning.template.json` | **刊物定位卡模板**：目的(六选一) / 读者(岗位+处境+专业水平+时间预算) / 价值承诺+reader_action / 调性三刻度 / 行业术语与忌讳。与 `stylespec.json` 平级的第二份机器可读产物 |
 | `assets/examples/qiming-regional-sample/positioning.json` | 定位卡填好的样例（虚构机构） |

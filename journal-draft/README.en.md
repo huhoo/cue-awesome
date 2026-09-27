@@ -33,6 +33,14 @@ The fourth gate is the **layout quality gate** (`audit_layout.py`, since v0.14.0
 
 The fifth gate is the **editorial positioning gate** (`audit_editorial.py`, since v0.15.0). The first four cover "right content, enough content, good looks"; only this one covers **is it on target** — who this issue is written for, what the reader should do after reading, and what tone it should speak in. Positioning is captured in `positioning.json` (the second machine-readable artifact, a peer of `stylespec.json`); then it judges whether each item's word count falls in the band derived from the tone, coverage of items that deliver "what the reader should do", share of pure-L0 items, sentence length, terminology and taboo words. Measured on a draft that passed all four gates green: all 48 items in a single shape, averaging 409 characters (template declares 180–320, i.e. 28% over), only 4 reader-addressing phrases in the whole issue, only 21% carrying an action suggestion — **again, not one gate reported it**.
 
+Neither gate's check list or thresholds are reproduced here — they are the scripts as they now stand, and one command prints them in place (it carries the installed path and runs from any directory; 装在别处把 ~/.workbuddy/skills/ 换成你的技能安装目录；Windows 走 Git Bash 或 WSL（命令用 grep，属 POSIX 工具）):
+
+```bash
+grep -n "^  [0-9] \|MD_SKIP = " ~/.workbuddy/skills/journal-draft/scripts/audit_layout.py ~/.workbuddy/skills/journal-draft/scripts/audit_editorial.py ~/.workbuddy/skills/journal-draft/scripts/crosscheck.py
+```
+
+Check names and thresholds appearing in this file and in `SKILL.md` are mirrors and common examples, **not an exhaustive claim** — after a script change the script governs. **What the machines catch is format and consistency; whether the issue is actually right stays human**: every blocking and advisory item in `references/qa-checklist.md` is ticked by a person, and the three-way cross-check only holds for the artifacts you actually passed in (an omitted one is not checked).
+
 ### ③ It admits its limits — and **marks them**
 
 The single-column renderer cannot draw two columns; component geometry on non-A4 trim needs manual tuning; chart-heavy pages have no built-in template; bilingual layout has no built-in rendering — none of this is hidden. When you hit one, the `+learn` wrap-up says so out loud, and `examples/` ships a dedicated **negative sample** to calibrate exactly where it breaks.

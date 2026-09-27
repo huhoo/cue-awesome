@@ -43,6 +43,14 @@
 句长、术语与忌讳词。实测一本四道全绿的稿子：48 条全部同一形态、均 409 字
 （模板声明 180–320，超 28%）、全刊读者称谓仅 4 次、含行动建议仅 21%——**同样没有一道报得出来**。
 
+两道门禁**具体查哪几项、阈值各是多少，本文不抄清单**——它们是脚本现值，一条命令原地打出来（自带安装后路径，任意目录可跑；装在别处把 ~/.workbuddy/skills/ 换成你的技能安装目录；Windows 走 Git Bash 或 WSL（命令用 grep，属 POSIX 工具））：
+
+```bash
+grep -n "^  [0-9] \|MD_SKIP = " ~/.workbuddy/skills/journal-draft/scripts/audit_layout.py ~/.workbuddy/skills/journal-draft/scripts/audit_editorial.py ~/.workbuddy/skills/journal-draft/scripts/crosscheck.py
+```
+
+本文与 `SKILL.md` 里出现的检查名和阈值都是**镜像与常见例，不作穷尽断言**；改了脚本以脚本为准。**机器拦的是形制与一致性，"这份到底对不对"仍归人工**：`references/qa-checklist.md` 的阻塞项/建议项全部要人逐项勾，三件套一致性也只在"你传了哪个介质"的范围内成立（省略即不检）。
+
 ### ③ 承认边界，并且**标出来**
 
 单栏渲染器画不出双栏、非 A4 开本的组件几何要人工微调、高图表页没有内建模板、
