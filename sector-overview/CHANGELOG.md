@@ -1,14 +1,15 @@
-# 更
-### 0.1.7 — 2026-09-27（机器面 · M150，lead 代记）
-
-- `scripts/run_fixtures.sh` 成功行不再打印仓外对账路径（P-29）：ALL GREEN 行改为包内自解释计数 `assertions: 49/49`。断言逻辑零碰，49/49 实测全绿。
-新日志
+# 更新日志
 
 本文件遵循 [Keep a Changelog](https://keepachangelog.com/) 与本仓 `CONTRIBUTING.md`；版本号以 `SKILL.md` frontmatter 为准。
 
 ### 0.1.8 — 2026-09-28（docs·渠道切换行纯文字化,审方裁形）
 
 - 头部「中文·English」可点切换改为同目录实际文件名的纯文字指路(渠道页不解析相对链接);仅导航文案,无判据与功能变更。
+
+### 0.1.7 — 2026-09-27（机器面 · M150，lead 代记）
+
+- `scripts/run_fixtures.sh` 成功行不再打印仓外对账路径（P-29）：ALL GREEN 行改为包内自解释计数 `assertions: 49/49`。断言逻辑零碰，49/49 实测全绿。
+
 
 ### 0.1.6 — 2026-09-27（文案面 · 上一趟自盘的四处范围外残留扫尾）
 
