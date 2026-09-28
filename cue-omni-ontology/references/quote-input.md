@@ -2,7 +2,7 @@
 
 The host still extracts semantics. `prepare` only binds exact quotes to evidence and copies supplied text; it never parses a URL, calls a model or proves support.
 
-Start with [quote-draft.json](../assets/demo/quote-draft.json). All entities, definitions, scopes and assertion fields follow [knowledge-contract.md](knowledge-contract.md). Source `sha256` may be omitted; the tool calculates it. Supplied hashes must match. Replace each evidence locator with:
+Start with [quote-draft.json](../assets/demo/quote-draft.json). All entities, definitions, scopes and assertion fields follow [knowledge-contract.md](knowledge-contract.md). Assertion `claim_kind` defaults to `reported` during `prepare`; any explicit other value is rejected. Source `sha256` may be omitted; the tool calculates it. Supplied hashes must match. Replace each evidence locator with:
 
 ```json
 {"source_id":"source:r1","quote":"Exact parsed text, including whitespace.","role":"value_and_scope"}
