@@ -37,7 +37,7 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ### Deferred (blocked, not built)
 
-- morning-note, idea-generation / screening, comps-analysis — held until the `equity_market` domain goes live (its status is whatever `GET https://cuecue.cn/api/mcp-catalog` reports; a coming-soon domain is never promised).
+- morning-note, idea-generation / screening, comps-analysis — held until the required data domains are live; the current live set is whatever the server-side catalog returns (`GET https://cuecue.cn/api/mcp-catalog`), and nothing here is a promise.
 
 ### Excluded by structure
 
@@ -45,21 +45,20 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ## Install
 
-With the skills CLI:
+Three steps, one skill at a time — the release page lists one zip per skill: <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>.
+Version numbers are whatever that page and the skill's own frontmatter say right now; this file does not carry a copy of them.
 
 ```bash
-npx skills add huhoo/cue-awesome                            # lists all skills
-npx skills add huhoo/cue-awesome --skill journal-draft      # add one skill
+curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/latest/download/tear-sheet.zip
+mkdir -p ~/.workbuddy/skills/tear-sheet
+unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-Or copy the directory you want into the WorkBuddy user-level skills directory:
-
-```bash
-cp -r journal-draft ~/.workbuddy/skills/
-cp -r competitive-brief ~/.workbuddy/skills/
-```
-
-On Windows: `C:\Users\<username>\.workbuddy\skills\`
+Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / cn-earnings-note / competitive-brief / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
+Want all eight at once: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
+Third route, the skills CLI: `npx skills add huhoo/cue-awesome` (lists all) / `npx skills add huhoo/cue-awesome --skill journal-draft` (one).
+On Windows the destination is `C:\Users\<username>\.workbuddy\skills\` — same three steps, same file names.
+After installing, `cd` into the skill folder and run the self-check commands its own README prints; each skill ships them, this page deliberately does not copy them.
 
 ## Language
 

@@ -37,7 +37,7 @@
 
 ### 暂缓（受阻、未建）
 
-- 晨报、选股 / 创意生成、可比公司分析——等 `equity_market` 域开放后再做（live 状态以 `GET https://cuecue.cn/api/mcp-catalog` 为准，coming_soon 期间不承诺）。
+- 晨报、选股 / 创意生成、可比公司分析——等所需数据域在服务端目录上线后再做；开放节奏不在本文承诺，实况以 `GET https://cuecue.cn/api/mcp-catalog` 返回为准。
 
 ### 结构性排除
 
@@ -45,21 +45,20 @@
 
 ## 安装
 
-用 skills CLI：
+三步装一件——release 页按件挂着八个 zip，你要哪个下哪个：<https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>。
+版本号以那一页和件内 frontmatter 的现值为准，本文件不留副本。
 
 ```bash
-npx skills add huhoo/cue-awesome                            # 列出全部 skill
-npx skills add huhoo/cue-awesome --skill journal-draft      # 只装一个
+curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/latest/download/tear-sheet.zip
+mkdir -p ~/.workbuddy/skills/tear-sheet
+unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-或把需要的 skill 子目录复制到 WorkBuddy 用户级 skills 目录：
-
-```bash
-cp -r journal-draft ~/.workbuddy/skills/
-cp -r competitive-brief ~/.workbuddy/skills/
-```
-
-Windows 对应路径：`C:\Users\<用户名>\.workbuddy\skills\`
+三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / cn-earnings-note / competitive-brief / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
+一次装全部八件走第二路径：`git clone https://github.com/huhoo/cue-awesome.git`，再把需要的子目录拷进 `~/.workbuddy/skills/`。
+第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。
+Windows 目标路径：`C:\Users\<用户名>\.workbuddy\skills\`——三步与文件名同上。
+装完 `cd` 进那件目录，跑它自己 README 里给的自查命令：各件自带，本页不复制其内容。
 
 ## 语言
 
