@@ -130,6 +130,13 @@ class Boundaries(unittest.TestCase):
         p = self.inputs / "injected.json"; p.write_text(json.dumps(j))
         with self.assertRaises(o.Invalid): o.prepare_input(p)
 
+    def test_claim_kind_defaults_to_reported(self):
+        j = o.read_json(self.inputs / "r1.json")
+        for a in j["assertions"]: a.pop("claim_kind", None)
+        p = self.inputs / "noclaim.json"; p.write_text(json.dumps(j))
+        k, _ = o.prepare_input(p)
+        self.assertTrue(all(a["claim_kind"] == "reported" for a in k["assertions"]))
+
     def test_derived_value_cannot_masquerade_as_reported(self):
         self.a["assertions"][0]["claim_kind"] = "derived"
         with self.assertRaises(o.Invalid): o.check_knowledge(self.a, self.inputs)
@@ -140,6 +147,10 @@ class Boundaries(unittest.TestCase):
     def test_symlink_escape_rejected(self):
         external = self.root / "outside.txt"; external.write_text("private")
         (self.inputs / "link.txt").symlink_to(external)
+        if not (self.inputs / "link.txt").is_symlink():
+            # On Windows without symlink privilege, symlink_to silently copies the
+            # target instead of creating a link, so no escape exists to reject.
+            self.skipTest("platform cannot create file symlinks (silently copied)")
         with self.assertRaises(o.Invalid): o.local_file(self.inputs, "link.txt")
 
     def test_private_and_credential_urls_rejected(self):
