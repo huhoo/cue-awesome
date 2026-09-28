@@ -22,7 +22,7 @@ from decimal import Decimal
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
-VERSION = "0.1.1"
+VERSION = "0.2.0"
 SCHEMA_VERSION = "0.1.0"
 ID = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]{0,119}$")
 HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -162,7 +162,7 @@ def check_knowledge(k, root, normalized=True):
             need(d["value_type"] == "entity", "relation must have entity value_type")
         text(d.get("name"), "definition.name")
         text(d.get("description"), "definition.description")
-        need(d.get("status", "candidate") == "candidate", "v0.1 definitions remain candidates; no schema approval engine")
+        need(d.get("status", "candidate") == "candidate", "public-beta definitions remain candidates; no schema approval engine")
     sources = indexed(k.get("sources"), "sources")
     source_bytes = {}
     for s in sources.values():
@@ -215,7 +215,7 @@ def check_knowledge(k, root, normalized=True):
         need(valid, f"invalid value for {vt}")
         if vt == "set":
             need(value == sorted(set(value)), "set value must be sorted and unique")
-        need(a.get("claim_kind") == "reported", "v0.1 packages directly reported claims only; keep derived answers separate")
+        need(a.get("claim_kind") == "reported", "packages store directly reported claims only; keep derived answers separate")
         need(a.get("status") in {"candidate", "accepted", "rejected"}, "invalid assertion status")
         evidence = a.get("evidence")
         need(isinstance(evidence, list) and evidence, "assertion needs evidence")
@@ -469,15 +469,27 @@ def main(argv=None):
         if name == "query":
             for field in ("entity", "concept", "period", "basis", "qualifiers", "unit", "valid-from", "valid-to", "fact"):
                 q.add_argument("--" + field)
+            q.add_argument("--with-evidence", action="store_true", help="Include bounded exact source excerpts")
         if name in {"export-okf", "feedback", "review"}: q.add_argument("--out", required=True)
         if name == "review":
             q.add_argument("--assertion", required=True)
             q.add_argument("--decision", required=True, choices=["accepted", "rejected"])
             q.add_argument("--reviewer", required=True)
             q.add_argument("--note", required=True)
+    q = sub.add_parser("prepare", help="Resolve exact quotes into validated byte evidence; no model or parser call")
+    q.add_argument("draft"); q.add_argument("--out", required=True)
+    q = sub.add_parser("brief", help="Create a local searchable HTML/Markdown brief with evidence previews")
+    q.add_argument("package"); q.add_argument("--base"); q.add_argument("--out", required=True)
+    q = sub.add_parser("demo", help="Run the complete synthetic build/update/brief example without an API key")
+    q.add_argument("--out", required=True)
     args = p.parse_args(argv)
     try:
-        if args.command in {"build", "update"}:
+        if args.command in {"prepare", "brief", "demo"}:
+            import experience
+            if args.command == "prepare": result = experience.prepare(args.draft, args.out)
+            elif args.command == "brief": result = experience.brief(args.package, args.out, args.base)
+            else: result = experience.demo(args.out)
+        elif args.command in {"build", "update"}:
             k, root = prepare_input(args.input)
             roots = roots_for(k, root)
             if args.command == "build":
@@ -493,12 +505,17 @@ def main(argv=None):
             k, run = load_package(args.package)
             if args.command == "validate":
                 result = {"status": "valid", "counts": run["counts"], "semantic_verification": "not_established_by_scripts"}
-            elif args.command == "query": result = query(k, args)
+            elif args.command == "query":
+                result = query(k, args)
+                if args.with_evidence:
+                    import experience
+                    result["evidence_previews"] = experience.previews(k, Path(args.package), result["assertions"])
             elif args.command == "export-okf": result = export_okf(k, args.out)
             elif args.command == "feedback":
                 out = Path(args.out); need(not out.exists(), "feedback output exists")
                 data = {"skill_version": VERSION, "counts": run["counts"], "intent": "",
                         "task_description_without_private_details": "", "failure_stage": "", "repeat_use": None,
+                        "repeat_update_completed": None, "review_minutes_self_reported": None, "next_workflow": "",
                         "notice": "Local draft only. Review and explicitly choose whether to share. No source URLs, raw claims, contacts or telemetry included."}
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
