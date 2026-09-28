@@ -1,6 +1,6 @@
 # dd-checklist
 
-**[中文](README.md) · [English](README.en.md)**
+**English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
 **How far does the public record actually get you?** This checklist answers in two parts: every risk item it can support is laid out with an anchor you can trace back to a live disclosure, and everything it cannot find is recorded by category, with the reason — **no tool in the domain** versus **zero hits inside the window**. It hands you no conclusion; the verdict slots stay `[待人工]` (human-only).
 

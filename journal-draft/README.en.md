@@ -1,6 +1,6 @@
 # journal-draft
 
-**[中文](README.md) · [English](README.en.md)**
+**English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
 **Give it one back issue; get back a next-issue draft that can go straight into design.**
 

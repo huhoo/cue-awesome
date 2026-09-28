@@ -4,7 +4,7 @@ This record distinguishes executed code, synthetic host tasks and saved parser o
 
 | Surface | Executed result | Limits |
 |---|---|---|
-| Offline boundary suite | 46 tests pass (`python3 -B scripts/test_ontology.py`) | Synthetic fixtures; no live parser, no LLM accuracy or enterprise IAM claim |
+| Offline boundary suite | all boundary tests passed as executed on this date — **count is not authority here**: run `python3 -B scripts/test_ontology.py` for the current number and result | Synthetic fixtures; no live parser, no LLM accuracy or enterprise IAM claim |
 | Independent host use | A separate agent followed SKILL.md using newly supplied fictional Cedar Instruments releases; built/updated two versions and answered business questions | Supplied parsed synthetic text; no live Omni invocation and no claim of cold client onboarding |
 | Independent query outcomes | Unscoped Q1 `needs_scope`; statutory/adjusted Q1 each `found`; restated Q4 `conflict`; alleged Beacon discontinuation `not_found` | One task, not a statistical generalization benchmark; machine assertions were not marked human-reviewed |
 | Public-source replay | Existing grounded Omni output for two Tencent 2026 quarterly releases successfully repackaged and updated | Saved earlier output and seeded rule-extracted claims; not a fresh model extraction or fresh parser run |

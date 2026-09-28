@@ -20,7 +20,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 
 | Directory | Name | Version | What it does |
 |---|---|---|---|
-| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | 0.2.0 | Public-document knowledge and change briefs: a zero-key demo, verbatim evidence, scope-aware answers, and updates that preserve history and conflicts. Includes financial, supplier and product task recipes. Public beta; see its verification record for tested scope. |
+| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | Public-document knowledge and change briefs: a zero-key demo, verbatim evidence, scope-aware answers, and updates that preserve history and conflicts. Includes financial, supplier and product task recipes. Public beta; see its verification record for tested scope. |
 | [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | Draft generator for corporate journals / in-house magazines / client newsletters / investor letters / ESG reports / yearbook specials. It **measures** a publication's layout and editorial conventions out of a sample PDF and turns them into verifiable parameters (grid, type area, type scale, leading, color palette, section templates), then produces the next issue against those parameters. Includes the regulatory-dynamics section spec and CTA source-tracing. |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | Competitive-analysis brief generator: turns competitor material scattered across web pages / PDFs / recordings / video into a traceable, comparable, updatable decision brief. Six-stage pipeline: ingest (omni-reader) → brief → comparison map → evidence (cue-research) → three-format delivery → QA gates. |
@@ -58,7 +58,7 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ## Install
 
-For `cue-omni-ontology`, use the CLI above or copy its directory from this repository. It is not included in the older ZIP release below.
+All nine skills, `cue-omni-ontology` included, ship as one ZIP asset each on the release page below — install any of them with the same three steps; copying a skill's directory out of this repository is the other way in.
 
 For the nine skills listed in the ZIP command instructions below, the existing release is <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>. Its packaged versions may differ from the current repository; check the release and the installed skill's frontmatter.
 

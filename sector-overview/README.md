@@ -1,6 +1,6 @@
 # sector-overview
 
-**[中文](README.md) · [English](README.en.md)**
+**本文件为中文主面；英文版是同目录下的 `README.en.md`（仓库内查阅用——渠道页不解析相对链接，这里不做可点切换）。**
 
 「这行业回暖了。」——凭什么？
 

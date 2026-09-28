@@ -20,7 +20,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 | 目录 | Name | 版本 | 用途 |
 |---|---|---|---|
-| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | 0.2.0 | 公开资料知识与变化简报：无需 Key 的演示、原文证据、区分口径的回答，以及保留历史和冲突的持续更新。提供财报、供应商和产品场景指引。公开试验版，已验范围见包内验证记录。 |
+| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 公开资料知识与变化简报：无需 Key 的演示、原文证据、区分口径的回答，以及保留历史和冲突的持续更新。提供财报、供应商和产品场景指引。公开试验版，已验范围见包内验证记录。 |
 | [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | 企业期刊 / 内刊 / 客户通讯 / ESG 报告 / 年鉴特刊的「底稿生成器」：把版式体例从 PDF 里量化成可校验参数（版面网格、版心、字号序列、行距、色板、栏目模板），再按这套参数生产新一期内容。含法规动态栏目规范、CTA 溯源机制。 |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | 长篇外文（德 / 英 / 法 / 日等）学术专著、古籍、档案、译著的全文高质量中译流水线：解析 → 清洗切片 → 建体例与术语表 → 并行分批翻译 → 多维质检 → 合并交付带目录的阅读版。 |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | 竞品简报生成器：把散落在网页 / PDF / 录音 / 视频里的竞品素材，变成可溯源、可对比、可更新的决策简报。六阶段管线：素材摄入（omni-reader）→ 需求对齐 → 对比框架 → 取证（cue-research）→ 三件套出稿 → 门禁校订。 |
@@ -58,7 +58,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 ## 安装
 
-`cue-omni-ontology` 请使用上方 CLI 或从仓库复制目录安装；它未包含在下方较早的 ZIP 发布中。
+九件（含 `cue-omni-ontology`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
 
 下方 ZIP 命令说明列出的九个 skill，现有发布页为 <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>。打包版本可能与当前仓库不同，请核对发布页和已安装 skill 的 frontmatter。
 

@@ -1,6 +1,6 @@
 # competitive-brief
 
-**[中文](README.md) · [English](README.en.md)**
+**English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
 Run a competitive analysis around one decision question, and ship a brief backed by an evidence chain.
 
