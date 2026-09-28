@@ -7,6 +7,7 @@ import io
 import importlib.util
 import json
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,7 +15,9 @@ from types import SimpleNamespace
 
 SPEC = importlib.util.spec_from_file_location("ontology", Path(__file__).with_name("ontology.py"))
 o = importlib.util.module_from_spec(SPEC)
+sys.modules['ontology'] = o
 SPEC.loader.exec_module(o)
+import experience as e
 DEMO = Path(__file__).resolve().parent.parent / "assets" / "demo"
 
 
@@ -260,6 +263,84 @@ class Boundaries(unittest.TestCase):
         self.assertIn(changes['conflicts'][0], rendered)
         self.assertIn('| Validity |', rendered)
         self.assertNotIn('[external](https://example.org)', rendered)
+
+    def test_quote_preparation_preserves_exact_evidence(self):
+        target = self.root / 'prepared'
+        e.prepare(self.inputs / 'quote-draft.json', target)
+        k, _ = o.prepare_input(target / 'input.json')
+        self.assertEqual(k['assertions'], self.a['assertions'])
+        self.assertEqual(k['sources'][0]['sha256'], self.a['sources'][0]['sha256'])
+
+    def quote_input(self, text, quote, occurrence=None):
+        d = o.read_json(self.inputs / 'quote-draft.json')
+        d['assertions'] = d['assertions'][:1]
+        d['sources'][0]['page_spans'] = []
+        (self.inputs/d['sources'][0]['content_file']).write_text(text, encoding='utf-8')
+        d['assertions'][0]['evidence'] = [dict(source_id=d['sources'][0]['id'],role='value',quote=quote)]
+        if occurrence is not None: d['assertions'][0]['evidence'][0]['occurrence'] = occurrence
+        p=self.inputs/'draft.json';p.write_text(json.dumps(d,ensure_ascii=False),encoding='utf-8')
+        return p
+
+    def test_ambiguous_quote_fails_without_output(self):
+        p=self.quote_input('收入 100。收入 100。','收入 100。')
+        with self.assertRaises(o.Invalid): e.prepare(p,self.root/'prepared')
+        self.assertFalse((self.root/'prepared').exists())
+
+    def test_quote_occurrence_uses_utf8_byte_positions(self):
+        p=self.quote_input('收入 100。收入 100。','收入 100。',2)
+        e.prepare(p,self.root/'prepared')
+        k,_=o.prepare_input(self.root/'prepared'/'input.json')
+        self.assertEqual(k['assertions'][0]['evidence'][0]['start_utf8'],len('收入 100。'.encode()))
+
+    def test_changed_quote_and_wrong_hash_are_rejected(self):
+        p=self.quote_input('actual text','invented text')
+        with self.assertRaises(o.Invalid): e.prepare(p,self.root/'bad')
+        d=o.read_json(p);d['assertions'][0]['evidence'][0]['quote']='actual text';d['sources'][0]['sha256']='0'*64
+        p.write_text(json.dumps(d))
+        with self.assertRaises(o.Invalid): e.prepare(p,self.root/'bad')
+
+    def test_quote_locator_cannot_override_derived_page(self):
+        p=self.inputs/'quote-draft.json';d=o.read_json(p)
+        d['assertions'][0]['evidence'][0]['page']=999;p.write_text(json.dumps(d))
+        with self.assertRaises(o.Invalid): e.prepare(p,self.root/'bad')
+
+    def test_brief_requires_preserved_baseline(self):
+        current,_=o.merge(self.a,self.b)
+        delta=e.changes_between(self.a,current)
+        self.assertEqual(len(delta['new_conflict_ids']),1)
+        self.assertEqual(delta['baseline_assertions_preserved'],2)
+        current['assertions'].pop(0)
+        with self.assertRaises(o.Invalid): e.changes_between(self.a,current)
+
+    def test_evidence_previews_are_bounded_and_not_rewritten(self):
+        previews=e.previews(self.a,self.inputs,limit=10)
+        self.assertTrue(previews[0]['truncated'])
+        ev=self.a['assertions'][0]['evidence'][0]
+        raw=(self.inputs/self.a['sources'][0]['content_file']).read_bytes()
+        self.assertEqual(previews[0]['excerpt'],raw[ev['start_utf8']:ev['end_utf8']].decode()[:10])
+
+    def test_brief_html_keeps_hostile_content_as_data(self):
+        k=copy.deepcopy(self.a);k['scope']['title']='</script><img src=x onerror=alert(1)>'
+        d=e.payload(k,self.inputs)
+        document=e.html_report(d)
+        self.assertNotIn('</script><img',document)
+        self.assertIn('\\u003c/script',document)
+        self.assertNotIn('innerHTML',document)
+
+    def test_one_command_demo_is_complete_and_offline(self):
+        out=self.root/'demo';result=e.demo(out)
+        self.assertEqual(result['api_calls'],0)
+        self.assertTrue((out/'brief'/'brief.html').is_file())
+        k,_=o.load_package(out/'v2');self.assertEqual(len(k['assertions']),5)
+        with self.assertRaises(o.Invalid): e.demo(out)
+
+    def test_query_evidence_cli_returns_source_excerpts(self):
+        base=self.build();stdout=io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            self.assertEqual(o.main(['query',str(base),'--concept','metric:revenue','--with-evidence']),0)
+        result=json.loads(stdout.getvalue())
+        self.assertTrue(result['evidence_previews'][0]['excerpt'])
+        self.assertIn('url',result['evidence_previews'][0])
 
 
 if __name__ == "__main__":

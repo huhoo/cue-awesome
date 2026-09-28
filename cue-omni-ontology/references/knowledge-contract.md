@@ -1,4 +1,4 @@
-# Knowledge input and package contract — 0.1.0
+# Knowledge input and package contract — schema 0.1.0, skill 0.2.0
 
 ## Input
 
@@ -22,7 +22,7 @@ Each evidence item is `{source_id,start_utf8,end_utf8,span_sha256,role,page,loca
 
 Build inputs cannot inject acceptance or reviews. The packager adds status `candidate`, reviews `[]`, fact_id and assertion id. Facts are keyed by entity, concept, unit, period, basis, qualifiers and validity. Source assertions additionally include value and supporting evidence. Numeric spellings such as 100 and 100.0 compare equal for conflict/support classification; original values and assertion IDs remain unchanged. No approximate tolerance or unit conversion is applied. Equivalent evidence reorderings deduplicate; changed ranges may create another supporting assertion. IDs are local content-derived identifiers, not externally certified identities.
 
-The skill version is independent of schema version. Skill 0.1.1 continues to read and write schema 0.1.0; existing knowledge hashes and IDs are not migrated. Queries return available `scopes`; `--fact` selects one whole scope, including any conflict. `--unit`, `--valid-from` and `--valid-to` match exact values. They do not resolve effective-date precedence.
+The skill version is independent of schema version. Skill 0.2.0 continues to read and write schema 0.1.0; existing knowledge hashes and IDs are not migrated. Queries return available `scopes`; `--fact` selects one whole scope, including any conflict. `--unit`, `--valid-from` and `--valid-to` match exact values. They do not resolve effective-date precedence.
 
 ## Package
 
@@ -41,3 +41,9 @@ Use a new output directory for each version. The tool validates before final ren
 Keep necessary source snapshots in the authorized task workspace. Publishing a complete package may redistribute its full parsed sources; select only authorized evidence and appropriate short excerpts for public examples. Do not treat public availability as permission to republish entire materials. Share feedback drafts separately from knowledge packages.
 
 OKF export emits candidate concept files with `type`, `title`, `status: draft`, source references and claims. `index.md` is navigation. It targets the v0.2 core subset, has no `verified` claim, embeds no authority to execute, and has not established compatibility with any external consumer. Core source: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md .
+
+## Convenience workflows in 0.2
+
+`prepare` converts verbatim quote evidence to the same 0.1.0 schema; see [quote-input.md](quote-input.md). `brief` emits searchable offline HTML, Markdown and JSON with up to 400 characters per evidence range. Truncation is explicit. Briefs do not embed complete source files and are derivatives, not a replacement for the integrity-checked package. When comparing versions, every baseline entity, definition, source, assertion and review prefix must be retained; an unrelated package is rejected.
+
+`demo --out NEW_DIRECTORY` runs the synthetic build/update/brief without API access. `query --with-evidence` returns excerpts plus source URLs and locators. The host must still assess semantic support and answer the user's business questions. No automatic claims about causality, ROI or business events are generated.

@@ -14,4 +14,4 @@ Three practical questions:
 
 Examples of reasons to leave a question unresolved: unavailable footnote, ambiguous entity identity, missing comparison period, conflicting disclosure, nonexhaustive list, or absent underlying source. Do not replace any of these with a numeric zero.
 
-Derived calculations belong in the answer with disclosed inputs, arithmetic and precision limits, not in v0.1 reported-claim storage. No investment rating, credit decision, operational action or enterprise authorization follows automatically from a packaged fact.
+Derived calculations belong in the answer with disclosed inputs, arithmetic and precision limits, not in v0.2 reported-claim storage. No investment rating, credit decision, operational action or enterprise authorization follows automatically from a packaged fact.
