@@ -215,7 +215,7 @@ def check_knowledge(k, root, normalized=True):
         need(valid, f"invalid value for {vt}")
         if vt == "set":
             need(value == sorted(set(value)), "set value must be sorted and unique")
-        need(a.get("claim_kind") == "reported", "packages store directly reported claims only; keep derived answers separate")
+        need(a.get("claim_kind") == "reported", "assertion.claim_kind must be 'reported' or omitted; packages store directly reported claims only, keep derived answers separate")
         need(a.get("status") in {"candidate", "accepted", "rejected"}, "invalid assertion status")
         evidence = a.get("evidence")
         need(isinstance(evidence, list) and evidence, "assertion needs evidence")
@@ -263,6 +263,7 @@ def prepare_input(path):
         need(a.get("status", "candidate") == "candidate" and not a.get("reviews"), "input cannot inject review decisions")
         a["status"] = "candidate"; a["reviews"] = []
         a.setdefault("valid_from", None); a.setdefault("valid_to", None)
+        a.setdefault("claim_kind", "reported")
         a["fact_id"] = fact_id(a)
         a["evidence"] = sorted(a["evidence"], key=canonical)
         a["id"] = assertion_id(a)
