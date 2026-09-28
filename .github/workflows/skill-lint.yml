@@ -27,3 +27,6 @@ jobs:
 
       - name: Repo skill lint
         run: python scripts/check_skills.py
+
+      - name: Ontology regression suite
+        run: python -B cue-omni-ontology/scripts/test_ontology.py
