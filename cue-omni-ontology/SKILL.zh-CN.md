@@ -1,8 +1,8 @@
 ---
 name: cue-omni-ontology
-description: "Build and update evidence-backed business knowledge from public documents with Cue Omni Reader; answer from a versioned knowledge package. Use for 公开资料本体抽取、企业业务知识、口径核对、跨期变化、可追溯知识包; ontology extraction, disclosure tracking, supplier/product changes, evidence briefs; 财报跟踪、供应商变化、竞品公告、变化简报。"
+description: "从公开文档建可追溯业务知识包:给「主体+两份以上公开材料」,产出带证据锚的实体、口径、跨期变化与变化简报;语义抽取由宿主模型完成,完整性、打包、更新、查询与导出由包内离线工具机检(47 项自测可复跑)。适合:财报跟踪、供应商/产品变化、竞品公告、口径核对。不适合:把本件当企业授权服务或抽取器本身——锚真伪仍须人工抽查。Triggers: ontology extraction, disclosure tracking, evidence briefs, 知识包, 变化简报。"
 license: MIT
-version: "0.2.0"
+version: "0.2.1"
 slug: cue-omni-ontology
 displayName: 公开资料业务知识包
 summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变化与变化简报;完整性、打包、更新与导出由包内离线工具机检,47 项自测可复跑。"

@@ -4,7 +4,7 @@
 
 Give an agent two releases or reports. Receive **evidenced answers, a searchable change brief with source excerpts, and a reusable knowledge package** for the next update. Start with disclosure tracking, public supplier diligence, or product/competitor monitoring.
 
-**[中文](README.md) · [English](README.en.md)** · v0.2.0 public beta · Python standard-library tools · No usage telemetry
+**[中文](README.md) · [English](README.en.md)** beta · Python standard-library tools · No usage telemetry
 
 ## See the value
 
