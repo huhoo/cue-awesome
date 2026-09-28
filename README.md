@@ -4,10 +4,23 @@
 
 A personal collection of self-built agent skills for WorkBuddy / Cue. Each subdirectory is a standalone skill — copy the one you need and use it on its own.
 
+## Try a public-document knowledge workflow
+
+**What changed, which figures are comparable, and where is the evidence?** [`cue-omni-ontology`](cue-omni-ontology/README.en.md) turns public reports and announcements into evidenced answers, a change brief, and a knowledge package you can update with the next release. Start with financial disclosures, supplier information, or product updates.
+
+```bash
+npx skills add huhoo/cue-awesome --skill cue-omni-ontology
+```
+
+Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new release adds, where claims conflict, and the source excerpts.”** The bundled demo needs no API key and makes no network calls. Real document parsing uses the separately configured official Cue Omni Reader.
+
+[Quick start and repeat-use prompts](cue-omni-ontology/README.en.md) · [Fresh Microsoft disclosure run](cue-omni-ontology/assets/public-example/live-preview.md) · [Verified scope and limits](cue-omni-ontology/references/verification.md)
+
 ## Skills
 
 | Directory | Name | Version | What it does |
 |---|---|---|---|
+| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | 0.2.0 | Public-document knowledge and change briefs: a zero-key demo, verbatim evidence, scope-aware answers, and updates that preserve history and conflicts. Includes financial, supplier and product task recipes. Public beta; see its verification record for tested scope. |
 | [`journal-draft/`](journal-draft/) | journal-draft | 0.15.3 | Draft generator for corporate journals / in-house magazines / client newsletters / investor letters / ESG reports / yearbook specials. It **measures** a publication's layout and editorial conventions out of a sample PDF and turns them into verifiable parameters (grid, type area, type scale, leading, color palette, section templates), then produces the next issue against those parameters. Includes the regulatory-dynamics section spec and CTA source-tracing. |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | 1.3.0 | High-quality full-text Chinese translation pipeline for long foreign-language (German / English / French / Japanese …) scholarly monographs, classics, archives and translated works: parse → clean & slice → build style guide + glossary → parallel batched translation → multi-dimensional QA → merge into a reading edition with a table of contents. |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | 0.3.0 | Competitive-analysis brief generator: turns competitor material scattered across web pages / PDFs / recordings / video into a traceable, comparable, updatable decision brief. Six-stage pipeline: ingest (omni-reader) → brief → comparison map → evidence (cue-research) → three-format delivery → QA gates. |
@@ -45,8 +58,9 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ## Install
 
-Three steps, one skill at a time — the release page lists one zip per skill: <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>.
-Version numbers are whatever that page and the skill's own frontmatter say right now; this file does not carry a copy of them.
+For `cue-omni-ontology`, use the CLI above or copy its directory from this repository. It is not included in the older ZIP release below.
+
+For the eight skills listed in the ZIP command instructions below, the existing release is <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>. Its packaged versions may differ from the current repository; check the release and the installed skill's frontmatter.
 
 ```bash
 curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/latest/download/tear-sheet.zip
@@ -55,7 +69,7 @@ unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
 Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / cn-earnings-note / competitive-brief / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
-Want all eight at once: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
+To choose from all current skills: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
 Third route, the skills CLI: `npx skills add huhoo/cue-awesome` (lists all) / `npx skills add huhoo/cue-awesome --skill journal-draft` (one).
 On Windows the destination is `C:\Users\<username>\.workbuddy\skills\` — same three steps, same file names.
 After installing, `cd` into the skill folder and run the self-check commands its own README prints; each skill ships them, this page deliberately does not copy them.
