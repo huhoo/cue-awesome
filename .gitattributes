@@ -1,0 +1,5 @@
+# All repo content is text (Markdown/JSON/Python/HTML/YAML/TXT) and parts of it
+# (assets/demo/*) carry recorded sha256 hashes and byte offsets. Normalize to LF
+# on commit and force LF on checkout so core.autocrlf=true (the Git for Windows
+# default) can never smudge these files into a state where validation fails.
+* text=auto eol=lf
