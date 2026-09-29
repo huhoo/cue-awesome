@@ -6,6 +6,7 @@ import contextlib
 import io
 import importlib.util
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -352,6 +353,25 @@ class Boundaries(unittest.TestCase):
         result=json.loads(stdout.getvalue())
         self.assertTrue(result['evidence_previews'][0]['excerpt'])
         self.assertIn('url',result['evidence_previews'][0])
+
+
+class VersionConsistency(unittest.TestCase):
+    """M158 案①一致性锁:脚本 VERSION 常量必须==两份 SKILL frontmatter version(防漂)。
+
+    M158 追加(4.1 发现,lead 转):本包中英两份 SKILL 各带 version 字段,单读一份
+    测不到两文漂移——遍历 SKILL.md+SKILL.en.md,三者(脚本+两份)同号才放行。"""
+
+    def test_script_version_equals_both_skill_frontmatter(self):
+        root = Path(__file__).resolve().parent.parent
+        for name in ("SKILL.md", "SKILL.en.md"):
+            with self.subTest(skill=name):
+                text = (root / name).read_text(encoding="utf-8")
+                fm = re.search(r"^---\s*\n(.*?)\n---\n", text, re.DOTALL)
+                self.assertIsNotNone(fm, f"{name} 缺 frontmatter 块")
+                mv = re.search(r'^version:\s*"?([0-9][^"\n]*)"?\s*$', fm.group(1), re.MULTILINE)
+                self.assertIsNotNone(mv, f"{name} frontmatter 缺 version 字段")
+                self.assertEqual(o.VERSION, mv.group(1),
+                                 f"ontology.py VERSION={o.VERSION} 与 {name} frontmatter {mv.group(1)} 漂号(M156 第6项/M158 追加)")
 
 
 if __name__ == "__main__":
