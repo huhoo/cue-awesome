@@ -2,7 +2,7 @@
 
 **English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
-*Full English translation of the Chinese-authoritative [`README.md`](README.md); the Chinese text governs where the two diverge.*
+*Full English translation of the Chinese-authoritative `README.md` in this directory; the Chinese text governs where the two diverge.*
 
 **Line up the *certain dates* behind your holdings as one forward-dated calendar — every date points back to a filed announcement or a statute, and nothing more. No judgments added.**
 

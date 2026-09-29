@@ -2,7 +2,7 @@
 
 **English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
-*Full English translation of the Chinese-authoritative [`README.md`](README.md); the Chinese text governs where the two diverge.*
+*Full English translation of the Chinese-authoritative `README.md` in this directory; the Chinese text governs where the two diverge.*
 
 **Give it an issuer + a reporting period; get back an 8–12-page research-grade deep review of the results as an AI first draft — every number traceable, ratings always `[待人工]` (pending human).**
 

@@ -2,7 +2,7 @@
 
 **English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
-*Full English translation of the Chinese-authoritative [`README.md`](README.md); the Chinese text governs where the two diverge.*
+*Full English translation of the Chinese-authoritative `README.md` in this directory; the Chinese text governs where the two diverge.*
 
 **Thirty seconds before a client meeting — enough?** Enough. Hand it an issuer + a use case and you get a one-page sheet where **every line traces to a disclosure anchor** (readable on one screen) — and an opinions column that honestly stays blank.
 
