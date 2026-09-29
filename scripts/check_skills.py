@@ -246,6 +246,25 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
         if top and top != version:
             rep.warn(f"{name}: CHANGELOG.md newest entry is {top}, but SKILL.md says {version}")
 
+    # --- CHANGELOG head shape (M161; CONTRIBUTING §frontmatter-adjacent rule
+    # 「首条即版本条」). ERROR, not WARN: a broken head is silent corruption —
+    # the newest entry is the release index readers actually land on, and unlike
+    # version alignment there is no legitimate mid-flight state for a shell or a
+    # bare first line (M150 truncation proved nothing flags it otherwise).
+    if changelog.is_file():
+        text = changelog.read_text(encoding="utf-8", errors="replace")
+        entries = [ln for ln in text.splitlines() if ln.startswith("### ")]
+        if not entries:
+            rep.error(f"{name}: CHANGELOG.md has no '### x.y.z' entry line — 禁裸标题/无条目")
+        elif not re.match(r"^### \d+\.\d+\.\d+", entries[0]):
+            rep.error(f"{name}: CHANGELOG.md first entry {entries[0][:40]!r} must be "
+                      f"'### x.y.z' — 禁 Unreleased 壳、禁裸标题(首条即版本条)")
+        for ln in text.splitlines():
+            if re.match(r"^#{2,3}\s*\[?Unreleased", ln):
+                rep.error(f"{name}: CHANGELOG.md carries an Unreleased shell heading — "
+                          f"随下趟车收口壳禁入文件(首条即版本条)")
+                break
+
     # --- forbidden files ---
     if (skill_dir / ".git").exists():
         rep.error(f"{name}: nested .git directory — skills must not carry their own repo")
