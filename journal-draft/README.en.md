@@ -170,7 +170,7 @@ Your latest issue PDF ──+learn──▶ stylespec.json ──human fill-in�
 A derived child package **carries its own `slug` / `displayName` / `version`** and can be published to a skill marketplace on its own; `scripts/` and the two `assets/` template directories are copied along, so it runs on another machine immediately. Only `references/` is deliberately left in the parent (it evolves with the framework; a copy would be stale at once) —
 **day-to-day work in a child package does not need the parent present; you only come back to the parent for underlying issues like changing trim, redesigning, or switching publication type.**
 
-> ⚠️ **The two finished samples and the one intermediate sample are all desensitized**: institution names, publication names, natural-person names, client and project names, and source file names are **fictional synthetic entities**; what is preserved is the measured layout parameters and template structure. See [`NOTICE.md`](NOTICE.md).
+> ⚠️ **The two finished samples and the one intermediate sample are all desensitized**: institution names, publication names, natural-person names, client and project names, and source file names are **fictional synthetic entities**; what is preserved is the measured layout parameters and template structure. See [`NOTICE.md`](../NOTICE.md) at the repository root — that file lives at the top level and does not ship inside this package, so you will not find it in this directory.
 
 ---
 
@@ -196,7 +196,7 @@ SKILL.md                     main flow and hard rules (read first)
 README.md                    this file in Chinese (features, limits, onboarding)
 README.en.md                 English version
 CHANGELOG.md                 version history and breaking changes
-NOTICE.md                    source statement and desensitization notice
+NOTICE.md                    source statement and desensitization notice (**repository root** — not shipped inside this package)
 LICENSE.md                   MIT (keeps the .md extension: marketplaces reject extension-less files)
 
 references/

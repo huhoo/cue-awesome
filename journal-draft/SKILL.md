@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.9"
+version: "0.15.10"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -910,7 +910,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 
 本技能随包提供 **两份成品样例技能**（`examples/`）与**一份 `+learn` 中间产物样例**（`assets/examples/`）。
 **三者均已脱敏**：机构名、刊物名、自然人姓名、客户与项目名称、源文件名全部为
-虚构合成实体；保留的是实测版式参数与模板结构。详见 [`NOTICE.md`](NOTICE.md)。
+虚构合成实体；保留的是实测版式参数与模板结构。详见仓根的 [`NOTICE.md`](../NOTICE.md)（在仓库顶层，不随本包分发）。
 
 | 样例 | 结构（样例刊） | 说明 |
 |---|---|---|
@@ -1001,5 +1001,5 @@ comm -23 /tmp/parent.txt /tmp/child.txt    # 只应输出 derive_skill.py
 - [`assets/examples/`](assets/examples/) — `+learn` 的中间产物样例（**已脱敏**：实体为虚构合成值，保留实测版式参数）
 - [`assets/demo/`](assets/demo/) — **可直接打开看的成品版面稿**（8 页示例，用上面那份样例 spec 渲染）
 - [`CHANGELOG.md`](CHANGELOG.md) — 版本变更与**不兼容变更**说明（升级前先读）
-- [`NOTICE.md`](NOTICE.md) — 来源、脱敏声明、用途边界与打包自检表
+- [`NOTICE.md`](../NOTICE.md) — **在仓根、不在本包内**：来源、脱敏声明、用途边界与打包自检表
 - [`LICENSE.md`](LICENSE.md) — MIT
