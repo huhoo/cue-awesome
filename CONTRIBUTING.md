@@ -52,7 +52,7 @@ cue-awesome/
 |---|---|---|
 | `name` | ✅ | **必须等于目录名**，校验脚本会查 |
 | `description` | ✅ | 用途 + 触发词。**中英双语触发词都要写** —— 只有中文触发词，英文用户永远触发不到 |
-| `version` | ✅ | `x.y.z`。顶层 `version:` 或 `metadata.version:` 二选一，**不要两处都写且不一致** |
+| `version` | ✅ | `x.y.z`。**只写顶层 `version:`**——嵌套 `metadata.version:` 即 lint ERROR（扁平解析器会 last-wins 静默覆盖真值，K-11 教训） |
 | `license` | 建议 | MIT |
 | `slug` / `displayName` / `summary` / `tags` / `metadata` | 可选 | 上架技能市场用；`agent_created: true` 表示由 agent 生成 |
 
