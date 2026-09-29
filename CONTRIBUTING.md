@@ -68,7 +68,7 @@ Triggers: 竞品分析 / 竞品简报 / 这个市场要不要进; competitive an
 
 - **版本号必须递增**：修 bug → patch（`0.1.0`→`0.1.1`）；加能力 / 改流程 → minor（`0.1.0`→`0.2.0`）；0.x 阶段的不兼容重构也走 minor。
 - **双语版本同步**：`SKILL.md` 与 `SKILL.zh-CN.md` / `README.md` 与 `README.en.md` 的 `version` 必须一致，脚本会查。
-- **CHANGELOG**：有 `CHANGELOG.md` 的 skill，最新条目版本要等于 `SKILL.md` 的 `version`（不一致只是 WARN，但请顺手对齐）。
+- **CHANGELOG**：有 `CHANGELOG.md` 的 skill，最新条目版本要等于 `SKILL.md` 的 `version`（不一致只是 WARN，但请顺手对齐）。头部形制：首条即版本条（`### x.y.z` 起，不留 `Unreleased` 壳），插入用版本条标题做锚、锚失配必须硬失败。
 - **脚本**：`scripts/` 下的脚本要 `--help` 可跑；默认零网络请求（除非这个 skill 本身就是网络能力）。
 - **双语规则细则**见 [`docs/i18n.zh-CN.md`](docs/i18n.zh-CN.md)：无后缀 = 权威版，`.en` / `.zh-CN` = 译文，改一个就要改另一个。
 
