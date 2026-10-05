@@ -67,7 +67,53 @@ scripts/gen_fixtures.py             idempotent re-generator for the whole bank (
 scripts/fixtures/                   question bank: one sample per contract question, plus positive-path guard samples; the runner grades by exact diagnostic-code set
 ```
 
-## 6. Current state (honest list)
+## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)
+
+Reviewed clauses re-assembled, no new promise. The category set, anchor kinds and forbidden phrasings are whatever
+`check_dd.py` holds now (locator command in section 5).
+
+| What you try | Does it work, and why not | Where to go instead |
+|---|---|---|
+| End with a verdict: invest or pass | **No.** The judgement slot stays `[待人工]`; this package ships anchored facts plus a ledger of what could not be checked | A person decides; for a pre-meeting page use `tear-sheet` |
+| Write "the company has no such issue" for categories you could not check | **No.** Not found is not absence; entity-negative assertions are forbidden for no-tool items | Record it in the coverage ledger, stating whether the domain had no tool or the search returned zero |
+| Derive the statutory filing deadline in passing | **Refused unless the statute text is on record.** Derivation needs the rule text and decidable applicability conditions together | No row plus one line of reasoning and the probe list in `progress.md` (this path is expected to yield zero anchors today) |
+| Screen several issuers at once | **No** (one subject per run); batching is how per-entry anchors degrade | One subject per run; batch one-pagers go to `tear-sheet` |
+| Skip the lookback window and let you default it | **No.** The window is mandatory; no wall-clock default | Give an explicit span (last three years, or 12 months back from a stated as-of date) |
+| Want the rating paragraph, the price paragraph and the legal-qualification paragraph | **Only restated from the disclosure, with anchors**; no opinion, no finding of compliance | Qualification belongs to a person; this guarantees every line resolves to source text |
+
+## 7. When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **currently released output** of `check_dd.py`: detail lines come first (each starting with one of the package's `DD-*` diagnostics followed by a colon,
+with a line number and a Chinese cause; the code set is this package's `DD-*` diagnostics - the full set, their count and meaning come from `check_dd.py` as it now stands (section 5's locator prints them)), then `RESULT: FAIL report.md (N items; code set ...)`; a clean pass prints
+`RESULT: PASS report.md (all eight gates passed)`.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `RESULT: FAIL ... ; code set DD-INPUT` | One of the six mandatory parameters missing or illegal (subject shape, date shape, purpose outside the closed enum) | Supply all six; the subject accepts both "Full name (6-digit code.SH\|.SZ\|.BJ)" and a bare code |
+| `DD-ROW` / `DD-TABLE` details with line numbers | Seven-column shape broken, category or impact value outside the enum, dates not ascending, anchor not in the last column | Fix per the bracketed spec; delete a row you cannot fix instead of filling it |
+| Anchor not uniquely resolved in `sources`, or no matching evidence file | Table row without a ledger entry, or ledger entry without a raw snapshot | Add the `sources.jsonl` line and drop the raw response into `evidence/` (verifiable via `LEDGER.sha256`); missing directory or hash mismatch is fail-closed - delivering first and evidencing later is not allowed |
+| `DD-COVERAGE`, including the age-declaration check | Nine categories incomplete, a category's count disagrees with the call log, or a long window used the disclosure domain without the one required declaration line | Complete the ledger category by category; for long windows write the contract's declaration line (collect-then-validate), window start equal to the recomputed window |
+| `DD-OMISSION` | The body claims more domains than the ledger records (claimed but not booked) | Back-filling requires all three artifacts (all domains in the cell, that domain in the call log, one category-tagged raw file per domain). Deleting the claim without booking the ledger is itself the failure shape |
+| Channel missing / that category has no public tool | No tool for it on the public face | Degradation: user pastes the disclosure list (marked L2 user-supplied, `sources` uses `user_supplied` + `path`); without the research run the whole category is marked "not found" and booked - never filled by common sense. Full degradation still ships; the price is coverage, not accuracy |
+| A traceback instead of a FAIL list | An incident: parse points are wrapped | Stop and report with the exact command in `progress.md`; run section 5's live commands first to tell a bad report from a broken script |
+
+## 8. How to ask (three positive examples, one counter-example, plus how to pick the purpose tier)
+
+- **Positive (simplest)**: "Run a public-information pre-diligence ledger for Beichen Corp over the last three
+  years" - a missing window or purpose triggers a question instead of a default.
+- **Positive (explicit tier + focus, complex input)**: "Subject: Beijing Oriental Yuhong Waterproof Technology
+  Co., Ltd. (002271.SZ), as-of 2026-09-23, lookback 12 months, purpose = M&A; focus on control rights, horizontal
+  competition and past acquisitions; output to `~/dd/2026q3/`". Tier guidance (the three tiers differ in what must be
+  checked): investment = the standard nine categories; credit tightens guarantees and fund occupation; M&A tightens
+  control, horizontal competition and acquisition history. Choosing the wrong tier is not cosmetic - it skips checks.
+- **Positive (what a follow-up question looks like)**: asking only "diligence Kweichow Moutai for me" should come back
+  with three questions: as-of date, lookback window, purpose tier (all six parameters are mandatory). Answer them in
+  one line - "as-of today, 24 months back, investment tier" - and work starts.
+- **Counter-example (adjacent need, not this skill)**: "also tell me whether to buy it and what it is worth" - no
+  verdict, no price; "I only need the confirmed dates in the next three months" - `catalyst-calendar`;
+  "a one-pager for a client meeting" - `tear-sheet`.
+
+## 9. Current state (honest list)
 
 - **Built**: contract = this package's `CONTRACT.md` (its revision clauses are numbered in section 0A and resolve inside that file). **The package ships the finished samples and the runner: reproducibility is anchored on `scripts/fixtures/run_fixtures.sh`, which also reports the sample count — no sample-count snapshot lives in these documents.** The question list and the per-question mapping table live in the independent reviewer's workspace and are not part of this package, and no local paths appear here. To re-spawn after new questions: `python3 scripts/gen_fixtures.py --badspec <question-list path>` (no default; samples follow the list, never the other way round, and the script has no grading power).
 - **Capability edge (stated plainly)**: `evidence/calls.jsonl` lets the gate machine-catch "the ledger reports fewer than the flow" and "the snapshot the flow points at was deleted or altered", but **a wholesale forged low-hit snapshot is self-consistent with its own flow** — that belongs to the forged-evidence family, which the machine does not disprove; the only defense is the human 3-snapshot verbatim spot check. This package makes no absolute-assurance sentence of that shape (the ban deliberately does not quote the phrasing, so our own literal scans stay clean); what it does commit to is: mismatch blocks delivery, zeroing requires a per-item reason, and under-reporting leaves a machine-side counter-proof.
@@ -77,7 +123,7 @@ scripts/fixtures/                   question bank: one sample per contract quest
 - **Release surface**: whether and when this package reaches any skill marketplace, and when it is pushed or published, is decided outside the package — these documents state no such status (a static document would rot). Repo visibility is governed by the root README and `CHANGELOG.md`.
 - **Known edges**: one subject per run (more than one is refused); no market-data feed; the statutory-derivation path expects zero anchors as of 2026-09-23; social-insurance detail, full pending-litigation and full administrative-fine data have no public tool — these live only in the coverage ledger, never in an assertion.
 
-## 7. Provenance
+## 10. Provenance
 
 - Base: anthropics/financial-services `dd-checklist` and `deal-screening` (Apache-2.0) — origin of the diligence-checklist task shape and the screening tiers.
 - This package is an **A-share re-implementation, not a port**: the data layer is fully Cue-native; the nine categories, first gate, coverage ledger and fail-closed evidence rule are rebuilt to this suite's contracts. No code from the base. See the repo-root `NOTICE.md`.

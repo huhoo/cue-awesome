@@ -59,14 +59,58 @@ scripts/          gate script check_page.py + fixtures (word sets and guard inve
                                      the anchor whitelist does accept bare six-plus-digit strings, so "a number on the page" is not "an anchored line". Word examples here are not an exhaustive claim.
 ```
 
-## 6. Current status (the blunt list)
+## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)
+
+Reviewed boundary clauses and fixture shapes re-assembled, nothing new promised. The banned family, the
+speculation family and anchor shapes are whatever `check_page.py` holds now (locator command in section 5).
+
+| What you try | Does it work, and why not | Where to go instead |
+|---|---|---|
+| Let me fill the view section myself so the page reads client-ready | **No.** The view section is three deliberately empty lines; filling them is out of bounds | A person writes the view; this skill keeps each figure traceable to a filing |
+| Also export an Excel / spreadsheet file | **No.** Output is a markdown client page only | Build the spreadsheet yourself; no file format grows into this shape |
+| Do seven or eight issuers in one pass | **No.** Issuers capped at 5 (machine-checked); beyond that per-row anchors slip | Run batches; to watch dates across a holdings set use `catalyst-calendar` |
+| Fill a missing cell from common sense | **No.** That row is deleted and logged as a dropped row - empty is legal, invented is not | Leave the gap and log one line; add the row when the disclosure arrives |
+| Put upcoming event dates into the one-pager | **No.** This page carries filed history only; forward-looking dates belong to the calendar skill | Use `catalyst-calendar`, where every event carries a disclosure anchor |
+| Ask for live market values (price, daily change) | **Not included.** That channel is not open and this package never promises unopened domains | Pull quotes from your own terminal; this page stays on disclosure terms |
+
+## 7. When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **currently released output** of `check_page.py`: on failure one line `FAIL: <file> (N items)`, detail
+lines each starting with a bracketed check label which labels appear is whatever `check_page.py` holds now - section 5's locator prints them, and the rows
+below quote shapes taken from real gate output rather than an exhaustive list) carrying
+the line number and that check's spec; a clean pass prints `PASS: <file> (four gates passed, subject blocks scanned normally)`.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `[args] missing --subjects(...)` | The formal command requires the declared subject count (two-way alignment with the page) | Add `--subjects N` equal to the real number of subject blocks; the opposite mismatch is reported too |
+| `[4]` format details | The five fixed blocks were reordered, renamed, added to or removed from; the mandatory risk line is absent | Restore the shape per the bracketed spec - the fixed risk sentence must be present |
+| `[②] anchor empty / not in the accepted set` | The row has no anchor that resolves to a filing, or its shape is not accepted | Attach a real disclosure anchor (announcement index / document number / URL) or delete the row; never invent one |
+| `[③] line N hit a banned word` | A rating, price-target or buy/sell family appeared in the body | Rewrite neutrally or delete; no exemptions here - full word set via section 5's locator |
+| Channel missing / a value cannot be fetched | Tool absent, or that measure was not disclosed for the period | Degradation: user-supplied material (marked at its source level); drop the row and log it instead of substituting an estimate |
+| A traceback instead of a FAIL list | An incident - the gate is defined as zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to separate a bad page from a broken script |
+
+## 8. How to ask (three positive examples, one counter-example)
+
+- **Positive (single issuer)**: "Give me a one-pager on Oriental Yuhong before the client meeting" - the shape in
+  section 3; at most three questions fill the contract (subject / purpose / focus).
+- **Positive (multiple issuers + purpose + focus + output dir)**: "Two names tomorrow: Midea and CATL. Purpose is a
+  pre-credit conversation; one page each, focus on cash flow and backlog wording, output to `~/sheets/2026-10/`" -
+  each page keeps its own anchors and ledger, and the declared subject count must match.
+- **Positive (with a one-line focus)**: "Give me a one-pager on Midea before the client meeting, focus on how cash
+  flow has been" - the focus only promotes that topic to a bolded line inside the page; it introduces no new data
+  source and no new section (it is the optional third question of the input contract; the format does not change).
+- **Counter-example (adjacent need, not this skill)**: "tabulate the confirmed dates for these names over the next
+  three months" - `catalyst-calendar`; "lay out public risk facts and account for what could not be checked" -
+  `dd-checklist`. This one ships a filed-history one-pager.
+
+## 9. Current status (the blunt list)
 
 - **Five-issuer boundary run landed (2026-09-21)**: pre-meeting glance ×5 issuers, 26 data-mcp lookups, 0 research, 0 omni; check_page in full form (incl. `--subjects 5`) PASSed first pass with exit 0.
 - **Capability state**: public with the repo (current version per this package's `CHANGELOG.md` and frontmatter); the gate script and its guard samples ship together and **the word sets and guard count are self-checked by running them, not quoted here** (two commands in §5). **The "30 seconds" claim has no measured evidence**, and no per-run cost magnitude is stated — time depends on your channels and consumption is whatever the server returns.
 - **Not submitted to any skill market**: publishing (P2) remains frozen; timing is the Owner's call. Repo visibility is governed by the root README and `CHANGELOG.md`.
 - Issuer cap of 5 (machine-checked); no market-data flow (the `equity_market` channel is not open); **rating vocabulary is zero-tolerance by gate design** — the concept does not exist on this page.
 
-## 7. Sources & credit
+## 10. Sources & credit
 
 - Base: anthropics/financial-services `tear-sheet` (Apache-2.0) — the origin of the one-pager task shape.
 - This package is an **A-share re-implementation, not a port**: the data layer is fully Cue-native; the five blocks, dual-basis snapshot, event first-gate, and cost discipline are rebuilt to this suite's contracts. No code from the base. See the repo-root `NOTICE.md`.

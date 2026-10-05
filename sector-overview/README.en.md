@@ -58,14 +58,59 @@ scripts/check_sector.py          four gates (word sets and guard inventory = the
                                      the only carve-out the machine makes is the "not investment advice" disclaimer phrase itself (gate ③); a reworded second-state sentence still fails while it keeps a verdict word or a hint token, and one that keeps neither is invisible to the machine. Word examples here are not an exhaustive claim.
 ```
 
-## 6. Current status (the blunt list)
+## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)
+
+Reviewed iron rules and boundary clauses re-assembled. The authoritative word sets (judgement, banned,
+speculation families) and anchor shapes are whatever `check_sector.py` holds now - locator command in section 5.
+
+| What you try | Does it work, and why not | Where to go instead |
+|---|---|---|
+| Say plainly whether the sector is buyable | **No.** That word family has zero exemption - no column exception, no "just verbally" exception | This ships industry heat evidence with comparable-series anchors; the verdict stays human |
+| Keep words like recovery / pressure / inflection without an anchor | **No.** Anchor co-location on the same line is the lifeblood - that is literally gate two | Write it only after fetching a comparable series on the spot; otherwise drop to the thin-report state, never substitute stale values |
+| Patch a number you cannot fetch on the spot with hedging phrasing | **No.** Missing data is declared, not filled | Data-gap declaration plus a line on the review checklist |
+| Apply one fixed industry framework to every sector | **No.** No framework library is carried; dimensions are generated per industry type by the research run (2-4) | Accept dynamic dimensions; a canned framework is a different product |
+| Nothing has a series on record, but ship the full six sections anyway | **No.** The legal shape is an empty conclusion | Thin report plus why it is thin; padding is exactly what the gate blocks |
+| Also cover one specific name's recent heat | **Out of scope** (subject here is the industry) | `tear-sheet` for a one-pager, `cn-earnings-note` for an earnings note |
+
+## 7. When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **currently released output** of `check_sector.py`: on failure one line `FAIL: <file> (N items)`, detail
+lines each starting with a bracketed check label which labels appear is whatever `check_sector.py` holds now - section 5's locator prints them, and the rows
+below quote shapes taken from real gate output rather than an exhaustive list) carrying
+the line number and that check's spec; a clean pass prints `PASS: <file> (four gates passed: declaration / lifeblood / banned words / format)`.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `[args] missing --window(...)` | The formal command requires the window (anti wall-clock) | Add `--window YYYY-MM-DD~YYYY-MM-DD`, matching the declared window verbatim |
+| `[②] ...` judgement word without a same-line anchor | The lifeblood rule was not kept: a heat claim with no comparable series anchor | Attach the series fetched on the spot (domain + value + period), or rewrite the sentence as a declaration / data gap |
+| `[③] line N hits a banned family` | A word from the banned set entered the body | Rewrite neutrally or delete; no exemptions |
+| `[④] sources line N field ... missing or empty` | The evidence ledger is malformed (missing field, illegal kind/asof/conv_id) | Repair that `sources` line per the bracketed spec; research items need `conv_id` plus the saved path |
+| Evidence directory missing or hash mismatch | Evidence is fail-closed: delivering first and evidencing later is refused | Restore the raw snapshots and re-book; if a claim cannot be evidenced, delete it |
+| Association or domain data stopped inside the window | No update for the period - a data shape, not a script error | Declare the gap and hang it on the review checklist; never substitute stale values; report research cost before spending it |
+| A traceback instead of a FAIL list | An incident: the gate is defined zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to tell a bad report from a broken script |
+
+## 8. How to ask (three positive examples, one counter-example)
+
+- **Positive (industry + angle)**: "Review the photovoltaic sector lately, focus on production plans and prices" -
+  the shape in section 3; at most three questions fill the contract (industry / window / angle).
+- **Positive (ambiguous industry name, disambiguated first)**: "How did the consumer electronics chain do in H1?" -
+  "consumer electronics" can mean panels, devices or components, so candidates are listed and you choose; the skill
+  never guesses for you, and the window then defaults to the last four complete quarters, echoed back.
+- **Positive (multi-angle + explicit window + policy anchor requirement, complex input)**: "Construction machinery,
+  window 2025-01-01~2026-06-30, three angles: operating hours, excavator sales, export mix; in the policy section
+  keep only anchors fetched on the spot with name + article number + short quote all three present" - anything less
+  is not entered, and one line of refusal reasoning goes to `progress.md`.
+- **Counter-example (adjacent need, not this skill)**: "one-pager on CATL recently" - `tear-sheet`; "deep-dive note
+  for 2026 Q2" - `cn-earnings-note`; "lay out anchored public risk facts for these names" - `dd-checklist`.
+
+## 9. Current status (the blunt list)
 
 - **Building-materials half-course run landed (2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to line-by-line sourcing (research-second-hand rows all carry L3 and sit in the review checklist). **Single authoritative count for the whole repo, scope fixed: the volume-price & drivers section holds 6 table rows, each carrying both a scope column and its source anchor — that number is this section's row count only, not the report-wide sourced-row count and not the L3-tier count.** Competing asphalt quotes from two sources stay un-arbitrated by design; continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
 - **capability state**: public with the repo (current version per this package's `CHANGELOG.md` and frontmatter); **a full end-to-end delivery run has not landed** (the half-course run and the smoke are both ≠ full delivery) — until it does, section coverage, runtime and dimension quality stay design values and are not claimed as verified;
 - **Not submitted to any skill market** (P2 frozen repo-wide; timing is the Owner's call);
 - no charts (tables carry as-of dates); no market-data flow, no expectation means; companies appear only as anchored aggregates, never as commentary.
 
-## 7. Sources & credit
+## 10. Sources & credit
 
 - Base: anthropics/financial-services `sector-overview` (Apache-2.0) — origin of the six-section task shape.
 - This package is an **A-share re-implementation, not a port**: the verdict-anchor rule, dynamic dimensions, and policy-anchor format are this suite's own discipline. No code from the base. See the repo-root `NOTICE.md`.

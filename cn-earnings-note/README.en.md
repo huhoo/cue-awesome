@@ -73,7 +73,53 @@ scripts/check_note.py          the four delivery gates (statement & pending-huma
                                      The codes actually emitted follow check_note.py as it stands, and the fixtures demonstrate only cases they actually exercise, not an exhaustive list of exemptions.
 ```
 
-## 6. Honest boundaries (the blunt list)
+## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)
+
+Nothing new is promised here; reviewed refusal clauses and fixture shapes are simply re-assembled. Word-level
+criteria (banned words, estimate words, which lines count as numbers) are whatever `check_note.py` holds now -
+locator command in section 5.
+
+| What you try | Does it work, and why not | Where to go instead |
+|---|---|---|
+| Ask for a rating, a price target, or a promise that the draft will clear publication | **No.** Judgement slots are left as `[待人工]`; filling them is out of bounds | A person writes the conclusion; this skill makes every figure traceable |
+| Feed in internal reports, client data or anything non-public | **No.** Public sources only | Write that section once the disclosure is on record; until then it stays "not disclosed" |
+| Also produce charts or a DCF model | **Not in scope.** The output is data tables plus a text skeleton; the base's plotting step was deliberately removed (A-share notes are evidence-chain first - a design trade-off, not a gap) | Generate figures elsewhere and pass them in as material; models live outside this format |
+| Subject is not a listed company (no periodic filing duty) | **Confirm the material shape first**; with thin material the ceiling is stated rather than papered over | Start once the material is sufficient; otherwise say why it does not apply |
+| One period is genuinely missing and you want a plausible number inserted | **No.** Missing values are marked "not disclosed"; estimate-style words are blocked by the gate | Leave the cell and log it. Empty is legal, invented is not |
+| Resume from memory because last quarter ran | **No.** Continuation starts by reading the `progress.md` ledger and upstream artifacts; the cross-period ledger must never be rewritten | Read the ledger first; a state mismatch is reported by the gate itself |
+
+## 7. When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **currently released output** of `check_note.py`: on failure one line `FAIL: <file> (N items)`, detail
+lines each starting with a bracketed check label (which labels appear is whatever `check_note.py` holds now - section 5's locator prints them;
+the rows below quote shapes taken from real gate output, not an exhaustive list, each carrying the line number
+and that check's spec); a clean pass prints `PASS: <file> (numbered lines X/Y tagged, four gates passed)`.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `[banned] ...` on a line | A banned / rating / inference family appeared, or a judgement slot was not left open | Rewrite neutrally or delete; put the judgement back into `[待人工]`; the full word set is in section 5's locator |
+| `[number]` coverage line (traceable ratio below threshold) | Tagged-number counts do not match the body (including edited lines whose counts were not synced) | Re-tag figure by figure: each number either carries a traceable anchor or is explicitly marked undisclosed |
+| `[source]` / ledger field failures | Missing fields or illegal values in the six inputs, `sources.jsonl`, or the ledger JSON | Repair or rebuild that line per the bracketed spec; ledgers get new entries, never rewritten history |
+| Exact hits are zero and the expectation pool is used silently | Nothing in the domain for the period - a designed fallback, not an error | Pool discipline: pooled content may not be cited into the body; either it carries a disclosure anchor or it is not written |
+| Channel missing / parsing failed | Tool not installed, or a scan the parser cannot read | Degradation chain: ask the user for text, switch source, or mark "not obtained" in the ledger, always recording the source level |
+| A traceback instead of a FAIL list | An incident: parse points are wrapped and the exit should be a list | Stop: check the criterion definitions through section 5's locator command (the checker holds the authoritative set), log the document plus the exact command in `progress.md` and report it; never loosen the gate yourself |
+
+## 8. How to ask (three positive examples, one counter-example)
+
+- **Positive (code + period)**: "Give me the 2026 H1 deep-dive note for 600519" - the shape in section 2; five
+  questions fill the contract and work starts.
+- **Positive (complex: user-supplied material + focus + output dir)**: "Subject is Oriental Yuhong (002271.SZ),
+  period 2026 Q2. Material is downloaded: the half-year report text and one earnings flash release under
+  `~/mat/2026H1/`; treat the two documents against the caliber discipline (mixed calibers fail the gate outright). Focus this run on
+  segment price/volume and cash-flow quality, keep other sections at defaults, output to `~/notes/2026Q2/`" - supplied
+  material is booked at its source level, focus changes fetch priority but never the output format.
+- **Positive (English)**: "Write the 2026 H1 deep-dive note for 600519." The frontmatter trigger phrase face is
+  currently Chinese-shaped, so English users should name the skill (`cn-earnings-note`) explicitly.
+- **Counter-example (adjacent need, not this skill)**: "Can I buy it, and what is it worth" - no verdict and no price
+  here; use `dd-checklist` for anchor-bound facts plus a ledger of what could not be checked, `tear-sheet` for a
+  pre-meeting one-pager.
+
+## 9. Honest boundaries (the blunt list)
 
 Known **won't-do** or **unverified** — check this before expecting a secret capability:
 
@@ -91,7 +137,7 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 | Scanned-document parsing | depends on the omni channel; the earlier server-side outage on its URL path is fixed (failed-parse-no-charge re-verified; the "completed-but-shell page still billed" edge case is fixed and re-verified (a failed parse returned billed:false; billing is whatever the server receipt says) — while the channel is down, degrade to "you paste the text" |
 | Compliance word list | built-in minimal blacklist (self-written); **not a compliance opinion** — human review before publishing is still required |
 
-## 7. Sources & credit
+## 10. Sources & credit
 
 - Base: anthropics/financial-services `earnings-analysis` (Apache-2.0) — the methodology and the four-period / beat-miss framing.
 - This package is a **re-implementation, not a port**: the data layer is fully replaced by Cue channels; no code from the base. See the repo-root `NOTICE.md`.
