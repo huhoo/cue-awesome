@@ -51,7 +51,7 @@ Optional: `scripts/`, `references/`, `assets/`, `examples/`, `CHANGELOG.md`, `ma
 | Field | Required | Notes |
 |---|---|---|
 | `name` | ✅ | **must equal the directory name** — the linter checks it |
-| `description` | ✅ | purpose + trigger words. **Write trigger words in both Chinese and English** — with Chinese-only triggers, English users can never trigger the skill |
+| `description` | ✅ | purpose + trigger words. **Both Chinese and English entry points must be understandable** — but do not pad trigger words just to have English (reviewer ruling 2026-09-28: the `Triggers:` tail block is not mandatory; add real English keywords only when genuinely needed, each backed by in-package evidence, within the C-36 length cap). Where English coverage falls short, an honest README note like "name the skill directly" is acceptable |
 | `version` | ✅ | `x.y.z`. **Top-level `version:` only** — a nested `metadata.version:` is a lint ERROR (flat parsers let the last line silently overwrite the real version; K-11 lesson) |
 | `license` | recommended | MIT |
 | `slug` / `displayName` / `summary` / `tags` / `metadata` | optional | for marketplace publishing; `agent_created: true` marks agent-generated skills |

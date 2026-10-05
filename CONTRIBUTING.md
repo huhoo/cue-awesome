@@ -51,7 +51,7 @@ cue-awesome/
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | `name` | ✅ | **必须等于目录名**，校验脚本会查 |
-| `description` | ✅ | 用途 + 触发词。**中英双语触发词都要写** —— 只有中文触发词，英文用户永远触发不到 |
+| `description` | ✅ | 用途 + 触发词。**中英两语的可懂入口都要有**——但不必为凑英文触发词堆词（审方裁形 2026-09-28：`Triggers:` 尾块非强制，确有需要才补真实英文关键词，词项须有包内依据、字段不超 C-36 限）。英文入口不足时，允许在 README 实况交代「建议直接点名 skill」 |
 | `version` | ✅ | `x.y.z`。**只写顶层 `version:`**——嵌套 `metadata.version:` 即 lint ERROR（扁平解析器会 last-wins 静默覆盖真值，K-11 教训） |
 | `license` | 建议 | MIT |
 | `slug` / `displayName` / `summary` / `tags` / `metadata` | 可选 | 上架技能市场用；`agent_created: true` 表示由 agent 生成 |
