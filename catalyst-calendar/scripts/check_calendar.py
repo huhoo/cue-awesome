@@ -52,6 +52,30 @@ OUTSIDE_PREFIX = "窗口外余档"
 BANNED_RE = re.compile(
     r"必涨|稳赚|零风险|保证收益|内幕|无风险套利|历史最佳|利好|利空|暴涨|会涨|抄底|逃顶")
 RATING_RE = re.compile(r"买入|增持|减持|持有|推荐|目标价")
+
+# ---------------------------------------------------------------- 错误码表(M166)
+# 五类码表 E_LEGEND 全族逐字一致(各件出口同源);E_RULES 是按本件标签的分类表。
+# 发码只在详行前缀 `[E-XXX] `,原消息一字不动,runner 子串断言向后兼容。
+E_LEGEND = {
+    "E-FORMAT":   "形制/输入/表序不合式→按该行括号内规格改形制后复跑",
+    "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
+    "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
+    "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+    "E-LEDGER":   "账本状态机/互链断→按账本契约重建链接,禁改写历史",
+}
+E_RULES = (
+    ("E-BANWORD", r"^\[(禁词|评级|幻觉)\]"),
+    ("E-ANCHOR", r"^\[(锚|证据|双向|sources)\]"),
+    ("E-COVERAGE", r"^\[摘要\]"),
+    ("E-FORMAT", r"^\[(表|日期|类型|序|保留区|声明|参数|节名|窗口)\]"),
+)
+
+
+def ecode(msg: str) -> str:
+    for code, pat in E_RULES:
+        if re.search(pat, msg):
+            return code
+    return "E-FORMAT"
 OFFICIAL_USAGE_RE = re.compile(
     r"(?:减持|增持)(?:计划|预披露|进展|实施|结果|完成|期限|变动|股份)"
     r"|持有(?:公司股份|股份|以上|5%)|买入返售")  # v4-B②:后缀强制,光杆「增持/减持」不豁免(S4)
@@ -491,8 +515,13 @@ def main(argv=None):
     fails, nrows = run(args)
     if fails:
         print(f"FAIL: {args.calendar}（{len(fails)} 条）")
+        codes = []
         for f in fails:
-            print(f"  - {f}")
+            c = ecode(f)
+            if c not in codes:
+                codes.append(c)
+            print(f"  - [{c}] {f}")
+        print("  码表: " + "; ".join(f"{c}→{E_LEGEND[c]}" for c in codes))
         return 1
     print(f"PASS: {args.calendar}（§v2-B+§v3-B 全过,表行 {nrows},--window {args.window}）")
     return 0

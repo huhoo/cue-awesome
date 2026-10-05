@@ -83,19 +83,23 @@ Reviewed clauses re-assembled, no new promise. The category set, anchor kinds an
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
-Written from the **currently released output** of `check_dd.py`: detail lines come first (each starting with one of the package's `DD-*` diagnostics followed by a colon,
-with a line number and a Chinese cause; the code set is this package's `DD-*` diagnostics - the full set, their count and meaning come from `check_dd.py` as it now stands (section 5's locator prints them)), then `RESULT: FAIL report.md (N items; code set ...)`; a clean pass prints
-`RESULT: PASS report.md (all eight gates passed)`.
+Shapes are taken from **the current output** of `check_dd.py`, captured by running it: detail lines come first, each **starting with an error-code prefix (one of the five `E-*` codes), then this package's `DD-*` diagnostic code**, followed by the line number and a Chinese cause; the last two lines are `code legend:` (only the codes used) and `RESULT: FAIL report.md (N items; code set DD-*...)`. A clean pass prints `RESULT: PASS report.md (all eight gates passed)`.
 
-| Symptom | Cause | Recovery |
+The five `E-*` codes are a closed suite-wide identical set (byte-identical with the four siblings); the eight `DD-*` codes are this package's layered diagnostics - **both are printed together**: `E-*` names the handling family, `DD-*` names which gate fired. Both tables live in the script, printable from anywhere by swapping these two keys into the grep in section 5:
+
+    grep -n "^E_LEGEND\|^E_RULES" ~/.workbuddy/skills/dd-checklist/scripts/check_dd.py
+
+| Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `RESULT: FAIL ... ; code set DD-INPUT` | One of the six mandatory parameters missing or illegal (subject shape, date shape, purpose outside the closed enum) | Supply all six; the subject accepts both "Full name (6-digit code.SH\|.SZ\|.BJ)" and a bare code |
-| `DD-ROW` / `DD-TABLE` details with line numbers | Seven-column shape broken, category or impact value outside the enum, dates not ascending, anchor not in the last column | Fix per the bracketed spec; delete a row you cannot fix instead of filling it |
-| Anchor not uniquely resolved in `sources`, or no matching evidence file | Table row without a ledger entry, or ledger entry without a raw snapshot | Add the `sources.jsonl` line and drop the raw response into `evidence/` (verifiable via `LEDGER.sha256`); missing directory or hash mismatch is fail-closed - delivering first and evidencing later is not allowed |
-| `DD-COVERAGE`, including the age-declaration check | Nine categories incomplete, a category's count disagrees with the call log, or a long window used the disclosure domain without the one required declaration line | Complete the ledger category by category; for long windows write the contract's declaration line (collect-then-validate), window start equal to the recomputed window |
-| `DD-OMISSION` | The body claims more domains than the ledger records (claimed but not booked) | Back-filling requires all three artifacts (all domains in the cell, that domain in the call log, one category-tagged raw file per domain). Deleting the claim without booking the ledger is itself the failure shape |
-| Channel missing / that category has no public tool | No tool for it on the public face | Degradation: user pastes the disclosure list (marked L2 user-supplied, `sources` uses `user_supplied` + `path`); without the research run the whole category is marked "not found" and booked - never filled by common sense. Full degradation still ships; the price is coverage, not accuracy |
-| A traceback instead of a FAIL list | An incident: parse points are wrapped | Stop and report with the exact command in `progress.md`; run section 5's live commands first to tell a bad report from a broken script |
+| `[E-FORMAT] DD-INPUT: ...` | One of the six mandatory parameters missing or illegal (subject shape, date shape, purpose outside the closed enum) | Supply all six; the subject accepts both "Full name (6-digit code.SH\|.SZ\|.BJ)" and a bare code |
+| `[E-FORMAT] DD-ROW: line N ...` / `[E-FORMAT] DD-TABLE: ...` | Seven-column shape broken, category or impact value outside the enum, dates not ascending, anchor not in the last column, or a hedging word in the facts cell | Fix per the bracketed spec; delete a row containing a confession word rather than rephrasing the same claim |
+| `[E-ANCHOR] DD-EVIDENCE: ...` | Table row without a ledger entry, or ledger entry without a raw snapshot; missing `evidence/` or hash mismatch | Add the `sources.jsonl` line and drop the raw response into `evidence/` (verifiable via `LEDGER.sha256`); a missing directory is fail-closed - deliver first, evidence later is refused |
+| `[E-ANCHOR] DD-STATUTE: ...` | Statutory derivation without the rule text on record, or undecidable applicability | Refuse the derivation, emit no row, and log one line of reasoning plus the probe list in `progress.md` (this path is expected to yield zero anchors today) |
+| `[E-COVERAGE] DD-COVERAGE: ...` | Nine categories incomplete, a category's count disagrees with the call log, or a long window used the disclosure domain without the required age-declaration line | Complete the ledger category by category; for long windows write the contract's declaration line (collect-then-validate), window start equal to the recomputed window |
+| `[E-COVERAGE] DD-OMISSION: ...` | The body claims more domains than the ledger booked | Back-filling requires all three artifacts (all domains in the cell, that domain in the call log, one category-tagged raw file per domain). Deleting the claim without booking the ledger is the failure shape this gate exists for |
+| `[E-BANWORD] DD-REDLINE: ...` | An investment verdict, legal qualification or completeness assertion entered the delivery face | Follow the printed legend: rewrite neutrally or delete; the judgement slot returns to `[待人工]` |
+| Channel missing / that category has no public tool | No tool for it on the public face | Degradation: the user pastes the disclosure list (marked L2 user-supplied, `sources` uses `user_supplied` + `path`); without the research run the whole category reads "not found" and is booked - never filled by common sense. The price is coverage, not accuracy |
+| A traceback instead of `RESULT: FAIL ...` | An incident: parse points are wrapped | Stop and report with the exact command in `progress.md`; run section 5's live commands first to tell a bad report from a broken script |
 
 ## 8. How to ask (three positive examples, one counter-example, plus how to pick the purpose tier)
 

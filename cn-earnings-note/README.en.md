@@ -90,19 +90,22 @@ locator command in section 5.
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
-Written from the **currently released output** of `check_note.py`: on failure one line `FAIL: <file> (N items)`, detail
-lines each starting with a bracketed check label (which labels appear is whatever `check_note.py` holds now - section 5's locator prints them;
-the rows below quote shapes taken from real gate output, not an exhaustive list, each carrying the line number
-and that check's spec); a clean pass prints `PASS: <file> (numbered lines X/Y tagged, four gates passed)`.
+Shapes are taken from **the current output** of `check_note.py`, captured by running it: on failure one line `FAIL: <file> (N items)`; detail lines **start with an error-code prefix (one of the five `E-*` codes), then the original check label** (`[E-BANWORD] [禁用词] (banned)`, `[E-COVERAGE] [数字] (number)`, `[E-FORMAT] [声明] (declaration)`), followed by the line number and that check's spec; the final `code legend:` line lists only the codes used. A clean pass prints `PASS: <file> (numbered lines X/Y tagged, four gates passed)`.
 
-| Symptom | Cause | Recovery |
+The five codes form a closed, suite-wide identical set (byte-identical with the four siblings): `E-FORMAT` / `E-ANCHOR` / `E-BANWORD` / `E-COVERAGE` / `E-LEDGER`. Handling is not restated here - **it is printed in the `code legend:` line**; which label maps to which code in this package is the classifier inside `check_note.py`, printable from anywhere by swapping these two keys into the grep in section 5:
+
+    grep -n "^E_LEGEND\|^E_RULES" ~/.workbuddy/skills/cn-earnings-note/scripts/check_note.py
+
+| Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `[banned] ...` on a line | A banned / rating / inference family appeared, or a judgement slot was not left open | Rewrite neutrally or delete; put the judgement back into `[待人工]`; the full word set is in section 5's locator |
-| `[number]` coverage line (traceable ratio below threshold) | Tagged-number counts do not match the body (including edited lines whose counts were not synced) | Re-tag figure by figure: each number either carries a traceable anchor or is explicitly marked undisclosed |
-| `[source]` / ledger field failures | Missing fields or illegal values in the six inputs, `sources.jsonl`, or the ledger JSON | Repair or rebuild that line per the bracketed spec; ledgers get new entries, never rewritten history |
+| `[E-BANWORD] ...` on a line | A banned family appeared, or a judgement slot was filled instead of left open | Follow the printed legend: rewrite neutrally or delete, and put the judgement back into `[待人工]`; full word set via section 5 |
+| `[E-COVERAGE] [数字] (number) ...` (including the ratio line) | Tagged-number counts disagree with the body, or traceable ratio is under threshold | Re-tag figure by figure: each number either carries a traceable anchor or is explicitly marked undisclosed |
+| `[E-ANCHOR] [来源] (source) sources.jsonl line N field ... missing or empty` | The evidence ledger is malformed (missing field, illegal id shape, non-date asof) | Repair that `sources` line per the bracketed spec; delete a claim you cannot evidence rather than invent an anchor |
+| `[E-LEDGER] ...` (ledger or cross-link failures) | Cross-period ledger state machine or a broken link (opening balance, amendment, fulfilment) | Rebuild the links per the ledger contract: add the current period's entry, **never rewrite history** |
+| `[E-FORMAT] [声明] (declaration) / [脚手架] (scaffold) / [参数] (args)` | First-screen declaration, scaffold section or a required parameter is out of shape | Restore per spec; supply `--ledger` / `--prev-ledger` / `--audit-report` as needed |
 | Exact hits are zero and the expectation pool is used silently | Nothing in the domain for the period - a designed fallback, not an error | Pool discipline: pooled content may not be cited into the body; either it carries a disclosure anchor or it is not written |
-| Channel missing / parsing failed | Tool not installed, or a scan the parser cannot read | Degradation chain: ask the user for text, switch source, or mark "not obtained" in the ledger, always recording the source level |
-| A traceback instead of a FAIL list | An incident: parse points are wrapped and the exit should be a list | Stop: check the criterion definitions through section 5's locator command (the checker holds the authoritative set), log the document plus the exact command in `progress.md` and report it; never loosen the gate yourself |
+| Channel missing / parsing failed | Tool absent, or a scan the parser cannot read | Degradation chain: ask for text, switch source, or mark "not obtained" in the ledger, always recording the source level |
+| A traceback instead of `FAIL ... (N items)` | An incident: the exit should be a list | Stop: check the criterion definitions through section 5's locator (the checker holds the authoritative set), log the document plus the exact command in `progress.md` and report it |
 
 ## 8. How to ask (three positive examples, one counter-example)
 

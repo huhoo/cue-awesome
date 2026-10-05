@@ -37,6 +37,31 @@ from pathlib import Path
 BANNED_WORDS = ["必涨", "稳赚", "零风险", "保证收益", "内幕", "无风险套利", "历史最佳"]
 BANNED_RE = re.compile("|".join(BANNED_WORDS))
 
+# ---------------------------------------------------------------- 错误码表(M166)
+# 五类全族统一(各件出口同源);发码只在详行前缀 `[E-XXX] `,原消息一字不动——
+# run_fixtures.sh 按子串断言,向后兼容零退化;图例行只列本次出现过的码。
+E_LEGEND = {
+    "E-FORMAT":   "形制/输入/表序不合式→按该行括号内规格改形制后复跑",
+    "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
+    "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
+    "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+    "E-LEDGER":   "账本状态机/互链断→按账本契约重建链接,禁改写历史",
+}
+E_RULES = (
+    ("E-LEDGER", r"ledger|账本|互链|期初|fulfilled|amendment"),
+    ("E-ANCHOR", r"^\[来源\]|^\[脚手架\][^\n]*(锚|来源)|锚行|双向"),
+    ("E-BANWORD", r"^\[(禁用词|待人工)\]|^\[脚手架\][^\n]*(判断|观点)|评级|目标价"),
+    ("E-COVERAGE", r"^\[数字\]|覆盖率|可回查|未检索"),
+    ("E-FORMAT", r"^\[(声明|脚手架|参数)\]"),
+)
+
+
+def ecode(msg: str) -> str:
+    for code, pat in E_RULES:
+        if re.search(pat, msg):
+            return code
+    return "E-FORMAT"
+
 NUM_UNIT_RE = re.compile(r"\d(?:[.,]\d+)?\s*(?:%|percent|个百分点|亿元|万元|千元|百万|万股|亿股|亿|元(?!年)|倍|股)", re.IGNORECASE)
 CN_NUM_UNIT_RE = re.compile(r"[一二三四五六七八九十百两]+(?:千万|百万|万|亿|千)(?:元(?!年)|股)|[一二三四五六七八九十百两]+倍")
 LEVEL_RE = re.compile(r"\[L[123]\]")
@@ -501,8 +526,13 @@ def main(argv=None):
 
     if fails:
         print(f"FAIL: {args.note}（{len(fails)} 条）")
+        codes = []
         for f in fails:
-            print(f"  - {f}")
+            c = ecode(f)
+            if c not in codes:
+                codes.append(c)
+            print(f"  - [{c}] {f}")
+        print("  码表: " + "; ".join(f"{c}→{E_LEGEND[c]}" for c in codes))
         return 1
     print(f"PASS: {args.note}（数字行 {tagged}/{total} 已标注，四道门禁全过）")
     return 0

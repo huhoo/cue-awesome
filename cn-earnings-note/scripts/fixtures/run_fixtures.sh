@@ -103,6 +103,14 @@ runout 0 "数字行 1/1" "good-cn-qianwan (一千二百万元 嵌套 带L→放)
 runout 1 "含数字结论但无" "bad-cn-bei      (三倍 无L→拦)"    "$PY" "$CHECK" bad-cn-bei.md
 runout 0 "数字行 1/1" "good-cn-bei     (三倍 带L→放)"   "$PY" "$CHECK" good-cn-bei.md
 
+# --- M166 码表断言:每类一枚破坏样触发对应 [E-XXX] 前缀(码表自身入册) ---
+runout 1 "[E-FORMAT]"   "ecode-format  (声明缺→E-FORMAT)"   "$PY" "$CHECK" bad-nodecl.md --sources sources.jsonl
+runout 1 "[E-ANCHOR]"   "ecode-anchor  (脚手架锚行缺 S→E-ANCHOR)" "$PY" "$CHECK" bad-scaffold-anchor.md --sources sources.jsonl
+runout 1 "[E-BANWORD]"  "ecode-banword (评级/目标价→E-BANWORD)" "$PY" "$CHECK" bad-norating.md --sources sources.jsonl
+runout 1 "[E-COVERAGE]" "ecode-coverg  (覆盖率/数字行→E-COVERAGE)" "$PY" "$CHECK" bad-numbers.md --sources sources.jsonl
+runout 1 "[E-LEDGER]"   "ecode-ledger  (跨期衔接断→E-LEDGER)" "$PY" "$CHECK" note-good.md --ledger bad-linkage.json --prev-ledger ledger-2025AR.json
+runout 1 "码表:"        "ecode-legend  (FAIL 出口带码表图例行)" "$PY" "$CHECK" bad-numbers.md --sources sources.jsonl
+
 run 0 "help (--help)"                "$PY" "$CHECK" --help
 
 

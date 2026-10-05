@@ -75,19 +75,21 @@ speculation family and anchor shapes are whatever `check_page.py` holds now (loc
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
-Written from the **currently released output** of `check_page.py`: on failure one line `FAIL: <file> (N items)`, detail
-lines each starting with a bracketed check label which labels appear is whatever `check_page.py` holds now - section 5's locator prints them, and the rows
-below quote shapes taken from real gate output rather than an exhaustive list) carrying
-the line number and that check's spec; a clean pass prints `PASS: <file> (four gates passed, subject blocks scanned normally)`.
+Shapes are taken from **the current output** of `check_page.py`, captured by running it: on failure one line `FAIL: <file> (N items)`; detail lines **start with an error-code prefix (one of the five `E-*` codes), then the check label** (`[E-FORMAT] [参数] (args)`, `[E-BANWORD] [3]`, `[E-ANCHOR] [2]`, `[E-FORMAT] [4]`), then the line number and that check's spec; the final `code legend:` line lists only the codes used. A clean pass prints `PASS: <file> (four gates passed, subject blocks scanned normally)`.
 
-| Symptom | Cause | Recovery |
+The five codes are a closed, suite-wide identical set (byte-identical with the four siblings): `E-FORMAT` / `E-ANCHOR` / `E-BANWORD` / `E-COVERAGE` / `E-LEDGER`. Handling is printed in the `code legend:` line; the label-to-code mapping for this package is the classifier in the script, printable from anywhere by swapping these two keys into the grep in section 5:
+
+    grep -n "^E_LEGEND\|^E_RULES" ~/.workbuddy/skills/tear-sheet/scripts/check_page.py
+
+| Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `[args] missing --subjects(...)` | The formal command requires the declared subject count (two-way alignment with the page) | Add `--subjects N` equal to the real number of subject blocks; the opposite mismatch is reported too |
-| `[4]` format details | The five fixed blocks were reordered, renamed, added to or removed from; the mandatory risk line is absent | Restore the shape per the bracketed spec - the fixed risk sentence must be present |
-| `[②] anchor empty / not in the accepted set` | The row has no anchor that resolves to a filing, or its shape is not accepted | Attach a real disclosure anchor (announcement index / document number / URL) or delete the row; never invent one |
-| `[③] line N hit a banned word` | A rating, price-target or buy/sell family appeared in the body | Rewrite neutrally or delete; no exemptions here - full word set via section 5's locator |
+| `[E-FORMAT] [参数] (args) missing --subjects(...)` | The formal command requires the declared subject count (two-way alignment with the page) | Add `--subjects N` equal to the real number of subject blocks; the opposite mismatch is reported too |
+| `[E-FORMAT] [①] / [④] ...` | The first-screen declaration is missing, or the five blocks, section names, columns or row order are off (renaming or adding/removing sections triggers it) | Restore per the bracketed spec - the fixed risk sentence must be present |
+| `[E-ANCHOR] [②] anchor empty / not in the accepted set` | The row has no anchor that resolves to a filing, or its shape is not accepted | Attach a disclosure anchor in an accepted shape (announcement index / document number / URL) or delete the row; never invent one |
+| `[E-BANWORD] [③] line N hit ...` | A word from the banned set entered the body (rating, price-target, buy/sell families) | Rewrite neutrally or delete; no exemptions - full word set via section 5's locator |
+| `[E-COVERAGE] [④] --subjects 声明 N ≠ 机检主体数 M(少报多搭/顶替申报)` | The declared subject count disagrees with the subject blocks actually on the page | Set `--subjects` to the real block count; do not resize the blocks to fit the declaration |
 | Channel missing / a value cannot be fetched | Tool absent, or that measure was not disclosed for the period | Degradation: user-supplied material (marked at its source level); drop the row and log it instead of substituting an estimate |
-| A traceback instead of a FAIL list | An incident - the gate is defined as zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to separate a bad page from a broken script |
+| A traceback instead of `FAIL ... (N items)` | An incident - the gate is defined zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to separate a bad page from a broken script |
 
 ## 8. How to ask (three positive examples, one counter-example)
 

@@ -224,6 +224,32 @@ class Findings:
         return any(i.startswith(code + ": ") for i in self.items)
 
 
+# ---------------------------------------------------------------- 错误码表(M166)
+# 五类码表 E_LEGEND 全族逐字一致(各件出口同源);E_RULES 把本件 8 枚 DD-* 码归入五类
+# ——DD-* 是规则号(保留于消息原位),[E-XXX] 是分类号(详行行首)。
+# 详行前缀 `[E-XXX] `,原消息一字不动;runner 抽码 sed 已同步兼容行首前缀。
+E_LEGEND = {
+    "E-FORMAT":   "形制/输入/表序不合式→按该行括号内规格改形制后复跑",
+    "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
+    "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
+    "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+    "E-LEDGER":   "账本状态机/互链断→按账本契约重建链接,禁改写历史",
+}
+E_RULES = (
+    ("E-BANWORD", r"^DD-REDLINE"),
+    ("E-ANCHOR", r"^DD-(STATUTE|EVIDENCE)"),
+    ("E-COVERAGE", r"^DD-(COVERAGE|OMISSION)"),
+    ("E-FORMAT", r"^DD-(INPUT|TABLE|ROW)"),
+)
+
+
+def ecode(msg: str) -> str:
+    for code, pat in E_RULES:
+        if re.search(pat, msg):
+            return code
+    return "E-FORMAT"
+
+
 def norm_cell(text: str) -> str:
     out = text.strip()
     for full, half in (("（", "("), ("）", ")"), ("，", ","), ("：", ":")):
@@ -1243,8 +1269,13 @@ def run(ns) -> int:
 
 def _finish(finds: Findings, report: Path) -> int:
     if finds.items:
+        codes = []
         for item in finds.items:
-            print(item)
+            c = ecode(item)
+            if c not in codes:
+                codes.append(c)
+            print(f"[{c}] {item}")
+        print("码表: " + "; ".join(f"{c}→{E_LEGEND[c]}" for c in codes))
         print(f"RESULT: FAIL {report}（{len(finds.items)} 项；码集 {', '.join(sorted(finds.codes))}）")
         return 1
     print(f"RESULT: PASS {report}（八道门禁全过）")

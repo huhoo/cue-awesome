@@ -80,6 +80,12 @@ a 1 "声明 2 ≠ 机检主体数 3"   "TS-B24b 谎报单因(不借 >5 冒充命
 a 1 "[参数] 缺 --subjects"    "缺参=FAIL 清单 exit1 非 argparse exit2(B6 家规)" "$PY" "$CHECK" fixtures/TS-B01.md --sources fixtures/TS-B01.jsonl
 a 1 "sources 孤儿记录未被正文引用" "TS-B04 方向二(协议3:双向各须有明确诊断)"   "$PY" "$CHECK" fixtures/TS-B04.md --sources fixtures/TS-B04.jsonl --subjects 1
 
+# ---- M166 码表断言:每类一枚(码表自身入册) ----
+a 1 "[E-FORMAT]"   "ecode-format  (TS-B01)"    "$PY" "$CHECK" fixtures/TS-B01.md --sources fixtures/TS-B01.jsonl --subjects 1
+a 1 "[E-ANCHOR]"   "ecode-anchor  (TS-B02)"    "$PY" "$CHECK" fixtures/TS-B02.md --sources fixtures/TS-B02.jsonl --subjects 1
+a 1 "[E-BANWORD]"  "ecode-banword (TS-B06)"    "$PY" "$CHECK" fixtures/TS-B06.md --sources fixtures/TS-B06.jsonl --subjects 1
+a 1 "[E-COVERAGE]" "ecode-coverg  (TS-B24 谎报 1≠机检 3)" "$PY" "$CHECK" fixtures/TS-B24.md --sources fixtures/TS-B24.jsonl --subjects 1
+
 echo "----"
 echo "assertions: $pass/$total"
 [ "$fail" -eq 0 ] && [ "$pass" -eq "$total" ] && { echo "ALL GREEN (assertions: $pass/$total)"; exit 0; }

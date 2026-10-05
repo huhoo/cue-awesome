@@ -77,20 +77,21 @@ whatever `check_calendar.py` contains right now (locator command in section 5).
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
-The rows below describe the **currently released output** of `check_calendar.py`, taken from real runs, not from
-the design intent: one line `FAIL: <file> (N items)`, then detail lines each starting with a bracketed check label
-(`[args]`, `[table]`, `[date]`, `[bidirectional]`, `[banned]` and the like) carrying the line number and that check's
-spec. A clean pass prints
-`PASS: <file> (... all gates passed, table rows N, --window ...)`.
+Shapes below are taken from **the current output** of `check_calendar.py`, captured by running it: a failure is one line `FAIL: <file> (N items)`; each detail line **starts with an error-code prefix (one of the five `E-*` codes), then the original check label** (`[E-FORMAT] [参数] (args)`, `[E-BANWORD] [禁词] (banned)`, `[E-ANCHOR] [双向] (bidirectional)` and so on), followed by the line number and that check's spec; the final `code legend:` line lists only the codes actually used, with their handling. A clean pass prints `PASS: <file> (... all gates passed, table rows N, --window ...)`.
 
-| Symptom on your screen | Cause | Recovery |
+The five codes are a **closed, suite-wide identical** set (this package and its four siblings share the table verbatim): `E-FORMAT` (format/input/row-order), `E-ANCHOR` (missing or broken anchor chain), `E-BANWORD` (banned / rating / hallucination / human-slot hit), `E-COVERAGE` (counts, coverage, declarations disagree), `E-LEDGER` (ledger state machine or cross-link broken). This page does not restate each code's handling - **the handling is printed in the `code legend:` line itself**; the full set and its classification live in the script as it now stands (paste one line from anywhere, swapping `E_LEGEND` into the grep in section 5):
+
+    grep -n "^E_LEGEND" ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py
+
+| Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `FAIL ... (N items)` with `[table] / [date] / [order]` details | Format mismatch: header, column slots, date shape or row order against the contract | Fix to the spec printed in the brackets and re-run the same command; if a row cannot be fixed, delete it rather than filling content in |
-| `[args] missing --window(...)` | The formal command requires the window (anti wall-clock) | Add `--window YYYY-MM-DD~YYYY-MM-DD`, matching the window declared in the document title verbatim (a mismatch raises its own failure line) |
-| `[bidirectional] row N anchor '...' has no entry in sources` | The anchor was never booked, or it is booked but the raw snapshot is missing / hash mismatched | Add the `sources.jsonl` line and put the raw response snapshot under `evidence/` (hash-verifiable), or delete the row. Never invent an anchor to close the chain |
-| `[banned] / [rating] / [inference]` on some row | A judgement, rating or inference word family appeared in the deliverable | Rewrite neutrally or delete the entry; no word list here - the authoritative set is in `check_calendar.py` (see section 5) |
-| A channel is not installed / a category returns nothing | Channel missing, or that category has no public tool at all | Take the degradation path: the user pastes the announcement list (marked as user-supplied, still snapshotted into `evidence/` with its source level); without the research run that category is marked "not found" - common sense never fills a date. Full degradation still delivers; the price is coverage |
-| A traceback instead of a FAIL list | That is an incident: this gate is defined as pure stdlib, no network, no crash, with every parse point wrapped | Stop: record the document and the exact command in `progress.md` and report it; first run the guard-sample command from section 5 to tell a bad document from a broken script. Do not silence the gate |
+| `[E-FORMAT] [表] (table) / [日期] (date) / [序] (order)` | Header, column slots, date shape or row order against the contract | Fix per the spec in the brackets and re-run; delete a row you cannot fix instead of filling it |
+| `[E-FORMAT] [参数] (args) missing --window(...)` | The formal command requires the window (anti wall-clock) | Add `--window YYYY-MM-DD~YYYY-MM-DD`, matching the declared title window verbatim (a mismatch emits its own window detail) |
+| `[E-ANCHOR] [双向] (bidirectional) row N anchor '...' has no entry in sources` | The anchor was never booked, or booked without a matching raw snapshot / hash | Add the `sources.jsonl` line and store the raw response under `evidence/` (hash-verifiable), or delete the row. Never invent an anchor to close a chain |
+| `[E-BANWORD] [禁词] (banned) / [评级] (rating) / [幻觉] (inference) ...` | A judgement, rating or inference family appeared in the deliverable | Follow the printed legend: rewrite neutrally or delete. The type column is the only one never scanned; full word set via section 5 |
+| `[E-COVERAGE] [摘要] (summary) ...` | Summary or counts disagree with the main table (including a missing reserved-area declaration) | Complete the ledger category by category, or mark "not found" honestly - do not delete rows to make counts match |
+| A channel is not installed / a category returns nothing | Channel missing, or that category has no public tool | Take the degradation path: the user pastes the announcement list (marked user-supplied, still snapshotted into `evidence/` with its source level); without the research run that category reads "not found" - common sense never fills a date. The price is coverage |
+| A traceback instead of `FAIL ... (N items)` | An incident: this gate is defined as pure stdlib, no network, no crash, every parse point wrapped | Stop: log the document and the exact command in `progress.md` and report it; run the guard samples from section 5 first to tell a bad document from a broken script. Do not silence the gate |
 
 ## 8. How to ask (three positive examples, one counter-example)
 

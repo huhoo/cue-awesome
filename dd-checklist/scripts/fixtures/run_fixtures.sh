@@ -43,7 +43,7 @@ for dir in "$FIXROOT"/*/; do
   got_exit=$?
 
   allowed="$(sed -n 's/^need=//p' "$dir/expect.txt" | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-  actual="$(printf '%s\n' "$out" | sed -n 's/^\(DD-[A-Z]*\): .*/\1/p' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  actual="$(printf '%s\n' "$out" | sed -n 's/^\(\[E-[A-Z]*\] \)\?\(DD-[A-Z]*\): .*/\2/p' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
   forbidden="$(sed -n 's/^must-not=//p' "$dir/expect.txt" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
 
   exact_ok=1
@@ -91,6 +91,20 @@ for dir in "$FIXROOT"/*/; do
     failed_cases+=("$name")
   fi
   [ "$kind" = contract ] && gb_total=$((gb_total + 1)) || ctl_total=$((ctl_total + 1))
+done
+
+# ---- M166 码表自检:每类一枚破坏样触发对应 [E-XXX] 行首前缀(计入 controls 自证列) ----
+for spec in "bad-B01-anchor-missing|[E-FORMAT]" "bad-B22-statute-fake|[E-ANCHOR]" "bad-X10-redline-in-ledger|[E-BANWORD]" "bad-X07-coverage-missing-row|[E-COVERAGE]"; do
+  d="${spec%%|*}"; mark="${spec##*|}"
+  cmd="$(head -n 1 "$FIXROOT/$d/cmd.txt")"
+  ctl_total=$((ctl_total + 1))
+  ec_out="$(cd "$FIXROOT/$d" && eval "$cmd" 2>&1 || true)"
+  case "$ec_out" in *"$mark"*) hit=1 ;; *) hit=0 ;; esac
+  if [ "$hit" -eq 1 ]; then
+    echo "ok   ecode-${d} (前缀 ${mark})"; ctl_ok=$((ctl_ok + 1))
+  else
+    echo "FAIL ecode-${d} (缺前缀 ${mark})"; ctl_fail=$((ctl_fail + 1)); failed_cases+=("ecode-${d}")
+  fi
 done
 
 echo "----"

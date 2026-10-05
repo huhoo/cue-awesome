@@ -42,6 +42,30 @@ BANNED_RE = re.compile(
     r"|买入|增持|减持|持有|推荐|目标价|建议")
 RISK_FIXED = "直查面内未命中≠无敞口"
 HEDGE_USAGE_RE = re.compile(r"(research|Research|深研)\s*\d*\s*次.{0,4}(omni|Omni|解析)?[^。\n]*")
+
+# ---------------------------------------------------------------- 错误码表(M166)
+# 五类码表 E_LEGEND 全族逐字一致(各件出口同源);E_RULES 是按本件标签的分类表。
+# 发码只在详行前缀 `[E-XXX] `,原消息一字不动,runner 子串断言向后兼容。
+E_LEGEND = {
+    "E-FORMAT":   "形制/输入/表序不合式→按该行括号内规格改形制后复跑",
+    "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
+    "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
+    "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+    "E-LEDGER":   "账本状态机/互链断→按账本契约重建链接,禁改写历史",
+}
+E_RULES = (
+    ("E-BANWORD", r"\[③\]|禁词|评级|目标价|买入|推荐"),
+    ("E-COVERAGE", r"\[④\][^\n]*(申报|对账|覆盖|未登记|漏报)"),
+    ("E-ANCHOR", r"\[②\]|\[④\][^\n]*(锚|双向|sources|statute)|\[来源\]"),
+    ("E-FORMAT", r"\[①\]|\[参数\]|^\[④\]"),
+)
+
+
+def ecode(msg: str) -> str:
+    for code, pat in E_RULES:
+        if re.search(pat, msg):
+            return code
+    return "E-FORMAT"
 RESERVED_H2 = ("附录", "来源索引")
 NUM_CELL_RE = re.compile(r"^-?[\d,]+(?:\.\d+)?$")
 ANCHOR_OK_RE = re.compile(r"^(\[S\d+\]|AN\d{8,}|(?<!\d)\d{6,}|https?://\S+|conv_id=\S+.*|\S*〔\d{4}〕\d+号|statute[:：].+)$", re.I)
@@ -256,8 +280,13 @@ def main(argv=None):
     fails = scan_body(lines, recs, args.subjects)
     if fails:
         print(f"FAIL: {args.page}（{len(fails)} 条）")
+        codes = []
         for f in fails:
-            print(f"  - {f}")
+            c = ecode(f)
+            if c not in codes:
+                codes.append(c)
+            print(f"  - [{c}] {f}")
+        print("  码表: " + "; ".join(f"{c}→{E_LEGEND[c]}" for c in codes))
         return 1
     print(f"PASS: {args.page}（四道全过,主体块扫描正常）")
     return 0

@@ -74,20 +74,24 @@ speculation families) and anchor shapes are whatever `check_sector.py` holds now
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
-Written from the **currently released output** of `check_sector.py`: on failure one line `FAIL: <file> (N items)`, detail
-lines each starting with a bracketed check label which labels appear is whatever `check_sector.py` holds now - section 5's locator prints them, and the rows
-below quote shapes taken from real gate output rather than an exhaustive list) carrying
-the line number and that check's spec; a clean pass prints `PASS: <file> (four gates passed: declaration / lifeblood / banned words / format)`.
+Shapes are taken from **the current output** of `check_sector.py`, captured by running it: on failure one line `FAIL: <file> (N items)`; detail lines **start with an error-code prefix (one of the five `E-*` codes), then the check label** (`[E-FORMAT] [参数] (args)`, `[E-BANWORD] [3]`, `[E-ANCHOR] [2]`, `[E-FORMAT] [4]` and so on), then the line number and that check's spec; the final `code legend:` line lists only the codes used. A clean pass prints `PASS: <file> (four gates passed: declaration / lifeblood / banned words / format)`.
 
-| Symptom | Cause | Recovery |
+The five codes are a closed, suite-wide identical set (byte-identical with the four siblings): `E-FORMAT` / `E-ANCHOR` / `E-BANWORD` / `E-COVERAGE` / `E-LEDGER`. Handling is printed in the `code legend:` line, and the label-to-code mapping for this package is the classifier inside the script - one line from anywhere, swapping these two keys into the grep in section 5:
+
+    grep -n "^E_LEGEND\|^E_RULES" ~/.workbuddy/skills/sector-overview/scripts/check_sector.py
+
+| Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `[args] missing --window(...)` | The formal command requires the window (anti wall-clock) | Add `--window YYYY-MM-DD~YYYY-MM-DD`, matching the declared window verbatim |
-| `[②] ...` judgement word without a same-line anchor | The lifeblood rule was not kept: a heat claim with no comparable series anchor | Attach the series fetched on the spot (domain + value + period), or rewrite the sentence as a declaration / data gap |
-| `[③] line N hits a banned family` | A word from the banned set entered the body | Rewrite neutrally or delete; no exemptions |
-| `[④] sources line N field ... missing or empty` | The evidence ledger is malformed (missing field, illegal kind/asof/conv_id) | Repair that `sources` line per the bracketed spec; research items need `conv_id` plus the saved path |
-| Evidence directory missing or hash mismatch | Evidence is fail-closed: delivering first and evidencing later is refused | Restore the raw snapshots and re-book; if a claim cannot be evidenced, delete it |
-| Association or domain data stopped inside the window | No update for the period - a data shape, not a script error | Declare the gap and hang it on the review checklist; never substitute stale values; report research cost before spending it |
-| A traceback instead of a FAIL list | An incident: the gate is defined zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to tell a bad report from a broken script |
+| `[E-FORMAT] [参数] (args) missing --window(...)` | The formal command requires the window (anti wall-clock) | Add `--window YYYY-MM-DD~YYYY-MM-DD`, matching the declared window verbatim |
+| `[E-FORMAT] [①] / [④] ...` | The declaration block is missing, or the six-section shape, table columns or row order are off | Restore per the bracketed spec; the shape is fixed, do not add or drop sections |
+| `[E-ANCHOR] [②] ...` | The lifeblood rule was not kept: a heat claim with no comparable series anchor on the same line | Attach the series fetched on the spot (domain + value + period), or rewrite the sentence as a declaration or data gap |
+| `[E-FORMAT] [④] sources line N field ... missing or empty` (same family: id not S<n>, kind/confidence outside the enum, illegal asof) | The evidence ledger is malformed | Repair that `sources` line per the bracketed spec; research items need `conv_id` plus the saved path |
+| `[E-BANWORD] [③] line N ...` | A word from the banned set entered the body (rating, price-target, buy/sell families) | Rewrite neutrally or delete; no exemptions - full word set via section 5's locator |
+| `[E-COVERAGE] [④] line N numeric/series row unanchored ... (缺数须申报)` | A row carries numbers with no `[S<n>]` anchor and no declared gap | Add the anchor, or rewrite the row as a declared data gap - never substitute stale values |
+| `[E-ANCHOR] [④] 正文孤儿锚:S<n> 在 sources 不存在（④双向账）` / `[E-ANCHOR] [④] 法定锚不可核:statute ...` | An anchor in the body has no ledger entry, or a statutory anchor cannot be verified | Book the `sources` line with its raw snapshot; statutory anchors need name + article number + short quote, all three, or delete the row |
+| Evidence directory missing or hash mismatch | Evidence is fail-closed | Restore the raw snapshots and re-book; delete the claim if it cannot be evidenced |
+| Association or domain data stopped inside the window | No update for the period - a data shape, not a script error | Declare the gap and hang it on the review checklist; report research cost before spending it |
+| A traceback instead of `FAIL ... (N items)` | An incident: the gate is defined zero-crash with every parse point wrapped | Stop and report with the exact command; run section 5's guard samples to tell a bad report from a broken script |
 
 ## 8. How to ask (three positive examples, one counter-example)
 

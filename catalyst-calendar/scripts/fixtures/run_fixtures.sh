@@ -91,6 +91,12 @@ runmark 1 "日期列为空或不可解析" "bad-s8-empty-date        (S8 空日�
 runmark 1 "不在主表日期集合" "bad-s10-summary-subset (S10 摘要⊄主表,v4-A④ 保留词定位)" "$PY" "$CHECK" bad-s10-summary-subset.md $W --sources calendar-sources.jsonl
 # ---- M37-B1/T1(M40 手术刀):前缀撞号须整词边界拦 ----
 runmark 1 "无原文匹配" "bad-t1-an-prefix     (T1 真 AN 少末位撞子串,整词边界断链)" "$PY" "$CHECK" bad-t1-an-prefix.md $W --sources bad-t1-sources.jsonl --evidence evidence-good
+# ---- M166 码表断言:每类一枚(码表自身入册) ----
+runmark 1 "\[E-FORMAT\]"   "ecode-format  (孤儿管道行→E-FORMAT)"  "$PY" "$CHECK" bad-noheader.md $W --sources calendar-sources.jsonl
+runmark 1 "\[E-ANCHOR\]"   "ecode-anchor  (假锚→E-ANCHOR)"        "$PY" "$CHECK" bad-anchor-fake.md $W --sources calendar-sources.jsonl
+runmark 1 "\[E-BANWORD\]"  "ecode-banword (自白词→E-BANWORD)"     "$PY" "$CHECK" bad-hallucination.md $W --sources calendar-sources.jsonl
+runmark 1 "\[E-COVERAGE\]" "ecode-coverg  (摘要⊄主表→E-COVERAGE)" "$PY" "$CHECK" bad-s10-summary-subset.md $W --sources calendar-sources.jsonl
+
 # ---- B6 缺参与 help ----
 run 1 "no-window  (缺 --window)" "$PY" "$CHECK" good-calendar.md --sources calendar-sources.jsonl
 run 1 "no-sources (缺 --sources)" "$PY" "$CHECK" good-calendar.md $W

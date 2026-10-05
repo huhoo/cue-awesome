@@ -74,6 +74,12 @@ a 1 "[参数] 缺 --sources" "缺 sources=FAIL 清单 exit1" "$PY" "$CHECK" fixt
 a 1 "[参数] 缺 --window" "缺 window=FAIL 清单 exit1" "$PY" "$CHECK" fixtures/good-sector.md --sources fixtures/good-sources.jsonl $E
 a 0 "" "--help (CONTRIBUTING §3)" "$PY" "$CHECK" --help
 
+# ---- M166 码表断言:每类一枚(码表自身入册) ----
+a 1 "[E-FORMAT]"   "ecode-format  (SO-B01 声明缺)"    "$PY" "$CHECK" fixtures/SO-B01.md --sources fixtures/SO-B01.jsonl $W $E
+a 1 "[E-ANCHOR]"   "ecode-anchor  (SO-B02 命门无锚)"  "$PY" "$CHECK" fixtures/SO-B02.md --sources fixtures/SO-B02.jsonl $W $E
+a 1 "[E-BANWORD]"  "ecode-banword (SO-B04 看好)"      "$PY" "$CHECK" fixtures/SO-B04.md --sources fixtures/SO-B04.jsonl $W $E
+a 1 "[E-COVERAGE]" "ecode-coverg  (SO-B05 据估计补数)" "$PY" "$CHECK" fixtures/SO-B05.md --sources fixtures/SO-B05.jsonl $W $E
+
 echo "----"
 echo "assertions: $pass/$total"
 [ "$fail" -eq 0 ] && [ "$pass" -eq "$total" ] && { echo "ALL GREEN (assertions: $pass/$total)"; exit 0; }
