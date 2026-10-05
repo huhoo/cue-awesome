@@ -230,3 +230,56 @@ examples/                    two finished sample skills, installable or adaptabl
 `build_draft.py --pdf` is a legacy path (depends on `playwright`) — **do not use it**; PDFs are always self-drawn by `export_pdf.py`.
 
 Version is in the `SKILL.md` frontmatter.
+
+## 9. Frequent confusion and anti-patterns (question in, honest answer out)
+
+This table is about mis-usage. For "work we do not take", see the ⑤ table in section 1; for typography detail, see
+`references/pitfalls.md` (this README keeps only the traps easiest to fall into; neither place claims to be exhaustive).
+
+| What you might think | What is actually true | Where to look |
+|---|---|---|
+| "Three gates green, so it is print-ready" | The gates divide labour: correct content, enough content, readable layout and fitness-for-purpose are **different things**. A draft can pass several and still ship one point too small with dozens of font-size tiers; a freshness gate runs before print | the five-gate division in section 1 ②; the `+check` command form in `SKILL.md` |
+| "Copy every check and threshold into the docs so I can verify against text" | Not copied. Checks and thresholds are the **script as it now stands**; a prose copy starts rotting immediately. Names and numbers that do appear here are mirrors and common examples | the grep line at the end of section 1 ② prints the live values in place |
+| "Print the HTML from a browser and deliver that as the PDF" | Some previewers and corporate policies make the whole document invisible; PDFs are always self-drawn by `export_pdf.py` | trap 1 in `references/pitfalls.md` |
+| "Feed a scanned sample straight into `+learn`" | Style extraction needs the PDF **text layer**; a scan has none and looks like an empty journal. OCR into a text layer first | the scan row of section 1 ⑤; `+learn` reads its boundaries out loud when it finishes |
+| "Clone the layout of a two-column magazine too" | The renderer is single-column only; columns and text wrap are another typesetting problem. For a two-column journal use it as a **style-guide and content** draft | the two-column row of section 1 ⑤; `examples/` ships a deliberately reversed sample that marks where it fails |
+| "No sample journal, but I still want this issue laid out" | Fine - at the price of **no style reproduction, content pipeline only**. That route is written into the routing table, not improvised | the "nothing at all" row of the routing table in `SKILL.md` |
+| "It runs without the Cue channels, right" | It runs, but what is missing is capability, not formatting: material comes from you (marked as supplied) and search-type entries are treated as not found. "Optional" means it can run without them, never that they should be skipped - they are recommended and confirmed with you before work starts | `references/cue-onboarding.md`; the recommended block in the `SKILL.md` frontmatter |
+
+## 10. When something goes wrong (symptom -> cause -> recovery)
+
+Symptoms are taken from the **current actual output** of the four scripts (real runs, not design intent): gate scripts
+print a human-readable report ending in `── FAIL n / WARN m`; a missing argument prints the argparse usage block and
+exits with **code 2**; `crosscheck.py` with no artifact prints
+`[ERR] 没有任何成品可校：至少给一个 --html / --md / --pdf`.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `── FAIL 2 / WARN 5` with `└─` detail lines below | The layout or editorial gate found blocking items (FAIL blocks, WARN does not) | Fix each object named on its `└─` line and re-run; after clearing FAIL, still look at every WARN before delivering |
+| `无阻塞项；WARN 建议逐条看一眼再交付。` | Passed, with warnings | Not a green light: judge warning items (font-size tier fragmentation, line-spacing ratio, stray CJK spaces) one by one |
+| `usage: audit_layout.py ... error: the following arguments are required: --pdf` | Missing parameter in the command form (each gate needs different ones) | Follow the command forms in `SKILL.md`; `--spec` / `--sample` are optional comparators - without them fewer judgements are made |
+| `[ERR] 没有任何成品可校：至少给一个 --html / --md / --pdf` | The artifact set is not out yet, or paths were not passed | Render first, then cross-check; once the three artifacts exist the cross-check is mandatory - what HTML has, PDF may not lack |
+| `结论：N 个版本有缺失` with `x MD 缺 n 条:` detail | Text coverage differs across the artifact set | Fill the missing entries per the detail. The text artifact carries a group of purely-layout fields that are exempt by design; the exemption table is `MD_SKIP` as it now stands, visible through the same grep line |
+| `[跳过] pdf 不存在：…` | That artifact has not been produced; the script says so instead of crashing | Produce it, then re-run the cross-check |
+| The freshness gate reports `FUTURE` (something that has not happened yet) or `STALE` (old news as new) | An event date falls outside the inclusion window, or issue numbers are not contiguous | Always run `check_freshness.py` before print (window defaults to 6 months, `--window` overrides); FUTURE blocks outright, STALE is judged entry by entry |
+| The report says it looks like a scan | The text layer is too thin for style extraction | OCR into a text layer first, then `+learn`; do not force the layout |
+| Interrupted, unclear where to resume | Eight verbs resume from any stage; artifacts land in the same directory | Read the existing artifacts and ledger in that directory, then enter at the matching verb - resuming is not re-running |
+
+## 11. How to ask (three positive examples, one counter-example)
+
+- **Positive (sample in hand, full chain)**: "Last issue's sample is `~/ink/sample.pdf`, this issue's six columns of
+  material are in `~/ink/mat/`; give me an editable draft, and the PDF too" - `+learn` measures the layout, `+brief` fixes
+  the positioning with three questions, then the chain runs. Paths supplied up front mean work starts immediately;
+  only the missing question comes back to you.
+- **Positive (complex: positioning first, content only, no style cloning)**: "First issue of a new in-house journal, no
+  sample journal - lay out by content only. Readers are frontline salespeople; after reading they should go do customer
+  follow-ups; short plain sentences, no diagrams, columns are listed in `~/plan.md`" - that hits the "nothing at all"
+  route: no style reproduction, content pipeline only. Once positioning lands in `positioning.json`, the editorial gate
+  judges word bands, forms of address and action-suggestion coverage against it.
+- **Positive (resume mid-pipeline)**: "The last `+draft` run finished halfway, the HTML exists - complete the docx and the
+  PDF" - the script reads the directory's artifacts and enters at the matching verb instead of re-running earlier steps
+  (the eight verbs are in section 3).
+- **Counter-example (adjacent need, not this skill)**: "Write the copy and decide the angles, I just want a finished piece"
+  - this ships a draft whose **layout and style conventions are correct**; viewpoint and case slots stay for a person
+  (first row of section 1 ⑤). "Is this paragraph compliant - give me an opinion" - it yields a checklist and sign-off
+  suggestions, never a legal opinion. "Clone a two-column magazine layout" - not rendered here.

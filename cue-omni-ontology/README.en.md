@@ -91,6 +91,81 @@ Offline self-check:
 python3 -B scripts/test_ontology.py
 ```
 
+## FAQ and anti-patterns (what you try -> declined, because -> where to go)
+
+Authoritative text lives in `SKILL.md`, `references/knowledge-contract.md` and `references/update-policy.md`;
+this table gathers it and does not restate it exhaustively.
+
+| What you try | Declined? Why | Where instead |
+|---|---|---|
+| A newer source omits a fact, so treat it as withdrawn | **No.** The update policy states plainly that "not mentioned" is not deletion - silence is not negation | Record a change only when a filing withdraws or supersedes; otherwise keep the old object with its basis state |
+| Reuse the same ID with a different meaning | **No.** The updater refuses same-ID meaning swaps; on definition or source ID conflict it keeps the old object, proposes a new ID and explains | Open a new ID for the new meaning, keep history, retain the conflict side by side |
+| Have the script merge two values into one conclusion | **No.** The knowledge package stores **directly disclosed assertions** only; computation and judgement belong in the answer with inputs named | Keep conflicts visible in the brief (100 and 105 coexist); no silent overwrite |
+| Describe `ontology.py` as an automatic extractor | **Not true.** Division of labour is fixed: the official parser reads material, the **host model does semantic extraction**, offline tools check structure and consistency | Write `extraction-notes.md` covering scope, failed sources and manual review |
+| Assume a public-looking URL is reachable | **No.** URL shape proves nothing about public accessibility; retrieval supplements only inside authorised research scope, no crawler | Use files or links the user explicitly provides, or fetch through Cue channels and keep snapshots |
+| Pipe `export-okf` straight into an external system | **Untested.** Export is a draft targeting the OKF 0.2 core subset; consumer compatibility is verified separately | Verify on the consuming side first; this package promises only the shape it emits |
+
+## When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **current actual output** of `scripts/ontology.py` (real runs): verification commands print **one JSON
+line**. Success looks like `{"status": "valid", "counts": {...}, "semantic_verification": "not_established_by_scripts"}`
+(exit 0); failure looks like `{"status": "invalid", "error": "<cause>"}` (exit 2, on stderr); a missing subcommand or
+argument prints the argparse usage and exits 2.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `{"status": "invalid", "error": "knowledge integrity mismatch"}` | Package content no longer matches its integrity record (`knowledge.json` hand-edited, or objects swapped under one ID) | Do not hand-edit package files: re-run `build` / `update` from sources; if a revision is truly needed, open a new ID and keep the old record |
+| `{"status": "invalid", "error": "source hash mismatch: <source ID>"}` | The stored snapshot disagrees with the recorded hash (source text changed or was replaced) | Re-parse that source into a new snapshot and a new run; keep the old snapshot, never rewrite history |
+| `{"status": "invalid", "error": "[Errno 2] No such file or directory: '<path>'"}` | The path handed to `validate` is not a complete package directory (one of `knowledge.json` / `run.json` / `changes.json` missing) | Point at the directory `build` emitted; `demo` output lives in version subdirectories such as `<out>/v1`, `<out>/v2` |
+| Messages shaped like `<label>: invalid ID`, `<label>: duplicate ID <key>`, `duplicate JSON key: <key>`, `invalid value for <type>` | Structure or value violates the contract (ID regex, duplicate keys, value type) | Fix per the field spec in `references/knowledge-contract.md`, then re-run the same validate |
+| `usage: ontology.py [-h] {build,update,validate,query,export-okf,feedback,review,prepare,brief,demo} ...` plus `error: the following arguments are required: command` | No subcommand, or a required parameter was skipped | Run `python3 scripts/ontology.py <subcommand> --help` first (e.g. `demo` requires `--out`, and **the output directory must be new**) |
+| Validation passes yet the extraction is semantically wrong | Scripts check structure and consistency only - the field `semantic_verification` literally reads `not_established_by_scripts`; scripts do not prove semantics | Review line by line with `review` and the expandable-source brief. That division is the design, not a defect |
+| Want to confirm the tool itself works | — | One local self-check: `python3 -B scripts/test_ontology.py` (listed under Deliverables and verification; test count comes from the run itself) |
+
+## How to ask (positive examples and one counter-example)
+
+- **Positive (first try, no credentials)**: "Use cue-omni-ontology with its bundled demo: once new material is added,
+  which facts are new, which conflict, and where is the basis?" - or one command,
+  `python3 scripts/ontology.py demo --out <a brand-new working directory>`: no network, no parse API, and it emits a
+  brief whose evidence expands to source text.
+- **Positive (two real documents)**: "Answer from these two public reports: (1) what disclosure is new; (2) which
+  numbers differ in basis and must not be compared directly; (3) which questions lack support. Give me a brief with
+  expandable sources and save an updatable knowledge package." - the template in Install and use your sources; sources
+  and task handles are kept separately, and the output directory must be new.
+- **Positive (complex: a second update with boundary demands)**: "Add this new announcement to the existing package and
+  give me the change brief. Keep old records, highlight conflicts needing review, and **do not treat 'not mentioned' as
+  deletion**; unit, period, basis, exclusions and validity go into the fact layer - do not merge them into one number
+  for me." - exactly what the updater enforces under update-policy: refuse same-ID meaning swaps, keep conflicts,
+  deduplicate identical statements.
+- **Positive (English phrasing)**: this package's frontmatter trigger set is already bilingual
+  (`ontology extraction` / `disclosure tracking` / `evidence briefs` / `supplier/product changes` / `知识包` / `变化简报`),
+  so either language can open it.
+- **Counter-example (adjacent need, not this skill)**: "which of these two companies is stronger, give me a verdict" -
+  the decision-shaped evidence chain belongs to `competitive-brief`; "lay out anchor-bound public risk facts for this
+  listed issuer and account for what could not be checked" - `dd-checklist`; "translate this foreign book, then index
+  it" - `long-doc-translation`. This package turns public material into an updatable, verifiable knowledge package plus
+  change briefs.
+
+## Domestically reachable evidence paths (when overseas sites do not load)
+
+The offline tools (`ontology.py`, `test_ontology.py`) depend only on the Python standard library, and **demo mode needs
+no API key and makes no network call** - so "let me see what this is" has no extra barrier in a domestic environment.
+When actually gathering material, three paths already exist in this package:
+
+1. **Files the user provides come first.** PDF, HTML or plain text can enter parsing and the knowledge package directly -
+   no overseas site needed. Domestic public material (exchange and disclosure-platform announcements, vendor Chinese
+   sites and documentation portals, industry-association reports, WeChat public-account articles) is most reliable here.
+2. **If an overseas site will not load, do not route around it.** Have the page **exported to a file by the user** and
+   hand that to the parse channel. This package builds no crawler and never assumes reachability from URL shape.
+3. **Supplementary retrieval stays inside authorised research scope** via the host's retrieval tools; whatever comes
+   back keeps its snapshot and provenance.
+
+None of the three changes the deliverable shape: the package still stores only directly disclosed assertions, conflicts
+stay side by side, snapshots and hashes remain re-checkable, and every source records its ID and parse date. A source
+that cannot be obtained is marked "not obtained" - **no inference, no silent overwrite**. That is the same discipline
+as update-policy; a restricted network does not loosen it. This section promises no unopened data domain and no
+promise that a specific site will load.
+
 ## Feedback that matters
 
 **Did your own documents answer your question? Would you add the next release? Where did correction still take effort?** These signals are more useful than download counts.

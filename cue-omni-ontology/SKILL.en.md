@@ -2,7 +2,7 @@
 name: cue-omni-ontology
 description: "从公开文档建可追溯业务知识包:给「主体+两份以上公开材料」,产出带证据锚的实体、口径、跨期变化与变化简报;语义抽取由宿主模型完成;工具只机检**输入包完整性**(自测现跑可复),打包/更新/查询/导出由它**执行**——外部 OKF 兼容性不验证,导出件仍须人工核。适合:财报跟踪、供应商/产品变化、竞品公告、口径核对。不适合:把本件当企业授权服务或抽取器本身——锚真伪仍须人工抽查。Triggers: ontology extraction, disclosure tracking, evidence briefs, supplier/product changes, 知识包, 变化简报。"
 license: MIT
-version: "0.2.3"
+version: "0.2.4"
 slug: cue-omni-ontology
 displayName: 公开资料业务知识包
 summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变化与变化简报;工具只机检输入包完整性,打包/更新/查询/导出由工具执行、外部兼容不验证,自测现跑可复。"

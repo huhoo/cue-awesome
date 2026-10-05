@@ -52,4 +52,60 @@ One command prints the constants the three QA scripts actually judge with, inclu
 grep -n "CONFIG\|^[A-Z_]\{2,\} *=" ~/.workbuddy/skills/long-doc-translation/scripts/qa_check.py ~/.workbuddy/skills/long-doc-translation/scripts/overlap_check.py ~/.workbuddy/skills/long-doc-translation/scripts/dedup_boundary.py
 ```
 
+#### Two starting tiers: simple and complex
+
+- **Simple tier (one text, clean text layer, relaxed terminology)**: `python scripts/init_project.py <project dir>` builds the skeleton, put the source where the RUNBOOK says, then run parse -> clean & slice -> translate -> merge -> the three QA checks. For a few dozen pages done by one person the size-routing table in `SKILL.md` says use **light mode** (`--scale light`); the same table says plainly that a few pages (< 10) should **not** use this pipeline - configuration costs more than it saves.
+- **Complex tier (columns, figure captions, scans, terminology unified across the book)**: parse first (an OCR channel such as omni-reader), slice by the book structure (chapter / page range, each segment belonging to exactly one place); then `overlap_check.py` (**before** translating - a superset and its subset each translated once duplicate the passage), `dedup_boundary.py` (clear 1-2 segment overlaps at neighbour boundaries), `qa_check.py` (completeness and style before merge). The only measured book is Dilthey, *Life of Schleiermacher* vol. 2: German, 800+ pages, 141 segments, 32 boundary seams - **wall-clock time was never measured here, so no hours are promised**; estimate by segment and batch count. Columns and figures are handled as text segments; thin text inside images may be missed, and the three QA scripts report untranslated residue, duplicated segments and page-mark gaps (thresholds via the grep line above, live values).
+
 The gates come in two kinds: **fixed in-package gates** (a missing directory errors out rather than printing zero segments, segment-count reconciliation, TOC depth, page-number continuity) and **project-configured domains** (page-mark regex, the OCR typo table, the three note section names, which files/sections are skipped, grouping patterns and the default thresholds). Every number in this file, in `SKILL.md` and in `references/qa-checklist.md` is a mirror and a common example, **not an exhaustive claim** — the scripts as they now stand govern.
+
+## FAQ and anti-patterns (what you try -> this skill declines, because -> where to go)
+
+Reviewed hard rules, the size-routing table and the pitfalls document re-assembled; nothing new promised. Thresholds
+and check lists stay in the scripts as they now stand (grep line above).
+
+| What you try | Declined? Why | Where instead |
+|---|---|---|
+| Run this pipeline over a dozen paragraphs | **Discouraged.** The routing table says: under 10 pages the configuration costs more than it saves | Translate directly; this package exists for "hundreds of pages + terminology unified book-wide + verifiable" |
+| A typeset bilingual parallel edition | **Not produced.** Output is a single-language master plus a reading HTML | That row is in the routing table; parallel typesetting is out of scope |
+| Slice a scanned image straight in | **No.** No text layer, nothing to verify | Parse/OCR into a text layer first; if a parallel foreign edition exists, use it |
+| Ignore overlapping slice boundaries and de-duplicate after translating | **Anti-pattern.** A superset and subset each translated once duplicate whole passages, hardest to see after merging | Run `overlap_check.py` **before** translating; `dedup_boundary.py` for what already happened |
+| One global find-and-replace for OCR typos | **Anti-pattern.** Bulk replacement also rewrites our own translator notes | Scope the mapping to source text; the damage shape is pitfall 2 |
+| Judge size and duplication by byte count | **Anti-pattern.** Bytes mixed with characters misjudge identical passages | Count characters; see pitfall 4 |
+| Merge and ship subagent output unchecked | **No.** Parallel work is fine; unverified work is not | Each batch passes the QA checks before merging (batch discipline in `parallel-translation.md`, pitfall 5) |
+| Emit the HTML while the `markdown` dependency is missing | **Cannot.** The .md master still builds; the HTML fails | The scripts name the install command and state the degradation instead of failing silently |
+
+## When something goes wrong (symptom -> cause -> recovery)
+
+Written from the **current actual output** of these scripts: none of them throws a traceback. A bad or missing path
+prints `[出错] <cause>` (the bracketed tag is Chinese in the shipped text) followed by lines starting
+`→ · <fix suggestion>` and exits 1 - measured behaviour: a missing directory always exits 1 with those hints and never
+"prints zero segments then a row of greens"; running without arguments prints that script's usage block.
+
+| Symptom | Cause | Recovery |
+|---|---|---|
+| `[出错] 目录不存在：<path>` with three `→ ·` hints | Path misspelled, a relative path taken against the shell rather than the project, or the project was never built | Work the hints in order: check spelling and current directory, quote paths containing spaces, and if unset `python scripts/init_project.py <project dir>` |
+| Running with no arguments just prints usage | **By design**: a missing argument exits 1 rather than crashing | Read the required arguments in that usage block; re-run with the path and `--expect` |
+| The same passage appears twice after merging | Sliding-window slices overlapped; superset and subset were each translated | `overlap_check.py` before translating, `dedup_boundary.py` after, then merge; reconcile seam counts against the measured shape |
+| Odd words appear inside translator notes | The global OCR typo map rewrote our own text | Restrict the mapping to source scope, re-run the cleaning step, hand-correct contaminated notes |
+| Page marks `[S. XXX]` break or stop being contiguous | Slice boundaries and page seams | Repair at the positions `qa_check.py` names; judge seams and suspects one by one (thresholds are live values) |
+| A segment was skipped leaving no trace | Skip ranges (preface, appendix, figure pages) configured against a different real structure | Check the project-configured skip list and grouping pattern - that domain is per project, not a fixed in-package gate |
+
+## How to ask (three positive examples, one counter-example)
+
+- **Positive (whole book)**: "Translate this 300-page German monograph into a Chinese master draft, terminology unified
+  book-wide, with a verifiable master and a reading HTML" - the main scenario, full pipeline; pass `--expect` with an
+  expected segment count so the QA checks reconcile against it.
+- **Positive (complex: scan + columns + per-chapter batches)**: "Source is `~/book/dilthey-v2.pdf`, a scan with columns
+  and figure captions. Cut batches by chapter, each subagent translates exactly one chapter and may not restructure;
+  run overlap detection before merging - at a seam keep the `〔承前页〕` marker rather than swallow text" - that is the
+  complex tier: parse -> slice by book structure -> `overlap_check` -> per-chapter translation -> `dedup_boundary` ->
+  `qa_check` -> merge. Time is not measured here, so estimate by segment and batch count; degradations are in the tiers above.
+- **Positive (80-page archive, one master)**: "Translate these 80 pages of English archive into Chinese, keep the page
+  marks, leave quotations in the notes untouched" - the 100-300 page row allows leaner batches; page marks and broken
+  sentences are preserved per the hard rules.
+- **Counter-example (adjacent need, not this skill)**: "just translate this one-page meeting summary tonight" - the
+  routing table says under 10 pages do not use this package; "turn this translation into a typeset parallel edition" -
+  out of scope (single-language master plus reading HTML only); "judge whether this passage of source material is
+  authentic" - that is verification/research work, a different skill.
+

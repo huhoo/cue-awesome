@@ -2,6 +2,12 @@
 
 本文件遵循 keep-a-changelog;版本权威=各 SKILL.md frontmatter 现值。
 
+### 0.2.4 — 2026-10-04（docs·M168 第二批三件套 + 专项「国内可达取证路径」：FAQ 与反模式 / 出错了怎么办 / 触发示例，中英双脸同步；新增节接在 §交付与验证 之后、§试用反馈 之前）
+
+- 缘起：渠道质量测评本件 antiPatternFaq=3.8（全档最低项之一：该禁的散在 update-policy 与 knowledge-contract，无反模式专节）、errorHandling=4.3（技术性强、无面向使用者的修正引导）、trigger=4.8（调用面散在段落里）、**trust.domestic=4.3**（示例与文档链接指向境外站点，网络受限时取证面变窄；另指出「脚本输出与错误提示为英文」——本段只补路径与说明，**不改脚本出口语言**，那属机器面，另票）。
+- 「出错了怎么办」按 `ontology.py` **现跑实际出口**写：成功一行 JSON `{"status":"valid", "counts":{...}, "semantic_verification":"not_established_by_scripts"}` 退 0；失败 `{"status":"invalid","error":"…"}` 退 2（stderr），实测两类真实原因 `knowledge integrity mismatch` 与 `source hash mismatch: <来源 ID>`；契约类消息（invalid ID / duplicate ID / duplicate JSON key / invalid value for）取自脚本源码字面。**不新造错误码**，也不把「脚本不证语义」这句省掉——出口里那句 `not_established_by_scripts` 就是本件的精度边界。
+- 专项口径：**demo 无需 API key、不联网**为既有事实；真实取证补三条现成路径（用户给文件优先 / 境外取不到就导出成文件而不是绕 / 检索补来源只在授权研究范围内），并保留两条既有铁律：URL 形状不能证明公开可访问、取不到就标「未取得」不推断不静默覆盖。不承诺未开放数据域、不承诺特定站点可达。
+- 版本位：README 与 README.en 在渠道包字节面内，占 patch 位 0.2.3 → 0.2.4（SKILL.md 与 SKILL.en.md 的 frontmatter `version` 同步，双语一致性由机检查）；脚本、references、assets 零触碰。
 ### 0.2.3（文案面·五处窄修）— 2026-09-28 机检范围两分 / 触发尾块补旧形 / 权威向归位 / 计数指针化
 
 - 机检范围收窄为如实：listing 与摘要此前把「打包、更新、查询、导出」与「完整性」并列写成由工具机检——工具只**机检输入包完整性**，其余四件事是工具**执行**的动作，导出路径对消费端返回未验证，外部 OKF 兼容性本件不验证。四词并列句改两分句，中英两份 frontmatter 同文同改。**同时删掉摘要与描述里写死的自测条数**：同一个数在包内出现多处且彼此不一致，改为一句话指现跑命令（活计数只留能被跑出来的那一处）。

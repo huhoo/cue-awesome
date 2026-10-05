@@ -91,6 +91,67 @@ python3 scripts/ontology.py query /path/to/work/v2 --concept metric:revenue --pe
 python3 -B scripts/test_ontology.py
 ```
 
+## 常见问题与反模式（你想这么用 → 本件不接，因为 → 替代去向）
+
+判据以 `SKILL.md` 与 `references/knowledge-contract.md`、`references/update-policy.md` 现文为准，本文只归纳不作穷尽复述。
+
+| 你想 | 本件接不接，为什么不接 | 替代去向 |
+|---|---|---|
+| 新材料没提到某事实，就当成已被删除 | **不接**。更新策略明写：不把「未提及」当成删除——沉默不是否定 | 只有披露里写出撤回/替代才记变化；未提及就保留旧对象并标注依据状态 |
+| 同一个 ID 换一套含义接着用 | **不接**。更新器拒绝同 ID 偷换含义；定义与来源 ID 冲突时保留旧对象、提出新 ID 并解释 | 新语义开新 ID，旧记录留档，冲突并列保留 |
+| 让脚本顺手把新旧值合并成一条结论 | **不接**。知识包只存**直接披露的断言**；计算与判断放在回答里说明输入与依据 | 冲突（如 100 与 105 并存）就在简报里并存，不静默覆盖 |
+| 把 `ontology.py` 说成自动抽取器 | **不可以**。本件分工固定：官方解析器读资料，**宿主模型做语义抽取**，离线工具做结构与一致性校验 | 抽取说明另写 `extraction-notes.md`，讲清范围、失败来源与人工复核 |
+| URL 长得像公开地址就算可访问 | **不接**。URL 形状不能证明公开可访问；检索补来源只在授权研究范围内，不另建爬虫 | 由用户明确提供文件/链接，或走 Cue 通道取回并留快照 |
+| `export-okf` 输出直接接进外部系统 | **别当已验**。导出为 draft，目标 OKF 0.2 核心子集，外部消费者兼容性另行验证 | 先在对方侧验一次；本件只承诺生成的概念文件形状 |
+
+## 出错了怎么办（症状 → 原因 → 恢复动作）
+
+按 `scripts/ontology.py` **当前实际出口**写（现跑所得）：校验类命令打印**一行 JSON**——
+成功形如 `{"status": "valid", "counts": {...}, "semantic_verification": "not_established_by_scripts"}`（退 0）；
+失败形如 `{"status": "invalid", "error": "<原因>"}`（退 2，走 stderr）；参数缺失走 argparse 的 usage 并退 2。
+
+| 症状 | 原因 | 恢复动作 |
+|---|---|---|
+| `{"status": "invalid", "error": "knowledge integrity mismatch"}` | 知识包内容与其完整性记录不符（改过 `knowledge.json`、或新旧对象被手工替换成同 ID） | 不要手改包内文件：从来源重跑 `build` / `update`；确需修订就开新 ID 并保留旧记录 |
+| `{"status": "invalid", "error": "source hash mismatch: <来源 ID>"}` | 来源快照与记录里的哈希不一致（原文变了或被替换） | 重新解析该来源生成新快照与新 run；旧快照留档，不改写历史 |
+| `{"status": "invalid", "error": "[Errno 2] No such file or directory: '<路径>'"}` | 传给 `validate` 的不是一个完整知识包目录（缺 `knowledge.json` / `run.json` / `changes.json` 之一） | 指向 `build` 输出的包目录；`demo` 的产出在 `<out>/v1`、`<out>/v2` 这类版本子目录里 |
+| 报错文案形如 `<标签>: invalid ID` / `<标签>: duplicate ID <键>` / `duplicate JSON key: <键>` / `invalid value for <类型>` | 结构与取值不合契约（ID 正则、重复键、值类型） | 按 `references/knowledge-contract.md` 的字段口径改；改完复跑同一条 validate |
+| `usage: ontology.py [-h] {build,update,validate,query,export-okf,feedback,review,prepare,brief,demo} ...` + `error: the following arguments are required: command` | 没给子命令或必传参数 | 先 `python3 scripts/ontology.py <子命令> --help` 看必传项（如 `demo` 必须 `--out`，且**输出目录必须是新目录**） |
+| 校验全过，但语义其实抽错了 | 脚本只校结构与一致性——`semantic_verification` 的值就是 `not_established_by_scripts`，脚本不证语义 | 逐条走 `review` 与展开原文的简报做人工复核；这是分工不是缺陷 |
+| 想确认工具本身没坏 | — | 本地自检一条命令：`python3 -B scripts/test_ontology.py`（README §交付与验证 已列，测项数以现跑为准） |
+
+## 怎么开口（触发示例：三条正例 + 一条反例）
+
+- **正例（首次试用，零凭据）**：「用 cue-omni-ontology 先拿自带样例演示：加入新材料后，哪些事实新增、哪些冲突、依据在哪里？」
+  ——或直接一条命令 `python3 scripts/ontology.py demo --out <全新工作目录>`，不联网、不调解析 API，产出可展开原文的 `brief/brief.html`。
+- **正例（真实两份材料）**：「根据这两份公开报告回答：①新增了什么披露；②哪些数字要区分口径不能直接比；
+  ③哪些问题缺依据。给我能展开原文的简报，并保存下次可更新的知识包。」
+  ——README §安装与真实资料 的那一条；来源与任务句柄分别保留，输出目录必须是新目录。
+- **正例（复杂输入：第二次更新 + 边界要求）**：「把这份新公告加进已有知识包，出变化简报。
+  保留旧记录，突出需要复核的冲突，**不把「未提及」当成删除**；单位、期间、口径、排除条件与有效期都进事实层，
+  别替我合并成一个数。」——更新器按 update-policy 走：拒绝同 ID 偷换含义、保留冲突、去重相同陈述。
+- **正例（英文说法）**：本件 frontmatter 的触发词面**已含中英两形**（`ontology extraction` / `disclosure tracking` /
+  `evidence briefs` / `supplier/product changes` / 知识包 / 变化简报），中英任一句形起头都能命中。
+- **反例（相邻需求，本件不接）**：「这两家公司谁更强，给个结论」→ 竞品决策的证据链是 `competitive-brief` 的活；
+  「上市主体公开信息里的风险逐条带锚、查不到什么也记账」→ `dd-checklist`；「先翻译这本外文书再建索引」→
+  `long-doc-translation`。本件只做「把公开资料变成可更新、可查证的知识包 + 变化简报」。
+
+## 国内可达取证路径（境外站点取不到时怎么办）
+
+本件的离线工具（`ontology.py`、`test_ontology.py`）只依赖 Python 标准库，**demo 模式无需 API key、不联网**，
+所以「先看看它是什么」这一步在国内环境没有任何额外门槛。真正取资料时有三条现成路径：
+
+1. **用户明确提供的文件优先**：PDF、HTML、文本都可以直接作为来源进入解析与知识包——
+   不依赖任何境外站点可达。国内公开材料（交易所与披露平台的公告、公司中文官网与文档站、行业协会发布的公开报告、
+   公众号文章）按这一条最稳。
+2. **境外站点取不到时不要绕**：把页面**由你导出成文件**再交给解析通道；本件不建爬虫，
+   也不因为「URL 看起来是公开的」就假定可访问（URL 形状不能证明公开可访问）。
+3. **需要横向补来源时走授权研究范围**：宿主检索工具只在授权范围内补来源，取回的内容同样留快照与出处。
+
+三条路径**不改交付形制**：知识包仍只存直接披露的断言，冲突并列保留，快照与哈希可复核；
+每个来源记 source ID 与解析日期。取不到的来源就标「未取得」，**不推断、不静默覆盖**——这与 update-policy
+是同一条纪律，不因网络环境而放宽。本段不承诺任何未开放的数据域，也不承诺任何特定站点必然可达。
+
 ## 试用后，最希望听到什么？
 
 **你的资料能否完成任务？你会不会加入第二份新材料再用一次？哪一步仍然需要大量纠错？** 这比下载量更能帮助我们改进产品。
