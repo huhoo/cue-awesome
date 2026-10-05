@@ -246,6 +246,23 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
         if top and top != version:
             rep.warn(f"{name}: CHANGELOG.md newest entry is {top}, but SKILL.md says {version}")
 
+    # --- manifest.yaml ↔ frontmatter version (M171) ---
+    # ERROR, not WARN: the manifest is the distribution toolchain's machine-read
+    # version; a split from the authoritative frontmatter is credential drift —
+    # precedent: long-doc manifest 1.3.0 vs SKILL 1.3.6 (lead hotfixed 680f079).
+    # Machine-read surfaces have no legitimate mid-flight state (WARN-grade is
+    # for human docs 「顺手对齐」-class only); missing version key = unverifiable
+    # distribution claim, same family, also ERROR.
+    manifest = skill_dir / "manifest.yaml"
+    if manifest.is_file():
+        mtext = manifest.read_text(encoding="utf-8", errors="replace")
+        mm = re.search(r"^version:\s*[\"']?([0-9][^\"\n]*?)[\"']?\s*$", mtext, re.M)
+        if not mm:
+            rep.error(f"{name}: manifest.yaml has no top-level `version:` — 分发机读面无从对账,视同漂移")
+        elif version and mm.group(1) != version:
+            rep.error(f"{name}: manifest.yaml version {mm.group(1)!r} != SKILL.md frontmatter {version!r} "
+                      f"— 分发面与权威面漂号(M171;判例 long-doc 1.3.0 vs 1.3.6/680f079),两处必须同号")
+
     # --- CHANGELOG head shape (M161; CONTRIBUTING §frontmatter-adjacent rule
     # 「首条即版本条」). ERROR, not WARN: a broken head is silent corruption —
     # the newest entry is the release index readers actually land on, and unlike
