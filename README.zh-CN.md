@@ -21,6 +21,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 | 目录 | Name | 版本 | 用途 |
 |---|---|---|---|
 | [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 公开资料知识与变化简报：无需 Key 的演示、原文证据、区分口径的回答，以及保留历史和冲突的持续更新。提供财报、供应商和产品场景指引。公开试验版，已验范围见包内验证记录。 |
+| [`cue-lead-pieces/`](cue-lead-pieces/) | cue-lead-pieces | [frontmatter](cue-lead-pieces/SKILL.md) | 财报引文逐字核对：从公司自己的 A 股（巨潮资讯）或美股（SEC EDGAR）公开披露生成线索件（对象 · 为何现在 · 建议动作 · 带来源和页码的原文证据），并把答案里的每句引文对回所注页核对；`verify --fix` 改正注错的页码、把改过字的引文换回原句、删掉原文没有的。数据源公开免费，无需 API key。公开试验版，只在一个宿主、一个模型、24 家公司上实测，数字与局限见包内[验证记录](cue-lead-pieces/references/verification.md)；它只核对引文是否出自原文，不判断信号对错。 |
 | [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | 企业期刊 / 内刊 / 客户通讯 / ESG 报告 / 年鉴特刊的「底稿生成器」：把版式体例从 PDF 里量化成可校验参数（版面网格、版心、字号序列、行距、色板、栏目模板），再按这套参数生产新一期内容。含法规动态栏目规范、CTA 溯源机制。 |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | 长篇外文（德 / 英 / 法 / 日等）学术专著、古籍、档案、译著的全文高质量中译流水线：解析 → 清洗切片 → 建体例与术语表 → 并行分批翻译 → 多维质检 → 合并交付带目录的阅读版。 |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | 竞品简报生成器：把散落在网页 / PDF / 录音 / 视频里的竞品素材，变成可溯源、可对比、可更新的决策简报。六阶段管线：素材摄入（omni-reader）→ 需求对齐 → 对比框架 → 取证（cue-research）→ 三件套出稿 → 门禁校订。 |
@@ -58,7 +59,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 ## 安装
 
-九件（含 `cue-omni-ontology`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
+九件（含 `cue-omni-ontology`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。`cue-lead-pieces` 在该发布之后加入，暂无 ZIP，请用下面的技能 CLI 安装或直接复制它的目录。
 
 下方 ZIP 命令说明列出的九个 skill，现有发布页为 <https://github.com/huhoo/cue-awesome/releases/tag/v2026.09.27>。打包版本可能与当前仓库不同，请核对发布页和已安装 skill 的 frontmatter。
 
@@ -70,7 +71,7 @@ unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 
 三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / cn-earnings-note / competitive-brief / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
 要从当前全部 skill 中选择：`git clone https://github.com/huhoo/cue-awesome.git`，再把需要的子目录拷进 `~/.workbuddy/skills/`。
-第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。
+第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。装 `cue-lead-pieces`：`npx skills add huhoo/cue-awesome --skill cue-lead-pieces`。
 Windows 目标路径：`C:\Users\<用户名>\.workbuddy\skills\`——三步与文件名同上。
 装完 `cd` 进那件目录，跑它自己 README 里给的自查命令：各件自带，本页不复制其内容。
 
