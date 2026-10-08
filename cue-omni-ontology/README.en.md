@@ -16,6 +16,7 @@ Give an agent two releases or reports. Receive **evidenced answers, a searchable
 | Must I start over after the next report? | Update the existing package while retaining history, added support and conflicts. |
 | Where did this conclusion come from? | Search the brief, expand verbatim excerpts and inspect original URLs/locators. |
 | Can my next agent task reuse the work? | Structured knowledge and optional draft OKF core-subset export. |
+| Can it take earnings-meeting video or audio? | Yes, as a **bounded local clips/splits (≤256 MiB)** workflow: three 90-second clips from two meetings completed the full chain (build→update×2→validate→query→export-okf) with 8/8 verbatim re-check hits; full-length meeting parsing is **not established** — five public full-length URL attempts were refused and a local full file is stopped by the 256 MiB gate. See `references/av-backtest.md`. |
 
 Begin with one subject, 2–5 public sources and a concrete question. A complete enterprise ontology is not a prerequisite.
 
@@ -195,6 +196,6 @@ For internal-document monitoring, downstream agents/ERP/CRM, domain schema revie
 
 ## Boundaries and license
 
-Store directly reported claims; disclose inputs for derived calculations and judgments in answers. Definitions remain candidates; local review records do not provide enterprise IAM or operational authorization. Cloud parsing of a local file is not full on-prem deployment.
+Store directly reported claims; disclose inputs for derived calculations and judgments in answers. The audio/video capability is bounded, not blanket: "includes audio/video" holds only under the "bounded local clips/splits (≤256 MiB)" workflow (the What this decides section of `references/av-backtest.md` is the single source of this wording); the verbatim re-check proves excerpt-to-parser consistency, i.e. integrity, not semantic truth. Definitions remain candidates; local review records do not provide enterprise IAM or operational authorization. Cloud parsing of a local file is not full on-prem deployment.
 
 Briefs include bounded source excerpts; complete packages contain parsed text. Check source conditions and authorization before sharing. Code/docs are [MIT](LICENSE); public access is not blanket permission to redistribute entire reports. The Chinese README is canonical user documentation; `SKILL.md` (Chinese-first) is the canonical agent entry, with `SKILL.en.md` as its synchronized translation. Judgements are the scripts as they now stand; fixtures evidence only the cases they actually run, not an exhaustive claim.

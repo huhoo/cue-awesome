@@ -2,6 +2,11 @@
 
 本文件遵循 keep-a-changelog;版本权威=各 SKILL.md frontmatter 现值。
 
+### 0.3.3 — 2026-10-08（文案面·M174 名述带界句：「含音视频」只在「本地小段/切片≤256 MiB」限定下说）
+
+- 缘起与口径源：M173 音视频端到端回测已在 `references/av-backtest.md` 定形（含 lead 跨会话复现段，其入链笔为 49dc951）。该档 What this decides 段的判词是本次唯一口径源——**「含音视频」supportable only with the qualification「本地小段/切片(≤256 MiB)工作流」**，实测强度为「两场合共三枚 90 秒切片走通全链、逐字回查 8/8，全长视频 URL 路五枪全拒、本地全长受 256 MiB 闸」，全长会议解析=未臻。述面据此**只加带界句**，不写把能力说成无界的词形；本条自身也不复写那两个被禁词形——复写了，「无界说法零出现」这条判据就被自家日志破掉（同型今日已犯两次，不再第三次）。
+- 落了哪四处：① `SKILL.md` 与 `SKILL.en.md` 的 `summary` 末追加「音视频限本地小段/切片」（**字节数容不下**：加 ≤256 MiB 即破 C-36 的 80 字闸，故数字界只出现在 ②③④ 三处）；② `description` 的「适合:」清单追加「业绩会音视频（本地小段/切片≤256 MiB）」；③ README 中文主面在「先看实际价值」表加一行、在「边界与许可」加一句（含「完整性≠语义为真」的限定）；④ README.en.md 同两处对点。displayName 未动（品类钩子已占位，音视频属能力细节进述面）。
+- 版本锁与实测数字：`SKILL.md` / `SKILL.en.md` frontmatter 与 `scripts/ontology.py` 的 `VERSION` 三处同号 0.3.3（M158 双锁的第三处在脚本里，动它只为对账，判定逻辑零改动）；改后两套自测 **Ran 66 tests / OK** 与 **Ran 8 tests / OK**，全仓 lint 10 skills / 0 error / 0 warning。限额实测：summary 79/80、description 286/300。
 ### 0.3.2 — 2026-10-08（M173：音视频端到端实跑证据票，C-13 先证据后申报）
 
 - 新增 `references/av-backtest.md`：公开业绩会音视频端到端诚实段。**样本 N=2**(当升材料 2025H1 网上业绩说明会回放、建行 2025 年度业绩发布会视频——两枚均为本机 ffprobe 核过的真 h264+**aac 音轨**,非幻灯片视频,源可达 HTTP 200/206)。
