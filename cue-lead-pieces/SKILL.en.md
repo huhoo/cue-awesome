@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Agent 思考,Cue 感知:用 Cue Omni Reader 把公司自己的披露(A股巨潮/美股SEC EDGAR)解析成带原PDF页码的原文,产出信用线索件,并逐句核对答案引文是否逐字出自所注页;--fix 改正页码、换回原句、删掉原文没有的。可选 Cue data-MCP 列公告、cue-research 补背景;未开通 Cue 时本地解析兜底。实测(本地解析、单一模型与宿主、24家):裸Agent引文39%对不上,用本件流程95%逐字可查。Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.4.0"
+version: "0.4.1"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露,建带页码的信用线索件,逐句核对引文是否出自所注页,对不上的标出或改回。"
@@ -37,6 +37,7 @@ Each official skill's own `SKILL.md` governs how to call it: omni's first call i
 2. **Credential boundary**: the user keeps `CUE_API_KEY` in their own credential facility; the agent never reads, prints or writes it anywhere and never asks for it in chat.
 3. **Ask before spending**: Omni parsing is billed per source; a cue-research run takes 3–15 minutes and may be billed. Before launching, tell the user how many files and which kinds (so many annual reports, so many announcements) and wait for consent; relay only the billing facts the service returns, never estimate rates or totals. The user may send only annual / interim reports through Omni and announcements through the local fallback.
 4. **Missing is not filled**: if a file failed or was not parsed, say so; do not fill it from memory or guesses.
+5. **A suggested action is not a directional verdict**: "suggested action" holds only verification steps (re-check which filing, re-open which page, what material is still missing). Bullish / bearish wording, ratings, target prices and default-or-not verdicts stay `[待人工]` (human review) — this skill ships checkable evidence; the judgment belongs to the human or the human's model.
 
 ## Fastest flow
 
