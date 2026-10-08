@@ -1,4 +1,6 @@
-# Verification record — cue-lead-pieces 0.3.0 (2026-10-07)
+# Verification record — cue-lead-pieces (measured with 0.3.x, 2026-10-07)
+
+**Parsing path: every number in this record was measured with local parsing (PyMuPDF / pdftotext for cninfo PDFs, HTML page breaks for EDGAR) — what 0.4.0 calls the `local` fallback. The 0.4.0 primary path, Cue Omni Reader with `ingest`, has not been measured yet.**
 
 This record lists what was measured, on what, and what it does not show. It is not a general accuracy benchmark. Numbers below are as measured; re-run `python3 scripts/test_skill_regression.py` for the current offline result.
 

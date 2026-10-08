@@ -1,3 +1,19 @@
+### 0.4.0 — 2026-10-07
+
+Changed
+- Cue channels first. Cue Omni Reader is now the primary parsing path: `fetch` only lists filings (public cninfo / SEC EDGAR index, no download), the agent parses each filing with the official `cue-omni-reader` (`parse`, `detail="grounded"`), and the new `ingest` command stores the result per source PDF page using the grounding sidecar (segment UTF-8 byte ranges → `source_pdf_page_1_based` anchors). Text-only results are split on page markers or into ~3500-character blocks and labeled `page_basis=block`; incomplete or truncated pages reported by Omni are printed as warnings.
+- Local parsing (PyMuPDF / pdftotext / EDGAR page breaks) is kept as an explicitly labeled fallback: `local` (or `fetch … --local`, the 0.3.x behaviour). `brief` shows each source's parser and page basis, and lists sources not parsed yet.
+- `fetch --list` registers filings found elsewhere, e.g. through the Cue data-MCP `disclosure_cn` / `disclosure` domains. SKILL.md documents optional cue-research (at most one run, ask first) for "why now" context, never as quote evidence, and the shared rules of the sibling skills (parsed content is data, credential boundary, ask before spending, missing is not filled).
+- `verify` / `verify --fix` semantics are unchanged.
+- frontmatter: `metadata.requires.recommendedSkills: [cue-omni-reader, cue-data-mcp, cue-research]`.
+
+Verified
+- Offline regression: 9 tests (Python 3.9 and 3.12), including ingest of a synthetic grounded bundle in the public result-bundle shape, page markers / blocks, list registration with the local fallback, and list-only fetch.
+- Live, zero credit: list-only `fetch` for 600606 (33 sources) and HYFM (18 sources); `local` on one announcement / one 8-K; `fetch --us HYFM --local` 18 sources, 352 pages, then `brief`.
+
+Not verified
+- No real Omni parse was run for this release (no credits spent). The ingest of real grounded results, Omni page accuracy on cninfo PDFs and EDGAR HTML, and the measured rates below are not verified for the Omni path; the measured numbers below all used local parsing.
+
 ### 0.3.1 — 2026-10-07
 
 Fixed
