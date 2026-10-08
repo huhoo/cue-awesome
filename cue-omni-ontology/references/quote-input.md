@@ -1,3 +1,13 @@
+# 引文输入（中文说明）
+
+宿主仍负责语义抽取。`prepare` 只把 quote 绑到证据字节范围，不解析 URL、不调用模型、不证明语义支持。
+
+匹配顺序：1）原文精确字节；2）若失败，忽略表格 `|`、空白（含全角空格）、Markdown `#`/`*` 后再定位，并把命中映射回**原文**起止字节。EvidenceSpan / `span_sha256` 始终对应原文片段。歧义时仍须加长 quote 或给 `occurrence`。
+
+宿主侧加长做法（回测 v2 实测）：若 quote 多处命中，先用宿主记录的页码筛出**引用页内唯一**的那一处（页内没有则看相邻页），再在正规化文本里向两侧逐步扩展该页的真实上下文，直到全文唯一，最后把对应的**原文逐字片段**作为 quote 交给 `prepare`。页内仍有多处或扩展到整页仍不唯一时丢弃，不得任选一处。
+
+---
+
 # Quote input: lower the extraction burden
 
 The host still extracts semantics. `prepare` only binds exact quotes to evidence and copies supplied text; it never parses a URL, calls a model or proves support.

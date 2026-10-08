@@ -2,6 +2,21 @@
 
 本文件遵循 keep-a-changelog;版本权威=各 SKILL.md frontmatter 现值。
 
+### 0.3.0 — 2026-10-07（回测修正合入 + Omni 结果转页码 + 留出集回测记录）
+
+- **版本号说明**：回测期间在仓外开发了五个未发布版本，内部编号 0.2.4–0.2.8，与本仓已发布的 0.2.4（2026-10-04 文档版）撞号。为避免混淆，这批改动合并为 0.3.0 发布；代码注释和测试里写作 dev-0.2.x。schema 仍为 0.1.0，旧知识包照常可读。
+- **引文匹配**（dev-0.2.4）：`prepare` 精确匹配失败时，忽略表格 `|`、空白和 Markdown `#`/`*` 再定位一次；EvidenceSpan 仍指向原文逐字节片段，返回 `quote_normalized_matches`。仍有歧义就失败，不做语义模糊匹配。
+- **catalog 与严格查询**（dev-0.2.4）：新增 `catalog PACKAGE [--kind all|entities|definitions|changes]`；`query` 支持 `--args-json`，未知字段名报错，不再静默忽略。
+- **冲突明细**（dev-0.2.4–0.2.6）：`changes.json` 冲突带 `old_value` / `new_value` / `period` / `severity` / `kind`。只有互不相同的值分别来自不同来源才算 `cross_period`，同一报告内并列的多值标 `intra_report`；按 high→medium→low 排序。每个冲突带 `old_evidence` / `new_evidence`，每个新事实带 `new_fact_details`，都是从来源字节切出的逐字摘录（≤160 字）。
+- **信用风险固定章节集**（dev-0.2.4）：新增 `references/credit-risk-sections.md` 与 `.json`，信用风险年报任务按节抽取，不再按关键词临时取约 12 页。
+- **数字包**（dev-0.2.7–0.2.8）：新增 `scripts/numeric.py`，`numeric-import` 校验宿主用确定性代码算出的跨期变动、重述、勾稽检查和叙述事项：两年都要有数值、单位、页码、表格编号，摘录与来源页逐字一致，`delta` 等于本期减上期，否则整包拒收。`numeric --view overview|drivers|consequences|normal|deltas|restatements|checks|narrative` 按审阅顺序展示：驱动因素 → 后果 → 已解释的正常事项。这是审阅顺序，不是评分或预警。
+- **Omni 结果转来源**（0.3.0 新增）：`ontology.py omni-source` 把保存下来的 Omni 解析结果（structuredContent 或完整 JSON 响应）逐字写成内容文件，生成带 `page_spans` 的来源记录，可选写出数字包用的 `FY<年>.pages.jsonl`。响应形状处理复制自 cue-lead-pieces 0.4.2 已有回归测试的代码（inline 与 artifact 两种存储，核对 sha256 digest）。只认源 PDF 页锚，跨页段、仅渲染页锚和无锚文字不给页码。不发起解析、不读 key、不花额度；只有结果以 artifact 存储时，才启动用户自己的 Bridge 从本地缓存 `read_result`。
+- **SKILL 第 1 步写入 2026-10-07 实测的四点**：`save_result` 或只存 Markdown 会丢页码；请求 artifact 时小结果仍内联返回；入库按真实响应形状；Bridge 1.8.3 对本地文件 grounded 解析返回 `DETAIL_CAPABILITIES_UNAVAILABLE`，SEC EDGAR 网址返回 `SOURCE_ACCESS_DENIED`。
+- **描述改正**：frontmatter 原写「工具只机检输入包完整性」，已不准确（`prepare` 绑定逐字证据，`numeric-import` 校验数字出处）。新描述写明工具做什么、不判断事实真伪、不做预警或风险发现。
+- **验证记录**：`references/verification.md` 增加留出集回测（40 份年报、7,598 页）。根因前 3 命中：本体 5 / 关键词检索 4 / 文本差异 6，未过预设通过线；证据有效率 0.958 / 0.463 / 0.660；每家对照误报 3.2 / 3.3 / 3.9。三组数字和局限并列写明，预警说法被证伪。微软实测记录保留不变。
+- **测试**：`test_numeric.py` 改为标准库 unittest，夹具数字换成合成整数（原夹具像真实公司数据）；`test_ontology.py` 增加 `OmniSource` 离线测试（合成文本，假 Bridge）。CI 另起仓库级 PR 跑 `test_numeric.py`。版本戳四处同号（脚本 VERSION、两份 frontmatter、锁测试）。
+- **README**：保留 0.2.4 的常见问题、出错处理、触发示例和国内取证路径各节；补 `omni-source`、`catalog`、数字包说明和对应出错行；常见问题加一行指向同仓库 cue-lead-pieces（引文核对与线索稿），另一行写明不能拿来做预警。
+
 ### 0.2.4 — 2026-10-04（docs·M168 第二批三件套 + 专项「国内可达取证路径」：FAQ 与反模式 / 出错了怎么办 / 触发示例，中英双脸同步；新增节接在 §交付与验证 之后、§试用反馈 之前）
 
 - 缘起：渠道质量测评本件 antiPatternFaq=3.8（全档最低项之一：该禁的散在 update-policy 与 knowledge-contract，无反模式专节）、errorHandling=4.3（技术性强、无面向使用者的修正引导）、trigger=4.8（调用面散在段落里）、**trust.domestic=4.3**（示例与文档链接指向境外站点，网络受限时取证面变窄；另指出「脚本输出与错误提示为英文」——本段只补路径与说明，**不改脚本出口语言**，那属机器面，另票）。
