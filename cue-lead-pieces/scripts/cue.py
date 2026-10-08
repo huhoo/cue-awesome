@@ -1,0 +1,528 @@
+#!/usr/bin/env python3
+"""cue-lead-pieces: turn a company's own filings into traceable lead pieces.
+
+  cue.py fetch   <dir> --cn 600606 | --us LESL   [--months 12]   download filings (cninfo / SEC EDGAR), extract text per page
+  cue.py changes <dir>                                            risk-sentence changes: cross-period (new/dropped wording) + events
+  cue.py leads   <dir> [--no-llm]                                 align changes into lead pieces (object / why now / action / evidence)
+  cue.py brief   <dir> [--top 10]                                 ONE call: source catalog + lead pieces + paste-ready verbatim evidence (JSON lines)
+  cue.py find    <dir> <term> [<term> ...] [--max 30]             sentences containing the terms, as paste-ready evidence JSON lines
+  cue.py page    <dir> <source> <pages> [<source> <pages> ...]    print pages (e.g. AR2025 54,196-198 ANN-2026-05-14-1 2), compacted
+  cue.py verify  <dir> (--json answer.json [--fix] | --quote Q --source S --page N)   check quotes verbatim against the source text;
+                 --fix repairs answer.json in place (wrong page -> real page, edited -> the real sentence, absent/fabricated -> dropped)
+
+Every quote Cue emits is copied by the program from the page text, never written by a model. Page = PDF page (A-share) or
+the filing's own page-break page (EDGAR HTML; falls back to ~3500-char blocks). Pure stdlib + PyMuPDF (or the pdftotext CLI)."""
+import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, urllib.parse, html, collections
+# SEC EDGAR asks every client to identify itself ("Company Name contact@domain"); set CUE_SEC_UA to your own name and email.
+UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
+# ---------------------------------------------------------------- text utils
+import unicodedata
+__version__ = '0.3.0'
+def nrm_map(s):
+    """normalised string for matching + map to original indices: NFKC, lower-case, and NO whitespace / punctuation / table marks
+    (so a quote that differs from the page only in spacing, line breaks or punctuation still counts as verbatim)"""
+    out, idx = [], []
+    for i, ch in enumerate(s or ''):
+        for x in unicodedata.normalize('NFKC', ch).lower():
+            if x.isspace() or x in '|#*' or unicodedata.category(x)[0] in 'PZS' and x not in '%': continue
+            out.append(x); idx.append(i)
+    return ''.join(out), idx
+def nrm(s): return nrm_map(s)[0]
+def jload(p, d=None):
+    return json.load(open(p, encoding='utf-8')) if os.path.exists(p) else d
+def jload_lenient(p):
+    """answers written by agents sometimes contain unescaped double quotes inside strings; escape a quote that is not followed by , : } ]"""
+    t = open(p, encoding='utf-8').read()
+    try: return json.loads(t)
+    except json.JSONDecodeError: pass
+    o, ins, i = [], False, 0
+    while i < len(t):
+        ch = t[i]
+        if ch == '\\' and ins: o.append(t[i:i + 2]); i += 2; continue
+        if ch == '"':
+            if not ins: ins = True
+            else:
+                nxt = t[i + 1:].lstrip()[:1]
+                if nxt in (',', ':', '}', ']', ''): ins = False
+                else: o.append('\\"'); i += 1; continue
+        o.append(ch); i += 1
+    return json.loads(''.join(o))
+def jdump(o, p):
+    os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True); json.dump(o, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+def get(url, headers=None, data=None, tries=4):
+    for a in range(tries):
+        try:
+            return urllib.request.urlopen(urllib.request.Request(url, data=data, headers=headers or {'User-Agent': 'Mozilla/5.0'}), timeout=90).read()
+        except Exception:
+            if a == tries - 1: raise
+            time.sleep(2 * (a + 1))
+# ---------------------------------------------------------------- page extraction
+def pdf_pages(path, max_pages=300):
+    try:
+        import fitz
+        doc = fitz.open(path); return [doc[i].get_text() for i in range(min(doc.page_count, max_pages))]
+    except ImportError:
+        import subprocess
+        t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout
+        return t.split('\f')[:max_pages]
+class _Txt(__import__('html.parser').parser.HTMLParser):
+    BLOCK = {'p', 'div', 'br', 'tr', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'table', 'hr'}
+    def __init__(s): super().__init__(); s.o = []; s.skip = 0
+    def handle_starttag(s, t, a):
+        if t in ('script', 'style'): s.skip += 1
+        if t in s.BLOCK: s.o.append('\n')
+        if t in ('td', 'th'): s.o.append(' | ')
+    def handle_endtag(s, t):
+        if t in ('script', 'style'): s.skip -= 1
+        if t in s.BLOCK: s.o.append('\n')
+    def handle_data(s, d):
+        if not s.skip: s.o.append(d)
+def html_text(h):
+    p = _Txt(); p.feed(h); t = ''.join(p.o).replace('\xa0', ' ')
+    t = re.sub(r'[ \t]+', ' ', t)
+    t = re.sub(r'\s*\n(\s*\|\s*\n)+\s*', ' | ', t)          # table cells split over lines -> one row
+    return re.sub(r'\n\s*\n+', '\n', t).strip()
+def html_pages(h):
+    h = re.sub(r'(?is)<ix:header>.*?</ix:header>', '', h)
+    parts = re.split(r'(?i)<[^>]+page-break-(?:before|after)\s*:\s*always[^>]*>', h)
+    pages = [html_text(x) for x in parts]
+    pages = [x for x in pages if len(x) > 40]
+    if len(pages) < 3 and sum(map(len, pages)) > 8000:      # no usable page breaks: fixed blocks at paragraph boundaries
+        t = '\n'.join(pages); pages, cur = [], ''
+        for para in t.split('\n'):
+            if len(cur) + len(para) > 3500 and cur: pages.append(cur); cur = ''
+            cur += para + '\n'
+        if cur: pages.append(cur)
+    return pages
+# ---------------------------------------------------------------- fetch: cninfo (A-share)
+CN_KEEP = ['诉讼', '仲裁', '冻结', '查封', '拍卖', '执行', '立案', '处罚', '警示', '监管', '关注函', '问询函', '逾期', '违约', '资金占用', '退市', '风险提示',
+           '更正', '差错', '减值', '质押', '担保', '辞职', '会计师事务所', '破产', '重整', '失信', '债务', '保留意见', '无法表示', '强调事项', '业绩预告',
+           '业绩快报', '亏损', '控制权', '减持', '停牌', '出售', '借款', '贷款', '展期', '终止', '持续经营', '回复']
+CN_DROP = re.compile(r'已取消|英文|English|法律意见书|股东大会的通知|召开.{0,12}股东大会|股东大会决议|章程|议事规则|管理制度|工作细则|摘要')
+def cn_fetch(d, code, months):
+    stocks = json.loads(get('http://www.cninfo.com.cn/new/data/szse_stock.json'))['stockList']
+    org = next(x for x in stocks if x['code'] == code)
+    end = datetime.date.today(); start = end - datetime.timedelta(days=int(months * 30.5)); ar_start = end - datetime.timedelta(days=800)
+    def query(s, e, category=''):
+        out, page = [], 1
+        while True:
+            body = urllib.parse.urlencode({'pageNum': page, 'pageSize': 30, 'column': 'sse' if code.startswith('6') else 'szse', 'tabName': 'fulltext',
+                                           'stock': f"{code},{org['orgId']}", 'category': category, 'seDate': f'{s}~{e}', 'isHLtitle': 'true'}).encode()
+            r = json.loads(get('http://www.cninfo.com.cn/new/hisAnnouncement/query', data=body, headers={'User-Agent': 'Mozilla/5.0', 'X-Requested-With': 'XMLHttpRequest',
+                                                                                                          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}))
+            for a in r.get('announcements') or []:
+                out.append({'id': str(a['announcementId']), 'title': re.sub('</?em>', '', a['announcementTitle'] or ''), 'url': a['adjunctUrl'],
+                            'date': datetime.datetime.fromtimestamp(a['announcementTime'] / 1000, datetime.timezone(datetime.timedelta(hours=8))).date().isoformat()})
+            if not r.get('hasMore'): return out
+            page += 1; time.sleep(0.4)
+    srcs = []
+    per = query(ar_start, end, 'category_ndbg_szsh;category_bndbg_szsh')
+    ars = sorted([a for a in per if re.search(r'年度报告$|年度报告（更新后）$|年度报告\(修订版\)$', a['title']) and '半年度' not in a['title'] and '摘要' not in a['title']], key=lambda a: a['date'], reverse=True)
+    hs = sorted([a for a in per if '半年度报告' in a['title'] and '摘要' not in a['title']], key=lambda a: a['date'], reverse=True)
+    seen = set()
+    for a in ars:
+        y = re.search(r'(20\d\d)年', a['title']); y = y.group(1) if y else a['date'][:4]
+        if y in seen or len(seen) >= 2: continue
+        seen.add(y); srcs.append(dict(a, sid=f'AR{y}', kind='annual'))
+    for a in hs[:1]:
+        y = re.search(r'(20\d\d)年', a['title']); srcs.append(dict(a, sid=f"H{y.group(1) if y else a['date'][:4]}", kind='interim'))
+    anns = [a for a in query(start, end) if not CN_DROP.search(a['title']) and any(k in a['title'] for k in CN_KEEP)
+            and not re.search(r'年度报告|季度报告', a['title']) or re.search(r'年度报告.*(问询|更正|延期|专项说明)', a['title'])]
+    anns = sorted(anns, key=lambda a: a['date'], reverse=True)[:30]
+    cnt = collections.Counter()
+    for a in sorted(anns, key=lambda a: (a['date'], a['id'])):
+        cnt[a['date']] += 1; srcs.append(dict(a, sid=f"ANN-{a['date']}-{cnt[a['date']]}", kind='announcement'))
+    for s in srcs:
+        pdf = f"{d}/raw/{s['sid']}.pdf"
+        if not os.path.exists(pdf):
+            os.makedirs(f'{d}/raw', exist_ok=True); open(pdf, 'wb').write(get('http://static.cninfo.com.cn/' + s['url'])); time.sleep(0.3)
+        s['pages'] = pdf_pages(pdf); s['source_url'] = 'http://static.cninfo.com.cn/' + s['url']
+    return {'company': org['zwjc'], 'id': code, 'market': 'CN'}, srcs
+# ---------------------------------------------------------------- fetch: SEC EDGAR (US)
+def us_fetch(d, ticker, months):
+    H = {'User-Agent': UA_SEC}
+    if ticker.isdigit(): cik = int(ticker); name = ticker
+    else:
+        m = next(v for v in json.loads(get('https://www.sec.gov/files/company_tickers.json', H)).values() if v['ticker'].upper() == ticker.upper())
+        cik, name = m['cik_str'], m['title']
+    sub = json.loads(get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json', H)); r = sub['filings']['recent']
+    F = [dict(form=r['form'][i], date=r['filingDate'][i], acc=r['accessionNumber'][i], doc=r['primaryDocument'][i], period=r['reportDate'][i]) for i in range(len(r['form']))]
+    start = (datetime.date.today() - datetime.timedelta(days=int(months * 30.5))).isoformat()
+    pick = [f for f in F if f['form'] == '10-K'][:2] + [f for f in F if f['form'] == '10-Q'][:2] + [f for f in F if f['form'] == '8-K' and f['date'] >= start][:15]
+    srcs, cnt = [], collections.Counter()
+    for f in pick:
+        base = f"https://www.sec.gov/Archives/edgar/data/{cik}/{f['acc'].replace('-', '')}"
+        sid = {'10-K': f"10-K_FY{f['period'][:4]}", '10-Q': f"10-Q_{f['period']}"}.get(f['form'])
+        if not sid: cnt[f['date']] += 1; sid = f"8-K_{f['date']}" + (f"_{cnt[f['date']]}" if cnt[f['date']] > 1 else '')
+        docs = [(sid, f['doc'])]
+        if f['form'] == '8-K':
+            try:
+                idx = json.loads(get(base + '/index.json', H))['directory']['item']
+                docs += [(f'{sid}_EX99' + (str(j) if j else ''), it['name']) for j, it in enumerate([x for x in idx if re.search(r'ex-?99', x['name'], re.I) and x['name'].endswith('.htm')][:2])]
+            except Exception: pass
+        for s2, doc in docs:
+            p = f'{d}/raw/{s2}.htm'
+            if not os.path.exists(p):
+                os.makedirs(f'{d}/raw', exist_ok=True); open(p, 'wb').write(get(f'{base}/{doc}', H)); time.sleep(0.2)
+            srcs.append({'sid': s2, 'kind': {'10-K': 'annual', '10-Q': 'interim'}.get(f['form'], 'event'), 'date': f['date'], 'title': f"{f['form']} {doc}",
+                         'source_url': f'{base}/{doc}', 'pages': html_pages(open(p, encoding='utf-8', errors='ignore').read())})
+    return {'company': name, 'id': ticker, 'cik': cik, 'market': 'US'}, srcs
+def cmd_fetch(a):
+    meta, srcs = cn_fetch(a.dir, a.cn, a.months) if a.cn else us_fetch(a.dir, a.us, a.months)
+    os.makedirs(f'{a.dir}/pages', exist_ok=True); os.makedirs(f'{a.dir}/docs', exist_ok=True)
+    mark = '第{}页' if meta['market'] == 'CN' else 'page {}'
+    for s in srcs:
+        with open(f"{a.dir}/pages/{s['sid']}.jsonl", 'w', encoding='utf-8') as f:
+            for i, t in enumerate(s['pages'], 1): f.write(json.dumps({'page': i, 'text': t}, ensure_ascii=False) + '\n')
+        with open(f"{a.dir}/docs/{s['sid']}.txt", 'w', encoding='utf-8') as f:
+            f.write(f"# {s['sid']} | {s['date']} | {s['title']}\n")
+            for i, t in enumerate(s['pages'], 1): f.write(f"\n[{mark.format(i)}]\n{t}\n")
+        s['n_pages'] = len(s.pop('pages'))
+    meta['fetched'] = datetime.date.today().isoformat(); meta['sources'] = srcs
+    jdump(meta, f'{a.dir}/sources.json'); jdump(meta, f'{a.dir}/docs/sources.json')
+    print(f"{meta['company']}: {len(srcs)} sources, {sum(s['n_pages'] for s in srcs)} pages -> {a.dir}/docs")
+def load(d):
+    meta = jload(f'{d}/sources.json'); S = collections.OrderedDict()
+    for s in meta['sources']:
+        S[s['sid']] = dict(s, text={json.loads(l)['page']: json.loads(l)['text'] for l in open(f"{d}/pages/{s['sid']}.jsonl", encoding='utf-8')})
+    return meta, S
+_NC = {}
+def normpage(k, p, t):
+    if (k, p) not in _NC: _NC[(k, p)] = nrm_map(t)
+    return _NC[(k, p)]
+# ---------------------------------------------------------------- changes
+RISK_CN = ['逾期', '违约', '冻结', '查封', '诉讼', '仲裁', '担保', '持续经营', '重大不确定性', '减值', '亏损', '立案', '处罚', '警示', '问询', '退市', '质押',
+           '资金占用', '无法表示', '保留意见', '强调事项', '流动负债', '债务', '重整', '破产', '失信', '被执行', '展期', '停产', '贷款', '借款', '偿还', '净资产为负', '受限']
+RISK_EN = ['going concern', 'substantial doubt', 'default', 'forbearance', 'waiver', 'covenant', 'accelerat', 'impairment', 'material weakness', 'restat',
+           'delist', 'minimum bid', 'nasdaq', 'liquidity', 'matur', 'refinanc', 'bankruptcy', 'chapter 11', 'restructur', 'workforce', 'net loss',
+           'cash runway', 'deficit', 'insufficient', 'unable to', 'termination', 'lender', 'interest payment']
+def sentences(text, cn):
+    t = text.replace('\r', '')
+    if cn:
+        t = re.sub(r'(?<=[\u4e00-\u9fff，、；：（）0-9%])\n(?=[\u4e00-\u9fff（0-9])', '', t)
+        parts = re.split(r'(?<=[。；！？])|\n', t)
+    else:
+        t = re.sub(r'(?<![.:;])\n(?=[a-z0-9(])', ' ', t)
+        parts = re.split(r'(?<=[.;])\s+(?=[A-Z(“"])|\n', t)
+    return [p.strip() for p in parts if 25 <= len(p.strip()) <= 600]
+def risk_hits(s, cn):
+    sl = s.lower(); return [k for k in (RISK_CN if cn else RISK_EN) if k in sl]
+def cmd_changes(a):
+    meta, S = load(a.dir); cn = meta['market'] == 'CN'; ch = []
+    def sents(sid): return [(p, s) for p, t in S[sid]['text'].items() for s in sentences(t, cn) if risk_hits(s, cn)]
+    for kind in ('annual', 'interim'):
+        ids = sorted([sid for sid, s in S.items() if s['kind'] == kind], key=lambda x: S[x]['date'], reverse=True)
+        if not ids: continue
+        new = sents(ids[0])
+        if len(ids) >= 2:     # cross-period: wording present in the latest but not in the previous report of the same kind (and vice versa)
+            old = sents(ids[1]); oldn = {nrm(s) for _, s in old}; newn = {nrm(s) for _, s in new}
+            oldtxt = nrm(''.join(S[ids[1]]['text'].values())); newtxt = nrm(''.join(S[ids[0]]['text'].values()))
+            for p, s in new:
+                if nrm(s) not in oldn and nrm(s) not in oldtxt:
+                    best = max(old, key=lambda x: difflib.SequenceMatcher(None, nrm(s)[:200], nrm(x[1])[:200]).quick_ratio(), default=None)
+                    prior = None
+                    if best:
+                        r = difflib.SequenceMatcher(None, nrm(s)[:300], nrm(best[1])[:300]).ratio()
+                        if r >= 0.55: prior = {'source': ids[1], 'date': S[ids[1]]['date'], 'page': best[0], 'quote': best[1], 'similarity': round(r, 2)}
+                    ch.append({'status': 'new_wording', 'source': ids[0], 'date': S[ids[0]]['date'], 'page': p, 'quote': s, 'prior': prior, 'compared_with': ids[1]})
+            for p, s in old:
+                if nrm(s) not in newn and nrm(s) not in newtxt and len(risk_hits(s, cn)) >= 2:
+                    ch.append({'status': 'dropped_wording', 'source': ids[1], 'date': S[ids[1]]['date'], 'page': p, 'quote': s, 'compared_with': ids[0]})
+        else:
+            ch += [{'status': 'in_report', 'source': ids[0], 'date': S[ids[0]]['date'], 'page': p, 'quote': s} for p, s in new]
+    for sid, s in S.items():
+        if s['kind'] in ('announcement', 'event'):
+            ss = sorted(sents(sid), key=lambda x: -len(risk_hits(x[1], cn)))[:8]
+            ch += [{'status': 'event', 'source': sid, 'date': s['date'], 'page': p, 'quote': q, 'title': s['title']} for p, q in ss]
+    for c in ch: c['keywords'] = risk_hits(c['quote'], cn); c['score'] = len(c['keywords']) + (2 if c['status'] in ('new_wording', 'event') else 0)
+    ch.sort(key=lambda c: (c['date'], c['source'], c['page']))
+    for i, c in enumerate(ch, 1): c['id'] = f'C{i}'
+    jdump({'company': meta['company'], 'n': len(ch), 'changes': ch}, f'{a.dir}/changes.json')
+    print(f"{len(ch)} changes ({collections.Counter(c['status'] for c in ch)}) -> {a.dir}/changes.json")
+# ---------------------------------------------------------------- leads
+ALIGN = ("下面是一家公司（{company}）在多个来源、多个时点留下的“变化条目”：年报/中报（或 10-K/10-Q）之间新增或删除的风险表述，以及之后的临时公告（或 8-K）里的风险事项。"
+         "每条有编号、日期、来源、状态和原文。请把指向同一对象或同一问题的条目跨时间、跨来源对齐，合成不超过 10 个“线索件”，按信贷员现在最该跟进的程度排序。每个线索件给出："
+         "object（对象，不超过 25 字）、why_now（为何现在：哪些条目在什么时间发生了什么变化、前后如何衔接，不超过 150 字）、action（建议动作：信贷员下一步具体核查、索要或跟进什么，不超过 60 字）、"
+         "change_ids（所依据的条目编号，按时间先后）。只能依据这些条目，不得使用外部知识。只输出 JSON：{{\"leads\":[{{\"object\":\"...\",\"why_now\":\"...\",\"action\":\"...\",\"change_ids\":[\"C3\",\"C12\"]}}]}}\n\n条目：\n{items}")
+def llm(prompt, max_tokens=5000):
+    """optional: any OpenAI-compatible chat-completions endpoint. Set CUE_LLM_BASE_URL (e.g. https://api.example.com/v1), CUE_LLM_API_KEY and
+    CUE_LLM_MODEL; without them `leads` uses the deterministic grouping (no network call, no key needed)."""
+    base = os.environ.get('CUE_LLM_BASE_URL', '').rstrip('/'); tok = os.environ.get('CUE_LLM_API_KEY'); model = os.environ.get('CUE_LLM_MODEL')
+    if not (base and tok and model): return None
+    body = {'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': max_tokens, 'temperature': 0}
+    for a in range(4):
+        try:
+            r = json.loads(get(base + '/chat/completions', data=json.dumps(body).encode(), headers={'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json'}))
+            return r['choices'][0]['message'].get('content') or ''
+        except Exception: time.sleep(5 * (a + 1))
+    return None
+def parse_json(t):
+    t = t or ''; i, j = t.find('{'), t.rfind('}')
+    try: return json.loads(t[i:j + 1])
+    except Exception: return None
+def cmd_leads(a):
+    out = f'{a.dir}/leads.json'
+    if os.path.exists(out) and not a.rebuild: print(render(jload(out))); return
+    if not os.path.exists(f'{a.dir}/changes.json'): cmd_changes(a)
+    C = jload(f'{a.dir}/changes.json'); ch = sorted(C['changes'], key=lambda c: -c['score'])[:260]; by = {c['id']: c for c in C['changes']}
+    ch.sort(key=lambda c: (c['date'], int(c['id'][1:])))
+    st = {'new_wording': '新增表述', 'dropped_wording': '删除表述', 'event': '事项', 'in_report': '报告内'}
+    items = '\n'.join(f"{c['id']}｜{c['date']}｜{c['source']}｜{st[c['status']]}｜{c['quote'][:220]}" for c in ch)
+    d = None if a.no_llm else parse_json(llm(ALIGN.format(company=C['company'], items=items)))
+    if not d or not d.get('leads'):     # deterministic fallback: one lead per dominant keyword, most recent first
+        groups = collections.defaultdict(list)
+        for c in ch: groups[c['keywords'][0] if c['keywords'] else '其他'].append(c['id'])
+        d = {'leads': [{'object': k, 'why_now': f'{len(v)} 条相关变化，最近一条 {by[v[-1]]["date"]}', 'action': '核对原文并向公司索要说明', 'change_ids': v[-6:]}
+                       for k, v in sorted(groups.items(), key=lambda x: -len(x[1]))[:10]], 'fallback': True}
+    L = []
+    for x in d['leads'][:10]:
+        ids = [i for i in (x.get('change_ids') or []) if i in by]
+        if not ids: continue
+        ev = []
+        for i in ids[:5]:
+            c = by[i]; e = {'source': c['source'], 'date': c['date'], 'page': c['page'], 'quote': c['quote'], 'status': st[c['status']]}
+            if c.get('prior'): e['prior'] = c['prior']
+            ev.append(e)
+        why = re.sub(r'\bC(\d+)\b', lambda m: f"[{by['C' + m.group(1)]['source']} p{by['C' + m.group(1)]['page']}]" if 'C' + m.group(1) in by else '', str(x.get('why_now', '')))
+        L.append({'object': x.get('object', ''), 'why_now': why, 'action': x.get('action', ''), 'evidence': ev})
+    res = {'company': C['company'], 'built': datetime.datetime.now().isoformat(timespec='seconds'), 'aligner': 'fallback' if d.get('fallback') else os.environ.get('CUE_LLM_MODEL', 'llm'), 'leads': L}
+    jdump(res, out); print(render(res))
+def render(r):
+    o = [f"# Cue 线索件：{r['company']}（{len(r['leads'])} 个；每条引文均由程序从原文逐字截取，可用 verify 复核）"]
+    for i, x in enumerate(r['leads'], 1):
+        o.append(f"\n## L{i} {x['object']}\n为何现在：{x['why_now']}\n建议动作：{x['action']}\n证据：")
+        for e in x['evidence']:
+            o.append(f"- [{e['source']} {e['date']} p{e['page']}]（{e['status']}）{e['quote']}")
+            if e.get('prior'): o.append(f"    上期对应 [{e['prior']['source']} p{e['prior']['page']}] {e['prior']['quote']}")
+    return '\n'.join(o)
+def pagespec(x):
+    out = []
+    for part in str(x).replace('，', ',').split(','):
+        part = part.strip().lower().lstrip('p')
+        if re.fullmatch(r'\d+\s*-\s*\d+', part):
+            lo, hi = map(int, re.split(r'\s*-\s*', part)); out += list(range(lo, min(hi, lo + 9) + 1))
+        elif part.isdigit(): out.append(int(part))
+    return out
+def compact(t):
+    """same text, fewer tokens: trailing spaces and empty lines removed (verify ignores whitespace, so quotes copied from here still match)"""
+    return '\n'.join(l.strip() for l in (t or '').split('\n') if l.strip())
+def cmd_page(a):
+    meta, S = load(a.dir); sp = a.specs
+    if len(sp) % 2: print('usage: page DIR SOURCE PAGES [SOURCE PAGES ...]  e.g. page DIR AR2025 54,196-198 ANN-2026-05-14-1 2'); return
+    shown = 0
+    for src, pg in zip(sp[0::2], sp[1::2]):
+        sid = resolve(src, S)
+        if not sid: print(f'[{src}] (unknown source; see `brief` for the catalog)'); continue
+        for n in pagespec(pg):
+            if shown >= 12: print('(more than 12 pages requested; stopped -- ask for fewer pages or use `find`)'); return
+            print(f'[{sid} p{n}]\n' + compact(S[sid]['text'].get(n, '(no such page)'))); shown += 1
+# ---------------------------------------------------------------- verify
+def resolve(src, S):
+    s = str(src or '').strip()
+    if s in S: return s
+    s2 = re.sub(r'\.(txt|pdf|htm|jsonl)$', '', os.path.basename(s))
+    if s2 in S: return s2
+    cand = [k for k in S if k.lower() in s.lower() or s2.lower() in k.lower() or (s and s in S[k]['title'])]
+    return max(cand, key=len) if cand else None
+def find(qn, S, sid, page):
+    """locations where the normalised quote occurs; fragments split by ellipses must all occur in order on one page"""
+    frags = [nrm(f) for f in re.split(r'\.{3,}|…+|\[\.\.\.\]', qn_raw_holder[0]) if len(nrm(f)) >= 6] or [qn]
+    hits = []
+    for k, s in S.items():
+        for p, t in s['text'].items():
+            nx = s['text'].get(p + 1); tn = normpage(k, p, t)[0] + (normpage(k, p + 1, nx)[0] if nx else ''); pos = 0; ok = True   # may run onto next page
+            for f in frags:
+                j = tn.find(f, pos)
+                if j < 0: ok = False; break
+                pos = j + len(f)
+            if ok: hits.append((k, p))
+    return hits
+qn_raw_holder = ['']
+def nearest(q, S, sid):
+    qn = nrm(q)[:400]; grams = {qn[i:i + 4] for i in range(0, max(1, len(qn) - 3), 2)}; best = (0, None, None, '')
+    pool = sorted(((sum(1 for g in grams if g in normpage(k, p, t)[0]), k, p, t) for k, s in S.items() for p, t in s['text'].items()), key=lambda x: -x[0])
+    for _, k, p, t in pool[:4]:
+        tn, idx = normpage(k, p, t); sm = difflib.SequenceMatcher(None, qn, tn, autojunk=False); m = sm.find_longest_match(0, len(qn), 0, len(tn))
+        lo = max(0, m.b - m.a); hi = min(len(tn), lo + int(len(qn) * 1.2) + 5)
+        if hi <= lo: continue
+        r = difflib.SequenceMatcher(None, qn, tn[lo:hi], autojunk=False).ratio()
+        if r > best[0]: best = (r, k, p, t[idx[lo]:idx[hi - 1] + 1])
+    return best
+def _check(q, src, page, S):
+    qn_raw_holder[0] = q; qn = nrm(q)
+    if len(qn) < 8: return {'status': 'too_short'}
+    sid = resolve(src, S)
+    try: page = int(re.search(r'\d+', str(page)).group())
+    except Exception: page = None
+    hits = find(qn, S, sid, page)
+    if sid and page is not None and any(k == sid and abs(p - page) <= 1 for k, p in hits): return {'status': 'verbatim', 'source': sid, 'page': page}
+    if hits: return {'status': 'verbatim_elsewhere', 'found_at': [f'{k} p{p}' for k, p in hits[:3]], 'cited': f'{src} p{page}'}
+    r, k, p, real = nearest(q, S, sid)
+    # not verbatim: classify honestly. numbers (commas/points dropped, bare years ignored) - are they really in the filings?
+    nums = {re.sub(r'[,，.]', '', n) for n in re.findall(r'\d[\d,，]*(?:\.\d+)?', q)}
+    nums = {n for n in nums if len(n) >= 2 and not re.fullmatch(r'(19|20)\d\d', n)}
+    def pg(ck, cp):
+        t = S[ck]['text'].get(cp) if ck in S else None; nx = S[ck]['text'].get(cp + 1) if t else None
+        return (normpage(ck, cp, t)[0] + (normpage(ck, cp + 1, nx)[0] if nx else '')) if t else ''
+    near = [(sid, pp) for pp in ((page - 1, page, page + 1) if page is not None else ()) if sid] + ([(k, p), (k, p - 1)] if k else [])
+    base = {'status': 'not_found', 'cited': f'{src} p{page}', 'nearest': {'similarity': round(r, 2), 'source': k, 'page': p, 'text': real[:400]}}
+    # edited: >=85% of the quote's characters occur, in order, in the real text (deleted words, joined clauses, ellipsis gaps)
+    cov = max([sum(b.size for b in difflib.SequenceMatcher(None, qn, pg(ck, cp), autojunk=False).get_matching_blocks() if b.size >= 4) / max(1, len(qn)) for ck, cp in near] or [0])
+    base['coverage'] = round(cov, 2)
+    if cov >= 0.85 and all(n in ''.join(pg(ck, cp) for ck, cp in near) for n in nums): return dict(base, kind='edited')
+    # table restated: every number of the quote sits on one real page (labels re-worded, cells joined into a sentence)
+    if nums and r >= 0.4:
+        for ck, cp in near + [(sid or k, pp) for pp in sorted(S[sid or k]['text']) if (sid or k)]:
+            if all(n in pg(ck, cp) for n in nums): return dict(base, kind='table_restated', numbers_at=f'{ck} p{cp}')
+    miss = sorted(n for n in nums if len(n) >= 3 and n not in _alldoc(S))
+    return dict(base, kind='numbers_differ' if miss else 'absent', missing_numbers=miss[:5])
+_AD = {}
+def _alldoc(S):
+    if id(S) not in _AD: _AD[id(S)] = '\n'.join(normpage(k, p, t)[0] for k in S for p, t in S[k]['text'].items())
+    return _AD[id(S)]
+def check(q, src, page, S):
+    """_check + fabricated numbers: numbers (>=3 digits once commas/points are dropped, bare years ignored) in the quote that occur neither on
+    the cited page (+-1) nor anywhere in the documents"""
+    r = _check(q, src, page, S)
+    if r['status'] in ('verbatim', 'too_short'): r['fab_numbers'] = []; return r
+    nums = {re.sub(r'[,，.]', '', n) for n in re.findall(r'\d[\d,，]*(?:\.\d+)?', q)}
+    nums = {n for n in nums if len(n) >= 3 and not re.fullmatch(r'(19|20)\d\d', n)}
+    sid = resolve(src, S)
+    try: pg = int(re.search(r'\d+', str(page)).group())
+    except Exception: pg = None
+    near = ''.join(normpage(sid, p, S[sid]['text'][p])[0] for p in ((pg - 1, pg, pg + 1) if pg is not None else ()) if sid and p in S[sid]['text'])
+    r['fab_numbers'] = sorted(n for n in nums if n not in near and n not in _alldoc(S))
+    return r
+def snap(t, real, cn):
+    """widen a matched span of page text t to whole sentence(s), so the replacement quote reads naturally (still a verbatim substring of t)"""
+    i = t.find(real)
+    if i < 0: return real
+    j = i + len(real); stops = '。；！？\n' if cn else '\n'
+    lo = max([t.rfind(c, max(0, i - 200), i) for c in stops] + [-1]) + 1
+    if not cn:
+        m = [x.end() for x in re.finditer(r'[.;]\s+(?=[A-Z(“"])', t[max(0, i - 200):i])]
+        if m: lo = max(lo, max(0, i - 200) + m[-1])
+    his = [k for k in (t.find(c, j) for c in stops) if 0 <= k <= j + 200]
+    if not cn:
+        m = re.search(r'[.;](\s|$)', t[j:j + 200]); his += [j + m.start()] if m else []
+    hi = min(his) + 1 if his else j
+    q = t[lo:hi].strip()
+    return q if 8 <= len(q) <= 700 else real
+def table_snippet(t, q):
+    """for a quote that restates table cells: the smallest span of the real page holding every number of the quote, widened to whole lines
+    (plus the row label line above), copied verbatim. None if the span would be too long."""
+    raw = [n for n in re.findall(r'\d[\d,，]*(?:\.\d+)?', q) if len(re.sub(r'[,，.]', '', n)) >= 2 and not re.fullmatch(r'(19|20)\d\d', n)]
+    pats = {re.sub(r'[,，]', '', n): '(?<![\\d.])' + '[,，]?'.join(re.escape(c) for c in re.sub(r'[,，]', '', n)) + '(?![\\d])' for n in raw}
+    occ = [[m.start() for m in re.finditer(pt, t)] for pt in pats.values()]
+    if not pats or not all(occ): return None
+    best = None
+    for start in sorted({x for o in occ for x in o}):
+        ends = [min([x for x in o if x >= start], default=None) for o in occ]
+        if None in ends: continue
+        w = (start, max(ends))
+        if best is None or w[1] - w[0] < best[1] - best[0]: best = w
+    if not best: return None
+    lo = best[0]
+    for _ in range(2):                     # the row label sits on the line(s) above in A-share PDFs (one cell per line)
+        k = t.rfind('\n', 0, max(0, lo - 1)); lo = k + 1 if k >= 0 else 0
+    hi = t.find('\n', best[1]); hi = len(t) if hi < 0 else hi
+    sn = t[lo:hi].strip()
+    return sn if 8 <= len(sn) <= 600 else None
+def fix_answer(path, d, sig, res, S):
+    """repair an answer in place; every kept quote is verbatim text of the cited page afterwards. The verify levels themselves are unchanged."""
+    bak = re.sub(r'\.json$', '', path) + '.before_fix.json'
+    if not os.path.exists(bak): open(bak, 'w', encoding='utf-8').write(open(path, encoding='utf-8').read())
+    cn = any(re.search(r'[\u4e00-\u9fff]', S[k]['title'] or '') for k in S) or any(k.startswith(('AR', 'ANN-')) for k in S)
+    it = iter(res); log = collections.Counter(); lines = []
+    for i, x in enumerate(sig, 1):
+        keep = []
+        for e in x.get('evidence') or []:
+            r = next(it); q = e.get('quote', '')
+            if r['status'] == 'verbatim': keep.append(e); continue
+            if r['status'] == 'verbatim_elsewhere':
+                k, p = r['found_at'][0].rsplit(' p', 1); e = dict(e, source=k, page=int(p)); keep.append(e); log['page_fixed'] += 1
+                lines.append(f"[S{i} 页码改正] {r['cited']} -> {k} p{p}: {q[:60]}"); continue
+            nb = r.get('nearest') or {}; kind = r.get('kind')
+            if kind == 'table_restated' and r.get('numbers_at') and not r.get('fab_numbers'):
+                k, p0 = r['numbers_at'].rsplit(' p', 1); p0 = int(p0); tx = S[k]['text']; nq = None
+                for p, t in ((p0, tx.get(p0, '')), (p0 + 1, tx.get(p0 + 1, '')), (p0, tx.get(p0, '') + '\n' + tx.get(p0 + 1, ''))):   # numbers may sit on the next page
+                    nq = table_snippet(t, q)
+                    if nq and check(nq, k, p, S)['status'] == 'verbatim': break
+                    nq = None
+                if nq:
+                    keep.append(dict(e, source=k, page=p, quote=nq)); log['replaced_with_original'] += 1
+                    lines.append(f"[S{i} 换成原表] {q[:50]} -> [{k} p{p}] {' '.join(nq.split())[:80]}"); continue
+            if r['status'] == 'not_found' and kind in ('edited', 'table_restated') and nb.get('source') and nb.get('similarity', 0) >= (0.5 if kind == 'edited' else 0.6) and not r.get('fab_numbers'):
+                k, p = nb['source'], nb['page']; t = S[k]['text'].get(p, ''); r0 = nearest(q, S, k)
+                nq = snap(t, r0[3], cn) if r0[1] == k and r0[2] == p else nb['text']
+                if check(nq, k, p, S)['status'] == 'verbatim':
+                    keep.append(dict(e, source=k, page=p, quote=nq)); log['replaced_with_original'] += 1
+                    lines.append(f"[S{i} 换成原文] {q[:50]} -> [{k} p{p}] {nq[:80]}"); continue
+            log['dropped'] += 1; lines.append(f"[S{i} 删除] ({r['status']}{'/' + kind if kind else ''}) {q[:80]}")
+        x['evidence'] = keep
+        if not keep: lines.append(f"[S{i} 警告] 这条信号已没有可核对的原文证据：用 find 或 page 找一句原文补上，或删掉这条。")
+    jdump(d, path)
+    after = [check(e.get('quote', ''), e.get('source'), e.get('page'), S)['status'] for x in sig for e in x.get('evidence') or []]
+    print(json.dumps({'before': dict(collections.Counter(r['status'] for r in res), total=len(res)), 'fixes': dict(log),
+                      'after': {'verbatim': after.count('verbatim'), 'total': len(after)}, 'saved_original': os.path.basename(bak)}, ensure_ascii=False))
+    for l in lines: print(l)
+    print('answer.json 已写回；引文现在都是所注页的原文。直接用中文复述答案即可，不需要再逐句复核。' if all(x.get('evidence') for x in sig) else '有信号缺证据，见上面的警告。')
+def cmd_brief(a):
+    meta, S = load(a.dir); cn = meta.get('market') == 'CN'
+    if not os.path.exists(f'{a.dir}/leads.json'):
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()): cmd_leads(argparse.Namespace(dir=a.dir, no_llm=False, rebuild=False))
+    L = jload(f'{a.dir}/leads.json')
+    o = [f"# Cue 简报：{meta['company']}（{meta.get('id', '')}，{meta.get('market', '')}）",
+         "一次给全：材料目录、线索件、可直接粘贴的逐字证据。不需要再 ls / cat sources.json / Read 原文件。",
+         "\n## 材料（来源编号｜类型｜日期｜页数｜标题）"]
+    for k, x in S.items(): o.append(f"{k}｜{x['kind']}｜{x['date']}｜{len(x['text'])}｜{(x.get('title') or '')[:40]}")
+    o.append("\n## 线索件（每行 JSON 证据都由程序从原文截取并已逐字核对，可原样粘贴进 answer.json 的 evidence）")
+    for i, x in enumerate(L['leads'][:a.top], 1):
+        o.append(f"\n### L{i} {x['object']}\n为何现在：{x['why_now']}\n建议动作：{x['action']}")
+        for e in x['evidence']:
+            if check(e['quote'], e['source'], e['page'], S)['status'] != 'verbatim': continue
+            o.append(json.dumps({'source': e['source'], 'page': e['page'], 'quote': e['quote']}, ensure_ascii=False) + f"  # {e['date']} {e['status']}")
+            pr = e.get('prior')
+            if pr: o.append('  上期对应 ' + json.dumps({'source': pr['source'], 'page': pr['page'], 'quote': pr['quote']}, ensure_ascii=False))
+    o.append("\n## 下一步\n1. 线索件证据不够时，在同一条命令里一次补查：find DIR 关键词1 关键词2 --max 30，或 page DIR 来源 页码,页码-页码 来源2 页码。"
+             "\n2. 一次写好 answer.json，然后运行一次 verify DIR --json answer.json --fix，修正后直接复述，不要逐句复核。")
+    print('\n'.join(o))
+def cmd_find(a):
+    meta, S = load(a.dir); cn = meta.get('market') == 'CN'; terms = [t.lower() for t in a.terms]; seen = set(); hits = []
+    for k, x in S.items():
+        if a.source and k != resolve(a.source, S): continue
+        for p, t in x['text'].items():
+            for q in sentences(t, cn):
+                ql = q.lower(); m = [t2 for t2 in terms if t2 in ql]
+                if not m or nrm(q) in seen: continue
+                seen.add(nrm(q)); hits.append((len(m), len(risk_hits(q, cn)), x['date'], k, p, q))
+    hits.sort(key=lambda h: (-h[0], -h[1], h[2]), reverse=False)
+    for h in hits[:a.max]: print(json.dumps({'source': h[3], 'page': h[4], 'quote': h[5]}, ensure_ascii=False))
+    if len(hits) > a.max: print(f'(共 {len(hits)} 句，只列前 {a.max} 句；可加 --source 或换更具体的词)')
+    if not hits: print('(没有找到；换个词，或用 page 读原页)')
+def cmd_verify(a):
+    meta, S = load(a.dir)
+    if a.json:
+        d = jload_lenient(a.json); sig = d.get('signals') or d.get('leads') or []; res = []
+        for i, x in enumerate(sig, 1):
+            for e in x.get('evidence') or []:
+                r = check(e.get('quote', ''), e.get('source') or e.get('report'), e.get('page'), S); r.update(signal=i, quote=e.get('quote', '')); res.append(r)
+        n = collections.Counter(r['status'] + ('/' + r['kind'] if r.get('kind') else '') for r in res)
+        out = {'summary': dict(n, total=len(res), fab_numbers=sum(len(r.get('fab_numbers') or []) for r in res)), 'results': res}
+        if a.out: jdump(out, a.out)
+        if a.fix: return fix_answer(a.json, d, sig, res, S)
+        print(json.dumps(out['summary'], ensure_ascii=False)); [print(f"[{r['status']}] {r['quote'][:80]}") for r in res if r['status'] != 'verbatim']
+    else:
+        print(json.dumps(check(a.quote, a.source, a.page, S), ensure_ascii=False, indent=1))
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter); sp = ap.add_subparsers(dest='cmd', required=True)
+    p = sp.add_parser('fetch'); p.add_argument('dir'); g = p.add_mutually_exclusive_group(required=True); g.add_argument('--cn'); g.add_argument('--us'); p.add_argument('--months', type=float, default=12)
+    p = sp.add_parser('changes'); p.add_argument('dir')
+    p = sp.add_parser('leads'); p.add_argument('dir'); p.add_argument('--no-llm', action='store_true'); p.add_argument('--rebuild', action='store_true')
+    p = sp.add_parser('page'); p.add_argument('dir'); p.add_argument('specs', nargs='+')
+    p = sp.add_parser('brief'); p.add_argument('dir'); p.add_argument('--top', type=int, default=10)
+    p = sp.add_parser('find'); p.add_argument('dir'); p.add_argument('terms', nargs='+'); p.add_argument('--max', type=int, default=30); p.add_argument('--source')
+    p = sp.add_parser('verify'); p.add_argument('dir'); p.add_argument('--json'); p.add_argument('--out'); p.add_argument('--fix', action='store_true'); p.add_argument('--quote'); p.add_argument('--source'); p.add_argument('--page')
+    ap.add_argument('--version', action='version', version=__version__)
+    a = ap.parse_args(); {'fetch': cmd_fetch, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a)
