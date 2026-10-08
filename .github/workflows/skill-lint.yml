@@ -31,5 +31,8 @@ jobs:
       - name: Ontology regression suite
         run: python -B cue-omni-ontology/scripts/test_ontology.py
 
+      - name: Ontology numeric pack tests
+        run: python -B cue-omni-ontology/scripts/test_numeric.py
+
       - name: cue-lead-pieces regression test (offline)
         run: python -B cue-lead-pieces/scripts/test_skill_regression.py
