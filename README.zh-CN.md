@@ -61,7 +61,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 十件（含 `cue-omni-ontology`、`cue-lead-pieces`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
 
-当前发布页为 <https://github.com/huhoo/cue-awesome/releases/tag/v2026.10.07>。之后仓库里的改动要等下一次发布才进 ZIP，请核对发布页和已安装 skill 的 frontmatter。
+当前发布页为 <https://github.com/huhoo/cue-awesome/releases/tag/v2026.10.08>。之后仓库里的改动要等下一次发布才进 ZIP，请核对发布页和已安装 skill 的 frontmatter。
 
 ```bash
 curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/latest/download/tear-sheet.zip
