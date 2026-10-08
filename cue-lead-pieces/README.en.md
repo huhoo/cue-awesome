@@ -127,7 +127,7 @@ python3 scripts/cue.py --help
 - Omni returns `SOURCE_ACCESS_DENIED` for an SEC EDGAR URL (measured, not billed) → Omni cannot fetch EDGAR today → run `cue.py local DIR` for US filings; `omni` already skips EDGAR sources by default.
 - `ingest` reports `read_result(...) failed: INVALID_RESULT_CURSOR` or an expired result → large results live in the Bridge's local cache until `expires_at` → ask the user before re-parsing (billed again), or use `cue.py local` for that file.
 - `ingest` reports `content does not match its sha256 digest` → the content read back is incomplete → nothing was ingested; re-run `ingest` (zero credit), else use `cue.py local`.
-- `ingest` prints `page_basis=block` / `text-only result` → you saved Markdown (`save_result` export or the tool's text), which has no page sidecar → save the JSON returned when parse completes (`result_delivery="artifact"`), or use `cue.py omni`.
+- `ingest` prints `page_basis=block` / `text-only result` → you saved Markdown (`save_result` export or the tool's text), which has no page sidecar → save the JSON returned when parse completes (for small results the page sidecar is only in `structuredContent`), or just use `cue.py omni`.
 - `cannot start the Omni Bridge` → Node.js missing or `CUE_OMNI_BRIDGE` wrong → install Node.js, or set `CUE_OMNI_BRIDGE` to your omni-reader launch command.
 - `fetch` reports a network error or SEC returns 403 → no network, or no identification → check the network, set `CUE_SEC_UA`, retry.
 - A-share `local` cannot find `pdftotext` → neither PyMuPDF nor poppler installed → `pip install pymupdf` or install poppler.

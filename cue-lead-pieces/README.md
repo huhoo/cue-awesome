@@ -127,7 +127,7 @@ python3 scripts/cue.py --help
 - Omni 对 SEC EDGAR 地址返回 `SOURCE_ACCESS_DENIED`（实测，未计费）→ Omni 目前抓不到 EDGAR → 美股文件运行 `cue.py local DIR`；`omni` 默认已跳过 EDGAR 来源。
 - `ingest` 报 `read_result(...) failed: INVALID_RESULT_CURSOR` 或提示结果过期 → 大结果存在 Bridge 本地，过了 `expires_at` 就读不回 → 重新解析前先问用户（会再次计费），或对这份走 `cue.py local`。
 - `ingest` 报 `content does not match its sha256 digest` → 读回的正文不完整 → 没有入库；重跑 `ingest`（零消耗），仍不行就走 `cue.py local`。
-- `ingest` 输出 `page_basis=block` / `text-only result` → 存下的是 Markdown（`save_result` 导出或工具返回的文本），没有页码 sidecar → 改存 parse 完成时返回的 JSON（`result_delivery="artifact"`），或用 `cue.py omni`。
+- `ingest` 输出 `page_basis=block` / `text-only result` → 存下的是 Markdown（`save_result` 导出或工具返回的文本），没有页码 sidecar → 改存 parse 完成时返回的 JSON（小结果的页码只在 `structuredContent` 里），或直接用 `cue.py omni`。
 - `cannot start the Omni Bridge` → 没装 Node.js 或 `CUE_OMNI_BRIDGE` 指错 → 安装 Node.js，或把 `CUE_OMNI_BRIDGE` 设为你的 omni-reader 启动命令。
 - `fetch` 报网络错误或 SEC 返回 403 → 网络不通或没有表明身份 → 检查网络，设置 `CUE_SEC_UA` 后重试。
 - A 股 `local` 报找不到 `pdftotext` → 没装 PyMuPDF 也没装 poppler → `pip install pymupdf` 或安装 poppler。

@@ -71,4 +71,6 @@ Coverage = share of the local page's character 4-grams (letters, digits, CJK onl
 
 Mini end-to-end on the Omni-ingested store: 8 quotes copied from the Omni pages, with one wrong page, one edited number and one too-short table fragment planted. `verify`: 5 verbatim, 1 verbatim_elsewhere, 1 not_found, 1 too_short. `verify --fix`: 1 page corrected, 2 dropped, 6/6 verbatim. Checked against the local PDF text, 5 kept quotes sit on the cited page and 1 on the next page (the ±1 rule).
 
+`cue.py omni` against live Omni: one run with `--yes` on the same announcement (Bridge 1.8.3, `result_delivery="artifact"`): completed in about 30 s, 0.201 credits charged (as reported), 3 PDF pages identical to the first run. The small result still came back inline.
+
 Not measured: US EDGAR through Omni (the 8-K attempts failed before parsing and were not billed: `SOURCE_ACCESS_DENIED` for the EDGAR URL, `DETAIL_CAPABILITIES_UNAVAILABLE` for a local file in grounded mode on Bridge 1.8.3, `MIME_MISMATCH` for the inline-XBRL file in text mode), and the 24-company comparison on the Omni path.

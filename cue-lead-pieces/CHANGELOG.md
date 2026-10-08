@@ -22,11 +22,11 @@ Verified
 
   Every grounding anchor was `source_pdf_page_1_based`, `reliable`; `partial=false`, no incomplete or truncated pages. Against a local PyMuPDF parse of the same PDFs: the best-matching Omni page was the same page number for 3/3 and 391/391 pages; median share of local text found on the same Omni page 1.0 and 0.983 (the 7 annual-report pages below 0.8 are multi-column tables whose cell order differs, not missing text); 30/30 and 16,973/16,984 numeric tokens of the local parse appear on the same Omni page. Tables came back as GFM tables (14 rows on 2 pages; 5,896 rows on 277 pages) plus 3 inline HTML tables on one page; in the announcement's litigation tables two adjacent columns were merged into one cell (both numbers kept).
 - Mini end-to-end on the Omni-ingested store: `brief` (cites both sources by PDF page), 8 quotes taken from the Omni pages → `verify`: 5 verbatim, 1 wrong page, 1 edited number, 1 too short → `verify --fix`: page corrected (p3 → p1), 2 dropped, 6/6 verbatim. Each kept quote was checked against the local PDF text: 5 on the cited page, 1 on the next page (accepted by the ±1 rule).
+- `omni` end to end against live Omni (2026-10-07, user's launcher, Bridge 1.8.3): `omni DIR` without `--yes` printed the plan and exited 3; `omni DIR --yes` on the same 3-page announcement completed in about 30 s, charged 0.201 credits (as reported), ingested 3 PDF pages identical to the first run, and quotes verified on their pages. With `result_delivery="artifact"` this small result still came back inline (both parts), so for small results the page sidecar exists only in `structuredContent`.
 - Ingesting the annual report from the 1.9 KB JSON an agent sees (artifact cursors) through Bridge 1.8.6 took about 5 s, no charge.
 
 Not verified
 - US EDGAR through Omni: the HYFM 8-K could not be parsed (EDGAR URL: `SOURCE_ACCESS_DENIED`; local file, grounded: `DETAIL_CAPABILITIES_UNAVAILABLE` in Bridge 1.8.3; local file, text: `MIME_MISMATCH` for the inline-XBRL .htm/.html); none of the three was billed. The text-block path was therefore not tested on real Omni output.
-- `result_delivery="artifact"` on a small file, and the `omni` command's parse loop against the live service (only against an offline fake Bridge).
 - The 24-company rates in references/verification.md are still from local parsing.
 
 ### 0.3.1 — 2026-10-07

@@ -210,7 +210,8 @@ def print_pending(d, meta):
     P = [s for s in meta['sources'] if s.get('parser', 'pending') == 'pending']
     if not P: return
     print(f"\n{len(P)} source(s) not parsed yet. Primary path — Cue Omni Reader (ask the user before spending credits):")
-    print("  parse(source=<url>, detail=\"grounded\") for each, save the result to " + f"{d}/omni/<sid>.json, then: cue.py ingest {d} --omni-dir {d}/omni")
+    print(f"  cue.py omni {d}            (prints the plan; after the user agrees: cue.py omni {d} --yes)")
+    print(f"  or parse(source=<url>, detail=\"grounded\") yourself, save the completed JSON (structuredContent) to {d}/omni/<sid>.json, then: cue.py ingest {d} --omni-dir {d}/omni")
     print(f"  fallback without Cue (local parser, labeled parser=local): cue.py local {d}")
     for s in P: print(f"  {s['sid']}\t{s.get('kind', '')}\t{s.get('date', '')}\t{s.get('source_url', '')}")
 def cmd_fetch(a):
