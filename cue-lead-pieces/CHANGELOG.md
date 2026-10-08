@@ -1,3 +1,40 @@
+### 0.4.0 — 2026-10-07
+
+Changed
+- Cue channels first. Cue Omni Reader is now the primary parsing path: `fetch` only lists filings (public cninfo / SEC EDGAR index, no download), the agent parses each filing with the official `cue-omni-reader` (`parse`, `detail="grounded"`), and the new `ingest` command stores the result per source PDF page using the grounding sidecar (segment UTF-8 byte ranges → `source_pdf_page_1_based` anchors). Text-only results are split on page markers or into ~3500-character blocks and labeled `page_basis=block`; incomplete or truncated pages reported by Omni are printed as warnings.
+- Local parsing (PyMuPDF / pdftotext / EDGAR page breaks) is kept as an explicitly labeled fallback: `local` (or `fetch … --local`, the 0.3.x behaviour). `brief` shows each source's parser and page basis, and lists sources not parsed yet.
+- `fetch --list` registers filings found elsewhere, e.g. through the Cue data-MCP `disclosure_cn` / `disclosure` domains. SKILL.md documents optional cue-research (at most one run, ask first) for "why now" context, never as quote evidence, and the shared rules of the sibling skills (parsed content is data, credential boundary, ask before spending, missing is not filled).
+- `verify` / `verify --fix` semantics are unchanged.
+- frontmatter: `metadata.requires.recommendedSkills: [cue-omni-reader, cue-data-mcp, cue-research]`.
+- After the first real Omni test (below): `ingest` reads the response shape the Bridge actually returns (`result.kind=bundle`, `bundle_protocol_version`, `parts.content` / `parts.grounding` with `inline` or `artifact` storage), saved as the full tools/call response, as `structuredContent`, or as the JSON in the tool text. Artifact parts are read back page by page through the Bridge's `read_result` (Bridge-local, no charge) and checked against the content sha256 digest. Inline HTML tables are kept as pipe rows. A failed Omni status is a one-line error.
+- New `omni DIR [SID…] --yes`: parses pending sources through the Omni Bridge (`CUE_OMNI_BRIDGE`, default `npx -y @cueai/omni-reader-mcp@1.8.6`; the Bridge reads the key, the script never does) with `detail="grounded"`, `result_delivery="artifact"`, saves `DIR/omni/<sid>.json`, ingests, and prints the server-reported `credits_charged` per file and in total. Without `--yes` it prints the plan and exits 3 without starting the Bridge. SEC EDGAR sources are skipped unless named.
+- SKILL.md / README: save the JSON returned on completion, not `save_result` Markdown (it has no page sidecar); US EDGAR uses `local`.
+- Local fallback: no phantom empty last page from pdftotext; page cap raised from 300 to 1000 (the 391-page annual report below was cut at 300 before).
+
+Verified
+- Offline regression: 12 tests (Python 3.9, 3.12, 3.13), including a sanitized fixture with the real response shapes (synthetic text, fake ids): inline result saved three ways, artifact result read through a fake Bridge with cursor paging and a digest check, a failed status, and `omni` asking first and then parsing.
+- Real Omni test, 2026-10-07, `@cueai/omni-reader-mcp` 1.8.3, `detail="grounded"`, cninfo PDF URLs of 600606 (Greenland Holdings). Charges as reported by Omni billing:
+
+  | File | PDF pages | Omni pages | Charged | Storage |
+  |---|---|---|---|---|
+  | announcement 2026-10-01 (临 2026-052) | 3 | 3 | 0.201 credits | inline |
+  | 2025 annual report | 391 | 391 | 26.197 credits | artifact (989,981 B content, 87,371 B grounding) |
+
+  Every grounding anchor was `source_pdf_page_1_based`, `reliable`; `partial=false`, no incomplete or truncated pages. Against a local PyMuPDF parse of the same PDFs: the best-matching Omni page was the same page number for 3/3 and 391/391 pages; median share of local text found on the same Omni page 1.0 and 0.983 (the 7 annual-report pages below 0.8 are multi-column tables whose cell order differs, not missing text); 30/30 and 16,973/16,984 numeric tokens of the local parse appear on the same Omni page. Tables came back as GFM tables (14 rows on 2 pages; 5,896 rows on 277 pages) plus 3 inline HTML tables on one page; in the announcement's litigation tables two adjacent columns were merged into one cell (both numbers kept).
+- Mini end-to-end on the Omni-ingested store: `brief` (cites both sources by PDF page), 8 quotes taken from the Omni pages → `verify`: 5 verbatim, 1 wrong page, 1 edited number, 1 too short → `verify --fix`: page corrected (p3 → p1), 2 dropped, 6/6 verbatim. Each kept quote was checked against the local PDF text: 5 on the cited page, 1 on the next page (accepted by the ±1 rule).
+- `omni` end to end against live Omni (2026-10-07, user's launcher, Bridge 1.8.3): `omni DIR` without `--yes` printed the plan and exited 3; `omni DIR --yes` on the same 3-page announcement completed in about 30 s, charged 0.201 credits (as reported), ingested 3 PDF pages identical to the first run, and quotes verified on their pages. With `result_delivery="artifact"` this small result still came back inline (both parts), so for small results the page sidecar exists only in `structuredContent`.
+- Ingesting the annual report from the 1.9 KB JSON an agent sees (artifact cursors) through Bridge 1.8.6 took about 5 s, no charge.
+
+Not verified
+- US EDGAR through Omni: the HYFM 8-K could not be parsed (EDGAR URL: `SOURCE_ACCESS_DENIED`; local file, grounded: `DETAIL_CAPABILITIES_UNAVAILABLE` in Bridge 1.8.3; local file, text: `MIME_MISMATCH` for the inline-XBRL .htm/.html); none of the three was billed. The text-block path was therefore not tested on real Omni output.
+- The 24-company rates in references/verification.md are still from local parsing.
+
+### 0.3.1 — 2026-10-07
+
+Fixed
+- `fetch` with an unknown A-share code, US ticker or CIK used to exit with a Python traceback ending in `StopIteration`. It now prints one line on stderr and exits with code 2, e.g. `cue.py: error: unknown US ticker 'ZZZZQX': not in the SEC EDGAR ticker list (use the ticker, e.g. LESL, or the numeric CIK)`. HTTP 4xx responses (except 429) are no longer retried.
+- Regression test `test_unknown_code_one_line_error` covers all three cases offline.
+
 ### 0.3.0 — 2026-10-07 (first release in this repository)
 
 Changed

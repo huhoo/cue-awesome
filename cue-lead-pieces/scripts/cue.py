@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
-"""cue-lead-pieces: turn a company's own filings into traceable lead pieces.
+"""cue-lead-pieces: turn a company's own filings into traceable lead pieces. The agent thinks; Cue perceives.
 
-  cue.py fetch   <dir> --cn 600606 | --us LESL   [--months 12]   download filings (cninfo / SEC EDGAR), extract text per page
-  cue.py changes <dir>                                            risk-sentence changes: cross-period (new/dropped wording) + events
-  cue.py leads   <dir> [--no-llm]                                 align changes into lead pieces (object / why now / action / evidence)
+  Parsing — primary channel is Cue Omni Reader (MCP, run by the agent); this script ingests its results:
+  cue.py fetch   <dir> --cn 600606 | --us LESL [--months 12]      list filings (cninfo / SEC EDGAR public index, no download, zero credit)
+  cue.py fetch   <dir> --list filings.json --company X --market CN  register filings found elsewhere (e.g. Cue data-MCP disclosure_cn)
+  cue.py ingest  <dir> --omni-dir <dir>/omni                      ingest Omni results saved as <sid>.json (grounded bundle) or <sid>.md
+  cue.py ingest  <dir> --omni r.json --sid SID [--kind --date --title --url]   one result; registers SID if new
+  cue.py local   <dir> [SID ...]                                  FALLBACK without Cue: download + local parse (PyMuPDF / pdftotext / HTML)
+  cue.py fetch   <dir> --cn 600606 --local                        list + local fallback in one step (the 0.3.x behaviour)
+
+  Reading and checking:
   cue.py brief   <dir> [--top 10]                                 ONE call: source catalog + lead pieces + paste-ready verbatim evidence (JSON lines)
   cue.py find    <dir> <term> [<term> ...] [--max 30]             sentences containing the terms, as paste-ready evidence JSON lines
   cue.py page    <dir> <source> <pages> [<source> <pages> ...]    print pages (e.g. AR2025 54,196-198 ANN-2026-05-14-1 2), compacted
+  cue.py changes <dir>  /  cue.py leads <dir> [--no-llm]           risk-sentence changes / lead pieces (brief already includes both)
   cue.py verify  <dir> (--json answer.json [--fix] | --quote Q --source S --page N)   check quotes verbatim against the source text;
                  --fix repairs answer.json in place (wrong page -> real page, edited -> the real sentence, absent/fabricated -> dropped)
 
-Every quote Cue emits is copied by the program from the page text, never written by a model. Page = PDF page (A-share) or
-the filing's own page-break page (EDGAR HTML; falls back to ~3500-char blocks). Pure stdlib + PyMuPDF (or the pdftotext CLI)."""
-import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, urllib.parse, html, collections
+Every quote Cue emits is copied by the program from the page text, never written by a model. Page = source PDF page from the Omni
+grounding sidecar (or PDF page / EDGAR page break with the local fallback); text-only results fall back to ~3500-char blocks and are
+labeled page_basis=block. Pure stdlib; the local fallback needs PyMuPDF or the pdftotext CLI for PDFs."""
+import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, urllib.parse, urllib.error, html, collections
 # SEC EDGAR asks every client to identify itself ("Company Name contact@domain"); set CUE_SEC_UA to your own name and email.
 UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
 # ---------------------------------------------------------------- text utils
 import unicodedata
-__version__ = '0.3.0'
+__version__ = '0.4.0'
+class CueError(Exception):
+    """a user-facing error: printed as one line on stderr, exit code 2 (no traceback)"""
 def nrm_map(s):
     """normalised string for matching + map to original indices: NFKC, lower-case, and NO whitespace / punctuation / table marks
     (so a quote that differs from the page only in spacing, line breaks or punctuation still counts as verbatim)"""
@@ -53,18 +63,22 @@ def get(url, headers=None, data=None, tries=4):
     for a in range(tries):
         try:
             return urllib.request.urlopen(urllib.request.Request(url, data=data, headers=headers or {'User-Agent': 'Mozilla/5.0'}), timeout=90).read()
+        except urllib.error.HTTPError as e:
+            if a == tries - 1 or (400 <= e.code < 500 and e.code != 429): raise   # 4xx (except rate limit) will not fix itself on retry
+            time.sleep(2 * (a + 1))
         except Exception:
             if a == tries - 1: raise
             time.sleep(2 * (a + 1))
 # ---------------------------------------------------------------- page extraction
-def pdf_pages(path, max_pages=300):
+def pdf_pages(path, max_pages=1000):
     try:
         import fitz
         doc = fitz.open(path); return [doc[i].get_text() for i in range(min(doc.page_count, max_pages))]
     except ImportError:
         import subprocess
-        t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout
-        return t.split('\f')[:max_pages]
+        t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout.split('\f')
+        if len(t) > 1 and not t[-1].strip(): t = t[:-1]            # pdftotext ends with a form feed: no extra empty page
+        return t[:max_pages]
 class _Txt(__import__('html.parser').parser.HTMLParser):
     BLOCK = {'p', 'div', 'br', 'tr', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'table', 'hr'}
     def __init__(s): super().__init__(); s.o = []; s.skip = 0
@@ -99,9 +113,10 @@ CN_KEEP = ['诉讼', '仲裁', '冻结', '查封', '拍卖', '执行', '立案',
            '更正', '差错', '减值', '质押', '担保', '辞职', '会计师事务所', '破产', '重整', '失信', '债务', '保留意见', '无法表示', '强调事项', '业绩预告',
            '业绩快报', '亏损', '控制权', '减持', '停牌', '出售', '借款', '贷款', '展期', '终止', '持续经营', '回复']
 CN_DROP = re.compile(r'已取消|英文|English|法律意见书|股东大会的通知|召开.{0,12}股东大会|股东大会决议|章程|议事规则|管理制度|工作细则|摘要')
-def cn_fetch(d, code, months):
+def cn_fetch(d, code, months, download=True):
     stocks = json.loads(get('http://www.cninfo.com.cn/new/data/szse_stock.json'))['stockList']
-    org = next(x for x in stocks if x['code'] == code)
+    org = next((x for x in stocks if x['code'] == code), None)
+    if org is None: raise CueError(f"unknown A-share code '{code}': not in the cninfo stock list (use the 6-digit code, e.g. 600606)")
     end = datetime.date.today(); start = end - datetime.timedelta(days=int(months * 30.5)); ar_start = end - datetime.timedelta(days=800)
     def query(s, e, category=''):
         out, page = [], 1
@@ -133,19 +148,22 @@ def cn_fetch(d, code, months):
     for a in sorted(anns, key=lambda a: (a['date'], a['id'])):
         cnt[a['date']] += 1; srcs.append(dict(a, sid=f"ANN-{a['date']}-{cnt[a['date']]}", kind='announcement'))
     for s in srcs:
-        pdf = f"{d}/raw/{s['sid']}.pdf"
-        if not os.path.exists(pdf):
-            os.makedirs(f'{d}/raw', exist_ok=True); open(pdf, 'wb').write(get('http://static.cninfo.com.cn/' + s['url'])); time.sleep(0.3)
-        s['pages'] = pdf_pages(pdf); s['source_url'] = 'http://static.cninfo.com.cn/' + s['url']
+        s['source_url'] = 'http://static.cninfo.com.cn/' + s.pop('url'); s['ann_id'] = s.pop('id')
+        if download: s['pages'] = local_pages(d, s)
     return {'company': org['zwjc'], 'id': code, 'market': 'CN'}, srcs
 # ---------------------------------------------------------------- fetch: SEC EDGAR (US)
-def us_fetch(d, ticker, months):
+def us_fetch(d, ticker, months, download=True):
     H = {'User-Agent': UA_SEC}
     if ticker.isdigit(): cik = int(ticker); name = ticker
     else:
-        m = next(v for v in json.loads(get('https://www.sec.gov/files/company_tickers.json', H)).values() if v['ticker'].upper() == ticker.upper())
+        m = next((v for v in json.loads(get('https://www.sec.gov/files/company_tickers.json', H)).values() if v['ticker'].upper() == ticker.upper()), None)
+        if m is None: raise CueError(f"unknown US ticker '{ticker}': not in the SEC EDGAR ticker list (use the ticker, e.g. LESL, or the numeric CIK)")
         cik, name = m['cik_str'], m['title']
-    sub = json.loads(get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json', H)); r = sub['filings']['recent']
+    try: sub = json.loads(get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json', H))
+    except urllib.error.HTTPError as e:
+        if e.code == 404: raise CueError(f"unknown CIK '{ticker}': SEC EDGAR has no filings index for it (use the ticker, e.g. LESL, or a valid CIK)")
+        raise
+    r = sub['filings']['recent']
     F = [dict(form=r['form'][i], date=r['filingDate'][i], acc=r['accessionNumber'][i], doc=r['primaryDocument'][i], period=r['reportDate'][i]) for i in range(len(r['form']))]
     start = (datetime.date.today() - datetime.timedelta(days=int(months * 30.5))).isoformat()
     pick = [f for f in F if f['form'] == '10-K'][:2] + [f for f in F if f['form'] == '10-Q'][:2] + [f for f in F if f['form'] == '8-K' and f['date'] >= start][:15]
@@ -161,30 +179,278 @@ def us_fetch(d, ticker, months):
                 docs += [(f'{sid}_EX99' + (str(j) if j else ''), it['name']) for j, it in enumerate([x for x in idx if re.search(r'ex-?99', x['name'], re.I) and x['name'].endswith('.htm')][:2])]
             except Exception: pass
         for s2, doc in docs:
-            p = f'{d}/raw/{s2}.htm'
-            if not os.path.exists(p):
-                os.makedirs(f'{d}/raw', exist_ok=True); open(p, 'wb').write(get(f'{base}/{doc}', H)); time.sleep(0.2)
-            srcs.append({'sid': s2, 'kind': {'10-K': 'annual', '10-Q': 'interim'}.get(f['form'], 'event'), 'date': f['date'], 'title': f"{f['form']} {doc}",
-                         'source_url': f'{base}/{doc}', 'pages': html_pages(open(p, encoding='utf-8', errors='ignore').read())})
+            x = {'sid': s2, 'kind': {'10-K': 'annual', '10-Q': 'interim'}.get(f['form'], 'event'), 'date': f['date'], 'title': f"{f['form']} {doc}", 'source_url': f'{base}/{doc}'}
+            if download: x['pages'] = local_pages(d, x)
+            srcs.append(x)
     return {'company': name, 'id': ticker, 'cik': cik, 'market': 'US'}, srcs
+def local_pages(d, s):
+    """local fallback parser (no Cue channel): download the filing and extract per-page text with PyMuPDF / pdftotext (PDF) or HTML page breaks"""
+    url = s['source_url']; ext = '.pdf' if url.lower().endswith('.pdf') else '.htm'; p = f"{d}/raw/{s['sid']}{ext}"
+    if not os.path.exists(p):
+        os.makedirs(f'{d}/raw', exist_ok=True)
+        open(p, 'wb').write(get(url, {'User-Agent': UA_SEC} if 'sec.gov' in url else None)); time.sleep(0.3)
+    return pdf_pages(p) if ext == '.pdf' else html_pages(open(p, encoding='utf-8', errors='ignore').read())
+def write_source(d, meta, s, pages, parser, basis, warnings=()):
+    """write pages/<sid>.jsonl + docs/<sid>.txt for one source and update its entry in sources.json"""
+    os.makedirs(f'{d}/pages', exist_ok=True); os.makedirs(f'{d}/docs', exist_ok=True)
+    mark = '第{}页' if meta.get('market') == 'CN' else 'page {}'
+    with open(f"{d}/pages/{s['sid']}.jsonl", 'w', encoding='utf-8') as f:
+        for i, t in enumerate(pages, 1): f.write(json.dumps({'page': i, 'text': t}, ensure_ascii=False) + '\n')
+    with open(f"{d}/docs/{s['sid']}.txt", 'w', encoding='utf-8') as f:
+        f.write(f"# {s['sid']} | {s.get('date', '')} | {s.get('title', '')} | parser={parser} page_basis={basis}\n")
+        for i, t in enumerate(pages, 1): f.write(f"\n[{mark.format(i)}]\n{t}\n")
+    s.update(n_pages=len(pages), parser=parser, page_basis=basis, parsed=datetime.date.today().isoformat())
+    if warnings: s['parse_warnings'] = list(warnings)
+    else: s.pop('parse_warnings', None)
+def save_meta(d, meta):
+    jdump(meta, f'{d}/sources.json'); os.makedirs(f'{d}/docs', exist_ok=True); jdump(meta, f'{d}/docs/sources.json')
+    for c in ('changes.json', 'leads.json'):                    # sources changed: cached changes / lead pieces are stale
+        if os.path.exists(f'{d}/{c}'): os.remove(f'{d}/{c}')
+def print_pending(d, meta):
+    P = [s for s in meta['sources'] if s.get('parser', 'pending') == 'pending']
+    if not P: return
+    print(f"\n{len(P)} source(s) not parsed yet. Primary path — Cue Omni Reader (ask the user before spending credits):")
+    print(f"  cue.py omni {d}            (prints the plan; after the user agrees: cue.py omni {d} --yes)")
+    print(f"  or parse(source=<url>, detail=\"grounded\") yourself, save the completed JSON (structuredContent) to {d}/omni/<sid>.json, then: cue.py ingest {d} --omni-dir {d}/omni")
+    print(f"  fallback without Cue (local parser, labeled parser=local): cue.py local {d}")
+    for s in P: print(f"  {s['sid']}\t{s.get('kind', '')}\t{s.get('date', '')}\t{s.get('source_url', '')}")
 def cmd_fetch(a):
-    meta, srcs = cn_fetch(a.dir, a.cn, a.months) if a.cn else us_fetch(a.dir, a.us, a.months)
-    os.makedirs(f'{a.dir}/pages', exist_ok=True); os.makedirs(f'{a.dir}/docs', exist_ok=True)
-    mark = '第{}页' if meta['market'] == 'CN' else 'page {}'
+    if a.list:
+        if not (a.company and a.market): raise CueError('--list needs --company and --market (CN or US)')
+        L = jload(a.list); L = L.get('sources', L) if isinstance(L, dict) else L
+        meta = jload(f'{a.dir}/sources.json') if os.path.exists(f'{a.dir}/sources.json') else {'company': a.company, 'id': a.id or a.company, 'market': a.market.upper(), 'sources': []}
+        have = {s['sid'] for s in meta['sources']}
+        for x in L:
+            miss = [k for k in ('sid', 'kind', 'date', 'title', 'source_url') if not x.get(k)]
+            if miss: raise CueError(f"list entry {x.get('sid', '?')}: missing {', '.join(miss)} (each entry needs sid, kind, date, title, source_url)")
+            if x['sid'] not in have: meta['sources'].append(dict(x, n_pages=0, parser='pending')); have.add(x['sid'])
+        meta['fetched'] = datetime.date.today().isoformat(); os.makedirs(a.dir, exist_ok=True); save_meta(a.dir, meta)
+        print(f"{meta['company']}: {len(meta['sources'])} sources registered -> {a.dir}/sources.json"); print_pending(a.dir, meta); return
+    if not (a.cn or a.us): raise CueError('fetch needs --cn CODE, --us TICKER or --list FILE')
+    meta, srcs = cn_fetch(a.dir, a.cn, a.months, download=a.local) if a.cn else us_fetch(a.dir, a.us, a.months, download=a.local)
+    meta['fetched'] = datetime.date.today().isoformat(); meta['sources'] = srcs; os.makedirs(a.dir, exist_ok=True)
     for s in srcs:
-        with open(f"{a.dir}/pages/{s['sid']}.jsonl", 'w', encoding='utf-8') as f:
-            for i, t in enumerate(s['pages'], 1): f.write(json.dumps({'page': i, 'text': t}, ensure_ascii=False) + '\n')
-        with open(f"{a.dir}/docs/{s['sid']}.txt", 'w', encoding='utf-8') as f:
-            f.write(f"# {s['sid']} | {s['date']} | {s['title']}\n")
-            for i, t in enumerate(s['pages'], 1): f.write(f"\n[{mark.format(i)}]\n{t}\n")
-        s['n_pages'] = len(s.pop('pages'))
-    meta['fetched'] = datetime.date.today().isoformat(); meta['sources'] = srcs
-    jdump(meta, f'{a.dir}/sources.json'); jdump(meta, f'{a.dir}/docs/sources.json')
-    print(f"{meta['company']}: {len(srcs)} sources, {sum(s['n_pages'] for s in srcs)} pages -> {a.dir}/docs")
+        if a.local: write_source(a.dir, meta, s, s.pop('pages'), 'local', 'pdf_page' if s['source_url'].lower().endswith('.pdf') else 'html_page_break')
+        else: s.update(n_pages=0, parser='pending')
+    save_meta(a.dir, meta)
+    print(f"{meta['company']}: {len(srcs)} sources, {sum(s['n_pages'] for s in srcs)} pages parsed -> {a.dir}/sources.json"); print_pending(a.dir, meta)
+def cmd_local(a):
+    meta = jload(f'{a.dir}/sources.json'); n = 0
+    for s in meta['sources']:
+        if (a.sids and s['sid'] not in a.sids) or (not a.sids and s.get('parser', 'pending') != 'pending'): continue
+        write_source(a.dir, meta, s, local_pages(a.dir, s), 'local', 'pdf_page' if s['source_url'].lower().endswith('.pdf') else 'html_page_break'); n += 1
+        print(f"{s['sid']}: {s['n_pages']} pages (parser=local)")
+    save_meta(a.dir, meta); print(f'{n} source(s) parsed locally'); print_pending(a.dir, meta)
+# ---------------------------------------------------------------- ingest: Cue Omni Reader results
+PAGE_MARK = re.compile(r'(?im)^[ \t]*(?:<!--\s*page[:\s]*(\d+)\s*-->|\[(?:第\s*(\d+)\s*页|page\s+(\d+))\])[ \t]*$')
+def text_pages(t):
+    """Markdown/text without grounding: split on form feeds or explicit page markers; else ~3500-char blocks (page_basis=block)"""
+    if '\f' in t: return t.split('\f'), 'form_feed'
+    ms = list(PAGE_MARK.finditer(t))
+    if ms:
+        pages = {}
+        for i, m in enumerate(ms):
+            p = int(next(g for g in m.groups() if g)); end = ms[i + 1].start() if i + 1 < len(ms) else len(t)
+            pages[p] = pages.get(p, '') + t[m.end():end].strip('\n')
+        return [pages.get(i, '') for i in range(1, max(pages) + 1)], 'marker'
+    out, cur = [], ''
+    for para in t.split('\n'):
+        if len(cur) + len(para) > 3500 and cur: out.append(cur); cur = ''
+        cur += para + '\n'
+    if cur: out.append(cur)
+    return out, 'block'
+def _find(o, pred):
+    if pred(o): return o
+    if isinstance(o, dict): it = o.values()
+    elif isinstance(o, list): it = o
+    else: return None
+    for v in it:
+        x = _find(v, pred)
+        if x is not None: return x
+    return None
+def bundle_pages(b):
+    """omni.result_bundle.v1 (detail=grounded|layout): map each segment's UTF-8 byte range to its source PDF page anchor"""
+    text = b['content']['text']; tb = text.encode('utf-8'); g = b.get('grounding', {}).get('value', {}) or {}
+    warn, pages, last, cond = [], {}, None, False
+    segs = sorted(g.get('segments') or [], key=lambda x: x.get('content_range_utf8', {}).get('start', 0))
+    def anchor_page(sg):
+        nonlocal cond
+        A = (sg.get('grounding') or {}).get('anchors') or []
+        P = [x['value'] for x in A if x.get('kind') == 'page' and x.get('basis') == 'source_pdf_page_1_based']
+        if not P:
+            P = [x['value'] for x in A if x.get('kind') == 'page' and x.get('basis') == 'rendered_pdf_page_1_based']; cond = cond or bool(P)
+        return min(P) if P else None
+    if not any(anchor_page(sg) for sg in segs):
+        p, basis = text_pages(text); return p, basis, ['no page anchors in the grounding sidecar; split as ' + basis]
+    pos = 0
+    for sg in segs:
+        rg = sg.get('content_range_utf8') or {}; st, en = rg.get('start', pos), rg.get('end', pos)
+        p = anchor_page(sg) or last or 1
+        if st > pos: pages[last or p] = pages.get(last or p, '') + tb[pos:st].decode('utf-8', 'ignore')   # uncovered gap -> previous page
+        pages[p] = pages.get(p, '') + tb[st:en].decode('utf-8', 'ignore'); last, pos = p, max(pos, en)
+    if pos < len(tb): pages[last] = pages.get(last, '') + tb[pos:].decode('utf-8', 'ignore')
+    doc = g.get('document') or {}
+    for x in doc.get('incomplete') or []: warn.append(f"incomplete {x.get('kind', '')} {x.get('values', '')} ({x.get('reason', '')})")
+    for x in doc.get('truncated') or []: warn.append(f"truncated {x.get('count', '')} {x.get('kind', '')}(s) ({x.get('reason', '')})")
+    if cond: warn.append('some pages use rendered_pdf_page anchors (conditional reliability)')
+    return [pages.get(i, '') for i in range(1, max(pages) + 1)], 'pdf_page', warn
+# Bridge = the official Cue Omni Reader MCP server (stdio). Used for (a) Bridge-local reads of artifact results (read_result:
+# no credits, no key) and (b) the `omni` command's parse calls. The Bridge reads CUE_API_KEY from its own environment or launcher;
+# this script never reads, prints or passes the key itself.
+BRIDGE_DEFAULT = 'npx -y @cueai/omni-reader-mcp@1.8.6'
+class Bridge:
+    def __init__(self, cmd=None):
+        import subprocess, shlex, threading, queue
+        cmd = cmd or os.environ.get('CUE_OMNI_BRIDGE') or BRIDGE_DEFAULT
+        try: self.p = subprocess.Popen(shlex.split(cmd), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        except OSError as e: raise CueError(f'cannot start the Omni Bridge ({cmd.split()[0]}): {e.strerror}; set CUE_OMNI_BRIDGE to your omni-reader MCP command')
+        self.q, self.i = queue.Queue(), 0
+        threading.Thread(target=lambda: [self.q.put(l) for l in self.p.stdout], daemon=True).start()
+        self.rpc('initialize', {'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'cue-lead-pieces', 'version': __version__}}, 240)
+        self.p.stdin.write(json.dumps({'jsonrpc': '2.0', 'method': 'notifications/initialized'}) + '\n'); self.p.stdin.flush()
+    def rpc(self, method, params, timeout=300):
+        import queue
+        self.i += 1; self.p.stdin.write(json.dumps({'jsonrpc': '2.0', 'id': self.i, 'method': method, 'params': params}) + '\n'); self.p.stdin.flush()
+        end = time.time() + timeout
+        while time.time() < end:
+            try: line = self.q.get(timeout=2)
+            except queue.Empty:
+                if self.p.poll() is not None: raise CueError('the Omni Bridge exited (check CUE_OMNI_BRIDGE and run its `doctor --json`)')
+                continue
+            try: m = json.loads(line)
+            except ValueError: continue
+            if m.get('id') == self.i:
+                if 'error' in m: raise CueError(f"Omni Bridge {method}: {m['error'].get('message', m['error'])}")
+                return m.get('result') or {}
+        raise CueError(f'Omni Bridge {method}: no answer within {timeout}s')
+    def tool(self, name, args, timeout=300):
+        r = self.rpc('tools/call', {'name': name, 'arguments': args}, timeout)
+        if isinstance(r.get('structuredContent'), dict): return r['structuredContent']
+        for c in r.get('content') or []:
+            try: return json.loads(c.get('text', ''))
+            except ValueError: return {'status': 'completed', 'result': {'kind': 'inline', 'text': c.get('text', '')}}
+        return r
+    def close(self):
+        try: self.p.stdin.close(); self.p.terminate(); self.p.wait(10)
+        except Exception: pass
+def omni_response(o):
+    """the parse / get_parse_status body inside whatever was saved: a full tools/call response, its structuredContent, or the compact
+    JSON from content[0].text (what the agent sees when the result is an artifact)"""
+    if isinstance(o, dict) and isinstance(o.get('result'), dict) and ('structuredContent' in o['result'] or 'content' in o['result']) and 'jsonrpc' in o: o = o['result']
+    if isinstance(o, dict) and isinstance(o.get('structuredContent'), dict): return o['structuredContent']
+    if isinstance(o, dict) and isinstance(o.get('content'), list) and 'status' not in o:
+        for c in o['content']:
+            try: return json.loads(c.get('text', ''))
+            except (ValueError, AttributeError): return {'status': 'completed', 'result': {'kind': 'inline', 'text': c.get('text', '')}}
+    return o
+def bundle_from_response(b, bridge=None):
+    """real Bridge shape (1.8.x): result = {kind: bundle, bundle_protocol_version: omni.result_bundle.v1, parts: {content, grounding}};
+    each part's storage is inline (text / value) or artifact (next_cursor -> Bridge-local read_result, no credits)"""
+    res = b.get('result') or {}; parts = res.get('parts') or {}; out = {}
+    for name in ('content', 'grounding'):
+        st = (parts.get(name) or {}).get('storage') or {}
+        if st.get('kind') == 'inline': out[name] = st.get('text') if 'text' in st else st.get('value')
+        elif st.get('kind') == 'artifact':
+            own = bridge is None; br = bridge or Bridge(); buf, cur = [], st.get('next_cursor')
+            try:
+                while cur:
+                    r = br.tool('read_result', {'result_id': res['result_id'], 'cursor': cur, 'max_bytes': 65536}, 120)
+                    if r.get('status') != 'completed': raise CueError(f"read_result({name}) {r.get('status')}: {(r.get('error') or {}).get('code', '')} — the local result may have expired (see expires_at); re-parsing may be billed, ask first")
+                    rr = r.get('result') or {}; buf.append(rr.get('text') or ''); cur = rr.get('next_cursor')
+            finally:
+                if own: br.close()
+            out[name] = ''.join(buf) if name == 'content' else json.loads(''.join(buf))
+    if not isinstance(out.get('content'), str): raise CueError('Omni result has no content part')
+    dg = (parts.get('content') or {}).get('digest', '')
+    if dg.startswith('sha256:'):
+        import hashlib
+        if hashlib.sha256(out['content'].encode('utf-8')).hexdigest() != dg[7:]: raise CueError('Omni content does not match its sha256 digest (incomplete read?); not ingested')
+    return {'protocol_version': res.get('bundle_protocol_version', 'omni.result_bundle.v1'), 'detail': res.get('detail', 'grounded'),
+            'content': {'text': out['content']}, 'grounding': {'value': out.get('grounding') or {}}}
+def html_tables_to_rows(t):
+    """Omni emits complex tables (rowspan/colspan) as inline HTML: keep cell text as pipe rows so quotes and verify see the cells, not tags"""
+    if '<t' not in t: return t
+    t = re.sub(r'(?i)</t[dh]>\s*<t[dh][^>]*>', ' | ', t); t = re.sub(r'(?i)<tr[^>]*>', '\n| ', t); t = re.sub(r'(?i)</tr>', ' |', t)
+    return html.unescape(re.sub(r'(?i)</?(?:table|tbody|thead|tfoot|td|th|caption|colgroup|col)[^>]*>', '', t))
+def omni_pages(path, bridge=None):
+    p, parser, basis, w = _omni_pages(path, bridge); return [html_tables_to_rows(x) for x in p], parser, basis, w
+def _omni_pages(path, bridge=None):
+    raw = open(path, 'rb').read().decode('utf-8', 'ignore')
+    if not path.lower().endswith('.json'):
+        p, basis = text_pages(raw); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis] if basis == 'block' else []
+    try: o = json.loads(raw)
+    except ValueError: raise CueError(f'{path}: not valid JSON (save the Omni result as .json, or as .md for plain Markdown)')
+    b = omni_response(o)
+    if isinstance(b, dict) and b.get('status') not in (None, 'completed'):
+        raise CueError(f"{path}: Omni status is {b.get('status')} ({(b.get('error') or {}).get('code', '')}); nothing to ingest — use `cue.py local` for this source")
+    if isinstance(b, dict) and (b.get('result') or {}).get('kind') == 'bundle':
+        bb = bundle_from_response(b, bridge); p, basis, w = bundle_pages(bb); return p, 'omni-' + bb['detail'], basis, w
+    full = _find(o, lambda x: isinstance(x, dict) and x.get('protocol_version') == 'omni.result_bundle.v1')   # canonical bundle bytes
+    if full: p, basis, w = bundle_pages(full); return p, 'omni-' + full.get('detail', 'grounded'), basis, w
+    t = _find(b, lambda x: isinstance(x, dict) and isinstance(x.get('text'), str) and len(x['text']) > 0)
+    if t is None: raise CueError(f'{path}: no Omni result text found (expected a completed parse result or an omni.result_bundle.v1 bundle)')
+    p, basis = text_pages(t['text']); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis] if basis == 'block' else []
+def cmd_omni(a):
+    """parse pending sources through the user's Omni Bridge (grounded), save each response to DIR/omni/<sid>.json, then ingest"""
+    meta = jload(f'{a.dir}/sources.json'); by = {s['sid']: s for s in meta['sources']}
+    todo = [by[k] for k in a.sids if k in by] if a.sids else [s for s in meta['sources'] if s.get('parser', 'pending') == 'pending']
+    bad = [k for k in a.sids if k not in by]
+    if bad: raise CueError(f"not in sources.json: {', '.join(bad)}")
+    todo = [s for s in todo if re.match(r'https?://', s.get('source_url') or '')]
+    if not a.sids:          # measured 2026-10-07: Omni answered SOURCE_ACCESS_DENIED (not billed) for an SEC EDGAR URL -> EDGAR stays on `local`
+        sec = [s for s in todo if 'sec.gov' in s['source_url']]; todo = [s for s in todo if s not in sec]
+        if sec: print(f"{len(sec)} SEC EDGAR source(s) skipped (Omni cannot fetch EDGAR URLs today): cue.py local {a.dir}")
+    kinds = collections.Counter(s.get('kind', '') for s in todo)
+    print(f"{len(todo)} source(s) to parse with Cue Omni Reader (detail={a.detail}): " + ', '.join(f'{v} {k}' for k, v in kinds.items()))
+    if not a.yes:
+        print('Omni parsing is billed per source. Ask the user, then re-run with --yes (or pass only some SIDs).'); return 3
+    os.makedirs(f'{a.dir}/omni', exist_ok=True); br = Bridge(); total = 0.0; ok = []
+    try:
+        for s in todo:
+            b = br.tool('parse', {'source': s['source_url'], 'detail': a.detail, 'result_delivery': 'artifact'}, 900)
+            while b.get('status') == 'processing':
+                b = br.tool('get_parse_status', {'operation_id': b['operation_id'], 'wait_ms': 20000}, 120)
+            bill = b.get('billing') or {}; total += float(bill.get('credits_charged') or 0)
+            jdump(b, f"{a.dir}/omni/{s['sid']}.json")
+            if b.get('status') == 'completed':
+                ok.append(s['sid']); print(f"{s['sid']}: completed, credits_charged={bill.get('credits_charged')}")
+            else:
+                e = b.get('error') or {}; print(f"{s['sid']}: {b.get('status')} {e.get('code', '')} billed={e.get('billed')} — left pending; use `cue.py local {a.dir} {s['sid']}`")
+                os.remove(f"{a.dir}/omni/{s['sid']}.json")
+        for sid in ok:
+            pages, parser, basis, warn = omni_pages(f'{a.dir}/omni/{sid}.json', br)
+            write_source(a.dir, meta, by[sid], pages, parser, basis, warn)
+            print(f"{sid}: {len(pages)} pages (parser={parser}, page_basis={basis})" + ''.join(f"\n  warning: {w}" for w in warn))
+    finally: br.close()
+    save_meta(a.dir, meta); print(f'credits charged in total (as reported by Omni): {round(total, 4)}'); print_pending(a.dir, meta)
+def cmd_ingest(a):
+    if os.path.exists(f'{a.dir}/sources.json'): meta = jload(f'{a.dir}/sources.json')
+    elif a.company and a.market: meta = {'company': a.company, 'id': a.id or a.company, 'market': a.market.upper(), 'sources': []}
+    else: raise CueError(f'{a.dir}/sources.json not found: run fetch first, or pass --company and --market to start a new directory')
+    by = {s['sid']: s for s in meta['sources']}; jobs = []
+    if a.omni_dir:
+        for fn in sorted(os.listdir(a.omni_dir)):
+            sid, ext = os.path.splitext(fn)
+            if ext.lower() in ('.json', '.md', '.txt') and sid in by: jobs.append((sid, os.path.join(a.omni_dir, fn)))
+        if not jobs: raise CueError(f'{a.omni_dir}: no files named <sid>.json / <sid>.md matching a source in sources.json')
+    elif a.omni and a.sid:
+        if a.sid not in by:
+            miss = [k for k in ('kind', 'date', 'title') if not getattr(a, k)]
+            if miss: raise CueError(f"source '{a.sid}' is not in sources.json: pass --{' --'.join(miss)} (and --url) to register it")
+            by[a.sid] = {'sid': a.sid, 'kind': a.kind, 'date': a.date, 'title': a.title, 'source_url': a.url or ''}; meta['sources'].append(by[a.sid])
+        jobs.append((a.sid, a.omni))
+    else: raise CueError('ingest needs --omni FILE --sid SID, or --omni-dir DIR')
+    os.makedirs(a.dir, exist_ok=True)
+    for sid, path in jobs:
+        pages, parser, basis, warn = omni_pages(path)
+        write_source(a.dir, meta, by[sid], pages, parser, basis, warn)
+        print(f"{sid}: {len(pages)} pages (parser={parser}, page_basis={basis})" + ''.join(f"\n  warning: {w}" for w in warn))
+    save_meta(a.dir, meta); print_pending(a.dir, meta)
 def load(d):
     meta = jload(f'{d}/sources.json'); S = collections.OrderedDict()
     for s in meta['sources']:
-        S[s['sid']] = dict(s, text={json.loads(l)['page']: json.loads(l)['text'] for l in open(f"{d}/pages/{s['sid']}.jsonl", encoding='utf-8')})
+        p = f"{d}/pages/{s['sid']}.jsonl"
+        S[s['sid']] = dict(s, text={json.loads(l)['page']: json.loads(l)['text'] for l in open(p, encoding='utf-8')} if os.path.exists(p) else {})
     return meta, S
 _NC = {}
 def normpage(k, p, t):
@@ -475,8 +741,11 @@ def cmd_brief(a):
     L = jload(f'{a.dir}/leads.json')
     o = [f"# Cue 简报：{meta['company']}（{meta.get('id', '')}，{meta.get('market', '')}）",
          "一次给全：材料目录、线索件、可直接粘贴的逐字证据。不需要再 ls / cat sources.json / Read 原文件。",
-         "\n## 材料（来源编号｜类型｜日期｜页数｜标题）"]
-    for k, x in S.items(): o.append(f"{k}｜{x['kind']}｜{x['date']}｜{len(x['text'])}｜{(x.get('title') or '')[:40]}")
+         "\n## 材料（来源编号｜类型｜日期｜页数｜解析通道｜标题）"]
+    BAS = {'pdf_page': 'PDF页', 'html_page_break': '原文分页', 'marker': '页标记', 'form_feed': '分页符', 'block': '文本块(页码=块号)'}
+    for k, x in S.items(): o.append(f"{k}｜{x['kind']}｜{x['date']}｜{len(x['text'])}｜{x.get('parser', 'local')}/{BAS.get(x.get('page_basis'), x.get('page_basis') or '-')}｜{(x.get('title') or '')[:40]}")
+    pend = [k for k, x in S.items() if x.get('parser') == 'pending']
+    if pend: o.append(f"未解析 {len(pend)} 个（{', '.join(pend[:8])}{' …' if len(pend) > 8 else ''}）：先用 Cue Omni Reader 解析后 ingest，或 cue.py local 本地兜底。")
     o.append("\n## 线索件（每行 JSON 证据都由程序从原文截取并已逐字核对，可原样粘贴进 answer.json 的 evidence）")
     for i, x in enumerate(L['leads'][:a.top], 1):
         o.append(f"\n### L{i} {x['object']}\n为何现在：{x['why_now']}\n建议动作：{x['action']}")
@@ -515,9 +784,14 @@ def cmd_verify(a):
         print(json.dumps(out['summary'], ensure_ascii=False)); [print(f"[{r['status']}] {r['quote'][:80]}") for r in res if r['status'] != 'verbatim']
     else:
         print(json.dumps(check(a.quote, a.source, a.page, S), ensure_ascii=False, indent=1))
-if __name__ == '__main__':
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter); sp = ap.add_subparsers(dest='cmd', required=True)
-    p = sp.add_parser('fetch'); p.add_argument('dir'); g = p.add_mutually_exclusive_group(required=True); g.add_argument('--cn'); g.add_argument('--us'); p.add_argument('--months', type=float, default=12)
+    p = sp.add_parser('fetch'); p.add_argument('dir'); g = p.add_mutually_exclusive_group(required=True); g.add_argument('--cn'); g.add_argument('--us'); g.add_argument('--list')
+    p.add_argument('--months', type=float, default=12); p.add_argument('--local', action='store_true'); p.add_argument('--company'); p.add_argument('--market'); p.add_argument('--id')
+    p = sp.add_parser('local'); p.add_argument('dir'); p.add_argument('sids', nargs='*')
+    p = sp.add_parser('omni'); p.add_argument('dir'); p.add_argument('sids', nargs='*'); p.add_argument('--yes', action='store_true'); p.add_argument('--detail', default='grounded', choices=['grounded', 'text'])
+    p = sp.add_parser('ingest'); p.add_argument('dir'); p.add_argument('--omni'); p.add_argument('--sid'); p.add_argument('--omni-dir')
+    for k in ('kind', 'date', 'title', 'url', 'company', 'market', 'id'): p.add_argument('--' + k)
     p = sp.add_parser('changes'); p.add_argument('dir')
     p = sp.add_parser('leads'); p.add_argument('dir'); p.add_argument('--no-llm', action='store_true'); p.add_argument('--rebuild', action='store_true')
     p = sp.add_parser('page'); p.add_argument('dir'); p.add_argument('specs', nargs='+')
@@ -525,4 +799,10 @@ if __name__ == '__main__':
     p = sp.add_parser('find'); p.add_argument('dir'); p.add_argument('terms', nargs='+'); p.add_argument('--max', type=int, default=30); p.add_argument('--source')
     p = sp.add_parser('verify'); p.add_argument('dir'); p.add_argument('--json'); p.add_argument('--out'); p.add_argument('--fix', action='store_true'); p.add_argument('--quote'); p.add_argument('--source'); p.add_argument('--page')
     ap.add_argument('--version', action='version', version=__version__)
-    a = ap.parse_args(); {'fetch': cmd_fetch, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a)
+    a = ap.parse_args(argv)
+    try: return {'fetch': cmd_fetch, 'local': cmd_local, 'omni': cmd_omni, 'ingest': cmd_ingest, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a) or 0
+    except CueError as e:
+        print(f'cue.py: error: {e}', file=sys.stderr); return 2
+    return 0
+if __name__ == '__main__':
+    sys.exit(main())
