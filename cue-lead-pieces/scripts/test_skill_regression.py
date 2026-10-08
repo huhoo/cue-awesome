@@ -79,6 +79,57 @@ class CueLeadPiecesRegression(unittest.TestCase):
         self.assertEqual(cue.check('会计师对持续经营能力出具了强调事项段', 'AR2025', 4, S)['status'], 'verbatim')
         self.assertEqual(cue.check('会计师对持续经营能力出具了强调事项段', 'AR2025', 1, S)['status'], 'verbatim_elsewhere')
         self.assertIn('短期借款', s['text'][2])
+    # ---- real response shapes (sanitized fixture recorded from @cueai/omni-reader-mcp 1.8.3, grounded; synthetic text, fake ids)
+    FX = _HERE / 'fixtures' / 'omni_real_shape.json'
+    def _fx(self): return json.load(open(self.FX, encoding='utf-8'))
+    def _ingest(self, d, path, **env):
+        e = dict(os.environ, **env)
+        return subprocess.run([sys.executable, str(CUE), 'ingest', d, '--omni', path, '--sid', 'ANN-1', '--kind', 'announcement', '--date', '2026-10-01',
+                               '--title', 't', '--company', 'TestCN', '--market', 'CN'], capture_output=True, text=True, env=e)
+    def _bridge_env(self, fx_path, log):
+        import shlex
+        return {'CUE_OMNI_BRIDGE': ' '.join(shlex.quote(x) for x in (sys.executable, str(_HERE / 'fixtures' / 'fake_omni_bridge.py'), str(fx_path), log))}
+    def test_ingest_real_shape_inline(self):
+        """the real parse result: result.kind=bundle, bundle_protocol_version + parts{content,grounding} with inline storage; saved as the full
+        tools/call response or as structuredContent -> PDF pages; saved as Markdown only (save_result / content[0].text) -> labeled blocks"""
+        fx = self._fx()
+        for name, obj in (('full.json', fx['inline_tools_call']), ('sc.json', fx['inline_tools_call']['result']['structuredContent'])):
+            d = os.path.join(self.d, name); p = os.path.join(self.d, 'in_' + name); json.dump(obj, open(p, 'w'), ensure_ascii=False)
+            r = self._ingest(d, p); self.assertEqual(r.returncode, 0, r.stderr); self.assertIn('ANN-1: 3 pages (parser=omni-grounded, page_basis=pdf_page)', r.stdout)
+            S = cue.load(d)[1]; t = S['ANN-1']['text']
+            self.assertEqual(cue.check('累计逾期债务 45.60 亿元', 'ANN-1', 1, S)['status'], 'verbatim')
+            self.assertEqual(cue.check('公司作为被告的诉讼事项有 12 件，金额 3.40 亿元', 'ANN-1', 2, S)['status'], 'verbatim')
+            self.assertNotIn('<td', t[3]); self.assertIn('| 张三 | 5 |', t[3])          # inline HTML table -> pipe rows
+        p = os.path.join(self.d, 'view.md'); open(p, 'w').write(fx['inline_tools_call']['result']['content'][0]['text'])
+        r = self._ingest(os.path.join(self.d, 'md'), p); self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('page_basis=block', r.stdout); self.assertIn('text-only result', r.stdout)
+    def test_ingest_real_shape_artifact_via_bridge(self):
+        """large results come back as artifacts (storage.kind=artifact + next_cursor); ingest pages them in through the Bridge's read_result
+        (Bridge-local, no parse call, no credits) and checks the content digest"""
+        fx = self._fx(); p = os.path.join(self.d, 'final.json'); json.dump(fx['final_response'], open(p, 'w'), ensure_ascii=False)
+        log = os.path.join(self.d, 'bridge.log'); d = os.path.join(self.d, 'cn')
+        r = self._ingest(d, p, **self._bridge_env(self.FX, log)); self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('ANN-1: 3 pages (parser=omni-grounded, page_basis=pdf_page)', r.stdout)
+        tools = [json.loads(l)['tool'] for l in open(log)]; self.assertEqual(set(tools), {'read_result'}); self.assertGreater(len(tools), 4)
+        S = cue.load(d)[1]; self.assertEqual(cue.check('累计逾期债务 45.60 亿元', 'ANN-1', 1, S)['status'], 'verbatim')
+        bad = dict(fx, parts=dict(fx['parts'], content=fx['parts']['content'].replace('45.60', '46.50'))); bp = os.path.join(self.d, 'bad_fx.json'); json.dump(bad, open(bp, 'w'), ensure_ascii=False)
+        r = self._ingest(os.path.join(self.d, 'bad'), p, **self._bridge_env(bp, log)); self.assertEqual(r.returncode, 2); self.assertIn('digest', r.stderr)
+        fp = os.path.join(self.d, 'failed.json'); json.dump(fx['failed_response'], open(fp, 'w'))
+        r = self._ingest(os.path.join(self.d, 'f'), fp); self.assertEqual(r.returncode, 2); self.assertIn('SOURCE_ACCESS_DENIED', r.stderr); self.assertEqual(len(r.stderr.strip().splitlines()), 1)
+    def test_omni_command_asks_first_then_parses(self):
+        """`omni` spends credits: without --yes it only states the plan (exit 3, Bridge never started); with --yes it parses, polls, reads, ingests"""
+        d = os.path.join(self.d, 'cn'); os.makedirs(d)
+        json.dump({'company': 'TestCN', 'id': '000000', 'market': 'CN', 'sources': [{'sid': 'ANN-1', 'kind': 'announcement', 'date': '2026-10-01', 'title': 't',
+                   'source_url': 'https://example.com/a.pdf', 'parser': 'pending', 'n_pages': 0}]}, open(f'{d}/sources.json', 'w'))
+        log = os.path.join(self.d, 'bridge.log'); env = dict(os.environ, **self._bridge_env(self.FX, log))
+        r = subprocess.run([sys.executable, str(CUE), 'omni', d], capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 3); self.assertIn('--yes', r.stdout); self.assertFalse(os.path.exists(log))
+        r = subprocess.run([sys.executable, str(CUE), 'omni', d, '--yes'], capture_output=True, text=True, env=env); self.assertEqual(r.returncode, 0, r.stderr)
+        tools = [json.loads(l) for l in open(log)]; self.assertEqual([t['tool'] for t in tools[:2]], ['parse', 'get_parse_status'])
+        self.assertEqual(tools[0]['args'], {'source': 'https://example.com/a.pdf', 'detail': 'grounded', 'result_delivery': 'artifact'})
+        self.assertIn('credits_charged=0.201', r.stdout); self.assertIn('credits charged in total (as reported by Omni): 0.201', r.stdout)
+        s = cue.load(d)[1]['ANN-1']; self.assertEqual((s['n_pages'], s['parser'], s['page_basis']), (3, 'omni-grounded', 'pdf_page'))
+        self.assertTrue(os.path.exists(f'{d}/omni/ANN-1.json'))
     def test_ingest_text_only_and_markers(self):
         self.assertEqual(cue.text_pages('a\fb')[1], 'form_feed')
         p, basis = cue.text_pages('<!-- page 1 -->\nfirst\n<!-- page 3 -->\nthird\n'); self.assertEqual((basis, len(p), p[2].strip()), ('marker', 3, 'third'))

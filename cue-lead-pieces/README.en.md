@@ -8,7 +8,7 @@ The agent thinks; Cue perceives. Uses **Cue Omni Reader** to parse a listed comp
 
 ![Bare agent vs agent + this skill](assets/demo-verifiable.png)
 
-The image is a measurement, not an illustration: the same agent, the same question, the same public filings, 24 listed companies. **These numbers were measured with the local parsing path; the Omni parsing path has not yet been measured at this scale.** Scope and limits are under "Delivery and verification" below. (The image text is Chinese.)
+The image is a measurement, not an illustration: the same agent, the same question, the same public filings, 24 listed companies. **These numbers were measured with the local parsing path; the Omni parsing path has not yet been measured at this scale** (Omni page alignment was measured on 2 A-share filings only, see below). Scope and limits are under "Delivery and verification" below. (The image text is Chinese.)
 
 ## What it solves
 
@@ -49,11 +49,13 @@ Or run it in the skill directory (Python 3.9+):
 ```sh
 export CUE_SEC_UA="Your Name your@email"
 python3 scripts/cue.py fetch /tmp/lesl --us LESL --months 12   # list only, no download, zero credit
-# primary: the agent parses each filing with cue-omni-reader parse(detail="grounded") and saves /tmp/lesl/omni/<sid>.json, then:
-python3 scripts/cue.py ingest /tmp/lesl --omni-dir /tmp/lesl/omni
-# fallback without Omni:
+python3 scripts/cue.py fetch /tmp/600606 --cn 600606 --months 12
+# primary (billed): without --yes it only prints the plan; after consent, --yes parses each file grounded, ingests it and prints credits_charged
+python3 scripts/cue.py omni /tmp/600606
+python3 scripts/cue.py omni /tmp/600606 --yes
+# US EDGAR (Omni cannot fetch EDGAR URLs today) or no Omni: local fallback
 python3 scripts/cue.py local /tmp/lesl
-python3 scripts/cue.py brief /tmp/lesl
+python3 scripts/cue.py brief /tmp/600606
 ```
 
 ## Install
@@ -67,7 +69,7 @@ This route requires Node.js/npm; copying this directory into your host's support
 ## Requirements
 
 - Python 3.9+ (standard library only).
-- Primary parser: the official `cue-omni-reader`, installed and configured (called by the agent over MCP; this script never contacts Omni and never reads `CUE_API_KEY`).
+- Primary parser: the official `cue-omni-reader`, installed and configured. The agent can call it over MCP itself; `cue.py omni`, and `ingest` when it reads a large result back, start the Omni Bridge (the command in `CUE_OMNI_BRIDGE`, default `npx -y @cueai/omni-reader-mcp@1.8.6`, needs Node.js). The Bridge reads the key itself; this script never reads or passes `CUE_API_KEY`.
 - The local fallback needs PyMuPDF (`pip install pymupdf`) **or** the `pdftotext` command (poppler) for A-share PDFs; US EDGAR HTML does not.
 - Filing lists come from the public cninfo and SEC EDGAR indexes, free. `fetch` only lists, `local` downloads files; `leads` / `brief` call a model endpoint only if the optional model variables below are set; everything else reads local files only.
 - SEC EDGAR asks clients to identify themselves: set `CUE_SEC_UA="Your Name your@email"` (without it a placeholder contact is sent and SEC may refuse or throttle).
@@ -79,7 +81,8 @@ This route requires Node.js/npm; copying this directory into your host's support
 |---|---|
 | `cue.py fetch DIR --cn 600606` / `--us LESL` | list the last 12 months of public filings with download URLs (no download, zero credit) |
 | `cue.py fetch DIR --list list.json --company X --market CN` | register filings found elsewhere (e.g. Cue data-MCP) |
-| `cue.py ingest DIR --omni-dir DIR/omni` | read Cue Omni Reader results (`<sid>.json` grounded with pages, or `<sid>.md` plain text) |
+| `cue.py omni DIR [sources…] [--yes]` | grounded parse through the Omni Bridge, then ingest (billed; without `--yes` it only prints the plan); skips SEC EDGAR sources by default |
+| `cue.py ingest DIR --omni-dir DIR/omni` | read Omni results saved by the agent (`<sid>.json` = the JSON returned when parse completes; large results are read back from the Bridge, no further charge; `<sid>.md` = plain text, stored as text blocks) |
 | `cue.py local DIR [sources…]` | local fallback: download and extract text per page; `fetch … --local` does both in one step |
 | `cue.py brief DIR` | one call: source catalog (with parser) + lead pieces + paste-ready verbatim evidence |
 | `cue.py find DIR <terms…>` | sentences containing the terms, paste-ready |
@@ -98,7 +101,7 @@ The measurement record is `references/verification.md` in this package; versions
 - With this skill's flow: 95% of 443 quotes verbatim (95% interval 91%–98%). These figures were measured with the version before 0.3.0.
 - 0.3.0 re-tested on the 14 previously slowest companies: 100% of 279 final quotes verbatim; the agent's draft before `verify --fix` was 98% (273/278); one 60-minute timeout versus four for the old version run at the same time.
 - Numbers that appear nowhere in the source: 0 in both arms.
-- The 0.4.0 Omni ingest has only been tested offline with synthetic grounded results, not with a real Omni parse; until then, page accuracy and the rates above are not verified for the Omni path.
+- 0.4.0 Omni path, measured (2026-10-07, two cninfo PDFs of Greenland Holdings 600606, grounded): a 3-page announcement and the 391-page 2025 annual report. Omni page count equals the PDF page count, and every page's text lands on the same PDF page number (3/3, 391/391); 99.9% of the numbers from local parsing appear on the same Omni page. Server-reported charges: 0.201 and 26.197 credits. In a mini run (brief, 8 quotes, verify, verify --fix) every quote kept was found on the same source PDF page (±1). The US 8-K could not be parsed through Omni (EDGAR URL `SOURCE_ACCESS_DENIED`, not billed). The 24-company rates above are still from local parsing; the Omni path has not been re-measured at that scale.
 
 What this shows is whether quotes can be found word for word in the source. It does not show that the signals are right, and other models or hosts may give different numbers.
 
@@ -121,6 +124,11 @@ python3 scripts/cue.py --help
 - Omni returns `OMNI_NOT_ENTITLED` / 403, credits run out, or you decline the spend → account not entitled or spend not approved → follow the official cue-omni-reader guidance; to avoid spending, run `cue.py local DIR` for the local fallback, and the answer says so.
 - Omni returns `UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE` → no grounded result with pages for this file → save the default text result as `<sid>.md` and `ingest` it; pages are then labeled as text-block numbers; for real pages use `cue.py local` for that file.
 - `ingest` prints `warning: incomplete page [...]` or `truncated` → Omni did not finish some pages → quotes on those pages cannot be verified; ask the user before re-parsing (it may be billed again), or use `cue.py local` for that file.
+- Omni returns `SOURCE_ACCESS_DENIED` for an SEC EDGAR URL (measured, not billed) → Omni cannot fetch EDGAR today → run `cue.py local DIR` for US filings; `omni` already skips EDGAR sources by default.
+- `ingest` reports `read_result(...) failed: INVALID_RESULT_CURSOR` or an expired result → large results live in the Bridge's local cache until `expires_at` → ask the user before re-parsing (billed again), or use `cue.py local` for that file.
+- `ingest` reports `content does not match its sha256 digest` → the content read back is incomplete → nothing was ingested; re-run `ingest` (zero credit), else use `cue.py local`.
+- `ingest` prints `page_basis=block` / `text-only result` → you saved Markdown (`save_result` export or the tool's text), which has no page sidecar → save the JSON returned when parse completes (`result_delivery="artifact"`), or use `cue.py omni`.
+- `cannot start the Omni Bridge` → Node.js missing or `CUE_OMNI_BRIDGE` wrong → install Node.js, or set `CUE_OMNI_BRIDGE` to your omni-reader launch command.
 - `fetch` reports a network error or SEC returns 403 → no network, or no identification → check the network, set `CUE_SEC_UA`, retry.
 - A-share `local` cannot find `pdftotext` → neither PyMuPDF nor poppler installed → `pip install pymupdf` or install poppler.
 - `fetch` prints one line, `cue.py: error: unknown A-share code '999999': not in the cninfo stock list ...` (for US: `unknown US ticker '...'` or `unknown CIK '...'`), exit code 2 → the ticker/code was not found (wrong code or unsupported market) → use the 6-digit code for A-shares, the ticker or CIK for US.

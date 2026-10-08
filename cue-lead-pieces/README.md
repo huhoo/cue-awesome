@@ -8,7 +8,7 @@ Agent 思考，Cue 感知。用 **Cue Omni Reader** 把上市公司自己披露�
 
 ![裸 Agent 与 Agent + 本技能对比](assets/demo-verifiable.png)
 
-上图是实测，不是示意：同一个 Agent、同一个问题、同一批公开文件，24 家上市公司。**这组数字是用本地解析通道测的，Omni 解析通道还没有做同样规模的实测**；口径和局限见下文“交付与验证”。
+上图是实测，不是示意：同一个 Agent、同一个问题、同一批公开文件，24 家上市公司。**这组数字是用本地解析通道测的，Omni 解析通道还没有做同样规模的实测**（Omni 只在 2 份 A 股文件上实测过页码对齐，见下文）；口径和局限见下文“交付与验证”。
 
 ## 它解决什么
 
@@ -49,11 +49,13 @@ Agent 会先列出文件清单、告诉你要用 Omni 解析几份并等你同�
 ```sh
 export CUE_SEC_UA="你的名字 你的邮箱"
 python3 scripts/cue.py fetch /tmp/lesl --us LESL --months 12   # 只列清单，不下载，零消耗
-# 主通道：Agent 用 cue-omni-reader 逐份 parse(detail="grounded")，结果存为 /tmp/lesl/omni/<sid>.json，然后：
-python3 scripts/cue.py ingest /tmp/lesl --omni-dir /tmp/lesl/omni
-# 没开通 Omni 时的兜底：
+python3 scripts/cue.py fetch /tmp/600606 --cn 600606 --months 12
+# 主通道（会计费）：不带 --yes 只列计划；同意后加 --yes 逐份 grounded 解析并入库，打印每份 credits_charged
+python3 scripts/cue.py omni /tmp/600606
+python3 scripts/cue.py omni /tmp/600606 --yes
+# 美股 EDGAR（Omni 目前抓不到 EDGAR 地址）或没开通 Omni 时的兜底：
 python3 scripts/cue.py local /tmp/lesl
-python3 scripts/cue.py brief /tmp/lesl
+python3 scripts/cue.py brief /tmp/600606
 ```
 
 ## 安装
@@ -67,7 +69,7 @@ npx skills add huhoo/cue-awesome --skill cue-lead-pieces
 ## 运行要求
 
 - Python 3.9+（只用标准库）。
-- 主解析通道：已安装并配置的官方 `cue-omni-reader`（由 Agent 通过 MCP 调用，本脚本不直接联系 Omni，也不读取 `CUE_API_KEY`）。
+- 主解析通道：已安装并配置的官方 `cue-omni-reader`。Agent 可以自己通过 MCP 调用；`cue.py omni` 和读回大结果的 `ingest` 会启动 Omni Bridge（`CUE_OMNI_BRIDGE` 指定的命令，默认 `npx -y @cueai/omni-reader-mcp@1.8.6`，需要 Node.js）。密钥由 Bridge 自己读取，本脚本不读取、不传递 `CUE_API_KEY`。
 - 本地兜底解析 A 股 PDF 需要 PyMuPDF（`pip install pymupdf`）**或** `pdftotext` 命令（poppler）；美股 EDGAR HTML 不需要。
 - 文件清单来自巨潮资讯、SEC EDGAR 公开索引，免费。`fetch` 只联网列清单，`local` 联网下载文件；`leads` / `brief` 只在设置了下面的可选模型变量时调用该模型接口；其余只读本地文件。
 - SEC EDGAR 要求访问者表明身份：请设置 `CUE_SEC_UA="你的名字 你的邮箱"`（不设置时用占位联系方式，SEC 可能拒绝或限流）。
@@ -79,7 +81,8 @@ npx skills add huhoo/cue-awesome --skill cue-lead-pieces
 |---|---|
 | `cue.py fetch DIR --cn 600606` / `--us LESL` | 列出近 12 个月的公开文件和下载地址（不下载、零消耗） |
 | `cue.py fetch DIR --list list.json --company X --market CN` | 登记从别处（如 Cue data-MCP）找到的文件 |
-| `cue.py ingest DIR --omni-dir DIR/omni` | 读入 Cue Omni Reader 的解析结果（`<sid>.json` 带页码的 grounded 结果，或 `<sid>.md` 纯文本） |
+| `cue.py omni DIR [来源…] [--yes]` | 经 Omni Bridge 做 grounded 解析并入库（会计费；不带 `--yes` 只列计划）；默认跳过 SEC EDGAR 来源 |
+| `cue.py ingest DIR --omni-dir DIR/omni` | 读入 Agent 存下的 Omni 解析结果（`<sid>.json` 为 parse 完成时返回的 JSON，大结果经 Bridge 本地读回、不再计费；`<sid>.md` 为纯文本，按文本块入库） |
 | `cue.py local DIR [来源…]` | 本地解析兜底：下载并按页抽取文本；`fetch … --local` 一步完成 |
 | `cue.py brief DIR` | 一次给全：材料目录（含解析通道）+ 线索件 + 可直接粘贴的逐字证据 |
 | `cue.py find DIR <关键词…>` | 含关键词的原句，可直接粘贴 |
@@ -98,7 +101,7 @@ Agent 的推荐流程写在 `SKILL.md` 里。
 - 用本技能的流程：443 条引文中 95% 逐字可查（95% 区间 91%～98%）。这一组数是 0.3.0 之前的版本测得的。
 - 0.3.0 在之前最慢的 14 家公司上复测：最终答案 279 条引文 100% 逐字可查，`verify --fix` 之前 Agent 原稿为 98%（273/278）；60 分钟超时 1 次，同时段旧版 4 次。
 - 原文任何地方都没有的数字：两种做法都是 0。
-- 0.4.0 的 Omni 读入只用合成的 grounded 结果做过离线测试，还没有用真实 Omni 解析跑过；在那之前，Omni 通道的页码准确度和上面的比例都不能算作已验证。
+- 0.4.0 Omni 通道实测（2026-10-07，2 份绿地控股 600606 的巨潮 PDF，grounded）：3 页临时公告与 391 页 2025 年年报，Omni 页数与 PDF 页数一致，每页文字都落在同一 PDF 页码上（3/3、391/391），本地解析的数字 99.9% 出现在 Omni 的同一页；计费按服务端返回分别为 0.201 和 26.197 积分。迷你流程（brief、8 条引文、verify、verify --fix）中，所有保留下来的引文都能在原 PDF 同一页（±1）找到。美股 8-K 没能经 Omni 解析（EDGAR 地址 `SOURCE_ACCESS_DENIED`，未计费）。上面 24 家的比例仍是本地解析测得的，Omni 通道没有做同等规模的复测。
 
 它证明的是“引文能不能在原文里逐字找到”，不代表信号判断正确，也不代表其他模型或宿主上会有同样的数字。
 
@@ -121,6 +124,11 @@ python3 scripts/cue.py --help
 - Omni 返回 `OMNI_NOT_ENTITLED` / 403、额度不足，或你不同意花费 → 账号未开通或未批准消耗 → 按官方 cue-omni-reader 的提示处理；不想花就运行 `cue.py local DIR` 走本地兜底，回答里会标明。
 - Omni 返回 `UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE` → 这份文件拿不到带页码的 grounded 结果 → 用默认文本结果存成 `<sid>.md` 再 `ingest`，页码会标成文本块号；要原页码就对这份走 `cue.py local`。
 - `ingest` 输出 `warning: incomplete page [...]` 或 `truncated` → Omni 这次有页面没解析完 → 这些页的引文核对不到；对这份重新解析前先问用户（可能再次计费），或对这份走 `cue.py local`。
+- Omni 对 SEC EDGAR 地址返回 `SOURCE_ACCESS_DENIED`（实测，未计费）→ Omni 目前抓不到 EDGAR → 美股文件运行 `cue.py local DIR`；`omni` 默认已跳过 EDGAR 来源。
+- `ingest` 报 `read_result(...) failed: INVALID_RESULT_CURSOR` 或提示结果过期 → 大结果存在 Bridge 本地，过了 `expires_at` 就读不回 → 重新解析前先问用户（会再次计费），或对这份走 `cue.py local`。
+- `ingest` 报 `content does not match its sha256 digest` → 读回的正文不完整 → 没有入库；重跑 `ingest`（零消耗），仍不行就走 `cue.py local`。
+- `ingest` 输出 `page_basis=block` / `text-only result` → 存下的是 Markdown（`save_result` 导出或工具返回的文本），没有页码 sidecar → 改存 parse 完成时返回的 JSON（`result_delivery="artifact"`），或用 `cue.py omni`。
+- `cannot start the Omni Bridge` → 没装 Node.js 或 `CUE_OMNI_BRIDGE` 指错 → 安装 Node.js，或把 `CUE_OMNI_BRIDGE` 设为你的 omni-reader 启动命令。
 - `fetch` 报网络错误或 SEC 返回 403 → 网络不通或没有表明身份 → 检查网络，设置 `CUE_SEC_UA` 后重试。
 - A 股 `local` 报找不到 `pdftotext` → 没装 PyMuPDF 也没装 poppler → `pip install pymupdf` 或安装 poppler。
 - `fetch` 只输出一行 `cue.py: error: unknown A-share code '999999': not in the cninfo stock list ...`（美股为 `unknown US ticker '...'` 或 `unknown CIK '...'`），退出码 2 → 股票代码查不到（代码不对或该市场不支持） → A 股用 6 位代码，美股用 ticker 或 CIK。

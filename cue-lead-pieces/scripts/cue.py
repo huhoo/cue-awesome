@@ -70,14 +70,15 @@ def get(url, headers=None, data=None, tries=4):
             if a == tries - 1: raise
             time.sleep(2 * (a + 1))
 # ---------------------------------------------------------------- page extraction
-def pdf_pages(path, max_pages=300):
+def pdf_pages(path, max_pages=1000):
     try:
         import fitz
         doc = fitz.open(path); return [doc[i].get_text() for i in range(min(doc.page_count, max_pages))]
     except ImportError:
         import subprocess
-        t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout
-        return t.split('\f')[:max_pages]
+        t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout.split('\f')
+        if len(t) > 1 and not t[-1].strip(): t = t[:-1]            # pdftotext ends with a form feed: no extra empty page
+        return t[:max_pages]
 class _Txt(__import__('html.parser').parser.HTMLParser):
     BLOCK = {'p', 'div', 'br', 'tr', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'table', 'hr'}
     def __init__(s): super().__init__(); s.o = []; s.skip = 0
@@ -292,21 +293,135 @@ def bundle_pages(b):
     for x in doc.get('truncated') or []: warn.append(f"truncated {x.get('count', '')} {x.get('kind', '')}(s) ({x.get('reason', '')})")
     if cond: warn.append('some pages use rendered_pdf_page anchors (conditional reliability)')
     return [pages.get(i, '') for i in range(1, max(pages) + 1)], 'pdf_page', warn
-def omni_pages(path):
+# Bridge = the official Cue Omni Reader MCP server (stdio). Used for (a) Bridge-local reads of artifact results (read_result:
+# no credits, no key) and (b) the `omni` command's parse calls. The Bridge reads CUE_API_KEY from its own environment or launcher;
+# this script never reads, prints or passes the key itself.
+BRIDGE_DEFAULT = 'npx -y @cueai/omni-reader-mcp@1.8.6'
+class Bridge:
+    def __init__(self, cmd=None):
+        import subprocess, shlex, threading, queue
+        cmd = cmd or os.environ.get('CUE_OMNI_BRIDGE') or BRIDGE_DEFAULT
+        try: self.p = subprocess.Popen(shlex.split(cmd), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        except OSError as e: raise CueError(f'cannot start the Omni Bridge ({cmd.split()[0]}): {e.strerror}; set CUE_OMNI_BRIDGE to your omni-reader MCP command')
+        self.q, self.i = queue.Queue(), 0
+        threading.Thread(target=lambda: [self.q.put(l) for l in self.p.stdout], daemon=True).start()
+        self.rpc('initialize', {'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'cue-lead-pieces', 'version': __version__}}, 240)
+        self.p.stdin.write(json.dumps({'jsonrpc': '2.0', 'method': 'notifications/initialized'}) + '\n'); self.p.stdin.flush()
+    def rpc(self, method, params, timeout=300):
+        import queue
+        self.i += 1; self.p.stdin.write(json.dumps({'jsonrpc': '2.0', 'id': self.i, 'method': method, 'params': params}) + '\n'); self.p.stdin.flush()
+        end = time.time() + timeout
+        while time.time() < end:
+            try: line = self.q.get(timeout=2)
+            except queue.Empty:
+                if self.p.poll() is not None: raise CueError('the Omni Bridge exited (check CUE_OMNI_BRIDGE and run its `doctor --json`)')
+                continue
+            try: m = json.loads(line)
+            except ValueError: continue
+            if m.get('id') == self.i:
+                if 'error' in m: raise CueError(f"Omni Bridge {method}: {m['error'].get('message', m['error'])}")
+                return m.get('result') or {}
+        raise CueError(f'Omni Bridge {method}: no answer within {timeout}s')
+    def tool(self, name, args, timeout=300):
+        r = self.rpc('tools/call', {'name': name, 'arguments': args}, timeout)
+        if isinstance(r.get('structuredContent'), dict): return r['structuredContent']
+        for c in r.get('content') or []:
+            try: return json.loads(c.get('text', ''))
+            except ValueError: return {'status': 'completed', 'result': {'kind': 'inline', 'text': c.get('text', '')}}
+        return r
+    def close(self):
+        try: self.p.stdin.close(); self.p.terminate(); self.p.wait(10)
+        except Exception: pass
+def omni_response(o):
+    """the parse / get_parse_status body inside whatever was saved: a full tools/call response, its structuredContent, or the compact
+    JSON from content[0].text (what the agent sees when the result is an artifact)"""
+    if isinstance(o, dict) and isinstance(o.get('result'), dict) and ('structuredContent' in o['result'] or 'content' in o['result']) and 'jsonrpc' in o: o = o['result']
+    if isinstance(o, dict) and isinstance(o.get('structuredContent'), dict): return o['structuredContent']
+    if isinstance(o, dict) and isinstance(o.get('content'), list) and 'status' not in o:
+        for c in o['content']:
+            try: return json.loads(c.get('text', ''))
+            except (ValueError, AttributeError): return {'status': 'completed', 'result': {'kind': 'inline', 'text': c.get('text', '')}}
+    return o
+def bundle_from_response(b, bridge=None):
+    """real Bridge shape (1.8.x): result = {kind: bundle, bundle_protocol_version: omni.result_bundle.v1, parts: {content, grounding}};
+    each part's storage is inline (text / value) or artifact (next_cursor -> Bridge-local read_result, no credits)"""
+    res = b.get('result') or {}; parts = res.get('parts') or {}; out = {}
+    for name in ('content', 'grounding'):
+        st = (parts.get(name) or {}).get('storage') or {}
+        if st.get('kind') == 'inline': out[name] = st.get('text') if 'text' in st else st.get('value')
+        elif st.get('kind') == 'artifact':
+            own = bridge is None; br = bridge or Bridge(); buf, cur = [], st.get('next_cursor')
+            try:
+                while cur:
+                    r = br.tool('read_result', {'result_id': res['result_id'], 'cursor': cur, 'max_bytes': 65536}, 120)
+                    if r.get('status') != 'completed': raise CueError(f"read_result({name}) {r.get('status')}: {(r.get('error') or {}).get('code', '')} — the local result may have expired (see expires_at); re-parsing may be billed, ask first")
+                    rr = r.get('result') or {}; buf.append(rr.get('text') or ''); cur = rr.get('next_cursor')
+            finally:
+                if own: br.close()
+            out[name] = ''.join(buf) if name == 'content' else json.loads(''.join(buf))
+    if not isinstance(out.get('content'), str): raise CueError('Omni result has no content part')
+    dg = (parts.get('content') or {}).get('digest', '')
+    if dg.startswith('sha256:'):
+        import hashlib
+        if hashlib.sha256(out['content'].encode('utf-8')).hexdigest() != dg[7:]: raise CueError('Omni content does not match its sha256 digest (incomplete read?); not ingested')
+    return {'protocol_version': res.get('bundle_protocol_version', 'omni.result_bundle.v1'), 'detail': res.get('detail', 'grounded'),
+            'content': {'text': out['content']}, 'grounding': {'value': out.get('grounding') or {}}}
+def html_tables_to_rows(t):
+    """Omni emits complex tables (rowspan/colspan) as inline HTML: keep cell text as pipe rows so quotes and verify see the cells, not tags"""
+    if '<t' not in t: return t
+    t = re.sub(r'(?i)</t[dh]>\s*<t[dh][^>]*>', ' | ', t); t = re.sub(r'(?i)<tr[^>]*>', '\n| ', t); t = re.sub(r'(?i)</tr>', ' |', t)
+    return html.unescape(re.sub(r'(?i)</?(?:table|tbody|thead|tfoot|td|th|caption|colgroup|col)[^>]*>', '', t))
+def omni_pages(path, bridge=None):
+    p, parser, basis, w = _omni_pages(path, bridge); return [html_tables_to_rows(x) for x in p], parser, basis, w
+def _omni_pages(path, bridge=None):
     raw = open(path, 'rb').read().decode('utf-8', 'ignore')
     if not path.lower().endswith('.json'):
-        p, basis = text_pages(raw); return p, 'omni-text', basis, []
+        p, basis = text_pages(raw); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis] if basis == 'block' else []
     try: o = json.loads(raw)
     except ValueError: raise CueError(f'{path}: not valid JSON (save the Omni result as .json, or as .md for plain Markdown)')
-    if isinstance(o, dict) and isinstance(o.get('content'), list):          # MCP tool result: content[].text may hold the bundle as JSON text
-        for c in o['content']:
-            try: o = json.loads(c.get('text', '')); break
-            except (ValueError, AttributeError): pass
-    b = _find(o, lambda x: isinstance(x, dict) and x.get('protocol_version') == 'omni.result_bundle.v1')
-    if b: p, basis, w = bundle_pages(b); return p, 'omni-' + b.get('detail', 'grounded'), basis, w
-    t = _find(o, lambda x: isinstance(x, dict) and isinstance(x.get('text'), str) and len(x['text']) > 0)
-    if t is None: raise CueError(f'{path}: no Omni result text found (expected an omni.result_bundle.v1 bundle or a result with a text field)')
-    p, basis = text_pages(t['text']); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis]
+    b = omni_response(o)
+    if isinstance(b, dict) and b.get('status') not in (None, 'completed'):
+        raise CueError(f"{path}: Omni status is {b.get('status')} ({(b.get('error') or {}).get('code', '')}); nothing to ingest — use `cue.py local` for this source")
+    if isinstance(b, dict) and (b.get('result') or {}).get('kind') == 'bundle':
+        bb = bundle_from_response(b, bridge); p, basis, w = bundle_pages(bb); return p, 'omni-' + bb['detail'], basis, w
+    full = _find(o, lambda x: isinstance(x, dict) and x.get('protocol_version') == 'omni.result_bundle.v1')   # canonical bundle bytes
+    if full: p, basis, w = bundle_pages(full); return p, 'omni-' + full.get('detail', 'grounded'), basis, w
+    t = _find(b, lambda x: isinstance(x, dict) and isinstance(x.get('text'), str) and len(x['text']) > 0)
+    if t is None: raise CueError(f'{path}: no Omni result text found (expected a completed parse result or an omni.result_bundle.v1 bundle)')
+    p, basis = text_pages(t['text']); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis] if basis == 'block' else []
+def cmd_omni(a):
+    """parse pending sources through the user's Omni Bridge (grounded), save each response to DIR/omni/<sid>.json, then ingest"""
+    meta = jload(f'{a.dir}/sources.json'); by = {s['sid']: s for s in meta['sources']}
+    todo = [by[k] for k in a.sids if k in by] if a.sids else [s for s in meta['sources'] if s.get('parser', 'pending') == 'pending']
+    bad = [k for k in a.sids if k not in by]
+    if bad: raise CueError(f"not in sources.json: {', '.join(bad)}")
+    todo = [s for s in todo if re.match(r'https?://', s.get('source_url') or '')]
+    if not a.sids:          # measured 2026-10-07: Omni answered SOURCE_ACCESS_DENIED (not billed) for an SEC EDGAR URL -> EDGAR stays on `local`
+        sec = [s for s in todo if 'sec.gov' in s['source_url']]; todo = [s for s in todo if s not in sec]
+        if sec: print(f"{len(sec)} SEC EDGAR source(s) skipped (Omni cannot fetch EDGAR URLs today): cue.py local {a.dir}")
+    kinds = collections.Counter(s.get('kind', '') for s in todo)
+    print(f"{len(todo)} source(s) to parse with Cue Omni Reader (detail={a.detail}): " + ', '.join(f'{v} {k}' for k, v in kinds.items()))
+    if not a.yes:
+        print('Omni parsing is billed per source. Ask the user, then re-run with --yes (or pass only some SIDs).'); return 3
+    os.makedirs(f'{a.dir}/omni', exist_ok=True); br = Bridge(); total = 0.0; ok = []
+    try:
+        for s in todo:
+            b = br.tool('parse', {'source': s['source_url'], 'detail': a.detail, 'result_delivery': 'artifact'}, 900)
+            while b.get('status') == 'processing':
+                b = br.tool('get_parse_status', {'operation_id': b['operation_id'], 'wait_ms': 20000}, 120)
+            bill = b.get('billing') or {}; total += float(bill.get('credits_charged') or 0)
+            jdump(b, f"{a.dir}/omni/{s['sid']}.json")
+            if b.get('status') == 'completed':
+                ok.append(s['sid']); print(f"{s['sid']}: completed, credits_charged={bill.get('credits_charged')}")
+            else:
+                e = b.get('error') or {}; print(f"{s['sid']}: {b.get('status')} {e.get('code', '')} billed={e.get('billed')} — left pending; use `cue.py local {a.dir} {s['sid']}`")
+                os.remove(f"{a.dir}/omni/{s['sid']}.json")
+        for sid in ok:
+            pages, parser, basis, warn = omni_pages(f'{a.dir}/omni/{sid}.json', br)
+            write_source(a.dir, meta, by[sid], pages, parser, basis, warn)
+            print(f"{sid}: {len(pages)} pages (parser={parser}, page_basis={basis})" + ''.join(f"\n  warning: {w}" for w in warn))
+    finally: br.close()
+    save_meta(a.dir, meta); print(f'credits charged in total (as reported by Omni): {round(total, 4)}'); print_pending(a.dir, meta)
 def cmd_ingest(a):
     if os.path.exists(f'{a.dir}/sources.json'): meta = jload(f'{a.dir}/sources.json')
     elif a.company and a.market: meta = {'company': a.company, 'id': a.id or a.company, 'market': a.market.upper(), 'sources': []}
@@ -673,6 +788,7 @@ def main(argv=None):
     p = sp.add_parser('fetch'); p.add_argument('dir'); g = p.add_mutually_exclusive_group(required=True); g.add_argument('--cn'); g.add_argument('--us'); g.add_argument('--list')
     p.add_argument('--months', type=float, default=12); p.add_argument('--local', action='store_true'); p.add_argument('--company'); p.add_argument('--market'); p.add_argument('--id')
     p = sp.add_parser('local'); p.add_argument('dir'); p.add_argument('sids', nargs='*')
+    p = sp.add_parser('omni'); p.add_argument('dir'); p.add_argument('sids', nargs='*'); p.add_argument('--yes', action='store_true'); p.add_argument('--detail', default='grounded', choices=['grounded', 'text'])
     p = sp.add_parser('ingest'); p.add_argument('dir'); p.add_argument('--omni'); p.add_argument('--sid'); p.add_argument('--omni-dir')
     for k in ('kind', 'date', 'title', 'url', 'company', 'market', 'id'): p.add_argument('--' + k)
     p = sp.add_parser('changes'); p.add_argument('dir')
@@ -683,7 +799,7 @@ def main(argv=None):
     p = sp.add_parser('verify'); p.add_argument('dir'); p.add_argument('--json'); p.add_argument('--out'); p.add_argument('--fix', action='store_true'); p.add_argument('--quote'); p.add_argument('--source'); p.add_argument('--page')
     ap.add_argument('--version', action='version', version=__version__)
     a = ap.parse_args(argv)
-    try: {'fetch': cmd_fetch, 'local': cmd_local, 'ingest': cmd_ingest, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a)
+    try: return {'fetch': cmd_fetch, 'local': cmd_local, 'omni': cmd_omni, 'ingest': cmd_ingest, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a) or 0
     except CueError as e:
         print(f'cue.py: error: {e}', file=sys.stderr); return 2
     return 0
