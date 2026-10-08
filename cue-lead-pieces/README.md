@@ -6,7 +6,7 @@ Agent 思考，Cue 感知。用 **Cue Omni Reader** 把上市公司自己披露�
 
 **本文件为中文主面；英文版为包内 `README.en.md`（仓库内查阅，渠道页不解析相对链接）。** beta · Python 标准库 · 无使用遥测
 
-![裸 Agent 与 Agent + 本技能对比](assets/demo-verifiable.png)
+**裸 Agent 与 Agent + 本技能对比演示图:`assets/demo-verifiable.png`——该图在仓库内本包目录可看(GitHub 直接渲染);渠道包不随发图片,故不在分发文件内。**
 
 上图是实测，不是示意：同一个 Agent、同一个问题、同一批公开文件，24 家上市公司。**这组数字是用本地解析通道测的，Omni 解析通道还没有做同样规模的实测**（Omni 只在 2 份 A 股文件上实测过页码对齐，见下文）；口径和局限见下文“交付与验证”。
 

@@ -6,7 +6,7 @@ The agent thinks; Cue perceives. Uses **Cue Omni Reader** to parse a listed comp
 
 **English companion of `README.md` (Chinese primary; repo-local reference — channel pages do not resolve relative links).** beta · Python standard library · No usage telemetry
 
-![Bare agent vs agent + this skill](assets/demo-verifiable.png)
+**Comparison demo image (bare agent vs agent + this skill): `assets/demo-verifiable.png` — viewable in this package's directory in the repository (GitHub renders it); the channel package does not ship images, so it is not part of the distributed files.**
 
 The image is a measurement, not an illustration: the same agent, the same question, the same public filings, 24 listed companies. **These numbers were measured with the local parsing path; the Omni parsing path has not yet been measured at this scale** (Omni page alignment was measured on 2 A-share filings only, see below). Scope and limits are under "Delivery and verification" below. (The image text is Chinese.)
 
