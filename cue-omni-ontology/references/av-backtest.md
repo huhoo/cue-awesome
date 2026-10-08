@@ -28,6 +28,13 @@
 - Two failure classes deliberately kept separate: parser `PARSE_FAILED` (remote/URL) vs client `stdio transport cannot be reconnected` (this session's MCP handle before reload; never reached the provider, not a parse result).
 - Billing: all failed parses returned `billed=false`. The two completed parses did not surface a billing field to this driver — actual charge, if any, stands with the provider/Owner account record; **no rate or amount is inferred here**.
 
+## Lead cross-session reproduction (post Bridge 1.8.6 reload, 2026-10-08 05:08:25)
+
+- Session: gtm:1.1 (separate Bridge process, audited 1.8.6 pin + allowed-root /data/sdc1/work/gtm applied per skill setup contract).
+- URL leg, fresh operations after reload: dangsheng mp4 grounded -> PARSE_FAILED (new op id, retryable=false, billed=false); CCB ee60 grounded re-attach -> same cached failure fingerprint (re-attach semantics, not a new attempt).
+- Local leg, bounded clip: inputs/ccb-h1-clip90.mp4 grounded -> **completed**; bundle omni.result_bundle.v1, grounding omni.grounding.v1 (format=video), [画面 mm:ss] + (幻灯片标题) + [说话人 mm:ss] anchors as described above; content digest sha256:2c60012d...; billed with credits consumed (expires_at present).
+- Verdict unchanged and now two-session reproducible: audio/video works **as a bounded local-file workflow**; public full-length video URLs are not served by the parser on either Bridge session.
+
 ## What this decides
 
 - 「含音视频」 in name/summary: **supportable only with the qualification 「本地小段/切片(≤256 MiB)工作流」**; measured strength = 「2 场公开业绩会视频共三枚 90 秒切片走通全链(build→update×2→validate→query→export-okf)、逐字回查 8/8(100%),全长视频 URL 路 5 枪全拒吐、本地全长受 256 MiB 闸」. Full-length meeting parsing = 未臻. Recommendation to lead/4.1: if added, phrase the hook as capability-with-bound, not blanket 「任意音视频」.
