@@ -92,7 +92,7 @@ python3 scripts/cue.py --help
 
 - `fetch` 报网络错误或 SEC 返回 403 → 网络不通或没有表明身份 → 检查网络，设置 `CUE_SEC_UA` 后重试。
 - A 股 `fetch` 报找不到 `pdftotext` → 没装 PyMuPDF 也没装 poppler → `pip install pymupdf` 或安装 poppler。
-- `fetch` 以 Python 回溯退出、最后一行是 `StopIteration` → 股票代码查不到（代码不对或该市场不支持） → A 股用 6 位代码，美股用 ticker 或 CIK。
+- `fetch` 只输出一行 `cue.py: error: unknown A-share code '999999': not in the cninfo stock list ...`（美股为 `unknown US ticker '...'` 或 `unknown CIK '...'`），退出码 2 → 股票代码查不到（代码不对或该市场不支持） → A 股用 6 位代码，美股用 ticker 或 CIK。
 - `brief` 输出太长被宿主存成文件 → 个别公司材料多 → 让 Agent 读那个文件即可，或用 `--top` 减少线索件条数。
 - `verify --fix` 提示某条信号已没有可核对的原文证据 → 那条信号的引文都不在原文里 → 用 `find` 补一句原文，或删掉那条信号。
 

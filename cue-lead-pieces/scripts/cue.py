@@ -12,12 +12,14 @@
 
 Every quote Cue emits is copied by the program from the page text, never written by a model. Page = PDF page (A-share) or
 the filing's own page-break page (EDGAR HTML; falls back to ~3500-char blocks). Pure stdlib + PyMuPDF (or the pdftotext CLI)."""
-import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, urllib.parse, html, collections
+import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, urllib.parse, urllib.error, html, collections
 # SEC EDGAR asks every client to identify itself ("Company Name contact@domain"); set CUE_SEC_UA to your own name and email.
 UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
 # ---------------------------------------------------------------- text utils
 import unicodedata
-__version__ = '0.3.0'
+__version__ = '0.3.1'
+class CueError(Exception):
+    """a user-facing error: printed as one line on stderr, exit code 2 (no traceback)"""
 def nrm_map(s):
     """normalised string for matching + map to original indices: NFKC, lower-case, and NO whitespace / punctuation / table marks
     (so a quote that differs from the page only in spacing, line breaks or punctuation still counts as verbatim)"""
@@ -53,6 +55,9 @@ def get(url, headers=None, data=None, tries=4):
     for a in range(tries):
         try:
             return urllib.request.urlopen(urllib.request.Request(url, data=data, headers=headers or {'User-Agent': 'Mozilla/5.0'}), timeout=90).read()
+        except urllib.error.HTTPError as e:
+            if a == tries - 1 or (400 <= e.code < 500 and e.code != 429): raise   # 4xx (except rate limit) will not fix itself on retry
+            time.sleep(2 * (a + 1))
         except Exception:
             if a == tries - 1: raise
             time.sleep(2 * (a + 1))
@@ -101,7 +106,8 @@ CN_KEEP = ['诉讼', '仲裁', '冻结', '查封', '拍卖', '执行', '立案',
 CN_DROP = re.compile(r'已取消|英文|English|法律意见书|股东大会的通知|召开.{0,12}股东大会|股东大会决议|章程|议事规则|管理制度|工作细则|摘要')
 def cn_fetch(d, code, months):
     stocks = json.loads(get('http://www.cninfo.com.cn/new/data/szse_stock.json'))['stockList']
-    org = next(x for x in stocks if x['code'] == code)
+    org = next((x for x in stocks if x['code'] == code), None)
+    if org is None: raise CueError(f"unknown A-share code '{code}': not in the cninfo stock list (use the 6-digit code, e.g. 600606)")
     end = datetime.date.today(); start = end - datetime.timedelta(days=int(months * 30.5)); ar_start = end - datetime.timedelta(days=800)
     def query(s, e, category=''):
         out, page = [], 1
@@ -143,9 +149,14 @@ def us_fetch(d, ticker, months):
     H = {'User-Agent': UA_SEC}
     if ticker.isdigit(): cik = int(ticker); name = ticker
     else:
-        m = next(v for v in json.loads(get('https://www.sec.gov/files/company_tickers.json', H)).values() if v['ticker'].upper() == ticker.upper())
+        m = next((v for v in json.loads(get('https://www.sec.gov/files/company_tickers.json', H)).values() if v['ticker'].upper() == ticker.upper()), None)
+        if m is None: raise CueError(f"unknown US ticker '{ticker}': not in the SEC EDGAR ticker list (use the ticker, e.g. LESL, or the numeric CIK)")
         cik, name = m['cik_str'], m['title']
-    sub = json.loads(get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json', H)); r = sub['filings']['recent']
+    try: sub = json.loads(get(f'https://data.sec.gov/submissions/CIK{cik:010d}.json', H))
+    except urllib.error.HTTPError as e:
+        if e.code == 404: raise CueError(f"unknown CIK '{ticker}': SEC EDGAR has no filings index for it (use the ticker, e.g. LESL, or a valid CIK)")
+        raise
+    r = sub['filings']['recent']
     F = [dict(form=r['form'][i], date=r['filingDate'][i], acc=r['accessionNumber'][i], doc=r['primaryDocument'][i], period=r['reportDate'][i]) for i in range(len(r['form']))]
     start = (datetime.date.today() - datetime.timedelta(days=int(months * 30.5))).isoformat()
     pick = [f for f in F if f['form'] == '10-K'][:2] + [f for f in F if f['form'] == '10-Q'][:2] + [f for f in F if f['form'] == '8-K' and f['date'] >= start][:15]
@@ -515,7 +526,7 @@ def cmd_verify(a):
         print(json.dumps(out['summary'], ensure_ascii=False)); [print(f"[{r['status']}] {r['quote'][:80]}") for r in res if r['status'] != 'verbatim']
     else:
         print(json.dumps(check(a.quote, a.source, a.page, S), ensure_ascii=False, indent=1))
-if __name__ == '__main__':
+def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter); sp = ap.add_subparsers(dest='cmd', required=True)
     p = sp.add_parser('fetch'); p.add_argument('dir'); g = p.add_mutually_exclusive_group(required=True); g.add_argument('--cn'); g.add_argument('--us'); p.add_argument('--months', type=float, default=12)
     p = sp.add_parser('changes'); p.add_argument('dir')
@@ -525,4 +536,10 @@ if __name__ == '__main__':
     p = sp.add_parser('find'); p.add_argument('dir'); p.add_argument('terms', nargs='+'); p.add_argument('--max', type=int, default=30); p.add_argument('--source')
     p = sp.add_parser('verify'); p.add_argument('dir'); p.add_argument('--json'); p.add_argument('--out'); p.add_argument('--fix', action='store_true'); p.add_argument('--quote'); p.add_argument('--source'); p.add_argument('--page')
     ap.add_argument('--version', action='version', version=__version__)
-    a = ap.parse_args(); {'fetch': cmd_fetch, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a)
+    a = ap.parse_args(argv)
+    try: {'fetch': cmd_fetch, 'changes': cmd_changes, 'leads': cmd_leads, 'brief': cmd_brief, 'find': cmd_find, 'page': cmd_page, 'verify': cmd_verify}[a.cmd](a)
+    except CueError as e:
+        print(f'cue.py: error: {e}', file=sys.stderr); return 2
+    return 0
+if __name__ == '__main__':
+    sys.exit(main())

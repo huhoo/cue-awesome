@@ -1,3 +1,9 @@
+### 0.3.1 — 2026-10-07
+
+Fixed
+- `fetch` with an unknown A-share code, US ticker or CIK used to exit with a Python traceback ending in `StopIteration`. It now prints one line on stderr and exits with code 2, e.g. `cue.py: error: unknown US ticker 'ZZZZQX': not in the SEC EDGAR ticker list (use the ticker, e.g. LESL, or the numeric CIK)`. HTTP 4xx responses (except 429) are no longer retried.
+- Regression test `test_unknown_code_one_line_error` covers all three cases offline.
+
 ### 0.3.0 — 2026-10-07 (first release in this repository)
 
 Changed

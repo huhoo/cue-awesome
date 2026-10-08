@@ -17,7 +17,7 @@ class CueLeadPiecesRegression(unittest.TestCase):
     def tearDown(self): shutil.rmtree(self.d, ignore_errors=True)
     def test_frontmatter(self):
         md = (_SKILL / 'SKILL.md').read_text(encoding='utf-8'); fm = re.match(r'^---\n(.*?)\n---\n', md, re.S).group(1)
-        self.assertRegex(fm, re.compile(r'^name:\s*cue-lead-pieces$', re.M)); self.assertIn('version: "0.3.0"', fm); self.assertEqual(cue.__version__, '0.3.0')
+        self.assertRegex(fm, re.compile(r'^name:\s*cue-lead-pieces$', re.M)); self.assertIn('version: "0.3.1"', fm); self.assertEqual(cue.__version__, '0.3.1')
     def test_verify_levels(self):
         c = lambda q, p: cue.check(q, '10-K_FY2025', p, self.S)
         self.assertEqual(c('there is substantial doubt about our ability to continue as a going concern', 1)['status'], 'verbatim')
@@ -35,6 +35,23 @@ class CueLeadPiecesRegression(unittest.TestCase):
         ev = json.load(open(a))['signals'][0]['evidence']; self.assertEqual(len(ev), 2)
         for e in ev: self.assertEqual(cue.check(e['quote'], e['source'], e['page'], cue.load(self.d)[1])['status'], 'verbatim')
         self.assertIn('"after": {"verbatim": 2, "total": 2}', out)
+    def test_unknown_code_one_line_error(self):
+        """0.3.1: an unknown A-share code / US ticker / CIK exits 2 with one stderr line, not a StopIteration traceback (offline: `get` is faked)"""
+        import urllib.error
+        def fake_get(url, headers=None, data=None, tries=4):
+            if 'cninfo' in url: return json.dumps({'stockList': [{'code': '600606', 'orgId': 'x', 'zwjc': 'X'}]}).encode()
+            if 'company_tickers' in url: return json.dumps({'0': {'cik_str': 1, 'ticker': 'LESL', 'title': 'X'}}).encode()
+            raise urllib.error.HTTPError(url, 404, 'Not Found', None, None)
+        real = cue.get; cue.get = fake_get
+        try:
+            for args, want in ((['--cn', '999999'], "unknown A-share code '999999'"), (['--us', 'ZZZZQX'], "unknown US ticker 'ZZZZQX'"),
+                               (['--us', '9999999999'], "unknown CIK '9999999999'")):
+                err = io.StringIO(); d = os.path.join(self.d, 'fetch-' + args[1])
+                with contextlib.redirect_stderr(err): rc = cue.main(['fetch', d] + args)
+                self.assertEqual(rc, 2); lines = err.getvalue().strip().splitlines()
+                self.assertEqual(len(lines), 1, err.getvalue()); self.assertTrue(lines[0].startswith('cue.py: error: ' + want), lines[0])
+                self.assertNotIn('Traceback', err.getvalue())
+        finally: cue.get = real
     def test_page_and_brief_offline(self):
         self.assertEqual(cue.pagespec('1,3-4'), [1, 3, 4])
         out = subprocess.run([sys.executable, str(CUE), 'page', self.d, '10-K_FY2025', '1-2'], capture_output=True, text=True, check=True).stdout

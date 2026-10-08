@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "读上市公司自己的披露文件(A股巨潮资讯/美股SEC EDGAR),产出带来源和页码的信用线索件,并逐句核对答案里的引文是否逐字出自所注页;--fix 改正注错的页码、把改过字的引文换回原句、删掉原文没有的。单一模型与宿主实测24家公司:裸Agent引文39%对不上,用本件流程95%逐字可查。适合:信用恶化信号、财报变化、要求逐字证据。不适合:投资建议、判断信号本身对错。Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.3.0"
+version: "0.3.1"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "从A股/美股公开披露建带页码的信用线索件,逐句核对引文是否逐字出自所注页,对不上的标出或改回;公开免费数据源,无需密钥。"
