@@ -2,6 +2,13 @@
 
 本文件遵循 keep-a-changelog;版本权威=各 SKILL.md frontmatter 现值。
 
+### 0.3.2 — 2026-10-08（M173：音视频端到端实跑证据票，C-13 先证据后申报）
+
+- 新增 `references/av-backtest.md`：公开业绩会音视频端到端诚实段。**样本 N=2**(当升材料 2025H1 网上业绩说明会回放、建行 2025 年度业绩发布会视频——两枚均为本机 ffprobe 核过的真 h264+**aac 音轨**,非幻灯片视频,源可达 HTTP 200/206)。
+- 分层账(全文见 `references/av-backtest.md`):L1 全长 URL 腿 5 枪(lead text×3+我 grounded×2,两 CDN)全 **PARSE_FAILED**(retryable=false、operation_created=true、**billed=false**,泛词零归因);L2 本地全长(1.34GB 字节严合)**SOURCE_TOO_LARGE**=256MiB source 闸(operation_created=false、billed=false,界外清晰非玄学);L3 本地 90s 切片两枚(3.2MB/6.3MB,ffmpeg 归一化 faststart)**grounded completed**——返回形制=内联 `[画面/说话人 mm:ss]` 锚+`(幻灯片标题)` 标记+`grounding.data` sidecar(`omni.grounding.v1`);L4 全链走通:`omni-source --text-only`→prepare(逐字 quote→字节 span)→build v1(4 幻灯断言)→update v2(+1 口播断言第二源,同 scope title 增量)→validate→独立逐字回查 **5/5**→query found+证据→export-okf 5 概念文件;run.json.skill_version=**0.3.2**(M158 锁在 AV 产物上自证)。口播 ASR 谐音(「利用」=净息差)原样入包不校,basis 注明。
+- **实测强度(只准写这个)**:「2 场公开业绩会视频(建行 H1、当升 2025H1)共三枚 90s 切片走通全链(build→update×2→validate→query→export-okf;包=3 源 8 断言)、逐字回查 8/8(100%);全长视频 URL 路 5 枪全拒、本地全长撞 256MiB 闸=未臻」。「含音视频」如加入 displayName/summary **必须带界**(「本地小段/切片 ≤256MiB 工作流」),不得写「任意/整场音视频」;终判归 lead/Owner,名述面属 4.1。
+- 本条为 M173 机器面账;版本 bump 由 lead 合并发,三处同号=SKILL.md+SKILL.en.md frontmatter+ontology.py VERSION(M158 锁,非 manifest——本包无 manifest)。EN 面 displayName 本就与主面同刻中文(M157 渠道一致性设计),「任意文档」口径两文一致,无需另改。
+
 ### 0.3.1 — 2026-10-07
 
 Changed
