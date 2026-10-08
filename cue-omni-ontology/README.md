@@ -71,10 +71,21 @@ python3 scripts/ontology.py prepare assets/demo/quote-draft.json --out /path/to/
 python3 scripts/ontology.py build /path/to/work/prepared/input.json --out /path/to/work/v1
 python3 scripts/ontology.py update assets/demo/r2.json --base /path/to/work/v1 --out /path/to/work/v2
 python3 scripts/ontology.py brief /path/to/work/v2 --base /path/to/work/v1 --out /path/to/work/brief
+python3 scripts/ontology.py catalog /path/to/work/v2 --kind changes
 python3 scripts/ontology.py query /path/to/work/v2 --concept metric:revenue --period 2026Q1 --with-evidence
 ```
 
-重复摘录会要求增加上下文或明确出现次数，不做模糊匹配。查询返回 `needs_scope` 时，可用口径、单位、有效期或返回的事实 ID 进一步选择。`--with-evidence` 附原文预览，截断时明确标注。匹配成功不证明语义正确，仍需核对表头、脚注及限定条件。
+重复摘录会要求增加上下文或明确出现次数。精确匹配失败时，`prepare` 会忽略表格竖线、空白和 Markdown 标记再定位一次，但证据仍指向原文逐字片段；仍有歧义就失败，不做语义模糊匹配。先用 `catalog` 看包里有哪些实体、概念和冲突（每个冲突带新旧两侧的原文摘录），`query` 遇到未知字段直接报错，不静默忽略。查询返回 `needs_scope` 时，可用口径、单位、有效期或返回的事实 ID 进一步选择。`--with-evidence` 附原文预览，截断时明确标注。匹配成功不证明语义正确，仍需核对表头、脚注及限定条件。
+
+**真实 Omni 结果直接转来源**：把解析调用返回的 structuredContent 或完整 JSON 存成文件，然后：
+
+```sh
+python3 scripts/ontology.py omni-source /path/to/work/omni/r1.json --out /path/to/work --id source:r1 --url "https://..." --title "..." --accessed-at 2026-10-07
+```
+
+它逐字写出解析文本（核对 Omni 的 sha256）和带页码的来源记录，贴进 draft.json 后即可 `prepare`。只认源 PDF 页锚，不猜页；不发起解析、不读 key、不花额度。用 `save_result` 落盘或只存 Markdown 会丢页码，工具默认拒收。
+
+**可选数字包**：宿主用确定性代码算出年报跨期变动、重述和勾稽检查，模型只抽叙述事项；`numeric-import` 只核对每个数字两年都有单位、页码和表格编号，摘录与来源页逐字一致，`numeric` 按审阅顺序（驱动因素 → 后果 → 已解释的正常事项）展示。它不打分、不预警。信用风险年报任务按[固定章节集](references/credit-risk-sections.md)抽取。
 
 ## 交付与验证
 
@@ -83,12 +94,13 @@ python3 scripts/ontology.py query /path/to/work/v2 --concept metric:revenue --pe
 - **抽取说明**：Agent 另写 `extraction-notes.md`，说明问题范围、失败来源及语义复核。
 - **可选交换**：`export-okf` 输出 draft 概念文件，目标为 OKF 0.2 核心子集；外部消费者兼容性另行验证。
 
-[验证记录](references/verification.md) 区分真实新解析、旧结果回放、独立合成任务和未验证范围。[微软实测](references/live-verification.md) 涉及两个来源、21 条来源断言，全部 11 条旧断言在更新后保留。它证明这一任务流程可完成，不代表通用准确率或已证实的客户 ROI。
+[验证记录](references/verification.md) 区分真实新解析、旧结果回放、独立合成任务和未验证范围。[微软实测](references/live-verification.md) 涉及两个来源、21 条来源断言，全部 11 条旧断言在更新后保留。它证明这一任务流程可完成，不代表通用准确率或已证实的客户 ROI。[留出集回测](references/verification.md)（40 份年报、7,598 页）中，证据有效率明显高于两种基线，但根因排序没有达到预设通过线，预警说法被证伪；三组数字与局限在验证记录中并列写明。
 
 本地自检：
 
 ```sh
 python3 -B scripts/test_ontology.py
+python3 -B scripts/test_numeric.py
 ```
 
 ## 常见问题与反模式（你想这么用 → 本件不接，因为 → 替代去向）
@@ -103,6 +115,8 @@ python3 -B scripts/test_ontology.py
 | 把 `ontology.py` 说成自动抽取器 | **不可以**。本件分工固定：官方解析器读资料，**宿主模型做语义抽取**，离线工具做结构与一致性校验 | 抽取说明另写 `extraction-notes.md`，讲清范围、失败来源与人工复核 |
 | URL 长得像公开地址就算可访问 | **不接**。URL 形状不能证明公开可访问；检索补来源只在授权研究范围内，不另建爬虫 | 由用户明确提供文件/链接，或走 Cue 通道取回并留快照 |
 | `export-okf` 输出直接接进外部系统 | **别当已验**。导出为 draft，目标 OKF 0.2 核心子集，外部消费者兼容性另行验证 | 先在对方侧验一次；本件只承诺生成的概念文件形状 |
+| 逐句核对一段话或一个数字在公告原文第几页，或要一份带页码的线索稿 | **不是本件主业**。本件做可更新的知识包、变化简报和数字包 | 同仓库 [cue-lead-pieces](../cue-lead-pieces/README.md)：引文核对与线索稿 |
+| 拿数字包或变化简报做违约预警、自动发现风险 | **不接**。留出集回测证伪了预警说法，根因排序也没过通过线；排序只是审阅顺序 | 由人基于逐字证据判断，见 [验证记录](references/verification.md) |
 
 ## 出错了怎么办（症状 → 原因 → 恢复动作）
 
@@ -116,9 +130,14 @@ python3 -B scripts/test_ontology.py
 | `{"status": "invalid", "error": "source hash mismatch: <来源 ID>"}` | 来源快照与记录里的哈希不一致（原文变了或被替换） | 重新解析该来源生成新快照与新 run；旧快照留档，不改写历史 |
 | `{"status": "invalid", "error": "[Errno 2] No such file or directory: '<路径>'"}` | 传给 `validate` 的不是一个完整知识包目录（缺 `knowledge.json` / `run.json` / `changes.json` 之一） | 指向 `build` 输出的包目录；`demo` 的产出在 `<out>/v1`、`<out>/v2` 这类版本子目录里 |
 | 报错文案形如 `<标签>: invalid ID` / `<标签>: duplicate ID <键>` / `duplicate JSON key: <键>` / `invalid value for <类型>` | 结构与取值不合契约（ID 正则、重复键、值类型） | 按 `references/knowledge-contract.md` 的字段口径改；改完复跑同一条 validate |
-| `usage: ontology.py [-h] {build,update,validate,query,export-okf,feedback,review,prepare,brief,demo} ...` + `error: the following arguments are required: command` | 没给子命令或必传参数 | 先 `python3 scripts/ontology.py <子命令> --help` 看必传项（如 `demo` 必须 `--out`，且**输出目录必须是新目录**） |
+| `usage: ontology.py [-h] {build,update,validate,query,catalog,export-okf,feedback,review,numeric-import,numeric,omni-source,prepare,brief,demo} ...` + `error: the following arguments are required: command` | 没给子命令或必传参数 | 先 `python3 scripts/ontology.py <子命令> --help` 看必传项（如 `demo` 必须 `--out`，且**输出目录必须是新目录**） |
+| `omni-source` 报 `not JSON. Plain Markdown (or text written by save_result) has no grounding sidecar` | 存的是 Markdown 或 `save_result` 写出的文本，页码已丢 | 改存解析调用的 structuredContent 或完整 JSON；确实只有文本就加 `--text-only`（无页码） |
+| `omni-source` 报 `the result has no source-PDF page anchors` | 结果是 detail=text、只有渲染页锚或非 PDF 来源 | 加 `--text-only` 按文本范围打包；grounded 重新解析会计费，先问用户 |
+| `omni-source` 报 `Omni status is failed SOURCE_ACCESS_DENIED` / `DETAIL_CAPABILITIES_UNAVAILABLE` | Omni 取不到该网址（实测 SEC EDGAR），或该 Bridge 不支持本地文件 grounded 解析（实测 1.8.3） | 写进覆盖说明；自行取得文本，用 `manual_page` 或文本范围打包，不冒充 Omni 页码 |
+| `omni-source` 报 `does not match its sha256 digest` 或 `read_result(...)` 过期 | artifact 读回不完整，或 Bridge 本地结果已过期 | 重读一次；过期后重新解析可能计费，先问用户 |
+| `numeric-import` 报 `excerpt is not verbatim on FY<年> p<页>` / `page not in sources` | 摘录不是该页原文，或页码不在 `FY<年>.pages.jsonl` 里 | 从来源页照抄摘录、核对页码；不要改写数字格式 |
 | 校验全过，但语义其实抽错了 | 脚本只校结构与一致性——`semantic_verification` 的值就是 `not_established_by_scripts`，脚本不证语义 | 逐条走 `review` 与展开原文的简报做人工复核；这是分工不是缺陷 |
-| 想确认工具本身没坏 | — | 本地自检一条命令：`python3 -B scripts/test_ontology.py`（README §交付与验证 已列，测项数以现跑为准） |
+| 想确认工具本身没坏 | — | 本地自检：`python3 -B scripts/test_ontology.py` 与 `python3 -B scripts/test_numeric.py`（README §交付与验证 已列，测项数以现跑为准） |
 
 ## 怎么开口（触发示例：三条正例 + 一条反例）
 
@@ -131,14 +150,14 @@ python3 -B scripts/test_ontology.py
   保留旧记录，突出需要复核的冲突，**不把「未提及」当成删除**；单位、期间、口径、排除条件与有效期都进事实层，
   别替我合并成一个数。」——更新器按 update-policy 走：拒绝同 ID 偷换含义、保留冲突、去重相同陈述。
 - **正例（英文说法）**：本件 frontmatter 的触发词面**已含中英两形**（`ontology extraction` / `disclosure tracking` /
-  `evidence briefs` / `supplier/product changes` / 知识包 / 变化简报），中英任一句形起头都能命中。
+  `evidence briefs` / `numeric pack` / 知识包 / 变化简报），中英任一句形起头都能命中。
 - **反例（相邻需求，本件不接）**：「这两家公司谁更强，给个结论」→ 竞品决策的证据链是 `competitive-brief` 的活；
   「上市主体公开信息里的风险逐条带锚、查不到什么也记账」→ `dd-checklist`；「先翻译这本外文书再建索引」→
   `long-doc-translation`。本件只做「把公开资料变成可更新、可查证的知识包 + 变化简报」。
 
 ## 国内可达取证路径（境外站点取不到时怎么办）
 
-本件的离线工具（`ontology.py`、`test_ontology.py`）只依赖 Python 标准库，**demo 模式无需 API key、不联网**，
+本件的离线工具（`ontology.py`、`numeric.py`、`omni_source.py` 及两个测试）只依赖 Python 标准库，**demo 模式无需 API key、不联网**，
 所以「先看看它是什么」这一步在国内环境没有任何额外门槛。真正取资料时有三条现成路径：
 
 1. **用户明确提供的文件优先**：PDF、HTML、文本都可以直接作为来源进入解析与知识包——

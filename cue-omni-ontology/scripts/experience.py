@@ -19,8 +19,77 @@ def stage_for(out):
     return dest, Path(tempfile.mkdtemp(prefix='.ontology-', dir=dest.parent))
 
 
+# Table/Markdown noise stripped only for locating quotes; evidence spans stay verbatim.
+_QUOTE_SKIP = set(' \t\r\n|\u3000#*')
+
+
+def _norm_index(text):
+    chars, idx = [], []
+    for i, ch in enumerate(text):
+        if ch in _QUOTE_SKIP:
+            continue
+        chars.append(ch)
+        idx.append(i)
+    return ''.join(chars), idx
+
+
+def _locate_quote(raw, quote, occurrence=None):
+    """Return (start_utf8, end_utf8, matched_bytes, normalized_match).
+
+    Exact byte match first. If that fails, ignore pipes/whitespace/Markdown #/* in
+    both sides, then map the hit back to the original UTF-8 byte range.
+    """
+    o.need(occurrence is None or (type(occurrence) is int and occurrence > 0),
+           'occurrence must be 1-based integer')
+    first = raw.find(quote)
+    if first >= 0:
+        hits = []
+        i = first
+        while i >= 0:
+            hits.append(i)
+            i = raw.find(quote, i + 1)
+            if len(hits) > 64:
+                break
+        if occurrence is None:
+            o.need(len(hits) == 1,
+                   'quote occurs more than once; supply a longer quote or explicit occurrence')
+            start = hits[0]
+        else:
+            o.need(occurrence <= len(hits), 'requested quote occurrence does not exist')
+            start = hits[occurrence - 1]
+        end = start + len(quote)
+        return start, end, raw[start:end], False
+
+    raw_text = raw.decode('utf-8')
+    quote_text = quote.decode('utf-8')
+    needle = ''.join(ch for ch in quote_text if ch not in _QUOTE_SKIP)
+    o.need(len(needle) >= 4, 'quote not found exactly; copy actual parsed text without rewriting')
+    hay, idx = _norm_index(raw_text)
+    hits = []
+    i = hay.find(needle)
+    while i >= 0:
+        hits.append(i)
+        i = hay.find(needle, i + 1)
+        if len(hits) > 64:
+            break
+    o.need(bool(hits), 'quote not found exactly; copy actual parsed text without rewriting')
+    if occurrence is None:
+        o.need(len(hits) == 1,
+               'quote occurs more than once after table/whitespace normalization; '
+               'supply a longer quote or explicit occurrence')
+        hi = hits[0]
+    else:
+        o.need(occurrence <= len(hits), 'requested quote occurrence does not exist')
+        hi = hits[occurrence - 1]
+    char_start = idx[hi]
+    char_end = idx[hi + len(needle) - 1] + 1
+    start = len(raw_text[:char_start].encode('utf-8'))
+    end = len(raw_text[:char_end].encode('utf-8'))
+    return start, end, raw[start:end], True
+
+
 def prepare(draft, out):
-    """Turn verbatim quotes into byte ranges, without guessing semantic support."""
+    """Turn quotes into byte ranges (exact, or table/whitespace-normalized locate)."""
     src = Path(draft).resolve()
     k = o.read_json(src)
     o.need(isinstance(k, dict), 'draft must be object')
@@ -41,28 +110,21 @@ def prepare(draft, out):
             raw_sources[s['id']] = raw
             s['content_file'] = 'evidence/' + o.digest(s['id'])[:24] + '.txt'
             (stage / s['content_file']).write_bytes(raw)
+        normalized_hits = 0
         for a in k['assertions']:
             o.need(isinstance(a, dict) and isinstance(a.get('evidence'), list), 'assertion evidence list required')
             for ev in a['evidence']:
                 o.need(isinstance(ev, dict) and ev.get('source_id') in sources, 'unknown quote source')
                 quote = o.text(ev.pop('quote', None), 'evidence.quote').encode('utf-8')
                 occurrence = ev.pop('occurrence', None)
-                o.need(occurrence is None or (type(occurrence) is int and occurrence > 0), 'occurrence must be 1-based integer')
                 raw = raw_sources[ev['source_id']]
-                first = raw.find(quote)
-                o.need(first >= 0, 'quote not found exactly; copy actual parsed text without rewriting')
-                if occurrence is None:
-                    o.need(raw.find(quote, first + 1) < 0,
-                           'quote occurs more than once; supply a longer quote or explicit occurrence')
-                else:
-                    for _ in range(occurrence - 1):
-                        first = raw.find(quote, first + 1)
-                        o.need(first >= 0, 'requested quote occurrence does not exist')
-                end = first + len(quote)
+                first, end, matched, used_norm = _locate_quote(raw, quote, occurrence)
+                if used_norm:
+                    normalized_hits += 1
                 page_spans = [p for p in sources[ev['source_id']].get('page_spans', [])
                               if p['start_utf8'] <= first < end <= p['end_utf8']]
                 page = page_spans[0] if len(page_spans) == 1 else None
-                generated = dict(start_utf8=first, end_utf8=end, span_sha256=o.digest(quote),
+                generated = dict(start_utf8=first, end_utf8=end, span_sha256=o.digest(matched),
                                  page=page['page'] if page else None,
                                  locator_basis=page['basis'] if page else 'text_range')
                 for field, value in generated.items():
@@ -75,7 +137,9 @@ def prepare(draft, out):
         p.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         stage.rename(dest)
         return {'status': 'prepared', 'input': str(dest / 'input.json'),
-                'counts': o.check_knowledge(normalized, dest), 'semantic_verification': 'not_established_by_quote_matching'}
+                'counts': o.check_knowledge(normalized, dest),
+                'quote_normalized_matches': normalized_hits,
+                'semantic_verification': 'not_established_by_quote_matching'}
     finally:
         if stage.exists(): shutil.rmtree(stage)
 

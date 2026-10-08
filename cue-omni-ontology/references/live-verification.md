@@ -1,6 +1,6 @@
 # Fresh source-to-answer run — 2026-09-28
 
-Version under test: cue-omni-ontology 0.2.0. Scope: selected Microsoft FY2026 Q3/Q4 public earnings disclosures. This is a development validation on two sources, not an extraction-accuracy benchmark or cross-client onboarding certification.
+Version under test: cue-omni-ontology 0.2.0. Scope: selected Microsoft FY2026 Q3/Q4 public earnings disclosures. This is a development validation on two sources, not an extraction-accuracy benchmark or cross-client onboarding certification. Because this run used `detail: text`, its sources carry text ranges, not page spans; since 0.3.0, `ontology.py omni-source` turns a saved grounded result into page spans (see [verification.md](verification.md)).
 
 ## What ran
 

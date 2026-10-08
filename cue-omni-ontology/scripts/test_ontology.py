@@ -374,6 +374,372 @@ class VersionConsistency(unittest.TestCase):
                                  f"ontology.py VERSION={o.VERSION} 与 {name} frontmatter {mv.group(1)} 漂号(M156 第6项/M158 追加)")
 
 
+
+class Patch024(unittest.TestCase):
+    """0.3.0 (backtest fix, developed as unpublished dev-0.2.4): normalized quotes, enriched conflicts, catalog, strict query fields."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.inputs = self.root / "inputs"
+        shutil.copytree(DEMO, self.inputs)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_prepare_normalizes_table_pipes_but_keeps_verbatim_span(self):
+        src = self.inputs / "demo-r1.txt"
+        raw = src.read_text(encoding="utf-8")
+        # Inject a markdown table line into a fresh source snapshot
+        table = "金额 | 100 | 元\n其它"
+        # Build minimal draft quoting without pipes; source has pipes
+        content = "前言\n| 金额 | 100 | 元 |\n结语\n"
+        snap = self.inputs / "table-src.txt"
+        snap.write_text(content, encoding="utf-8")
+        raw_b = content.encode("utf-8")
+        draft = {
+            "schema_version": o.SCHEMA_VERSION,
+            "scope": {"title": "PipeQuote", "as_of": "2026-01-01"},
+            "entities": [{"id": "org:subject", "type": "Organization", "name": "Subj"}],
+            "definitions": [{"id": "metric:x", "kind": "metric", "value_type": "number",
+                             "name": "X", "description": "x", "status": "candidate"}],
+            "sources": [{
+                "id": "source:t", "url": "https://example.com/t", "title": "t",
+                "published_at": "2026-01-01", "accessed_at": "2026-01-02",
+                "public_status": "synthetic", "parse_origin": "synthetic",
+                "content_file": "table-src.txt", "sha256": o.digest(raw_b),
+                "page_spans": [{"page": 1, "start_utf8": 0, "end_utf8": len(raw_b), "basis": "synthetic_page"}],
+            }],
+            "assertions": [{
+                "entity_id": "org:subject", "concept_id": "metric:x", "value": 100,
+                "unit": "CNY", "period": "2026Q1", "basis": "IFRS", "qualifiers": {},
+                "evidence": [{"source_id": "source:t", "quote": "金额 100 元", "role": "value"}],
+            }],
+        }
+        dp = self.inputs / "pipe-draft.json"
+        dp.write_text(json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8")
+        out = self.root / "prepared-pipe"
+        result = e.prepare(dp, out)
+        self.assertEqual(result["status"], "prepared")
+        self.assertGreaterEqual(result.get("quote_normalized_matches", 0), 1)
+        k = o.read_json(out / "input.json")
+        ev = k["assertions"][0]["evidence"][0]
+        excerpt = raw_b[ev["start_utf8"]:ev["end_utf8"]].decode("utf-8")
+        self.assertIn("|", excerpt)  # verbatim original keeps pipes
+        self.assertEqual(ev["span_sha256"], o.digest(excerpt.encode("utf-8")))
+
+    def test_conflict_details_marks_intra_report_vs_cross_period(self):
+        a, _ = o.prepare_input(self.inputs / "r1.json")
+        # Duplicate same fact key with different value, same source -> intra_report
+        twin = copy.deepcopy(a["assertions"][0])
+        twin["value"] = twin["value"] + 1 if isinstance(twin["value"], (int, float)) else "other"
+        twin.pop("id", None); twin.pop("fact_id", None)
+        twin["fact_id"] = o.fact_id(twin); twin["id"] = o.assertion_id(twin)
+        a["assertions"].append(twin)
+        details = o.conflict_details(a)
+        self.assertTrue(details)
+        self.assertEqual(details[0]["kind"], "intra_report")
+        self.assertIn("old_value", details[0])
+        self.assertIn("new_value", details[0])
+        self.assertIn("severity", details[0])
+        # Cross-period: use merged demo package
+        dest = self.root / "v1"
+        o.write_package(a, o.roots_for(a, self.inputs), dest, {})
+        changes = o.read_json(dest / "changes.json")
+        self.assertIsInstance(changes["conflicts"][0], dict)
+        self.assertEqual(changes["conflicts"][0]["kind"], "intra_report")
+
+    def test_catalog_lists_entities_and_changes(self):
+        a, _ = o.prepare_input(self.inputs / "r1.json")
+        dest = self.root / "v1"
+        o.write_package(a, o.roots_for(a, self.inputs), dest, {"new_facts": [x["fact_id"] for x in a["assertions"]]})
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = o.main(["catalog", str(dest), "--kind", "all"])
+        self.assertEqual(code, 0)
+        data = json.loads(buf.getvalue())
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["entities"])
+        self.assertTrue(data["definitions"])
+        self.assertIn("conflicts", data["changes"])
+
+    def test_query_args_json_rejects_unknown_field(self):
+        a, _ = o.prepare_input(self.inputs / "r1.json")
+        dest = self.root / "v1"
+        o.write_package(a, o.roots_for(a, self.inputs), dest, {})
+        buf = io.StringIO(); err = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+            code = o.main(["query", str(dest), "--args-json", json.dumps({"concept": "metric:revenue", "bogus": 1})])
+        self.assertEqual(code, 2)
+        self.assertIn("unknown query fields", err.getvalue())
+
+    def test_query_dict_rejects_unknown_field(self):
+        a, _ = o.prepare_input(self.inputs / "r1.json")
+        with self.assertRaises(o.Invalid):
+            o.query(a, {"concept": "metric:revenue", "typo_field": "x"})
+
+    def test_credit_risk_section_catalog_present(self):
+        root = Path(__file__).resolve().parent.parent
+        data = json.loads((root / "references" / "credit-risk-sections.json").read_text(encoding="utf-8"))
+        ids = {s["id"] for s in data["sections"]}
+        self.assertEqual(ids, {"audit_opinion", "mda", "guarantees", "borrowings",
+                               "related_party", "litigation", "impairment", "going_concern"})
+        self.assertTrue((root / "references" / "credit-risk-sections.md").exists())
+
+class Patch025(unittest.TestCase):
+    """0.3.0 (backtest fix, unpublished dev-0.2.5): cross_period only when disagreeing values come from different sources; severity order."""
+
+    def _rows(self, spec):
+        rows = []
+        for i, (value, srcs) in enumerate(spec):
+            rows.append({"id": f"assert:{i}", "value": value, "period": "2020-12-31",
+                         "evidence": [{"source_id": s} for s in srcs]})
+        return rows
+
+    def test_two_values_same_report_plus_support_from_other_report_is_intra(self):
+        k = {"sources": [{"id": "src:a"}, {"id": "src:b"}]}
+        rows = self._rows([(80000000, ["src:a"]), (35000000, ["src:a"]), (80000000, ["src:b"])])
+        self.assertEqual(o.conflict_kind(k, rows), "intra_report")
+
+    def test_value_changed_between_reports_is_cross_period(self):
+        k = {"sources": [{"id": "src:a"}, {"id": "src:b"}]}
+        rows = self._rows([(640000000.0, ["src:a"]), (630000000.0, ["src:b"])])
+        self.assertEqual(o.conflict_kind(k, rows), "cross_period")
+
+    def test_severity_sort_high_medium_low(self):
+        src = Path(o.__file__).read_text(encoding="utf-8")
+        self.assertIn('rank = {"high": 0, "medium": 1, "low": 2}', src)
+
+
+class Patch026(unittest.TestCase):
+    """0.3.0 (backtest fix, unpublished dev-0.2.6): every conflict / new fact carries short verbatim excerpts (report, page, quote) from EvidenceSpans."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.inputs = self.root / "inputs"
+        shutil.copytree(DEMO, self.inputs)
+        self.a, _ = o.prepare_input(self.inputs / "r1.json")
+        self.b, _ = o.prepare_input(self.inputs / "r2.json")
+
+    def tearDown(self): self.temp.cleanup()
+
+    def merged(self):
+        dest = self.root / "v1"
+        o.write_package(self.a, o.roots_for(self.a, self.inputs), dest, {})
+        base, run = o.load_package(dest)
+        k, changes = o.merge(base, self.b)
+        out = self.root / "v2"
+        roots = dict(o.roots_for(base, dest), **o.roots_for(self.b, self.inputs))
+        o.write_package(k, roots, out, changes, run["knowledge_sha256"], "update")
+        return out
+
+    def _raw(self, pkg, source_id):
+        k = o.read_json(pkg / "knowledge.json")
+        s = [x for x in k["sources"] if x["id"] == source_id][0]
+        return (pkg / s["content_file"]).read_bytes()
+
+    def test_conflict_carries_verbatim_excerpts_for_both_sides(self):
+        out = self.merged()
+        ch = o.read_json(out / "changes.json")
+        conflicts = [c for c in ch["conflicts"] if c["kind"] == "cross_period"]
+        self.assertTrue(conflicts)
+        c = conflicts[0]
+        self.assertTrue(c["old_evidence"] and c["new_evidence"])
+        self.assertNotEqual(c["old_evidence"][0]["source_id"], c["new_evidence"][0]["source_id"])
+        for ev in c["old_evidence"] + c["new_evidence"]:
+            raw = self._raw(out, ev["source_id"])
+            full = raw[ev["start_utf8"]:ev["end_utf8"]].decode("utf-8")
+            self.assertTrue(full.startswith(ev["quote"]))
+            self.assertLessEqual(len(ev["quote"]), o.EXCERPT_CHARS)
+            self.assertIn("report", ev); self.assertIn("page", ev)
+
+    def test_new_facts_carry_excerpts_and_catalog_shows_them(self):
+        out = self.merged()
+        ch = o.read_json(out / "changes.json")
+        self.assertEqual({d["fact_id"] for d in ch["new_fact_details"]}, set(ch["new_facts"]))
+        for d in ch["new_fact_details"]:
+            self.assertTrue(d["evidence"])
+            for ev in d["evidence"] + d["prior_evidence"]:
+                raw = self._raw(out, ev["source_id"])
+                self.assertTrue(raw[ev["start_utf8"]:ev["end_utf8"]].decode("utf-8").startswith(ev["quote"]))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(o.main(["catalog", str(out), "--kind", "changes"]), 0)
+        data = json.loads(buf.getvalue())
+        self.assertIn("new_fact_details", data["changes"])
+        self.assertTrue(all("old_evidence" in c and "new_evidence" in c for c in data["changes"]["conflicts"]))
+
+    def test_excerpt_truncation_flag(self):
+        k = {"sources": [{"id": "s", "title": "t"}]}
+        raw = ("甲" * 300).encode("utf-8")
+        a = {"evidence": [{"source_id": "s", "page": 1, "start_utf8": 0, "end_utf8": len(raw)}]}
+        ex = o.evidence_excerpts(k, a, {"s": raw})
+        self.assertTrue(ex[0]["truncated"]); self.assertEqual(len(ex[0]["quote"]), o.EXCERPT_CHARS)
+
+
+
+class OmniSource(unittest.TestCase):
+    """0.3.0: saved Omni result -> exact content + page_spans (shapes as returned by @cueai/omni-reader-mcp 1.8.x;
+    synthetic text and fake ids). No Bridge process, no network, no key."""
+
+    PAGES = ["示例公司公告 第一页。\n累计逾期债务 12.34 亿元。", "第二页：新增诉讼 5 件，金额 0.67 亿元。", "Page three: 特此公告。"]
+
+    def setUp(self):
+        import hashlib
+        import omni_source as om
+        self.om, self.hashlib = om, hashlib
+        self.temp = tempfile.TemporaryDirectory(); self.root = Path(self.temp.name)
+        sep = "\n\n"
+        self.content = sep.join(self.PAGES)
+        segs, pos = [], 0
+        for i, t in enumerate(self.PAGES, 1):
+            n = len(t.encode("utf-8"))
+            segs.append({"segment_id": f"segment_{i:06d}", "content_range_utf8": {"start": pos, "end": pos + n},
+                         "grounding": {"availability": "available", "anchors": [
+                             {"kind": "page", "basis": "source_pdf_page_1_based", "reliability": "reliable", "value": i}]}})
+            pos += n + len(sep.encode("utf-8"))
+        self.grounding = {"schema_version": "omni.grounding.v1", "detail": "grounded", "segments": segs,
+                          "document": {"format": "pdf", "partial": False, "incomplete": [], "truncated": []}}
+        self.meta = {"id": "src:omni-demo", "url": "https://example.org/omni-demo.pdf", "title": "Synthetic Omni result",
+                     "published_at": None, "accessed_at": "2026-10-07", "public_status": "retrieved_public"}
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def digest(self, text):
+        return "sha256:" + self.hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    def response(self, storage="inline", content=None, grounding_as_text=False):
+        content = self.content if content is None else content
+        g = json.dumps(self.grounding, ensure_ascii=False) if grounding_as_text else self.grounding
+        if storage == "inline":
+            parts = {"content": {"part": "content", "digest": self.digest(self.content), "storage": {"kind": "inline", "text": content}},
+                     "grounding": {"part": "grounding", "storage": {"kind": "inline", **({"text": g} if grounding_as_text else {"value": g})}}}
+        else:
+            parts = {"content": {"part": "content", "digest": self.digest(self.content), "storage": {"kind": "artifact", "next_cursor": "c:content:0"}},
+                     "grounding": {"part": "grounding", "storage": {"kind": "artifact", "next_cursor": "c:grounding:0"}}}
+        sc = {"status": "completed", "operation_id": "op_fake",
+              "result": {"kind": "bundle", "result_id": "result_fake", "detail": "grounded",
+                         "bundle_protocol_version": "omni.result_bundle.v1", "parts": parts},
+              "billing": {"credits_charged": 0}}
+        return {"jsonrpc": "2.0", "id": 3, "result": {"content": [{"type": "text", "text": json.dumps(sc, ensure_ascii=False)}],
+                                                       "structuredContent": sc}}
+
+    def save(self, obj, name="r.json"):
+        p = self.root / name
+        p.write_text(obj if isinstance(obj, str) else json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def test_inline_result_to_page_spans_prepare_and_build(self):
+        r = self.om.build_source(self.save(self.response()), self.root / "src", self.meta, "omni_replay", fy=2026)
+        self.assertEqual(r["pages"], [1, 2, 3])
+        rec = json.loads(Path(r["source_record"]).read_text(encoding="utf-8"))
+        raw = (self.root / "src" / rec["content_file"]).read_bytes()
+        self.assertEqual(raw, self.content.encode("utf-8"))
+        for span, text in zip(rec["page_spans"], self.PAGES):
+            self.assertEqual(raw[span["start_utf8"]:span["end_utf8"]].decode("utf-8"), text)
+            self.assertEqual(span["basis"], o.OMNI)
+        lines = [json.loads(x) for x in (self.root / "src" / "FY2026.pages.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([x["text"] for x in lines], self.PAGES)
+        draft = {"schema_version": o.SCHEMA_VERSION, "scope": {"title": "Omni replay", "as_of": "2026-10-07"},
+                 "entities": [{"id": "org:demo", "type": "Organization", "name": "Demo (synthetic)"}],
+                 "definitions": [{"id": "metric:overdue", "kind": "metric", "name": "Cumulative overdue debt",
+                                  "description": "As explicitly reported.", "value_type": "number", "status": "candidate"}],
+                 "sources": [rec],
+                 "assertions": [{"entity_id": "org:demo", "concept_id": "metric:overdue", "value": 12.34, "period": "2026-09-28",
+                                 "basis": "as_reported", "unit": "CNY_100m", "qualifiers": {}, "valid_from": None, "valid_to": None,
+                                 "claim_kind": "reported", "evidence": [{"source_id": rec["id"], "role": "value_and_scope",
+                                                                         "quote": "累计逾期债务 12.34 亿元。"}]}]}
+        (self.root / "src" / "draft.json").write_text(json.dumps(draft, ensure_ascii=False), encoding="utf-8")
+        e.prepare(self.root / "src" / "draft.json", self.root / "prep")
+        out = self.root / "v1"
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(o.main(["build", str(self.root / "prep" / "input.json"), "--out", str(out)]), 0)
+        k, _ = o.load_package(out)
+        ev = k["assertions"][0]["evidence"][0]
+        self.assertEqual((ev["page"], ev["locator_basis"]), (1, o.OMNI))
+
+    def test_artifact_storage_is_read_back_and_digest_checked(self):
+        content, grounding = self.content, json.dumps(self.grounding, ensure_ascii=False)
+        calls = []
+
+        class FakeBridge:
+            def tool(self, name, args, timeout=0):
+                calls.append(args)
+                part, i = args["cursor"].split(":")[1], int(args["cursor"].split(":")[2])
+                text = content if part == "content" else grounding
+                chunks = [text[j:j + 7] for j in range(0, len(text), 7)]
+                return {"status": "completed", "result": {"text": chunks[i],
+                        "next_cursor": f"c:{part}:{i + 1}" if i + 1 < len(chunks) else None}}
+
+        r = self.om.build_source(self.save(self.response("artifact")), self.root / "a", self.meta, bridge=FakeBridge())
+        self.assertEqual(r["pages"], [1, 2, 3]); self.assertGreater(len(calls), 5)
+        self.assertTrue(all(c["result_id"] == "result_fake" and c["max_bytes"] <= 65536 for c in calls))
+        content = self.content[:-1]                       # truncated read -> digest mismatch -> nothing written
+        with self.assertRaisesRegex(self.om.OmniError, "digest"):
+            self.om.build_source(self.save(self.response("artifact"), "t.json"), self.root / "b", self.meta, bridge=FakeBridge())
+        self.assertFalse((self.root / "b").exists())
+
+        class Expired:
+            def tool(self, name, args, timeout=0):
+                return {"status": "failed", "error": {"code": "RESULT_EXPIRED", "billed": False}}
+        with self.assertRaisesRegex(self.om.OmniError, "expired"):
+            self.om.build_source(self.save(self.response("artifact"), "e.json"), self.root / "c", self.meta, bridge=Expired())
+
+    def test_shapes_structured_content_compact_text_and_grounding_text(self):
+        full = self.response(grounding_as_text=True)
+        for name, obj in (("sc.json", full["result"]["structuredContent"]),
+                          ("compact.json", {"content": full["result"]["content"]}),
+                          ("full.json", full)):
+            with self.subTest(shape=name):
+                r = self.om.build_source(self.save(obj, name), self.root / name[:-5], self.meta)
+                self.assertEqual(r["pages"], [1, 2, 3])
+
+    def test_conservative_page_mapping(self):
+        raw = "AAAA|BBBB|CCCC|DDDD|EEEE|FFFF"
+        def seg(a, b, anchors):
+            return {"content_range_utf8": {"start": a, "end": b}, "grounding": {"anchors": anchors}}
+        src = lambda v: {"kind": "page", "basis": "source_pdf_page_1_based", "value": v}
+        rendered = {"kind": "page", "basis": "rendered_pdf_page_1_based", "value": 9}
+        g = {"segments": [seg(0, 4, [src(1)]), seg(5, 9, [src(1)]), seg(10, 14, [rendered]),
+                          seg(15, 19, [src(2), src(3)]), seg(20, 24, [src(2)]), seg(25, 29, [src(1)])],
+             "document": {"partial": True}}
+        spans, warns = self.om.page_spans(raw, g)
+        self.assertEqual([(s["page"], s["start_utf8"], s["end_utf8"]) for s in spans], [(1, 0, 9), (2, 20, 24)])
+        joined = " ".join(warns)
+        for word in ("rendered_page_only", "multi_page", "page_reappears", "partial"):
+            self.assertIn(word, joined)
+
+    def test_markdown_failures_and_overwrite_are_refused(self):
+        md = self.save(self.content, "r.md")
+        with self.assertRaisesRegex(self.om.OmniError, "structuredContent"):
+            self.om.build_source(md, self.root / "m", self.meta)
+        r = self.om.build_source(md, self.root / "m", self.meta, text_only=True)
+        rec = json.loads(Path(r["source_record"]).read_text(encoding="utf-8"))
+        self.assertEqual(rec["page_spans"], [])
+        for code in ("SOURCE_ACCESS_DENIED", "DETAIL_CAPABILITIES_UNAVAILABLE"):
+            bad = {"status": "failed", "error": {"code": code, "billed": False}}
+            with self.assertRaisesRegex(self.om.OmniError, code):
+                self.om.build_source(self.save(bad, code + ".json"), self.root / "f", self.meta)
+        p = self.save(self.response(), "ok.json")
+        self.om.build_source(p, self.root / "o", self.meta)
+        with self.assertRaisesRegex(self.om.OmniError, "overwrite"):
+            self.om.build_source(p, self.root / "o", self.meta)
+        with self.assertRaisesRegex(self.om.OmniError, "parse_origin"):
+            self.om.build_source(p, self.root / "o2", self.meta, parse_origin="synthetic")
+
+    def test_cli_validates_metadata(self):
+        p = self.save(self.response())
+        base = ["omni-source", str(p), "--id", "src:cli", "--title", "t", "--accessed-at", "2026-10-07"]
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(o.main(base + ["--url", "https://example.org/x.pdf", "--out", str(self.root / "cli")]), 0)
+        self.assertEqual(json.loads(out.getvalue())["pages"], [1, 2, 3])
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(o.main(base + ["--url", "http://127.0.0.1/x.pdf", "--out", str(self.root / "cli2")]), 2)
+        self.assertFalse((self.root / "cli2").exists())
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()

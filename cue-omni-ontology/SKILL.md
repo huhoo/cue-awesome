@@ -1,11 +1,11 @@
 ---
 name: cue-omni-ontology
-description: "从公开文档建可追溯业务知识包:给「主体+两份以上公开材料」,产出带证据锚的实体、口径、跨期变化与变化简报;语义抽取由宿主模型完成;工具只机检**输入包完整性**(自测现跑可复),打包/更新/查询/导出由它**执行**——外部 OKF 兼容性不验证,导出件仍须人工核。适合:财报跟踪、供应商/产品变化、竞品公告、口径核对。不适合:把本件当企业授权服务或抽取器本身——锚真伪仍须人工抽查。Triggers: ontology extraction, disclosure tracking, evidence briefs, supplier/product changes, 知识包, 变化简报。"
+description: "从用户指定的公开文档建可追溯业务知识包:宿主模型抽取实体、口径与断言,工具把逐字摘录绑定为字节级证据(可带入 Omni 原生页码),并执行打包、更新、跨期变化/冲突列表、查询与变化简报;可选数字包只校验宿主算出的数字与来源页逐字一致。工具不判断事实真伪、不做预警或风险发现,结论须人工核对证据。适合:披露跟踪、供应商/产品变化、口径核对。Triggers: ontology extraction, disclosure tracking, evidence briefs, numeric pack, 知识包, 变化简报。"
 license: MIT
-version: "0.2.4"
+version: "0.3.0"
 slug: cue-omni-ontology
 displayName: 公开资料业务知识包
-summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变化与变化简报;工具只机检输入包完整性,打包/更新/查询/导出由工具执行、外部兼容不验证,自测现跑可复。"
+summary: "从公开资料建可追溯业务知识包:逐字证据锚、口径、跨期变化与变化简报;可选数字包校验数字逐字出处。工具不判断真伪、不预警,须人工核证据。"
 ---
 
 # Cue Omni Ontology
@@ -38,6 +38,23 @@ summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变
 
 以官方 parse 为入口，能力支持时优先 grounded artifact。分别保留各来源和任务句柄，有界并发，先恢复再重试。按任务读取完整页/游标，预览不等于完整内容。失败来源留在覆盖说明中，不静默降级、不编造工具或参数。保存源 URL、可得发布日期、获取日期、精确 UTF-8 解析文本和实际页范围。
 
+### Omni 结果转来源
+
+grounded 解析完成后，把**工具调用返回的 structuredContent 或完整 JSON 响应**原样存成文件，再执行：
+
+```sh
+python3 "$SKILL_DIR/scripts/ontology.py" omni-source "$RUN_DIR/omni/r1.json" --out "$RUN_DIR" --id source:r1 --url "https://..." --title "..." --accessed-at YYYY-MM-DD
+```
+
+它逐字写出 content（先核对 Omni 给的 sha256 digest）和带 `page_spans` 的来源记录（basis `omni_native_source_pdf_page`，`parse_origin` 默认 `omni_live`，复用旧结果时加 `--parse-origin omni_replay`）；把记录贴进 draft.json 的 `sources` 即可 `prepare`。`--fy 2025` 另写数字包用的 `FY2025.pages.jsonl`。只认 `source_pdf_page_1_based` 锚；跨页段、仅有渲染页锚的段、无锚文字和页间分隔不给页码，落到 text_range，不猜页。本命令不发起解析、不读 key、不花额度。
+
+2026-10-07 实测的四点（Bridge 1.8.3–1.8.6）：
+
+1. 用 `save_result` 落盘或只存 Markdown 会丢掉 grounding 页码。保留 structuredContent 或完整 JSON；工具拒收纯 Markdown，除非显式加 `--text-only`（无页码，全部 text_range）。
+2. 即使请求 `result_delivery=artifact`，小结果仍会内联返回（storage `inline`）。两种都要接住：artifact 部分由 Bridge 本地 `read_result` 读回（不计费）；结果过期后重新解析可能计费，先问用户。
+3. 入库按真实响应形状：`result.kind=bundle`、`parts.content` / `parts.grounding`，各自 inline（`text`/`value`）或 artifact（`next_cursor`）。不要按示例猜字段，`omni-source` 已按此实现并有离线测试。
+4. Bridge 1.8.3 对本地文件做 grounded 解析返回 `DETAIL_CAPABILITIES_UNAVAILABLE`；SEC EDGAR 网址返回 `SOURCE_ACCESS_DENIED`（未计费）。这类来源写进覆盖说明，自行取得文本后以 `manual_page` 或 text_range 打包，不冒充 Omni 原生页码。
+
 哈希通过不证明事实正确。没有页定位的来源使用文本范围，不编页码和几何位置。先在任务目录保存需要的证据快照，再按确认结果清理临时解析产物。只转述实际返回的计费事实，离线工具不观察计费。
 
 ## 2. 建立小模型并抽取断言
@@ -48,7 +65,9 @@ summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变
 
 知识包只保存**直接披露的断言**。计算和建议放在回答中，说明输入和不确定性。每条断言绑定实际支持范围，必要时包括表头和限定脚注。用小型本地脚本从真实字节计算范围与哈希，不目测估算；数字位置不一定支持其期间和口径。
 
-优先使用 [quote-input.md](references/quote-input.md) 的摘录输入：在 draft.json 写来源信息及逐字 quote，然后执行 `prepare "$RUN_DIR/draft.json" --out "$RUN_DIR/prepared"`，自动生成哈希、字节范围和 prepared/input.json。重复摘录要扩充上下文或明确 occurrence，不做模糊匹配。仍需核实摘录、表头和脚注是否支持断言，旧字节范围输入继续支持。
+优先使用 [quote-input.md](references/quote-input.md) 的摘录输入：在 draft.json 写来源信息及逐字 quote，然后执行 `prepare "$RUN_DIR/draft.json" --out "$RUN_DIR/prepared"`，自动生成哈希、字节范围和 prepared/input.json。`prepare` 先精确匹配；失败时会忽略表格 `|`、空白与 Markdown `#`/`*` 再定位，但 **EvidenceSpan 仍指向原文逐字节片段**。重复摘录要扩充上下文或明确 occurrence；正规化后仍歧义则失败，不做语义模糊匹配。仍需核实摘录、表头和脚注是否支持断言，旧字节范围输入继续支持。
+
+信用风险年报任务：抽取范围使用固定章节集 [credit-risk-sections.md](references/credit-risk-sections.md)（机器可读清单见同目录 JSON），不要按关键词临时抽约 12 页。
 
 在用户任务目录写 input.json（或上述 prepared/input.json）和相对路径证据文件；另写 extraction-notes.md 记录失败来源、缺口和宿主/模型。机器抽取不标记成人工审定，不承诺自动覆盖整份材料。
 
@@ -73,13 +92,19 @@ python3 "$SKILL_DIR/scripts/ontology.py" update "$RUN_DIR/new-input.json" --base
 
 ## 4. 回答与审阅
 
-使用明确条件选择事实：
+先用 catalog 发现实体与概念，再按条件 query：
 
 ```sh
+python3 "$SKILL_DIR/scripts/ontology.py" catalog "$RUN_DIR/v2"
+python3 "$SKILL_DIR/scripts/ontology.py" catalog "$RUN_DIR/v2" --kind changes
 python3 "$SKILL_DIR/scripts/ontology.py" query "$RUN_DIR/v2" --entity org:example --concept metric:revenue --period 2026Q1 --basis IFRS --with-evidence
 ```
 
-found 只表示找到结构匹配的来源断言，不等于真实性已验证。needs_scope 时查看返回的 scopes，列出不同单位、有效期、期间、口径和限定条件。可用 --unit、--valid-from、--valid-to（精确 YYYY-MM-DD 边界）或返回的事实 ID 配合 --fact 选择范围；事实 ID 会保留该范围内全部冲突断言，不代表选出正确值。用户未指定时澄清或并列呈现；conflict 时展示冲突来源；not_found 时说明缺口，不输出零或“不存在”。引用源 URL 和真实定位，不用任务句柄充当来源。可以归纳回答，不能新增无依据的知识包事实。
+`catalog` 列出实体、概念（含断言计数）与变化摘要；`--kind changes` 时冲突项带 `old_value` / `new_value` / `period` / `severity` / `kind`（`cross_period` 跨期 vs `intra_report` 报告内并列）。报告内因 qualifiers 过粗产生的多值并列标为 `intra_report`，不要当成跨年更正。每个冲突另带 `old_evidence` / `new_evidence`，每个新事实带 `new_fact_details`（自身摘录及上期同口径事实摘录），均为来源原文逐字摘录（报告、页码、≤160 字）。回答时引用这些原文摘录，不要把包内“值+单位”拼成引文。
+
+`query` 只接受字段：`entity` / `concept` / `period` / `basis` / `unit` / `qualifiers` / `valid-from` / `valid-to` / `fact` / `with-evidence`（或等价 `--args-json`）。**未知字段名报错**，不静默丢弃。也可用 `--args-json '{"concept":"metric:revenue","bogus":1}'` 验证——含未知键会失败。
+
+found 只表示找到结构匹配的来源断言，不等于真实性已验证。needs_scope 时查看返回的 scopes，列出不同单位、有效期、期间、口径和限定条件。可用 --unit、--valid-from、--valid-to（精确 YYYY-MM-DD 边界）或返回的事实 ID 配合 --fact 选择范围；事实 ID 会保留该范围内全部冲突断言，不代表选出正确值。用户未指定时澄清或并列呈现；conflict 时展示冲突来源与 changes 中的 old/new；not_found 时说明缺口，不输出零或“不存在”。引用源 URL 和真实定位，不用任务句柄充当来源。可以归纳回答，不能新增无依据的知识包事实。
 
 只有用户明确接受/拒绝某条断言，并提供审阅人标签和理由，才记录审阅：
 
@@ -104,3 +129,25 @@ python3 "$SKILL_DIR/scripts/ontology.py" export-okf "$RUN_DIR/v2" --out "$RUN_DI
 输出针对 OKF 0.2 的核心 Markdown/YAML 子集，概念状态为 draft，不宣称第三方导入、运行动作或人工核验已完成。
 
 交付后可提供一个自愿反馈入口：错误、日常任务或内部部署意向。有需要才运行 feedback PACKAGE --out PATH 生成本地草稿，不自动发送。读取 [feedback.md](references/feedback.md)，不把内部业务信息发到公开 Issues。说明公开云解析与完整企业本地部署是不同交付形态。
+
+## 数字包（宿主算数，工具只校验）
+
+宿主用**确定性代码**从年报表格算出跨期变动（本期期末 vs 本报告期初，口径一致）、重述（上年年报期末 vs 本年报期初）、勾稽检查（分项合计、附注与报表相符、期初+变动=期末）、应收账款账龄表和报告事项（重述原因、同一控制/非同一控制下企业合并、首次执行新准则、前期差错更正），模型只抽取叙述事项（审计意见、诉讼、持续经营、换所、担保/违约）并附逐字引文。然后：
+
+```
+python3 scripts/ontology.py numeric-import numeric.json --narrative narrative.json --sources SRC_DIR --out PKG
+python3 scripts/ontology.py numeric PKG --view overview
+python3 scripts/ontology.py numeric PKG --view drivers            # 驱动因素（带证据）
+python3 scripts/ontology.py numeric PKG --view consequences       # 后果及其链接的驱动因素
+python3 scripts/ontology.py numeric PKG --view normal             # 已解释的正常事项
+python3 scripts/ontology.py numeric PKG --view deltas --period latest --role driver --limit 15
+```
+
+- 每条变动两年都带数值、单位、页码、表格编号和逐字行摘录；摘录/引文/事项行与来源页不一致即拒收。
+- **因果排序**：先驱动因素，再后果，最后背景和已解释的正常事项。
+  - 驱动因素：逾期/违约；审计意见、持续经营、监管、前期差错更正；非受限现金对（短期借款+一年内到期的非流动负债）的覆盖；回款恶化（应收账款增速高于收入、坏账准备跳升、账龄 1 年以上占比上升、预付款异常增长）；担保比例和关联方/往来资金；受限资金比例；短期债务增长。每个驱动因素有 1–3 级强度，阈值写在 `scripts/numeric.py`。
+  - 后果：亏损、减值损失、商誉减记、净资产下降；排在驱动因素之后，并链接到可能解释它的驱动因素。
+  - 已解释的正常事项（不是风险）：同一控制下企业合并带来的重述；列示/口径变化（净额与总额、明细重分类，且报表项目本身未重述）；会计政策变更/首次执行新准则；非同一控制下收购带来的规模增长（同期增长型驱动因素降一级）。
+- `SRC_DIR` 放各年 `FY<年>.pages.jsonl`（每行 `{"page","text"}`），可由 `omni-source --fy` 生成。
+- 排序只是审阅顺序，不是信用评分或预警信号：留出集回测中它对根因排序没有超过简单基线（见 [verification.md](references/verification.md)）。
+- 引用数字时引用工具给出的摘录和页码，不要自己换算或拼接引文。叙述事项若 `match=table_normalized`，`quote` 是原文逐字片段（表格单元被解析器打散，字序可能交错），引用时照抄 `quote`。

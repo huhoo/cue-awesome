@@ -1,11 +1,11 @@
 ---
 name: cue-omni-ontology
-description: "从公开文档建可追溯业务知识包:给「主体+两份以上公开材料」,产出带证据锚的实体、口径、跨期变化与变化简报;语义抽取由宿主模型完成;工具只机检**输入包完整性**(自测现跑可复),打包/更新/查询/导出由它**执行**——外部 OKF 兼容性不验证,导出件仍须人工核。适合:财报跟踪、供应商/产品变化、竞品公告、口径核对。不适合:把本件当企业授权服务或抽取器本身——锚真伪仍须人工抽查。Triggers: ontology extraction, disclosure tracking, evidence briefs, supplier/product changes, 知识包, 变化简报。"
+description: "从用户指定的公开文档建可追溯业务知识包:宿主模型抽取实体、口径与断言,工具把逐字摘录绑定为字节级证据(可带入 Omni 原生页码),并执行打包、更新、跨期变化/冲突列表、查询与变化简报;可选数字包只校验宿主算出的数字与来源页逐字一致。工具不判断事实真伪、不做预警或风险发现,结论须人工核对证据。适合:披露跟踪、供应商/产品变化、口径核对。Triggers: ontology extraction, disclosure tracking, evidence briefs, numeric pack, 知识包, 变化简报。"
 license: MIT
-version: "0.2.4"
+version: "0.3.0"
 slug: cue-omni-ontology
 displayName: 公开资料业务知识包
-summary: "从公开资料建可追溯业务知识包:实体、口径、跨期变化与变化简报;工具只机检输入包完整性,打包/更新/查询/导出由工具执行、外部兼容不验证,自测现跑可复。"
+summary: "从公开资料建可追溯业务知识包:逐字证据锚、口径、跨期变化与变化简报;可选数字包校验数字逐字出处。工具不判断真伪、不预警,须人工核证据。"
 ---
 
 # Cue Omni Ontology
@@ -35,6 +35,23 @@ For a real task, use [task-recipes.md](references/task-recipes.md) to select a c
 Read the installed official `cue-omni-reader` skill and follow its active MCP schema. If unavailable, explain the missing dependency and point to [official setup](https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md). A metadata dependency does not auto-install or connect an MCP server. Obtain any required installation/root-expansion authorization; never ask for a key in chat. The user configures credentials in their own secret facility.
 
 Use official `parse` first. Prefer grounded artifact output where advertised; keep each operation and source handle separate, use bounded independent concurrency, and recover before retrying. Read all result pages/cursors needed for the task; previews are not complete results. Failures must remain in the coverage statement. Do not silently downgrade a requested detail profile or invent unavailable tools/fields. Preserve source URL, publication date if available, retrieval date, exact parsed UTF-8 text and actual page spans.
+
+### Turn an Omni result into a source
+
+After a grounded parse completes, save the tool call's **structuredContent or the complete JSON response** unchanged, then run:
+
+```sh
+python3 "$SKILL_DIR/scripts/ontology.py" omni-source "$RUN_DIR/omni/r1.json" --out "$RUN_DIR" --id source:r1 --url "https://..." --title "..." --accessed-at YYYY-MM-DD
+```
+
+It writes the content byte-for-byte (after checking Omni's sha256 digest) and a source record with `page_spans` (basis `omni_native_source_pdf_page`, `parse_origin` `omni_live` by default; use `--parse-origin omni_replay` when re-using a saved result). Paste the record into draft.json `sources` and run `prepare`. `--fy 2025` also writes `FY2025.pages.jsonl` for the numeric pack. Only `source_pdf_page_1_based` anchors count; multi-page segments, rendered-page-only anchors, unanchored text and page separators get no page and fall back to text_range. The command never starts a parse, reads no key and spends no credits.
+
+Four lessons measured on 2026-10-07 (Bridge 1.8.3–1.8.6):
+
+1. Writing the result with `save_result`, or keeping only the Markdown, loses the grounding page numbers. Keep structuredContent or the complete JSON; the tool refuses plain Markdown unless you pass `--text-only` (no pages, text_range only).
+2. Small results come back inline (storage `inline`) even when `result_delivery=artifact` was requested. Handle both: artifact parts are read back through the Bridge-local `read_result` (not billed); once a result has expired, re-parsing may be billed, so ask the user first.
+3. Ingest the real response shape: `result.kind=bundle`, `parts.content` / `parts.grounding`, each stored inline (`text`/`value`) or as an artifact (`next_cursor`). Do not guess fields from examples; `omni-source` implements this shape and is covered by offline tests.
+4. Bridge 1.8.3 answered `DETAIL_CAPABILITIES_UNAVAILABLE` for grounded parsing of a local file, and `SOURCE_ACCESS_DENIED` (not billed) for SEC EDGAR URLs. List such sources in the coverage statement, obtain the text yourself and package it with `manual_page` or text_range; never present it as Omni-native pages.
 
 A successful hash check does not prove that a claim is true. Page-less sources use text ranges, not invented page numbers. Never synthesize geometry. Preserve required evidence snapshots in the task workspace before confirmed cleanup of temporary parser results. Report only returned billing facts; the offline tool does not observe charges.
 
@@ -79,6 +96,8 @@ python3 "$SKILL_DIR/scripts/ontology.py" query "$RUN_DIR/v2" --entity org:exampl
 
 `found` means a structurally matched source claim, not verified truth. For `needs_scope`, inspect returned `scopes` and list the differing units, validity, bases, qualifiers or periods. Select the intended scope with `--unit`, `--valid-from`, `--valid-to` (exact YYYY-MM-DD boundaries), or `--fact` using a returned fact ID. A fact ID selects the whole scope, including its conflicting assertions; it does not choose a winning value. Ask or present alternatives when the user has not specified a scope. For `conflict`, show conflicting sources and retain uncertainty. For `not_found`, state the gap; never output zero or “does not exist.” Cite source URLs and actual locators from the returned records, not operation handles. Answers may synthesize findings but cannot add unsupported packaged facts.
 
+Use `catalog PACKAGE` / `catalog PACKAGE --kind changes` to discover entities, concepts and changes. Every conflict carries `old_evidence` / `new_evidence` and every new fact carries `new_fact_details` (its own excerpt plus the prior-period same-scope excerpt when present); each is a short verbatim excerpt of the source (report, page, <=160 chars). Cite these source excerpts in answers; never assemble a quote from package values.
+
 Apply a review only when the user explicitly accepts/rejects a specific assertion, supplying a reviewer label and reason:
 
 ```sh
@@ -102,3 +121,9 @@ python3 "$SKILL_DIR/scripts/ontology.py" export-okf "$RUN_DIR/v2" --out "$RUN_DI
 The export targets the core Markdown/YAML subset of OKF 0.2, keeps concepts `draft`, and claims no third-party import, runtime actions or human verification.
 
 After delivering value, offer one optional feedback route: an error, a recurring work task, or internal-deployment interest. Generate a local draft with `feedback PACKAGE --out PATH` only when useful. Nothing is sent automatically. Read [feedback.md](references/feedback.md); keep private business details out of public Issues. State that public cloud parsing and a full enterprise-local deployment are different delivery arrangements.
+
+## Numeric pack (host computes, tool validates)
+
+The host computes cross-period deltas (closing vs the same report's opening, consistent basis), restatements (prior report's closing vs this report's opening), balance checks, the receivable aging table and report events (restatement reason, same-control / non-same-control business combinations, first adoption of new standards, prior-period error correction) with deterministic code; a model only extracts narrative items with verbatim quotes. `numeric-import numeric.json --narrative narrative.json --sources SRC_DIR --out PKG` validates (both years need value, unit, page, table id; every excerpt/quote/event line must be verbatim on its source page) and `numeric PKG --view overview|drivers|consequences|normal|deltas|restatements|checks|narrative` serves the pack.
+
+**Credit-causal ordering.** Drivers first: overdue borrowings/defaults; audit opinion, going concern, regulatory action, error-correction restatements; unrestricted cash vs (short-term borrowings + current portion of non-current liabilities); collection deterioration (receivables growing faster than revenue, provision jumps, share of receivables aged >1 year rising, abnormal prepayments); guarantee ratio and related-party / other-receivable funds; restricted-cash share; short-term debt growth. Each driver has strength 1-3 (thresholds in `scripts/numeric.py`). Consequences (net loss, impairment totals, goodwill write-downs, equity decline) rank after drivers and link to the drivers that plausibly explain them. Explained-normal events are labelled and ranked last: same-control-merger restatements; presentation/basis changes (net vs gross, reclassification, statement line not restated); accounting-policy changes / first adoption; scale growth from acquisitions (growth-type drivers lose one strength level). `SRC_DIR` holds one `FY<year>.pages.jsonl` per year (`{"page","text"}` per line); `omni-source --fy` writes one. The ordering is a review order, not a credit score or an early-warning signal: in the holdout backtest it did not beat simple baselines at ranking root causes (see [verification.md](references/verification.md)). Cite the tool's excerpts and pages; for narrative items with `match=table_normalized` cite `quote` exactly (verbatim, table cells interleaved by the parser).

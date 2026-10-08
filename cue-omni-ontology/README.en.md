@@ -71,10 +71,21 @@ python3 scripts/ontology.py prepare assets/demo/quote-draft.json --out /path/to/
 python3 scripts/ontology.py build /path/to/work/prepared/input.json --out /path/to/work/v1
 python3 scripts/ontology.py update assets/demo/r2.json --base /path/to/work/v1 --out /path/to/work/v2
 python3 scripts/ontology.py brief /path/to/work/v2 --base /path/to/work/v1 --out /path/to/work/brief
+python3 scripts/ontology.py catalog /path/to/work/v2 --kind changes
 python3 scripts/ontology.py query /path/to/work/v2 --concept metric:revenue --period 2026Q1 --with-evidence
 ```
 
-Repeated quotes require more context or an explicit occurrence; no fuzzy match is used. For `needs_scope`, choose a basis, unit, exact validity boundaries or returned fact ID. `--with-evidence` includes bounded verbatim previews and flags truncation. Matching is not semantic verification: inspect headers, footnotes and qualifications.
+Repeated quotes require more context or an explicit occurrence. When the exact match fails, `prepare` retries once ignoring table pipes, whitespace and Markdown markers, yet the evidence still points at verbatim source bytes; anything still ambiguous fails, with no semantic fuzzy matching. Use `catalog` first to see the entities, concepts and conflicts in a package (each conflict carries verbatim excerpts for both sides); `query` rejects unknown fields instead of ignoring them. For `needs_scope`, choose a basis, unit, exact validity boundaries or returned fact ID. `--with-evidence` includes bounded verbatim previews and flags truncation. Matching is not semantic verification: inspect headers, footnotes and qualifications.
+
+**Turn a real Omni result into a source**: save the parse call's structuredContent or complete JSON, then:
+
+```sh
+python3 scripts/ontology.py omni-source /path/to/work/omni/r1.json --out /path/to/work --id source:r1 --url "https://..." --title "..." --accessed-at 2026-10-07
+```
+
+It writes the parsed text byte-for-byte (checking Omni's sha256) and a source record with pages; paste it into draft.json and run `prepare`. Only source-PDF page anchors count and no page is guessed; it starts no parse, reads no key and spends no credits. Writing with `save_result` or keeping only Markdown loses the pages, so the tool refuses that by default.
+
+**Optional numeric pack**: the host computes annual-report deltas, restatements and balance checks with deterministic code, and a model extracts only narrative items. `numeric-import` checks that every figure has unit, page and table id for both years and that excerpts are verbatim on the source page; `numeric` shows them in review order (drivers -> consequences -> explained-normal events). It does not score or warn. Credit-risk annual-report tasks extract the [fixed section set](references/credit-risk-sections.md).
 
 ## Deliverables and verification
 
@@ -83,12 +94,13 @@ Repeated quotes require more context or an explicit occurrence; no fuzzy match i
 - **Extraction notes:** host-written `extraction-notes.md` records questions, gaps, failed sources and semantic review.
 - **Optional interchange:** `export-okf` creates draft concepts targeting the OKF 0.2 core subset; external consumer imports need separate verification.
 
-The [verification record](references/verification.md) distinguishes fresh parsing, saved-output replay, independent synthetic use and remaining limits. The [Microsoft run](references/live-verification.md) produced 21 source claims from two sources and retained all 11 baseline claims after updating. It demonstrates a bounded workflow, not general extraction accuracy or proven customer ROI.
+The [verification record](references/verification.md) distinguishes fresh parsing, saved-output replay, independent synthetic use and remaining limits. The [Microsoft run](references/live-verification.md) produced 21 source claims from two sources and retained all 11 baseline claims after updating. It demonstrates a bounded workflow, not general extraction accuracy or proven customer ROI. In the [holdout backtest](references/verification.md) (40 annual reports, 7,598 pages) evidence validity was clearly higher than two baselines, but root-cause ranking missed the pre-set pass bar and the early-warning claim was falsified; the three sets of numbers and the limits are stated together in the verification record.
 
 Offline self-check:
 
 ```sh
 python3 -B scripts/test_ontology.py
+python3 -B scripts/test_numeric.py
 ```
 
 ## FAQ and anti-patterns (what you try -> declined, because -> where to go)
@@ -104,6 +116,8 @@ this table gathers it and does not restate it exhaustively.
 | Describe `ontology.py` as an automatic extractor | **Not true.** Division of labour is fixed: the official parser reads material, the **host model does semantic extraction**, offline tools check structure and consistency | Write `extraction-notes.md` covering scope, failed sources and manual review |
 | Assume a public-looking URL is reachable | **No.** URL shape proves nothing about public accessibility; retrieval supplements only inside authorised research scope, no crawler | Use files or links the user explicitly provides, or fetch through Cue channels and keep snapshots |
 | Pipe `export-okf` straight into an external system | **Untested.** Export is a draft targeting the OKF 0.2 core subset; consumer compatibility is verified separately | Verify on the consuming side first; this package promises only the shape it emits |
+| Check a sentence or figure against the filing page by page, or get a lead piece with page citations | **Not this package's job.** This package builds updatable knowledge packages, change briefs and the numeric pack | [cue-lead-pieces](../cue-lead-pieces/README.en.md) in this repository: quote verification and lead pieces |
+| Use the numeric pack or change brief as a default early warning or automatic risk discovery | **No.** The holdout backtest falsified the early-warning claim and root-cause ranking missed the pass bar; the ordering is a review order | A person judges from the verbatim evidence; see the [verification record](references/verification.md) |
 
 ## When something goes wrong (symptom -> cause -> recovery)
 
@@ -118,9 +132,14 @@ argument prints the argparse usage and exits 2.
 | `{"status": "invalid", "error": "source hash mismatch: <source ID>"}` | The stored snapshot disagrees with the recorded hash (source text changed or was replaced) | Re-parse that source into a new snapshot and a new run; keep the old snapshot, never rewrite history |
 | `{"status": "invalid", "error": "[Errno 2] No such file or directory: '<path>'"}` | The path handed to `validate` is not a complete package directory (one of `knowledge.json` / `run.json` / `changes.json` missing) | Point at the directory `build` emitted; `demo` output lives in version subdirectories such as `<out>/v1`, `<out>/v2` |
 | Messages shaped like `<label>: invalid ID`, `<label>: duplicate ID <key>`, `duplicate JSON key: <key>`, `invalid value for <type>` | Structure or value violates the contract (ID regex, duplicate keys, value type) | Fix per the field spec in `references/knowledge-contract.md`, then re-run the same validate |
-| `usage: ontology.py [-h] {build,update,validate,query,export-okf,feedback,review,prepare,brief,demo} ...` plus `error: the following arguments are required: command` | No subcommand, or a required parameter was skipped | Run `python3 scripts/ontology.py <subcommand> --help` first (e.g. `demo` requires `--out`, and **the output directory must be new**) |
+| `usage: ontology.py [-h] {build,update,validate,query,catalog,export-okf,feedback,review,numeric-import,numeric,omni-source,prepare,brief,demo} ...` plus `error: the following arguments are required: command` | No subcommand, or a required parameter was skipped | Run `python3 scripts/ontology.py <subcommand> --help` first (e.g. `demo` requires `--out`, and **the output directory must be new**) |
+| `omni-source`: `not JSON. Plain Markdown (or text written by save_result) has no grounding sidecar` | You saved Markdown or text written by `save_result`; the pages are gone | Save the parse call's structuredContent or complete JSON; if text is all you have, pass `--text-only` (no pages) |
+| `omni-source`: `the result has no source-PDF page anchors` | The result is detail=text, has rendered-page anchors only, or is not a PDF | Pass `--text-only` to package with text ranges; a grounded re-parse is billed, so ask the user first |
+| `omni-source`: `Omni status is failed SOURCE_ACCESS_DENIED` / `DETAIL_CAPABILITIES_UNAVAILABLE` | Omni cannot fetch that URL (measured for SEC EDGAR), or this Bridge cannot do grounded parsing of a local file (measured on 1.8.3) | Note it in the coverage statement; obtain the text yourself and package it with `manual_page` or text ranges, never as Omni pages |
+| `omni-source`: `does not match its sha256 digest`, or `read_result(...)` expired | An artifact read came back incomplete, or the Bridge-local result expired | Read again; after expiry a re-parse may be billed, so ask the user first |
+| `numeric-import`: `excerpt is not verbatim on FY<year> p<page>` / `page not in sources` | The excerpt is not the page's text, or the page is missing from `FY<year>.pages.jsonl` | Copy the excerpt from the source page and check the page; do not reformat numbers |
 | Validation passes yet the extraction is semantically wrong | Scripts check structure and consistency only - the field `semantic_verification` literally reads `not_established_by_scripts`; scripts do not prove semantics | Review line by line with `review` and the expandable-source brief. That division is the design, not a defect |
-| Want to confirm the tool itself works | — | One local self-check: `python3 -B scripts/test_ontology.py` (listed under Deliverables and verification; test count comes from the run itself) |
+| Want to confirm the tool itself works | — | Local self-checks: `python3 -B scripts/test_ontology.py` and `python3 -B scripts/test_numeric.py` (listed under Deliverables and verification; test count comes from the run itself) |
 
 ## How to ask (positive examples and one counter-example)
 
@@ -138,7 +157,7 @@ argument prints the argparse usage and exits 2.
   for me." - exactly what the updater enforces under update-policy: refuse same-ID meaning swaps, keep conflicts,
   deduplicate identical statements.
 - **Positive (English phrasing)**: this package's frontmatter trigger set is already bilingual
-  (`ontology extraction` / `disclosure tracking` / `evidence briefs` / `supplier/product changes` / `知识包` / `变化简报`),
+  (`ontology extraction` / `disclosure tracking` / `evidence briefs` / `numeric pack` / `知识包` / `变化简报`),
   so either language can open it.
 - **Counter-example (adjacent need, not this skill)**: "which of these two companies is stronger, give me a verdict" -
   the decision-shaped evidence chain belongs to `competitive-brief`; "lay out anchor-bound public risk facts for this
@@ -148,7 +167,7 @@ argument prints the argparse usage and exits 2.
 
 ## Domestically reachable evidence paths (when overseas sites do not load)
 
-The offline tools (`ontology.py`, `test_ontology.py`) depend only on the Python standard library, and **demo mode needs
+The offline tools (`ontology.py`, `numeric.py`, `omni_source.py` and the two tests) depend only on the Python standard library, and **demo mode needs
 no API key and makes no network call** - so "let me see what this is" has no extra barrier in a domestic environment.
 When actually gathering material, three paths already exist in this package:
 
