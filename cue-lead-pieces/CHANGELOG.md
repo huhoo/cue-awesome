@@ -1,3 +1,8 @@
+### 0.4.4 — 2026-10-07
+
+Changed
+- 渠道分类修复：补 frontmatter `tags: [投研, 信用信号, 引文核对, 财报, A股, 美股]`（双语两份）——渠道页此前挂「未分类」，根因是本件全件无 tags 面（姊妹件皆有，子类映射由它驱动；渠道 API 现值对点：lead-pieces category=空 vs ontology=knowledge-management、earnings=pro-finance）。
+
 ### 0.4.3 — 2026-10-07
 
 Changed
