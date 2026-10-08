@@ -2,9 +2,9 @@
 name: cue-omni-ontology
 description: "从用户指定的公开文档建可追溯业务知识包:宿主模型抽取实体、口径与断言,工具把逐字摘录绑定为字节级证据(可带入 Omni 原生页码),并执行打包、更新、跨期变化/冲突列表、查询与变化简报;可选数字包只校验宿主算出的数字与来源页逐字一致。工具不判断事实真伪、不做预警或风险发现,结论须人工核对证据。适合:披露跟踪、供应商/产品变化、口径核对。Triggers: ontology extraction, disclosure tracking, evidence briefs, numeric pack, 知识包, 变化简报。"
 license: MIT
-version: "0.3.0"
+version: "0.3.1"
 slug: cue-omni-ontology
-displayName: 公开资料业务知识包
+displayName: 任意文档·建逐句可回查知识库
 summary: "从公开资料建可追溯业务知识包:逐字证据锚、口径、跨期变化与变化简报;可选数字包校验数字逐字出处。工具不判断真伪、不预警,须人工核证据。"
 ---
 
