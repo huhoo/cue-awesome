@@ -117,6 +117,7 @@ python3 scripts/cue.py --help
 - Decide whether the company will default → not this skill; it only guarantees quotes come from the source, not that signals are right → you or your credit model decide; this skill supplies checkable evidence.
 - Check claims from research notes, news or third-party databases → not this skill; it reads the company's own filings only → find the underlying announcement or 10-K text first.
 - Cover Hong Kong, bond prospectuses or private companies → not yet; `fetch` only lists cninfo and SEC EDGAR → you can parse other public files with Omni and register them with `ingest --sid … --kind … --date … --title …`, but that route is untested.
+- Turn several filings into an updatable knowledge package that tracks cross-period changes and basis conflicts → not this skill; it verifies quotes and writes lead pieces → [cue-omni-ontology](../cue-omni-ontology/README.en.md) in this repository: updatable knowledge packages, change briefs and a numeric pack, with the same verbatim evidence.
 - Treat `--fix` output as final → not recommended; the swapped-in sentence is the nearest original text chosen by the program, not reviewed by a person for whether it still supports the claim → for key conclusions, look at the page (`page` command).
 
 ## When something goes wrong (symptom → cause → recovery)
