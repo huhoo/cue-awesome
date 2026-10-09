@@ -62,6 +62,13 @@ Example trigger words (both languages):
 Triggers: 竞品分析 / 竞品简报 / 这个市场要不要进; competitive analysis / competitor comparison / battlecard
 ```
 
+### The four door questions (listing gate for new skills and renames, added 2026-10-09)
+
+1. **Does the name carry value**: `displayName` must state "what it does for you + why to trust it" (example: `公告事件速读卡·关键数逐字带出处`);
+2. **Is the blurb real**: `summary` ≤80 and `description` ≤300, lengths **measured by script** (wc -m style; no counting by hand);
+3. **Any un-measured numbers**: names, blurbs and descriptions must not cite timings, hit-rates or growth figures no run has measured yet (allowed after measurement, with the ticket as source);
+4. **Can it work on open**: the README's first section gives a verb-level first action (civil's door-frame standard), not an adjective pile.
+
 ---
 
 ## 3. Modifying an existing skill
