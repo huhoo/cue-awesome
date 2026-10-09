@@ -2,14 +2,41 @@
 
 **English companion of `README.md` (Chinese primary; the pair is for reading inside the repository — skill-channel pages do not resolve relative links, so this is deliberately not a clickable switch).**
 
+**You hired a lawyer for the first instance, and you still lost. The second instance is yours to run - this skill promises no reversal; it hands the case back from your lawyer's head to the person who knows it best.**
+
 **Give it a lost judgment; get back a second-instance case system you can file.**
 
 This is not "draft me an appeal" — it **reverse-engineers the judgment into the judge's own chain of reasoning**, locates the level at which the issue was framed wrong, recovers what was truncated, omitted or split off from the raw materials, and finally lays the argument out as a **ladder** instead of a single bet. So what it hands back is a set of interlocking documents, not one isolated appeal brief.
 
 **Input**: the first-instance judgment + whatever loose material you hold (statement of claim, hearing transcript, recording transcripts, chat records, lookup results)
-**Output**: `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · four tables (breakdown / diff / ladder / ledger)
+**Output**: `今日三件事.txt` (day-one three actions) · `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · four tables (breakdown / diff / ladder / ledger)
 **Cost**: half a day for the Phase 0 close-out, then it scales with the judgment and the case file; **the 15-day appeal window is a hard constraint**
 **Lead channel**: statutes, judicial interpretations and similar cases can be listed as candidates via `cue-research` - **a lead is not a conclusion**; no outcome is promised, and nothing enters the tables before it is verified against official sources.
+
+## Opening: four verbs on the sign
+
+Every action you take reduces to four verbs, and each table is where one of them lands. The Chinese labels below are kept verbatim in their canonical form - the case files carry them, so treat them as your anchors.
+
+| Verb | What you do | Lands in |
+|---|---|---|
+| `盘点` *(take stock)* | Break the judgment into its chain of reasoning, then split what you lost into three faces: inherently unfavourable, self-inflicted by how the case was run, and errors the judgment itself made | `判决书拆解表.md` + `败诉三面表.md` (template in `assets/`) |
+| `搜集` *(gather)* | Diff your source material against the judgment's excerpts word by word; whatever the diff turns up becomes the to-be-obtained list - three applications: evidence retrieval, order to produce, schedule of new evidence | `证据比对表.md` + those three applications |
+| `查证` *(verify)* | Grade every fact A/B/C and leave the "check it before filing" line on every article number; nothing unverified enters a document | `事实台账.md` + the red-line list |
+| `todo` *(schedule)* | Put the first three on a calendar and count backwards: T+0 / T+1~3 / T+4~7 / deadline | `主控清单.md` (preconditions + to-do tables) |
+
+Phases 0-6 are not a fifth thing next to these four verbs - they are the **fine print** of them (see section 2).
+
+### Day one: three steps
+
+Three steps today, each with what skipping it costs:
+
+| Today | How | What happens if you skip it |
+|---|---|---|
+| 1. Fix the service date, compute the deadline | 15 days for a judgment, counting from the day after service; take both dates from **the tail of the judgment and the proof of service**, never from memory | The window closes unrecoverably, the first-instance judgment stands, and you start from behind |
+| 2. Check the preservation status | Already preserved - the continued-preservation application is the top priority (appealing does not extend preservation); not preserved - first estimate how far the other side can move assets after the claim was dismissed | Preservation is released or lapses; even a reversal collects nothing |
+| 3. Check the representation status | Counsel withdrawn - delete counsel's line from the appeal and change the service address **in writing** | Papers go to the former agent or the old address, and deadlines burn while you never see the notice |
+
+These are the first three items of Phase 0; the judgment breakdown and the evidence diff come after them, not before.
 
 ---
 
@@ -47,12 +74,12 @@ Tier 4  Fallback: requires the court to clarify the legal relationship
 
 ---
 
-## 2. Six phases
+## 2. The workflow in detail: six phases (the four verbs expanded)
 
 | Phase | What happens | Output |
 |---|---|---|
 | **0 · Close-out** | Fix the service date and appeal deadline, the preservation status, the representation status | preconditions table |
-| **1 · Judgment reverse-engineering** | Rebuild the chain of reasoning, find the largest leap, five-level root cause | `判决书拆解表.md` |
+| **1 · Judgment reverse-engineering** | Rebuild the chain of reasoning, find the largest leap, five-level root cause; fill the three-faces sheet in the same pass | `判决书拆解表.md` + `败诉三面表.md` |
 | **2 · Evidence diff** | Source vs excerpt; mark truncated / omitted / split | `证据比对表.md` |
 | **3 · Legal ladder** | Main / alternative / fallback; per tier, elements and "what the judgment skipped" | `法律阶梯表.md` |
 | **4 · Fact ledger and discipline** | A/B/C provenance grades, red-line list, traceable corrections | `事实台账.md` |
@@ -70,7 +97,7 @@ This skill's own scripts and flow stay offline. Both channels below are **auxili
 - **Whether a source parses, and what it costs, are decided by the service response**: this package claims no unopened domain and infers no rate.
 - **Transcripts still obey this skill's grading discipline**: homophones and mishearings are not auto-corrected (parser output is kept as returned); a recording must be **re-listened to on its original carrier** before it can be graded A/B - until then it sits at grade C, marked pending.
 
-**Research channel · `cue-research`**: for Phase 1's "provision that should have applied but did not" and for the elements on each rung of Phase 3's ladder, it can search statutes, judicial interpretations and similar cases, producing a **candidate list** - every article text and case number first enters as **grade C (pending verification)** marked "awaiting verification against official sources", and may rise to B only after being filed into the record", the same provenance discipline this skill already applies (the eight hard constraints and the six-phase semantics are untouched). Bound: that channel covers public data sources only, its domain table is its own doc as it now stands (not hard-coded here), and **a lead is not a conclusion** - no promise of an outcome, no promise that whatever is found is usable.
+**Research channel · `cue-research`**: for Phase 1's "provision that should have applied but did not" and for the elements on each rung of Phase 3's ladder, it can search statutes, judicial interpretations and similar cases, producing a **candidate list** - every article text and case number first enters as **grade C (pending verification)** marked "awaiting verification against official sources", and may rise to B only after being filed into the record — the same provenance discipline this skill already applies (the eight hard constraints and the six-phase semantics are untouched). Bound: that channel covers public data sources only, its domain table is its own doc as it now stands (not hard-coded here), and **a lead is not a conclusion** - no promise of an outcome, no promise that whatever is found is usable.
 
 ---
 
@@ -82,7 +109,7 @@ This skill's own scripts and flow stay offline. Both channels below are **auxili
 | 2 | **Every claim carries a provenance grade**: A = found by the judgment / B = submitted but unaddressed / C = to be obtained. **Never use C as A** |
 | 3 | **No prejudging, no invention, no inference** — money flows and party attribution are always stated in the open / alternative form |
 | 4 | **A corrected characterisation must be applied repo-wide and left traceable** — state "the previous conclusion is void" and re-check every inference that leaned on it |
-| 5 | **Money > deadline > evidence** — preservation and the appeal window outrank every取证 action |
+| 5 | **Money > deadline > evidence** — preservation and the appeal window outrank every evidence-gathering action |
 | 6 | **Keep the grievance thread out of the litigation thread** — complaints and accountability claims go in separate files |
 | 7 | **Redact the output** — ID numbers, phone numbers, addresses, account numbers become placeholders |
 | 8 | **Never shortcut a procedural qualification question** — new evidence, adding claims on appeal, whether a party may testify: check explicitly |
@@ -100,14 +127,14 @@ cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-case --case "(2026) Jing XXXX Minchu XXXX"
 ```
 
-On first entry, read the four table templates in `assets/` and `references/07-worked-example.md` (a redacted run through the whole flow).
+On first entry, read `assets/败诉三面表.md` (the take-stock sheet) and the four table templates, then `references/07-worked-example.md` (a redacted run through the whole flow).
 
 ### Self-check
 
 ```bash
 python scripts/init_case.py --help          # usage; no network
 python scripts/init_case.py /tmp/case-demo  # writes 8 skeleton files, never overwrites existing ones
-ls /tmp/case-demo                           # expect 4 tables + 4 skeletons + 归档/
+ls /tmp/case-demo                           # expect 5 tables + 4 skeletons + today-three-things + 归档/
 ```
 
 ---
@@ -118,6 +145,21 @@ ls /tmp/case-demo                           # expect 4 tables + 4 skeletons + �
 - It does not replace a lawyer, nor the court's own view on procedural questions. Deadlines, amounts and filing channels follow the receiving court's current rules and notices.
 - This skill's scripts and flow are offline and self-contained: no network, no external repository, no API calls. The two channels at the end of section 2 are optional auxiliaries the user installs separately, used only for parsing material and gathering leads; whether they are available, what they return and what they cost follow the service response - this skill promises no unopened domain and no outcome.
 - Where article numbers and deadlines would otherwise appear, the skill deliberately uses **descriptive wording instead of hard-coded numbers** — the risk of a model misremembering an article is held by that "check before filing" gate.
+- **Expectation management**: reversal and remand on appeal are not common, and **this skill does not bet on a reversal**. It does the controllable part - reframe the issue, recover what was truncated, keep watch over the money and the deadlines. The outcome is the court's to decide; run the four verbs and what you hold is **a set of sourced tables, a filing-ready appeal, and a calendar counted back from the deadline**. That is the whole of what is promised.
+
+### Guarding against a second harvest: three warnings
+
+Losing once makes you easy to charge twice. Check all three:
+
+1. **Signs of unfreezing or asset movement**: after the claim is dismissed, the other side may apply to lift preservation and move assets. React with the continued-preservation application and its expiry date, not with the appeal draft first - that is what constraint 5 ("Money > deadline > evidence") is for.
+2. **"We will win it for you" agents and templates of unknown origin**: anyone who promises the reversal in advance, and any "second-instance reversal template" sent without reading your file, is a risk item rather than a resource. Constraint 2 requires a source and a grade for every claim; a document generated from nothing in your record only adds a characterisation you will later have to correct (constraint 4).
+3. **Self-media legal answers**: a short video or post telling you "write the appeal like this" stays unusable until the article text and its current validity are checked against the official source. Search results enter as grade C, marked "awaiting verification against official sources", and may rise to B only after being filed into the record - the same discipline as the research channel in section 2.
+
+### Minimum outsourcing: one paid checkpoint, not a return to full representation
+
+By default **you run the case**. Two situations justify paying once: the amount at stake is large; or a procedural-qualification question is live - whether something counts as new evidence on appeal, whether claims may be added, whether a party may testify. Constraint 8 forbids this skill from answering those for you.
+
+Do it as **one verification session**, not a re-delegation: bring `事实台账.md` plus the two sections of `复核报告.md` (`序：一句话结论` and `二、扭转路径`), write down the three questions you actually need answered, and pay for those three only; you still make the corrections and you still file. An outside opinion is marked pending like anything else - it does not replace your own grading.
 
 ## 6. Dependencies
 
@@ -136,7 +178,7 @@ ls /tmp/case-demo                           # expect 4 tables + 4 skeletons + �
 | `references/05-self-represented-filing.md` | Self-represented practice: deadlines, filing channels, fees, file inspection, qualification checks |
 | `references/06-document-pack.md` | Pack structure, how to write the summary, sync mechanism, version notes |
 | `references/07-worked-example.md` | A redacted worked example |
-| `assets/` | Four table templates |
+| `assets/` | Four table templates + `败诉三面表.md` (take-stock sheet) |
 | `scripts/init_case.py` | Case directory initialiser |
 
 Version history lives in `CHANGELOG.md`. `README.md` is the Chinese primary of this file.

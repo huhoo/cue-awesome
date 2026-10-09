@@ -10,6 +10,8 @@ init_case.py — 初始化一个「民事二审翻案」案件工作目录。
     - 创建案件目录与 归档/ 子目录
     - 从本技能的 assets/ 复制四张表模板（判决书拆解表、证据比对表、法律阶梯表、事实台账）
     - 生成主控清单、复核报告、上诉状、配套文书包的骨架文件
+    - 生成 今日三件事.txt（死线三步占位，M176B）
+    - 生成 败诉三面表.md：assets/败诉三面表.md 存在则复制（4.1 模板），否则写占位表头（M176A 未交时的先写形态）
     - 已存在的文件一律不覆盖（避免丢失已填内容）
 """
 
@@ -433,6 +435,38 @@ PACK = """# 二审配套文书包（骨架）
 **⚠️ 全部文书同一天递交。**
 """
 
+TODAY = """今日三件事（死线三步 · 今天不排明天）
+==================================================
+
+① 确认判决送达日 → 填死线
+   送达日 ____ 年 ____ 月 ____ 日 → 上诉截止 ____ 年 ____ 月 ____ 日
+   （送达次日起 15 日；两个日期都以判决书尾部与送达回证为准，不凭记忆推算）
+   不做会怎样：上诉期届满不可恢复，一审生效，全盘被动。
+
+② 保全状态 + 《继续保全申请书》位置
+   已保全？金额/届满日：____________；申请书递交去处：____________
+   （继续保全申请书另交一审承办法官一份，并随上诉状同日递交）
+   不做会怎样：上诉不自动延续保全；保全被解冻或届满释放，即便翻案也拿不到钱。
+
+③ 委托与送达地址两问
+   一问：律师是否仍在委托？若已解除，上诉状署名行是否已删除：____
+   二问：送达地址是否已向法院书面变更：____
+   不做会怎样：文书寄到旧地址或原代理人，关键期限在你不知情中被消耗掉。
+
+—— 三步填完，回头把结果登记进 主控清单.md 的『前提确认』表。
+"""
+
+THREEFACES_PLACEHOLDER = """# 败诉三面表
+
+> ⚠️ 占位表头（M176B 先写形态）：正式模板以 4.1 的 `assets/败诉三面表.md` 为准，合车后替换复制来源；本占位不预设三面定义。
+
+| 面 | 本案表述 | 出处（等级 A/B/C） | 与其他面的断点 |
+|---|---|---|---|
+| 面一 | | | |
+| 面二 | | | |
+| 面三 | | | |
+"""
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="初始化民事二审翻案案件工作目录")
@@ -465,6 +499,7 @@ def main() -> int:
         "复核报告.md": REPORT,
         "上诉状.md": APPEAL,
         "配套文书包.md": PACK,
+        "今日三件事.txt": TODAY,
     }
     for name, tpl in skeletons.items():
         dst = case_dir / name
@@ -474,11 +509,27 @@ def main() -> int:
         dst.write_text(tpl.format(case=args.case, date=date.today().isoformat()), encoding="utf-8")
         created.append(name)
 
+    # 败诉三面表.md：assets 有正式模板则原样复制（M176A 交付后自动取 4.1 现文），
+    # 否则写占位表头（先写形态，合车时 lead 对一致性）。
+    tf_name = "败诉三面表.md"
+    tf_src, tf_dst = ASSETS_DIR / tf_name, case_dir / tf_name
+    if tf_dst.exists():
+        skipped.append(tf_name)
+    elif tf_src.exists():
+        shutil.copy2(tf_src, tf_dst)
+        created.append(tf_name)
+    else:
+        tf_dst.write_text(
+            THREEFACES_PLACEHOLDER.format(case=args.case, date=date.today().isoformat()),
+            encoding="utf-8")
+        created.append(tf_name + "（占位表头）")
+
     print(f"✅ 案件目录：{case_dir}")
     print(f"   新建 {len(created)} 个文件：{', '.join(created)}")
     if skipped:
         print(f"   跳过（已存在，未覆盖）：{', '.join(skipped)}")
     print("\n下一步：")
+    print("  0. 今天：填 今日三件事.txt（送达日→死线 / 继续保全 / 委托与送达地址），结果登记回主控清单『前提确认』")
     print("  1. 填 主控清单.md 的『前提确认』（送达日 / 保全 / 代理人）")
     print("  2. 做 Phase 1 判决逆向工程 → 判决书拆解表.md")
     print("  3. 做 Phase 2 逐字比对 → 证据比对表.md")
