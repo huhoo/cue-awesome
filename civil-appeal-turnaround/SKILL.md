@@ -1,20 +1,21 @@
 ---
 name: civil-appeal-turnaround
 slug: cue-civil-appeal-turnaround
-displayName: 民事二审翻案工程
+displayName: 民事二审翻案工程·论断逐条带出处
 summary: "一审败诉后建二审作战体系:判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见,条号递交前核对。"
 description: "民事一审败诉后的翻案工程:还原法官推理链、定位争点被框错的层;证据逐字比对截断/省略/割裂;请求权铺主攻/备位/兜底阶梯;事实台账三级出处;文书包同日递交与自行诉讼操作。不提供法律意见、不替代律师,条号与费用标准递交前核对。脚本与流程离线自包含。Triggers: 一审败诉上诉 / 二审上诉状 / 判决书拆解 / 为什么败诉 / 上诉期与继续保全 / 自行诉讼; lost at first instance / civil appeal / appeal deadline / self-represented litigant Do NOT use for: legal advice."
 agent_created: true
-version: "0.2.3"
+version: "0.3.0"
 license: MIT
 metadata:
   requires:
     bins: ["python3"]
     # 「可选」只表示「不装也能跑」，不表示「默认不用」：用时须先经使用人确认
+    optional: ["python-docx（Word 递交稿，scripts/export_docx.py；不装则只有该脚本不可用，其余流程不受影响）"]
     recommendedSkills: ["cue-omni-reader", "cue-research"]
 ---
 
-# 民事二审翻案工程
+# 民事二审翻案工程·论断逐条带出处
 
 ## 开宗：这门牌只有四个动词
 
@@ -173,6 +174,7 @@ metadata:
 - **上诉状**：理由之前加一段**总述**（一页内：一个核心争点 + 判决自认的关键事实 + 三项致命错误）。法官时间有限，总述决定他会不会往下读。
 - **配套文书**：继续保全、调取证据、责令提交、到庭接受询问、新证据清单——**必须与上诉状同日递交**，否则很可能书面审理、不开庭。
 - **同步机制**：上诉状每次修改后，同步更新配套文书包与主控清单中的对应段落，并在版本说明中记录。
+- **导出 Word 递交稿**：成文后用 `scripts/export_docx.py` 把 markdown 转成 .docx（公文体：A4、仿宋三号、首行缩进 2 字符、页脚页码）。**只做格式投影，不重写一个字**；转完必跑 `--check` 做文本覆盖校验。详见 `references/06-document-pack.md` §Word 递交稿。
 
 ### Phase 6 · 待办与递交
 
@@ -199,6 +201,7 @@ metadata:
 | `assets/法律阶梯表.md` | Phase 3 产出模板 |
 | `assets/事实台账.md` | Phase 4 产出模板 |
 | `scripts/init_case.py` | 初始化案件工作目录，生成五张表、主控骨架与今日三件事.txt（枚数以脚本自报行为准） |
+| `scripts/export_docx.py` | markdown → Word 递交稿（公文体／诉状体两档），带 `--check` 文本覆盖校验；需 python-docx |
 
 ## 交付物约定
 
@@ -209,6 +212,7 @@ metadata:
 3. **上诉状**（含总述）
 4. **配套文书包**（同日递交）
 5. **五张表**（拆解／比对／阶梯／台账／败诉三面）——模板在 `assets/`，枚数以 `scripts/init_case.py` 自报行为准
+6. **Word 递交稿**（`.docx`）：上诉状与配套文书包各一份，公文体排版、页脚页码，`--check` 校验零丢失
 
 交付前自检：
 
