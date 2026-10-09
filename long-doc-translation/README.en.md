@@ -4,9 +4,17 @@
 
 Turn a several-hundred-page foreign-language monograph into a **deliverable, verifiable, terminologically consistent** Chinese full manuscript.
 
-## In one line
+## Open it and work: three steps today
 
-Not "translate a passage" — it is about keeping 100+ translation units consistent in style and wording, so that after merging there are no duplicates, no broken joins, and no untranslated leftovers.
+First, what this package is actually for: not "translate a passage", but keeping 100+ translation units consistent in style and wording, so that after merging there are no duplicates, no broken joins and no untranslated leftovers. The three steps below exist for that, and each says what skipping it costs.
+
+| Step | Action | How | What happens if you skip it |
+|---|---|---|---|
+| 1 | **Size the job first, then scaffold** | `python scripts/init_project.py <project-dir>` builds the chunk and style skeleton; under 10 pages the scale routing says **do not use this package** (configuration costs more than it returns), and a few dozen pages handled solo runs in `--scale light` | Scaffolding without sizing means running an 800-page rig over 8 pages - the cost lands on the pipeline, not on the translation |
+| 2 | **Run `overlap_check.py` after slicing and before translating** | Slice along the book's own structure (chapter / page range) with **exactly one owner per chunk**, run `overlap_check.py`, only then start batching | A superset and its subset both get translated and the same passage appears twice - this package names that as an anti-pattern, and it is the most expensive kind of rework |
+| 3 | **Pass two gates before merging, then build the reader** | `dedup_boundary.py` clears 1-2 paragraphs of boundary overlap, `qa_check.py` checks leftovers, duplicated passages and marginal-page continuity, `merge_build.py` emits the catalogued main draft and reading version | Discovering breaks after the merge means reworking all 100+ units at once; the gates' judgement and thresholds are whatever the scripts now say (see the grep in Getting started) |
+
+**The first step never waits on anything**: sizing and scaffolding need no external service and no network.
 
 ## Pipeline
 
