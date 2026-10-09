@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""check_study_card.py — 校验一张「论文研读卡」是否合 `SKILL.md` §3 五段契约与 §4 红线。
+
+用法：
+    python3 check_study_card.py <卡.md>        校验一张卡（默认零网络，不发任何请求）
+    python3 check_study_card.py --selftest     跑包内两件夹具：好样必须过，坏样四道必须全发
+    python3 check_study_card.py --help         本说明
+
+出口形制（与套件姊妹件同族）：
+    失败 = 一行 "FAIL: <文件>（N 条）"，其下每条详行**先打错误码前缀**（四枚 `E-*` 之一），
+           道名后是行号与该道规格；末行 "码表:" 只列本次真正用到的码与含义。
+    全过 = 一行 "PASS: <文件>（…）"，并印「扫过行数」与「发条数」两类计数。
+
+四道是什么（判定全集在本脚本，本文只指路，不复述细节）：
+    道一 形制：头部自标三件套＋本次读取依据与论文版本就位＋五段齐且有序
+    道二 锚：论文卡每行、引用网络每条、槽材料句每句都要有页／节锚；取不到写「缺」并注「不适用」
+    道三 红线：禁"应该能复现"式推断、禁代写·降重·润色交稿类话术、学术评价类语句必须挂 [待人工]
+    道四 计数与申报：复现三项逐个交代；引用无条目必须勾选声明；推断槽必须带确认标记；待核段必须有 [待人工] 汇总
+
+学术检索增强腿（SKILL §2）的证据票 M182 在途，因此本脚本**不校验任何学术域检索结果**——
+未证的面上不建闸，免得把没跑过的能力说成已可核对。
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+# 与姊妹件逐字同源的四枚码（第五枚 E-LEDGER 属账本状态机面，本件无账本，故不启用）
+E_LEGEND = {
+    "E-FORMAT":   "形制/输入/表序不合式→按该行括号内规格改形制后复跑",
+    "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
+    "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
+    "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+}
+
+SECTIONS = ['论文卡', '复现清单', '引用网络', '综述脚手架', '待核清单']
+CN_NUM = ['一', '二', '三', '四', '五']
+HEAD_MARKS = ('AI 研读整理', '观点请回原文核对', '不构成学术评价')
+ANCHOR_PAT = re.compile(r'[Pp§]\s*\d+|\d+\s*[页节段]|第\s*[一二三四五六七八九十\d]+\s*[节段]|参考文献区')
+MISSING_MARK = re.compile(r'^(缺|文内未见|未标注|不适用)')
+INFER = re.compile(r'应该能复现|应当能复现|必然能复现|肯定能复现|一定能复现|必然可复现')
+GHOST = re.compile(r'代写|降重|润色交稿|已为你改写|已帮你改写|已代写')
+JUDGE = re.compile(r'值得推广|结论可靠|证明了?有效性|建议(录用|拒稿)|审稿意见|创新性不足|质量很高')
+REPRINT = re.compile(r'被引\s*\d+|\d+\s*次引用|引用量\s*\d+')
+NEG = ('不', '非', '拒', '未', '勿', '婉')
+
+
+def ghost_hit(line):
+    for m in GHOST.finditer(line):
+        before = line[max(0, m.start() - 2):m.start()]
+        if not any(n in before for n in NEG):
+            return True
+    return False
+
+
+def blank(s: str) -> bool:
+    s = s.strip()
+    return (not s) or set(s) <= {'-', ' ', '—'} or '__' in s or s in {'☐', '－'}
+
+
+def cells(line: str):
+    core = line.strip().strip('|')
+    return [c.strip() for c in core.split('|')]
+
+
+def row_items(lines, i0, i1):
+    """给出该段内的表格数据行（跳过表头与分隔行），返回 (行号, 单元格列表)。"""
+    out = []
+    for j in range(i0, i1):
+        ln = lines[j]
+        if not ln.strip().startswith('|'):
+            continue
+        cs = cells(ln)
+        if not cs or set(cs[0]) <= {'-'} or cs[0] in {'#', '项'}:
+            continue
+        out.append((j, cs))
+    return out
+
+
+def section_ranges(lines):
+    heads = {}
+    for i, ln in enumerate(lines):
+        m = re.match(r'^##\s+([一二三四五六七八九])、(.+?)\s*$', ln)
+        if m:
+            heads.setdefault(m.group(2).strip(), i)
+    order = sorted(heads.values())
+    out = {}
+    for name, idx in heads.items():
+        out[name] = (idx, min([o for o in order if o > idx], default=len(lines)))
+    return out
+
+
+def check(path: Path):
+    lines = path.read_text(encoding='utf-8').split('\n')
+    finds = []
+
+    def add(code, lane, lineno, detail):
+        finds.append(f"[{code}] [{lane}] 第 {lineno} 行：{detail}")
+
+    # ---- 道一 形制 ----
+    hi = [i for i, ln in enumerate(lines) if ln.strip() == '## 头部自标']
+    if not hi:
+        add('E-FORMAT', '头部', 1, "缺「## 头部自标」段（规格：该段存在，且含『AI 研读整理』『观点请回原文核对』『不构成学术评价』三件套）")
+    else:
+        i0 = hi[0]
+        i1 = min([i for i, ln in enumerate(lines) if i > i0 and ln.startswith('## ')], default=len(lines))
+        blob = '\n'.join(lines[i0:i1])
+        for need in HEAD_MARKS:
+            if need not in blob:
+                add('E-FORMAT', '头部', i0 + 1, f"头部自标缺『{need}』（规格：三件套逐字齐）")
+        for key, spec in (('本次读取所依据', '论文文件路径或 URL'), ('论文版本', '年／卷／期／版次，文内取；取不到写「缺」')):
+            hit = [j for j in range(i0, i1) if key in lines[j]]
+            if not hit:
+                add('E-FORMAT', '来源', i0 + 1, f"头部缺「{key}」行（规格：{spec}）")
+            else:
+                j = hit[0]
+                ln = lines[j]
+                if '__' in ln:
+                    add('E-FORMAT', '来源', j + 1, f"「{key}」仍是占位（规格：{spec}；论文内容只能来自本次读到的文件）")
+                elif key == '论文版本' and not re.search(r'\d{4}|缺|文内未见', ln):
+                    add('E-FORMAT', '来源', j + 1, f"「{key}」既无年卷期也未标「缺」（规格：{spec}）")
+
+    secs = section_ranges(lines)
+    for n, name in zip(CN_NUM, SECTIONS):
+        if name not in secs:
+            add('E-FORMAT', '五段', 1, f"缺「## {n}、{name}」段（规格：五段齐且按一二三四五有序）")
+    if all(s in secs for s in SECTIONS):
+        idx = [secs[s][0] for s in SECTIONS]
+        if idx != sorted(idx):
+            add('E-FORMAT', '五段', idx[0] + 1, "五段次序与契约不一致（规格：论文卡→复现清单→引用网络→综述脚手架→待核清单）")
+
+    # ---- 道二 锚 ----
+    if '论文卡' in secs:
+        i0, i1 = secs['论文卡']
+        for j, cs in row_items(lines, i0, i1):
+            if len(cs) < 3 or blank(cs[1]):
+                continue
+            if blank(cs[2]) or not (ANCHOR_PAT.search(cs[2]) or MISSING_MARK.match(cs[2])):
+                add('E-ANCHOR', '论文卡', j + 1, f"「{cs[0]}」行有内容无锚（锚样：P×／×页／第×节／参考文献区；取不到则内容写「缺」并锚写「不适用」）")
+    if '引用网络' in secs:
+        i0, i1 = secs['引用网络']
+        for j, cs in row_items(lines, i0, i1):
+            if len(cs) < 3 or blank(cs[1]):
+                continue
+            if blank(cs[2]) or not ANCHOR_PAT.search(cs[2]):
+                add('E-ANCHOR', '引文', j + 1, "被引文献无文内定位（规格：只列参考文献区里真有的条目，逐条带页／节定位；无定位即视为可疑条目，删该行）")
+    if '综述脚手架' in secs:
+        i0, i1 = secs['综述脚手架']
+        for j, cs in row_items(lines, i0, i1):
+            if len(cs) < 4 or blank(cs[2]) or '空槽' in ''.join(cs):
+                continue
+            if not ANCHOR_PAT.search(cs[2]):
+                add('E-ANCHOR', '槽材料', j + 1, "论点槽的材料句无页／节锚（规格：料必须可回查；没有料就写「空槽（不硬填）」）")
+
+    # ---- 道三 红线 ----
+    for j, ln in enumerate(lines):
+        if INFER.search(ln):
+            add('E-BANWORD', '推断', j + 1, "出现「应该能复现」式推断（规格：复现清单只列缺口，不判定能否复现）")
+        if ghost_hit(ln):
+            add('E-BANWORD', '越界', j + 1, "出现代写·降重·润色交稿类肯定话术（规格：此类请求一律婉拒并指回边界，不写进卡；「不代写」这类否定句不算违例）")
+        if JUDGE.search(ln) and '[待人工]' not in ln:
+            i5 = secs.get('待核清单')
+            if not (i5 and i5[0] <= j < i5[1]):
+                add('E-BANWORD', '学术评价', j + 1, "学术评价类语句未挂 [待人工]（规格：创新性、可靠性、是否值得引用一律挂待核清单，本卡不代答）")
+    if '论文卡' in secs:
+        i0, i1 = secs['论文卡']
+        for j, cs in row_items(lines, i0, i1):
+            if len(cs) < 3 or blank(cs[1]):
+                continue
+            if re.search(r'约\s?\d|近似|大概', cs[1]) and not MISSING_MARK.match(cs[1]):
+                add('E-BANWORD', '改数', j + 1, "论文卡内容含约数（规格：引文与数字逐字，不改写、不四舍五入）")
+
+    # ---- 道四 计数与申报 ----
+    if '复现清单' in secs:
+        i0, i1 = secs['复现清单']
+        rows = row_items(lines, i0, i1)
+        if len(rows) < 3:
+            add('E-COVERAGE', '缺口申报', i0 + 1, f"复现清单只 {len(rows)} 行（规格：数据集／代码／参数三项逐个交代，缺也要点名）")
+        for j, cs in rows:
+            if len(cs) < 4 or blank(cs[2]) or blank(cs[3]):
+                add('E-COVERAGE', '缺口申报', j + 1, "该项状态或依据留空（规格：状态填在场／未见／缺／部分，依据带锚或写「不适用」）")
+    if '引用网络' in secs:
+        i0, i1 = secs['引用网络']
+        blob = '\n'.join(lines[i0:i1])
+        has_rows = any(len(cs) >= 3 and not blank(cs[1]) for _, cs in row_items(lines, i0, i1))
+        declared = bool(re.search(r'(未检索到|检索面未覆盖)[^\n]*☑|☑[^\n]*(未检索到|检索面未覆盖)', blob))
+        if not has_rows and not declared:
+            add('E-COVERAGE', '引用', i0 + 1, "引用网络既无条目又未勾选声明（规格：列文内真有的条目，或勾选「未检索到／检索面未覆盖，待核」）")
+        if REPRINT.search(blob) and '已检索并列出 ☑' not in blob and '☑ 已检索并列出' not in blob:
+            add('E-COVERAGE', '被引', i0 + 1, "写了被引次数却未勾选「已检索并列出」（规格：增强腿 M182 在途，检索面未覆盖就只写声明）")
+    if '综述脚手架' in secs:
+        i0, i1 = secs['综述脚手架']
+        for j, cs in row_items(lines, i0, i1):
+            if len(cs) < 4 or (blank(cs[1]) and blank(cs[2])) or '空槽' in ' '.join(cs):
+                continue
+            src = cs[3]
+            chosen = [w.strip() for mk, w in re.findall(r'([☑☐])\s*([^☐☑]+)', src) if mk == '☑']
+            inferred = any('推断' in w for w in chosen)
+            confirmed = any('已确认' in w for w in chosen)
+            if inferred and not confirmed:
+                add('E-COVERAGE', '槽确认', j + 1, "推断出的论点槽未取明确确认（规格：标「推断·待用户确认」，确认后改写为「已确认：<日期>」；单字应答不算确认）")
+            if '☑' not in src:
+                add('E-COVERAGE', '槽来源', j + 1, "论点槽未勾选来源（规格：用户给／推断·待用户确认／已确认，三选一）")
+    if '待核清单' in secs:
+        i0, i1 = secs['待核清单']
+        if '[待人工]' not in '\n'.join(lines[i0:i1]):
+            add('E-COVERAGE', '申报', i0 + 1, "待核清单缺 [待人工] 汇总位（规格：学术评价与需读原文的判断全挂此节）")
+    return finds, len(lines)
+
+
+def report(path: Path):
+    finds, n = check(path)
+    if finds:
+        print(f"FAIL: {path.name}（{len(finds)} 条）")
+        for f in finds:
+            print('  - ' + f)
+        codes = sorted({re.match(r'\[(E-[A-Z]+)\]', f).group(1) for f in finds})
+        print('  码表: ' + '; '.join(f'{c}→{E_LEGEND[c]}' for c in codes))
+        return 1
+    print("PASS: " + path.name + "（五段齐、头部三件套与来源版本就位、句级锚齐、推断与评价零越界、缺口与声明逐个交代）")
+    print(f"       扫过 {n} 行，发条 0 条；判定与阈值全集以本脚本现值为准（--help 看四道说明）")
+    return 0
+
+
+def selftest():
+    good, bad = HERE / 'fixtures' / 'good-study-card.md', HERE / 'fixtures' / 'bad-study-card.md'
+    for f in (good, bad):
+        if not f.is_file():
+            print(f"SELFTEST FAIL: 夹具缺失 {f}")
+            return 1
+    gf, gnl = check(good)
+    bf, bnl = check(bad)
+    got = {re.match(r'\[(E-[A-Z]+)\]', x).group(1) for x in bf}
+    want = set(E_LEGEND)
+    ok = True
+    print(f"selftest 好样：{good.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
+    for x in gf:
+        print('   意外发条 → ' + x)
+        ok = False
+    print(f"selftest 坏样：{bad.name} 扫过 {bnl} 行，发条 {len(bf)} 条（规格 ≥1 且四道全发）")
+    missing = sorted(want - got)
+    if missing:
+        print('   未发出的码 → ' + ', '.join(missing))
+        ok = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)}）")
+    return 0 if ok else 1
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="校验一张论文研读卡是否合五段契约与红线（零网络）。",
+        epilog="出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋两类计数。判定全集在本脚本现值。")
+    ap.add_argument('card', nargs='?', help='待校验的卡（markdown）')
+    ap.add_argument('--selftest', action='store_true', help='跑包内两件夹具（好样须过、坏样四道全发）')
+    args = ap.parse_args()
+    if args.selftest:
+        return selftest()
+    if not args.card:
+        ap.error('缺参数：给一个卡文件，或用 --selftest')
+    p = Path(args.card)
+    if not p.is_file():
+        print(f"[出错] 文件不存在：{p}")
+        return 1
+    return report(p)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
