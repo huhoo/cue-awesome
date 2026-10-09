@@ -7,7 +7,7 @@
 不是「帮我写份上诉状」——是把判决书**逆向拆成法官的推理链**，定位争点被框错在哪一层，再从原始材料里找出被截断、被省略、被割裂的内容，最后把论证铺成**阶梯**而不是单点押注。所以它交出的东西是一整套互相咬合的文书，而不是一份孤零零的上诉状。
 
 **输入**：一审判决书 + 手上的零散材料（起诉状、庭审笔录、录音转文本、聊天记录、查询结果）
-**输出**：`今日三件事.txt` · `主控清单.md` · `复核报告.md` · `上诉状.md` · `配套文书包.md` · 四张表（拆解 / 比对 / 阶梯 / 台账）
+**输出**：`今日三件事.txt` · `主控清单.md` · `复核报告.md` · `上诉状.md` · `配套文书包.md` · 五张表（拆解 / 比对 / 阶梯 / 台账 / 败诉三面）
 **代价**：Phase 0 半天收口，之后按判决书与卷宗的体量推进；**上诉期 15 日是硬约束**
 **线索通道**：路径与先例线索可由 `cue-research` 列候选（法条、司法解释、类案）——**线索不是结论**，裁判结果不作承诺，一律以官方来源核对后才入表。
 
@@ -121,7 +121,7 @@ Phase 0-6 不是这四个动词之外的第五件事，它们是这四个动词�
 mkdir -p ~/.workbuddy/skills
 cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 
-# 2. 初始化一个案件工作目录（生成四张表 + 主控/复核/上诉状/配套文书包骨架）
+# 2. 初始化一个案件工作目录（生成五张表 + 主控/复核/上诉状/配套文书包骨架 + 今日三件事.txt）
 python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-case --case "（2026）京××××民初××××号"
 ```
 
@@ -131,7 +131,7 @@ python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-ca
 
 ```bash
 python scripts/init_case.py --help          # 参数说明，零网络
-python scripts/init_case.py /tmp/case-demo  # 生成 8 个骨架文件，已存在的不覆盖
+python scripts/init_case.py /tmp/case-demo  # 生成 10 个文件，已存在的不覆盖
 ls /tmp/case-demo                           # 应见 5 张表 + 4 份骨架 + 今日三件事.txt + 归档/
 ```
 

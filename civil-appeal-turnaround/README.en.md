@@ -9,7 +9,7 @@
 This is not "draft me an appeal" — it **reverse-engineers the judgment into the judge's own chain of reasoning**, locates the level at which the issue was framed wrong, recovers what was truncated, omitted or split off from the raw materials, and finally lays the argument out as a **ladder** instead of a single bet. So what it hands back is a set of interlocking documents, not one isolated appeal brief.
 
 **Input**: the first-instance judgment + whatever loose material you hold (statement of claim, hearing transcript, recording transcripts, chat records, lookup results)
-**Output**: `今日三件事.txt` (day-one three actions) · `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · four tables (breakdown / diff / ladder / ledger)
+**Output**: `今日三件事.txt` (day-one three actions) · `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · five tables (breakdown / diff / ladder / ledger / loss three-faces)
 **Cost**: half a day for the Phase 0 close-out, then it scales with the judgment and the case file; **the 15-day appeal window is a hard constraint**
 **Lead channel**: statutes, judicial interpretations and similar cases can be listed as candidates via `cue-research` - **a lead is not a conclusion**; no outcome is promised, and nothing enters the tables before it is verified against official sources.
 
@@ -123,7 +123,7 @@ This skill's own scripts and flow stay offline. Both channels below are **auxili
 mkdir -p ~/.workbuddy/skills
 cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 
-# 2. Initialise a case working directory (four tables + master / report / appeal / pack skeletons)
+# 2. Initialise a case working directory (five tables + master / report / appeal / pack skeletons + day-one three actions)
 python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-case --case "(2026) Jing XXXX Minchu XXXX"
 ```
 
@@ -133,7 +133,7 @@ On first entry, read `assets/败诉三面表.md` (the take-stock sheet) and the 
 
 ```bash
 python scripts/init_case.py --help          # usage; no network
-python scripts/init_case.py /tmp/case-demo  # writes 8 skeleton files, never overwrites existing ones
+python scripts/init_case.py /tmp/case-demo  # writes 10 files, never overwrites existing ones
 ls /tmp/case-demo                           # expect 5 tables + 4 skeletons + today-three-things + 归档/
 ```
 
