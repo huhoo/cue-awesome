@@ -25,7 +25,7 @@ import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, url
 UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
 # ---------------------------------------------------------------- text utils
 import unicodedata
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 class CueError(Exception):
     """a user-facing error: printed as one line on stderr, exit code 2 (no traceback)"""
 def nrm_map(s):
