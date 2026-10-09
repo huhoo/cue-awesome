@@ -30,6 +30,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`tear-sheet/`](tear-sheet/) | tear-sheet | [frontmatter](tear-sheet/SKILL.md) | Company tear-sheet (client meeting prep): ≤5 subjects + context → five fixed sections, every line disclosure-anchored, header carries asof + channel usage; zero deep-research by default; opinion slots always `[待人工]`. **Adversarial final review passed (2026-09-21); first real runs on record — counts and the still-unverified scope are stated in this package's README status section.** |
 | [`sector-overview/`](sector-overview/) | sector-overview | [frontmatter](sector-overview/SKILL.md) | Industry cycle briefing (six sections): every trend judgement must sit in the same line as its comparable-series anchor, else the verbatim "no comparable series, no cycle judgement" applies; policy timeline uses three-part statute anchors. **Adversarial final review passed (2026-09-21); first real runs on record — counts and the still-unverified scope are stated in this package's README status section.** |
 | [`dd-checklist/`](dd-checklist/) | dd-checklist | [frontmatter](dd-checklist/SKILL.md) | A due-diligence screen from public disclosures: nine risk categories, every entry anchor-bound; what could not be checked is stated as such — no investment verdict, no legal opinion. **Real-subject end-to-end run on record; adversarial re-review closed — the verified scope and the remaining unverified tiers are stated in this package's README status section.** Base provenance: see [NOTICE.md](NOTICE.md) §financial-suite. |
+| [`civil-appeal-turnaround/`](civil-appeal-turnaround/) | civil-appeal-turnaround | [frontmatter](civil-appeal-turnaround/SKILL.md) | Second-instance turnaround after losing at first instance: reverse-engineers the judgment into the judge's own chain of reasoning to find where the issue was framed wrong, diffs each exhibit against its source for truncated / omitted / split passages, then lays the argument out as a ladder whose first two tiers need no new evidence. Outputs a master checklist, a review report, an appeal with a summary up front, a same-day filing pack (continued preservation, evidence collection, summoning a party for questioning) and four tables. Working drafts and structure, not legal advice — article numbers are deliberately left for the user to verify before filing. |
 
 ## Financial-research suite roadmap
 
@@ -59,7 +60,7 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ## Install
 
-All ten skills, `cue-omni-ontology` and `cue-lead-pieces` included, ship as one ZIP asset each on the release page below — install any of them with the same three steps; copying a skill's directory out of this repository is the other way in.
+All eleven skills, `cue-omni-ontology` and `cue-lead-pieces` included, ship as one ZIP asset each on the release page below — install any of them with the same three steps; copying a skill's directory out of this repository is the other way in.
 
 The current release is <https://github.com/huhoo/cue-awesome/releases/tag/v2026.10.08>. Later repository changes are not in it until the next release; check the release and the installed skill's frontmatter.
 
@@ -69,7 +70,7 @@ mkdir -p ~/.workbuddy/skills/tear-sheet
 unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
+Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
 To choose from all current skills: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
 Third route, the skills CLI: `npx skills add huhoo/cue-awesome` (lists all) / `npx skills add huhoo/cue-awesome --skill journal-draft` (one).
 On Windows the destination is `C:\Users\<username>\.workbuddy\skills\` — same three steps, same file names.
