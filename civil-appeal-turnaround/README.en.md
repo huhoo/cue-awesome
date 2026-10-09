@@ -9,7 +9,7 @@
 This is not "draft me an appeal" — it **reverse-engineers the judgment into the judge's own chain of reasoning**, locates the level at which the issue was framed wrong, recovers what was truncated, omitted or split off from the raw materials, and finally lays the argument out as a **ladder** instead of a single bet. So what it hands back is a set of interlocking documents, not one isolated appeal brief.
 
 **Input**: the first-instance judgment + whatever loose material you hold (statement of claim, hearing transcript, recording transcripts, chat records, lookup results)
-**Output**: `今日三件事.txt` (day-one three actions) · `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · five tables (breakdown / diff / ladder / ledger / loss three-faces)
+**Output**: `今日三件事.txt` (day-one three actions) · `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · five tables (breakdown / diff / ladder / ledger / loss three-faces) · **a Word filing copy** (`*.docx`, exported from the markdown: official-document typography + page numbers in the footer)
 **Cost**: half a day for the Phase 0 close-out, then it scales with the judgment and the case file; **the 15-day appeal window is a hard constraint**
 **Lead channel**: statutes, judicial interpretations and similar cases can be listed as candidates via `cue-research` - **a lead is not a conclusion**; no outcome is promised, and nothing enters the tables before it is verified against official sources.
 
@@ -164,6 +164,7 @@ Do it as **one verification session**, not a re-delegation: bring `事实台账.
 ## 6. Dependencies
 
 - `python3` (only `scripts/init_case.py`; standard library, no third-party packages, no network requests)
+- `python-docx` (**optional**, needed only by `scripts/export_docx.py` to produce the Word filing copy): `python -m pip install python-docx -i https://pypi.tuna.tsinghua.edu.cn/simple`. Without it you simply get no `.docx`; everything else is unaffected, and the script reports the install command rather than degrading silently.
 - Apart from the two **optional** auxiliaries above (`cue-omni-reader` for material, `cue-research` for statute and case leads) there is no other dependency: absent tools degrade without error, the user confirms before either is run, and the judgment plus materials come from the user - when material cannot get in, see the channel section at the end of section 2.
 
 ## 7. Contents
@@ -176,9 +177,10 @@ Do it as **one verification session**, not a re-delegation: bring `事实台账.
 | `references/03-legal-ladder.md` | Liability ladder: four patterns, how to write the three elements of apparent authority |
 | `references/04-fact-ledger-and-discipline.md` | Fact ledger, A/B/C grades, correction mechanism, red-line list |
 | `references/05-self-represented-filing.md` | Self-represented practice: deadlines, filing channels, fees, file inspection, qualification checks, **minimum outsourcing: paid spot-checks** |
-| `references/06-document-pack.md` | Pack structure, how to write the summary, sync mechanism, version notes |
+| `references/06-document-pack.md` | Pack structure, how to write the summary, sync mechanism, version notes, **exporting and fidelity-checking the Word filing copy** |
 | `references/07-worked-example.md` | A redacted worked example |
 | `assets/` | Five table templates (breakdown / diff / ladder / ledger / loss three-faces) |
 | `scripts/init_case.py` | Case directory initialiser |
+| `scripts/export_docx.py` | Markdown to Word filing copy (official-document or brief style), with `--check` text-coverage verification |
 
 Version history lives in `CHANGELOG.md`. `README.md` is the Chinese primary of this file.

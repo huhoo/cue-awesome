@@ -1,5 +1,37 @@
 # CHANGELOG（civil-appeal-turnaround）
 
+### 0.3.0 — 2026-10-10（minor·新增 Word 递交稿导出链）
+
+Added
+
+- **`scripts/export_docx.py`：markdown → Word 递交稿。** 缘起很直接——markdown 对普通用户不方便：打印、递交法院、给律师核、给打印店，要的都是 Word。且递交件要公文体排版与页码，这不是 `pandoc` 式裸转换能给的。
+- **两个样式**：`--style court`（默认，公文体：A4 / 上3.7 下3.5 左2.8 右2.6cm / 文种标题黑体二号居中 / 正文仿宋三号行距固定 28pt 首行缩进 2 字符 / 表格宋体小四 / 页脚 PAGE 域）；`--style brief`（诉状体：宋体小四 1.5 倍行距，页数少一半，给律师核或自用）。
+- **保真优先，转换 ≠ 重写。** 导出只做格式投影，不润色、不精简、不「优化措辞」——上诉状里一个字的改动可能改变意思，而这种改动不报错，只会静静变成另一个说法。markdown 仍是唯一事实源，docx 由它导出。
+- **`--check` 文本覆盖校验**（必做）：逐行比对源 md 与 docx，少了哪一行直接报出来。思路取自 `journal-draft` 的 crosscheck 与「空转测试」——内容丢失不会报错，只会静静少一段，递交法院的文书尤其不能接受。
+- **`--strip-emoji`**：递交件去 emoji（⚠️ 📌 ★ 在法院文书里不合适，部分字体还显示成方框）；自用件保留。纪律：该开关与 `--check` 必须同开同关，否则把「按要求去掉的符号」误报成「丢失的内容」。
+
+借 `journal-draft` 的两条经验
+
+- **Word 版不承担精确版面**（该件硬规则 12 的同款教训）：想让 docx 保持 mm 定位会退化成互相打架的文本框。本件只求「打印出来是规整的公文」。
+- **中文必须写 `w:eastAsia`**：python-docx 的 `font.name` 只写 ascii/hAnsi，不补 eastAsia 中文会掉回宋体。
+
+实测修掉的两个坑（都写在 `references/06` §七）
+
+| 现象 | 真因 | 处理 |
+|---|---|---|
+| 递交件里出现反引号残留（如 \`xxx.md\`） | 粗体内部还套行内代码，整段按粗体原样写入 | 粗体分支递归解析内部 code / link |
+| 校验报「缺 N 行」但没真缺 | 导出开了 `--strip-emoji`，校验却拿带 emoji 的源去比 | 校验与导出共用同一开关 |
+
+**实测**：本案六件（上诉状／配套文书包／复核报告／总清单／证据目录／自行诉讼手册）共 1619 行源文本，导出后零丢失；排版抽查 A4、边距、黑体二号居中、仿宋三号、首行缩进 32pt、行距 28pt、页脚 PAGE 域、markdown 标记零残留。
+
+Docs
+
+- `SKILL.md`：交付物约定加「Word 递交稿」；Phase 5 加导出一步；资源索引加脚本；frontmatter `metadata.requires.optional` 声明 python-docx。
+- `references/06-document-pack.md` 新增 **§七 Word 递交稿（导出与保真校验）**（原「交付前终检」顺延为 §八，并加两条 docx 检查项）。
+- README 双语：输出行加 Word 稿、依赖段加 python-docx（可选）、资源索引加脚本与 06 的新内容。
+
+版本位 0.2.3 → 0.3.0（新增能力＝minor）。`summary`／`description`／`displayName` 一字未动；`scripts/init_case.py` 与 `assets/` 零触碰。
+
 ### 0.2.3 — 2026-10-09（patch·门面四问第 1 条：名字补价值点）
 
 Fixed
