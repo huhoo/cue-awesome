@@ -1,5 +1,10 @@
 # CHANGELOG(paper-study-cn)
 
+### 0.2.1 — 2026-10-09（M192：§2 增强腿句按 M182 账改写，四面同步）
+
+- 改写依据=`verify/academic-backtest-2026-10-09.md`（M182）：文献检索腿 4 枪全撞 HTTP 429、零数据，**结论＝不立**；限流归因未辨（共享池／本机配额／上游对通道限流皆未排除，只记事实，不下归因）；NIH 与 NSF 各一次 live 正例，判为**辅助信息源**（存在性证明非稳定性证明）；重入口径＝哨兵单枪探 429→200 翻转＋catalog-diff 后重跑该账，补字段／日期形／PDF 锚／中文语料四项。
+- 同步面：`SKILL.md` §2 那一行（lead 授权改写，节题「留白」随之改「未立」，尾注记明按账改写、旧句存 git 历史）、`README.md` 三处、`README.en.md` 两处、`assets/论文研读卡.md` 引用网络段一处、`scripts/check_study_card.py` 三处（docstring 两行＋详行规格）。共 11 处、5 面。禁句实扫：「论文检索可达」在五面**零出现**（除作为被禁对象的自指句外无肯定式用法，见探针）；机检继续不校验学术检索结果——**未在证的面上不建闸**不因文案改写而放松。
+- 版本位：patch 位 0.2.1（`SKILL.md`／本条同号；本件无 `manifest.yaml`、无 `SKILL.en.md`、脚本内无版本锁）。名述面本次零改动，门面三枚复测仍 displayName 17／summary 61／description 264。
 ### 0.2.0 — 2026-10-09（M186 核心腿细化：README 双语＋五段卡模板＋四道机检器；SKILL 契约一字未改）
 
 - 面：`README.md` 由 P0 骨架 6 行重写为九节（Q4 合规＝第一节给动词级三步，每步注「不做会怎样」，并保留骨架原句「第一次进入怎么说」）、新增 `README.en.md`（九节对点）、新增 `assets/论文研读卡.md`（五段模板，段名与 `SKILL.md` §3 逐字一致）、新增 `scripts/check_study_card.py`＋`scripts/fixtures/good-study-card.md`／`bad-study-card.md`。`SKILL.md` 只动 `version:` 一行；§1 输入契约、§3 五段、§4 红线在卡与闸里逐条落地，不新增承诺。
