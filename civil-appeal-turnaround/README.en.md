@@ -127,7 +127,7 @@ cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-case --case "(2026) Jing XXXX Minchu XXXX"
 ```
 
-On first entry, read `assets/败诉三面表.md` (the take-stock sheet) and the four table templates, then `references/07-worked-example.md` (a redacted run through the whole flow).
+On first entry, read `assets/败诉三面表.md` (the take-stock sheet) and the other four table templates, then `references/07-worked-example.md` (a redacted run through the whole flow). Every file under `references/` opens with a **door-sign anchor** (verb / phase / where it lands / where to stop), so you can follow the anchors without re-checking the mapping table in `SKILL.md`.
 
 ### Self-check
 
@@ -171,14 +171,14 @@ Do it as **one verification session**, not a re-delegation: bring `事实台账.
 | File | Purpose |
 |---|---|
 | `SKILL.md` | Main instructions (Chinese primary) |
-| `references/01-judgment-reverse-engineering.md` | Reverse-engineering: chain rebuild, frame-level error, 20-item checklist |
+| `references/01-judgment-reverse-engineering.md` | Reverse-engineering: chain rebuild, frame-level error, five-layer root causes, **root cause to three-faces**, 20-item checklist |
 | `references/02-evidence-diff-protocol.md` | Evidence diff: spotting and phrasing truncated / omitted / split |
 | `references/03-legal-ladder.md` | Liability ladder: four patterns, how to write the three elements of apparent authority |
 | `references/04-fact-ledger-and-discipline.md` | Fact ledger, A/B/C grades, correction mechanism, red-line list |
-| `references/05-self-represented-filing.md` | Self-represented practice: deadlines, filing channels, fees, file inspection, qualification checks |
+| `references/05-self-represented-filing.md` | Self-represented practice: deadlines, filing channels, fees, file inspection, qualification checks, **minimum outsourcing: paid spot-checks** |
 | `references/06-document-pack.md` | Pack structure, how to write the summary, sync mechanism, version notes |
 | `references/07-worked-example.md` | A redacted worked example |
-| `assets/` | Four table templates + `败诉三面表.md` (take-stock sheet) |
+| `assets/` | Five table templates (breakdown / diff / ladder / ledger / loss three-faces) |
 | `scripts/init_case.py` | Case directory initialiser |
 
 Version history lives in `CHANGELOG.md`. `README.md` is the Chinese primary of this file.
