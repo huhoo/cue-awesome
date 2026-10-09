@@ -125,7 +125,7 @@ cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-case --case "（2026）京××××民初××××号"
 ```
 
-首次进入先看 `assets/` 里的 `败诉三面表.md`（盘点）与四张表模板，再看 `references/07-worked-example.md`（一份走通全流程的脱敏实例）。
+首次进入先看 `assets/` 里的 `败诉三面表.md`（盘点）与其余四张表模板，再看 `references/07-worked-example.md`（一份走通全流程的脱敏实例）。`references/` 每份开头都有**门牌锚点**（动词／Phase／落点／读到哪为止），按锚点走即可，不必回查 `SKILL.md` 的映射表。
 
 ### 自校验
 
@@ -169,14 +169,14 @@ ls /tmp/case-demo                           # 应见 5 张表 + 4 份骨架 + �
 | 文件 | 用途 |
 |---|---|
 | `SKILL.md` | 主指令（中文权威） |
-| `references/01-judgment-reverse-engineering.md` | 判决逆向工程：推导链还原、框架层错误、20 项拆解清单 |
+| `references/01-judgment-reverse-engineering.md` | 判决逆向工程：推导链还原、框架层错误、五层根因、**根因→三面归置**、20 项拆解清单 |
 | `references/02-evidence-diff-protocol.md` | 证据逐字比对：截断 / 省略 / 割裂的识别与表述模板 |
 | `references/03-legal-ladder.md` | 责任归属阶梯：四种范式、表见代理三要件写法 |
 | `references/04-fact-ledger-and-discipline.md` | 事实台账、A/B/C 等级、定性更正机制、红线清单 |
-| `references/05-self-represented-filing.md` | 自行诉讼操作：期限、递交渠道、费用、阅卷、程序资格核查 |
+| `references/05-self-represented-filing.md` | 自行诉讼操作：期限、递交渠道、费用、阅卷、程序资格核查、**最小外包的单点付费核验** |
 | `references/06-document-pack.md` | 文书包结构、总述写法、同步机制、版本说明 |
 | `references/07-worked-example.md` | 脱敏实例 |
-| `assets/` | 四张表模板 + `败诉三面表.md`（盘点用） |
+| `assets/` | 五张表模板（拆解 / 比对 / 阶梯 / 台账 / 败诉三面） |
 | `scripts/init_case.py` | 案件目录初始化 |
 
 版本见 `CHANGELOG.md`。`README.en.md` 为本文件的英文译文。
