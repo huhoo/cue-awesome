@@ -3,13 +3,15 @@ name: civil-appeal-turnaround
 slug: cue-civil-appeal-turnaround
 displayName: 民事二审翻案工程
 summary: "一审败诉后建二审作战体系:判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见,条号递交前核对。"
-description: "民事一审败诉后的翻案工程:还原法官推理链、定位争点被框错的层;证据逐字比对截断/省略/割裂;请求权铺主攻/备位/兜底阶梯;事实台账三级出处;文书包同日递交与自行诉讼操作。不提供法律意见、不替代律师,条号与费用标准递交前核对。全程离线自包含。Triggers: 一审败诉上诉 / 二审上诉状 / 判决书拆解 / 为什么败诉 / 上诉期与继续保全 / 自行诉讼; lost at first instance / civil appeal / judgment analysis / why I lost / appeal deadline / self-represented litigant"
+description: "民事一审败诉后的翻案工程:还原法官推理链、定位争点被框错的层;证据逐字比对截断/省略/割裂;请求权铺主攻/备位/兜底阶梯;事实台账三级出处;文书包同日递交与自行诉讼操作。不提供法律意见、不替代律师,条号与费用标准递交前核对。脚本与流程离线自包含。Triggers: 一审败诉上诉 / 二审上诉状 / 判决书拆解 / 为什么败诉 / 上诉期与继续保全 / 自行诉讼; lost at first instance / civil appeal / judgment analysis / why I lost / appeal deadline / self-represented litigant"
 agent_created: true
-version: "0.1.0"
+version: "0.1.1"
 license: MIT
 metadata:
   requires:
     bins: ["python3"]
+    # 「可选」只表示「不装也能跑」，不表示「默认不用」：用时须先经使用人确认
+    recommendedSkills: ["cue-omni-reader", "cue-research"]
 ---
 
 # 民事二审翻案工程

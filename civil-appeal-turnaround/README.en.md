@@ -9,6 +9,7 @@ This is not "draft me an appeal" — it **reverse-engineers the judgment into th
 **Input**: the first-instance judgment + whatever loose material you hold (statement of claim, hearing transcript, recording transcripts, chat records, lookup results)
 **Output**: `主控清单.md` (master checklist) · `复核报告.md` (review report) · `上诉状.md` (appeal) · `配套文书包.md` (filing pack) · four tables (breakdown / diff / ladder / ledger)
 **Cost**: half a day for the Phase 0 close-out, then it scales with the judgment and the case file; **the 15-day appeal window is a hard constraint**
+**Lead channel**: statutes, judicial interpretations and similar cases can be listed as candidates via `cue-research` - **a lead is not a conclusion**; no outcome is promised, and nothing enters the tables before it is verified against official sources.
 
 ---
 
@@ -57,6 +58,20 @@ Tier 4  Fallback: requires the court to clarify the legal relationship
 | **4 · Fact ledger and discipline** | A/B/C provenance grades, red-line list, traceable corrections | `事实台账.md` |
 | **5–6 · Documents and filing** | Appeal (with a summary up front) + companion documents, filed the same day | `上诉状.md` / `配套文书包.md` |
 
+### Two optional channels for material and for leads (both bounded)
+
+This skill's own scripts and flow stay offline. Both channels below are **auxiliaries the user installs separately**, used only where material cannot get in and where candidate leads are needed; whether to use them is confirmed with the user, and their format list, size cap and covered domains are taken from their own docs as they now stand - this package neither copies those tables nor promises outcomes.
+
+**Material channel · `cue-omni-reader`**: when evidence is a scan, a recording, a video or a packed bundle and the agent's own upload path refuses it (format or size), have this tool parse it into **locatable text** (page and time anchors included) before it enters the case directory. Every bound, none dropped:
+
+- **Formats follow the local allowlist as it now stands**: `rar`/`tar`/`tgz`/`gz`/`bz2` are included, `parquet`/`xmind`/`mmap` are not - the authoritative table is that package's `references/compatibility.md`; a copy here would start rotting at once, so none is made.
+- **Per source ≤256 MiB**: larger inputs are stopped before parsing by the `constraints.max_bytes` gate (measured 268,435,456 bytes) - that is not a parse failure.
+- **Audio/video is proven only as bounded local clips/splits**: full-length meeting parsing is not established (measured: three 90-second clips from two meetings completed the chain with 8/8 verbatim re-checks; five public full-length URL attempts were refused, and a local full file is stopped by the cap above).
+- **Whether a source parses, and what it costs, are decided by the service response**: this package claims no unopened domain and infers no rate.
+- **Transcripts still obey this skill's grading discipline**: homophones and mishearings are not auto-corrected (parser output is kept as returned); a recording must be **re-listened to on its original carrier** before it can be graded A/B - until then it sits at grade C, marked pending.
+
+**Research channel · `cue-research`**: for Phase 1's "provision that should have applied but did not" and for the elements on each rung of Phase 3's ladder, it can search statutes, judicial interpretations and similar cases, producing a **candidate list** - every article text and case number first enters as **grade C (pending verification)** marked "awaiting verification against official sources", and may rise to B only after being filed into the record", the same provenance discipline this skill already applies (the eight hard constraints and the six-phase semantics are untouched). Bound: that channel covers public data sources only, its domain table is its own doc as it now stands (not hard-coded here), and **a lead is not a conclusion** - no promise of an outcome, no promise that whatever is found is usable.
+
 ---
 
 ## 3. Eight hard constraints (violating one means redoing the work)
@@ -101,13 +116,13 @@ ls /tmp/case-demo                           # expect 4 tables + 4 skeletons + �
 
 - What this skill produces is **working drafts and structure, not legal advice**; **every article number must be checked by the user before filing**, and the skill marks them all "check the article number before filing".
 - It does not replace a lawyer, nor the court's own view on procedural questions. Deadlines, amounts and filing channels follow the receiving court's current rules and notices.
-- Fully offline and self-contained: no network, no external repository, no API calls.
+- This skill's scripts and flow are offline and self-contained: no network, no external repository, no API calls. The two channels at the end of section 2 are optional auxiliaries the user installs separately, used only for parsing material and gathering leads; whether they are available, what they return and what they cost follow the service response - this skill promises no unopened domain and no outcome.
 - Where article numbers and deadlines would otherwise appear, the skill deliberately uses **descriptive wording instead of hard-coded numbers** — the risk of a model misremembering an article is held by that "check before filing" gate.
 
 ## 6. Dependencies
 
 - `python3` (only `scripts/init_case.py`; standard library, no third-party packages, no network requests)
-- Nothing else. The judgment and the materials come from the user.
+- Apart from the two **optional** auxiliaries above (`cue-omni-reader` for material, `cue-research` for statute and case leads) there is no other dependency: absent tools degrade without error, the user confirms before either is run, and the judgment plus materials come from the user - when material cannot get in, see the channel section at the end of section 2.
 
 ## 7. Contents
 
