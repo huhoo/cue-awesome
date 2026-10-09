@@ -30,6 +30,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 | [`tear-sheet/`](tear-sheet/) | tear-sheet | [frontmatter](tear-sheet/SKILL.md) | 公司一页纸(回客件):主体≤5+用途语境 → 五段固定形制、每行带披露锚、页眉含 asof 与通道用量;默认零深研,观点区永远 `[待人工]`。**对抗审已通过（2026-09-21）；实跑已在账——计数与仍未验证面以本包 README 状态段为准。** |
 | [`sector-overview/`](sector-overview/) | sector-overview | [frontmatter](sector-overview/SKILL.md) | 行业景气全景(六节):判断词必须与可比序列锚同行,无锚走逐字「不做景气判定」句;政策时间线 statute 三件齐锚。**对抗审已通过（2026-09-21）；实跑已在账——计数与仍未验证面以本包 README 状态段为准。** |
 | [`dd-checklist/`](dd-checklist/) | dd-checklist | [frontmatter](dd-checklist/SKILL.md) | 公开信息预尽调清单-cn：唯一主体 + 回溯窗口 → 九类风险逐条带锚摊开，缺什么/查不到什么同表记账；不出投资判断、不出法律意见。**真实主体端到端已在账；复审已闭——已验范围与仍未验证面以本包 README 状态段为准。** 基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
+| [`civil-appeal-turnaround/`](civil-appeal-turnaround/) | civil-appeal-turnaround | [frontmatter](civil-appeal-turnaround/SKILL.md) | 民事一审败诉后的二审翻案工程：把判决书逆向拆成法官的推理链，定位争点被框错在哪一层；逐字比对原始材料，找出被截断 / 被省略 / 被割裂的内容；再把论证铺成阶梯，硬判据是前两层不依赖任何新证据。产出主控清单、复核报告、带总述的上诉状、同日递交的配套文书包（继续保全 / 调证 / 传唤当事人到庭）、四张表。交付的是工作稿与结构，不是法律意见——法条条号刻意留给使用人递交前核对。 |
 
 ## 金融研究套件路线图
 
@@ -59,7 +60,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 ## 安装
 
-十件（含 `cue-omni-ontology`、`cue-lead-pieces`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
+十一件（含 `cue-omni-ontology`、`cue-lead-pieces`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
 
 当前发布页为 <https://github.com/huhoo/cue-awesome/releases/tag/v2026.10.08>。之后仓库里的改动要等下一次发布才进 ZIP，请核对发布页和已安装 skill 的 frontmatter。
 
@@ -69,7 +70,7 @@ mkdir -p ~/.workbuddy/skills/tear-sheet
 unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
+三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
 要从当前全部 skill 中选择：`git clone https://github.com/huhoo/cue-awesome.git`，再把需要的子目录拷进 `~/.workbuddy/skills/`。
 第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。
 Windows 目标路径：`C:\Users\<用户名>\.workbuddy\skills\`——三步与文件名同上。
