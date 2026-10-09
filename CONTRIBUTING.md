@@ -71,6 +71,7 @@ Triggers: 竞品分析 / 竞品简报 / 这个市场要不要进; competitive an
 - **CHANGELOG**：有 `CHANGELOG.md` 的 skill，最新条目版本要等于 `SKILL.md` 的 `version`（不一致只是 WARN，但请顺手对齐）。头部形制：首条即版本条（`### x.y.z` 起，不留 `Unreleased` 壳），插入用版本条标题做锚、锚失配必须硬失败。
 - **脚本**：`scripts/` 下的脚本要 `--help` 可跑；默认零网络请求（除非这个 skill 本身就是网络能力）。
 - **双语规则细则**见 [`docs/i18n.zh-CN.md`](docs/i18n.zh-CN.md)：无后缀 = 权威版，`.en` / `.zh-CN` = 译文，改一个就要改另一个。
+- **换装 release 资产**：`gh release upload --clobber` 的目标资产名取自上传文件的 basename——文件名必须与仓内登记的资产名逐一对上，错名上传＝静默新增杂项资产而旧件原样在架。换装后必做供体面复核：重新下载该资产、比对 sha256 与本地构建同值；只核「SKILL.md 版本行」拦不住内容回吐旧字节的场景。误挂的杂项资产当场 `DELETE releases/assets/<id>` 清掉再收工。
 
 ---
 

@@ -71,6 +71,7 @@ Triggers: 竞品分析 / 竞品简报 / 这个市场要不要进; competitive an
 - **CHANGELOG**: if the skill has one, its newest entry must equal the `SKILL.md` `version` (a mismatch is only a warning, but please align it).
 - **Scripts**: everything under `scripts/` must run with `--help`; zero network requests by default (unless networking is the skill's purpose).
 - **Bilingual rules** are in [`docs/i18n.md`](docs/i18n.md): extension-less = canonical, `.en` / `.zh-CN` = translation, edit one and you edit the other.
+- **Replacing a release asset**: the target asset name in `gh release upload --clobber` comes from the uploaded file's basename — the file name must match the registered asset name exactly; a mis-named upload silently adds a junk asset while the old one stays live. After any replacement, re-download the asset and confirm its sha256 equals the local build — checking only the SKILL.md version line will not catch stale bytes being served. Delete any accidentally attached asset (`DELETE releases/assets/<id>`) before closing the task.
 
 ---
 
