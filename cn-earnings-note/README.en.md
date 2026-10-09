@@ -90,6 +90,10 @@ locator command in section 5.
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
+
+**Error-level findings are blockers**: never describe them as harmless, ignorable, or shippable-as-is - fix them, or declare them explicitly on the deliverable.
+
 Shapes are taken from **the current output** of `check_note.py`, captured by running it: on failure one line `FAIL: <file> (N items)`; detail lines **start with an error-code prefix (one of the five `E-*` codes), then the original check label** (`[E-BANWORD] [禁用词] (banned)`, `[E-COVERAGE] [数字] (number)`, `[E-FORMAT] [声明] (declaration)`), followed by the line number and that check's spec; the final `code legend:` line lists only the codes used. A clean pass prints `PASS: <file> (numbered lines X/Y tagged, four gates passed)`.
 
 The five codes form a closed, suite-wide identical set (byte-identical with the four siblings): `E-FORMAT` / `E-ANCHOR` / `E-BANWORD` / `E-COVERAGE` / `E-LEDGER`. Handling is not restated here - **it is printed in the `code legend:` line**; which label maps to which code in this package is the classifier inside `check_note.py`, printable from anywhere by swapping these two keys into the grep in section 5:
@@ -109,6 +113,7 @@ The five codes form a closed, suite-wide identical set (byte-identical with the 
 
 ## 8. How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its data date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **data date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (code + period)**: "Give me the 2026 H1 deep-dive note for 600519" - the shape in section 2; five
   questions fill the contract and work starts.
 - **Positive (complex: user-supplied material + focus + output dir)**: "Subject is Oriental Yuhong (002271.SZ),

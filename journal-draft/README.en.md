@@ -248,6 +248,7 @@ This table is about mis-usage. For "work we do not take", see the ⑤ table in s
 
 ## 10. When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
 Symptoms are taken from the **current actual output** of the four scripts (real runs, not design intent): gate scripts
 print a human-readable report ending in `── FAIL n / WARN m`; a missing argument prints the argparse usage block and
 exits with **code 2**; `crosscheck.py` with no artifact prints
@@ -267,6 +268,7 @@ exits with **code 2**; `crosscheck.py` with no artifact prints
 
 ## 11. How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its issue and build date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **issue and build date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (sample in hand, full chain)**: "Last issue's sample is `~/ink/sample.pdf`, this issue's six columns of
   material are in `~/ink/mat/`; give me an editable draft, and the PDF too" - `+learn` measures the layout, `+brief` fixes
   the positioning with three questions, then the chain runs. Paths supplied up front mean work starts immediately;

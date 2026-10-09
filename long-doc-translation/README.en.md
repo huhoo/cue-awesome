@@ -77,6 +77,7 @@ and check lists stay in the scripts as they now stand (grep line above).
 
 ## When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
 Written from the **current actual output** of these scripts: none of them throws a traceback. A bad or missing path
 prints `[出错] <cause>` (the bracketed tag is Chinese in the shipped text) followed by lines starting
 `→ · <fix suggestion>` and exits 1 - measured behaviour: a missing directory always exits 1 with those hints and never
@@ -93,6 +94,7 @@ prints `[出错] <cause>` (the bracketed tag is Chinese in the shipped text) fol
 
 ## How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its source edition and translation date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **source edition and translation date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (whole book)**: "Translate this 300-page German monograph into a Chinese master draft, terminology unified
   book-wide, with a verifiable master and a reading HTML" - the main scenario, full pipeline; pass `--expect` with an
   expected segment count so the QA checks reconcile against it.

@@ -122,6 +122,7 @@ python3 scripts/cue.py --help
 
 ## 出错了怎么办（症状 → 原因 → 恢复动作）
 
+**未见于本次返回的一律写「未检索到」**：参数名、字段名、枚举值没有出现在本次工具返回里的，不得凭印象填写；写「未检索到」并记入待核清单或覆盖率账，不得留空顶替。
 - Omni 返回 `OMNI_NOT_ENTITLED` / 403、额度不足，或你不同意花费 → 账号未开通或未批准消耗 → 按官方 cue-omni-reader 的提示处理；不想花就运行 `cue.py local DIR` 走本地兜底，回答里会标明。
 - Omni 返回 `UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE` → 这份文件拿不到带页码的 grounded 结果 → 用默认文本结果存成 `<sid>.md` 再 `ingest`，页码会标成文本块号；要原页码就对这份走 `cue.py local`。
 - `ingest` 输出 `warning: incomplete page [...]` 或 `truncated` → Omni 这次有页面没解析完 → 这些页的引文核对不到；对这份重新解析前先问用户（可能再次计费），或对这份走 `cue.py local`。
@@ -138,6 +139,7 @@ python3 scripts/cue.py --help
 
 ## 怎么开口（触发示例：三条正例 + 一条反例）
 
+**开口请带上时点，输出标来源日期**：请求里给出报告期／基准日或回看窗口；成品首行标注**来源日期**，当它与用户所指日期不一致时，正文禁用「今日」「最新」，一律改写为「截至 <日期>」。
 - 正例：“用 cue-lead-pieces 看看 600606 最近一年的披露里有哪些信用恶化信号，带原文页码；年报用 Omni 解析，公告本地解析就行。”
 - 正例：“这份答案里的引文帮我逐句核对一下是不是原文。”（附 answer.json 和数据目录）
 - 正例：“Check the latest 10-Q of QVCG for going-concern and covenant language, with page numbers.”

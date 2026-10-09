@@ -75,6 +75,10 @@ speculation family and anchor shapes are whatever `check_page.py` holds now (loc
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
+
+**Error-level findings are blockers**: never describe them as harmless, ignorable, or shippable-as-is - fix them, or declare them explicitly on the deliverable.
+
 Shapes are taken from **the current output** of `check_page.py`, captured by running it: on failure one line `FAIL: <file> (N items)`; detail lines **start with an error-code prefix (one of the five `E-*` codes), then the check label** (`[E-FORMAT] [参数] (args)`, `[E-BANWORD] [3]`, `[E-ANCHOR] [2]`, `[E-FORMAT] [4]`), then the line number and that check's spec; the final `code legend:` line lists only the codes used. A clean pass prints `PASS: <file> (four gates passed, subject blocks scanned normally)`.
 
 The five codes are a closed, suite-wide identical set (byte-identical with the four siblings): `E-FORMAT` / `E-ANCHOR` / `E-BANWORD` / `E-COVERAGE` / `E-LEDGER`. Handling is printed in the `code legend:` line; the label-to-code mapping for this package is the classifier in the script, printable from anywhere by swapping these two keys into the grep in section 5:
@@ -93,6 +97,7 @@ The five codes are a closed, suite-wide identical set (byte-identical with the f
 
 ## 8. How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its data date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **data date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (single issuer)**: "Give me a one-pager on Oriental Yuhong before the client meeting" - the shape in
   section 3; at most three questions fill the contract (subject / purpose / focus).
 - **Positive (multiple issuers + purpose + focus + output dir)**: "Two names tomorrow: Midea and CATL. Purpose is a

@@ -83,6 +83,10 @@ Reviewed clauses re-assembled, no new promise. The category set, anchor kinds an
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
+
+**Error-level findings are blockers**: never describe them as harmless, ignorable, or shippable-as-is - fix them, or declare them explicitly on the deliverable.
+
 Shapes are taken from **the current output** of `check_dd.py`, captured by running it: detail lines come first, each **starting with an error-code prefix (one of the five `E-*` codes), then this package's `DD-*` diagnostic code**, followed by the line number and a Chinese cause; the last two lines are `code legend:` (only the codes used) and `RESULT: FAIL report.md (N items; code set DD-*...)`. A clean pass prints `RESULT: PASS report.md (all eight gates passed)`.
 
 The five `E-*` codes are a closed suite-wide identical set (byte-identical with the four siblings); the eight `DD-*` codes are this package's layered diagnostics - **both are printed together**: `E-*` names the handling family, `DD-*` names which gate fired. Both tables live in the script, printable from anywhere by swapping these two keys into the grep in section 5:
@@ -103,6 +107,7 @@ The five `E-*` codes are a closed suite-wide identical set (byte-identical with 
 
 ## 8. How to ask (three positive examples, one counter-example, plus how to pick the purpose tier)
 
+**Ask with a point in time; the output states its data date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **data date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (simplest)**: "Run a public-information pre-diligence ledger for Beichen Corp over the last three
   years" - a missing window or purpose triggers a question instead of a default.
 - **Positive (explicit tier + focus, complex input)**: "Subject: Beijing Oriental Yuhong Waterproof Technology

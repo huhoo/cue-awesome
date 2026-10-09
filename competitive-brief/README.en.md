@@ -76,6 +76,7 @@ stand; nothing below re-lists them exhaustively.
 
 ## When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
 This package has no scripts, therefore **there are no error codes to report**. The rows below cover process stalls and
 follow only the constraints already written in `SKILL.md` (no new vocabulary, no promise of tool capability):
 
@@ -90,6 +91,7 @@ follow only the constraints already written in `SKILL.md` (no new vocabulary, no
 
 ## How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its source date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **source date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (a single decision question)**: "Should we enter the compliance-tools market for small and mid US law
   firms - take a competitive look" - decision and competitor set first, then the evidence table; this is the shape at
   the top of this README.

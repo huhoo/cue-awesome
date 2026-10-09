@@ -17,7 +17,7 @@ class CueLeadPiecesRegression(unittest.TestCase):
     def tearDown(self): shutil.rmtree(self.d, ignore_errors=True)
     def test_frontmatter(self):
         md = (_SKILL / 'SKILL.md').read_text(encoding='utf-8'); fm = re.match(r'^---\n(.*?)\n---\n', md, re.S).group(1)
-        self.assertRegex(fm, re.compile(r'^name:\s*cue-lead-pieces$', re.M)); self.assertIn('version: "0.4.5"', fm); self.assertEqual(cue.__version__, '0.4.5')
+        self.assertRegex(fm, re.compile(r'^name:\s*cue-lead-pieces$', re.M)); self.assertIn('version: "0.4.6"', fm); self.assertEqual(cue.__version__, '0.4.6')
     def test_verify_levels(self):
         c = lambda q, p: cue.check(q, '10-K_FY2025', p, self.S)
         self.assertEqual(c('there is substantial doubt about our ability to continue as a going concern', 1)['status'], 'verbatim')

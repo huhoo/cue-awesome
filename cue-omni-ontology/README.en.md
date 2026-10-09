@@ -122,6 +122,7 @@ this table gathers it and does not restate it exhaustively.
 
 ## When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
 Written from the **current actual output** of `scripts/ontology.py` (real runs): verification commands print **one JSON
 line**. Success looks like `{"status": "valid", "counts": {...}, "semantic_verification": "not_established_by_scripts"}`
 (exit 0); failure looks like `{"status": "invalid", "error": "<cause>"}` (exit 2, on stderr); a missing subcommand or
@@ -144,6 +145,7 @@ argument prints the argparse usage and exits 2.
 
 ## How to ask (positive examples and one counter-example)
 
+**Ask with a point in time; the output states its source date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **source date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - **Positive (first try, no credentials)**: "Use cue-omni-ontology with its bundled demo: once new material is added,
   which facts are new, which conflict, and where is the basis?" - or one command,
   `python3 scripts/ontology.py demo --out <a brand-new working directory>`: no network, no parse API, and it emits a

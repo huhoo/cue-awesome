@@ -77,6 +77,10 @@ whatever `check_calendar.py` contains right now (locator command in section 5).
 
 ## 7. When something goes wrong (symptom -> cause -> recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
+
+**Error-level findings are blockers**: never describe them as harmless, ignorable, or shippable-as-is - fix them, or declare them explicitly on the deliverable.
+
 Shapes below are taken from **the current output** of `check_calendar.py`, captured by running it: a failure is one line `FAIL: <file> (N items)`; each detail line **starts with an error-code prefix (one of the five `E-*` codes), then the original check label** (`[E-FORMAT] [参数] (args)`, `[E-BANWORD] [禁词] (banned)`, `[E-ANCHOR] [双向] (bidirectional)` and so on), followed by the line number and that check's spec; the final `code legend:` line lists only the codes actually used, with their handling. A clean pass prints `PASS: <file> (... all gates passed, table rows N, --window ...)`.
 
 The five codes are a **closed, suite-wide identical** set (this package and its four siblings share the table verbatim): `E-FORMAT` (format/input/row-order), `E-ANCHOR` (missing or broken anchor chain), `E-BANWORD` (banned / rating / hallucination / human-slot hit), `E-COVERAGE` (counts, coverage, declarations disagree), `E-LEDGER` (ledger state machine or cross-link broken). This page does not restate each code's handling - **the handling is printed in the `code legend:` line itself**; the full set and its classification live in the script as it now stands (paste one line from anywhere, swapping `E_LEGEND` into the grep in section 5):
@@ -95,6 +99,7 @@ The five codes are a **closed, suite-wide identical** set (this package and its 
 
 ## 8. How to ask (three positive examples, one counter-example)
 
+**Ask with a point in time; the output states its data date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **data date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 Section 2 carries the simplest phrasing. These three are other shapes it handles, and the counter-example is an
 adjacent request that genuinely belongs to a sibling skill.
 

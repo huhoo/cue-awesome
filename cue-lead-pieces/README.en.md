@@ -122,6 +122,7 @@ python3 scripts/cue.py --help
 
 ## When something goes wrong (symptom → cause → recovery)
 
+**Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
 - Omni returns `OMNI_NOT_ENTITLED` / 403, credits run out, or you decline the spend → account not entitled or spend not approved → follow the official cue-omni-reader guidance; to avoid spending, run `cue.py local DIR` for the local fallback, and the answer says so.
 - Omni returns `UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE` → no grounded result with pages for this file → save the default text result as `<sid>.md` and `ingest` it; pages are then labeled as text-block numbers; for real pages use `cue.py local` for that file.
 - `ingest` prints `warning: incomplete page [...]` or `truncated` → Omni did not finish some pages → quotes on those pages cannot be verified; ask the user before re-parsing (it may be billed again), or use `cue.py local` for that file.
@@ -138,6 +139,7 @@ python3 scripts/cue.py --help
 
 ## How to ask (three positive examples, one negative)
 
+**Ask with a point in time; the output states its source date**: give the reporting period, reference date or look-back window in the request; the deliverable labels its **source date** on the first line, and when that differs from the date you asked about, the text never says "today" or "latest" - it reads "as of <date>".
 - Positive: "Use cue-lead-pieces to find credit-deterioration signals in 600606's filings over the last year, with page numbers; parse the annual reports with Omni, announcements locally is fine."
 - Positive: "Check sentence by sentence whether the quotes in this answer are really in the source." (with answer.json and the data directory)
 - Positive: "Check the latest 10-Q of QVCG for going-concern and covenant language, with page numbers."

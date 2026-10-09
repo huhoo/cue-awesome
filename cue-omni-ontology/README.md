@@ -121,6 +121,7 @@ python3 -B scripts/test_numeric.py
 
 ## 出错了怎么办（症状 → 原因 → 恢复动作）
 
+**未见于本次返回的一律写「未检索到」**：参数名、字段名、枚举值没有出现在本次工具返回里的，不得凭印象填写；写「未检索到」并记入待核清单或覆盖率账，不得留空顶替。
 按 `scripts/ontology.py` **当前实际出口**写（现跑所得）：校验类命令打印**一行 JSON**——
 成功形如 `{"status": "valid", "counts": {...}, "semantic_verification": "not_established_by_scripts"}`（退 0）；
 失败形如 `{"status": "invalid", "error": "<原因>"}`（退 2，走 stderr）；参数缺失走 argparse 的 usage 并退 2。
@@ -142,6 +143,7 @@ python3 -B scripts/test_numeric.py
 
 ## 怎么开口（触发示例：三条正例 + 一条反例）
 
+**开口请带上时点，输出标来源日期**：请求里给出报告期／基准日或回看窗口；成品首行标注**来源日期**，当它与用户所指日期不一致时，正文禁用「今日」「最新」，一律改写为「截至 <日期>」。
 - **正例（首次试用，零凭据）**：「用 cue-omni-ontology 先拿自带样例演示：加入新材料后，哪些事实新增、哪些冲突、依据在哪里？」
   ——或直接一条命令 `python3 scripts/ontology.py demo --out <全新工作目录>`，不联网、不调解析 API，产出可展开原文的 `brief/brief.html`。
 - **正例（真实两份材料）**：「根据这两份公开报告回答：①新增了什么披露；②哪些数字要区分口径不能直接比；
