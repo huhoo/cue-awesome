@@ -4,7 +4,7 @@ slug: cue-meeting-minutes-cn
 displayName: "会议纪要包·录音到待办一条链"
 summary: "把会议录音变成带时间锚的分段纪要:逐字句挂 mm:ss,话题归段自标,决策与待办逐条回查原话;边界内工作,不承诺实时。"
 description: "企业会议纪要:给我会议录音(本地文件,当前实证边界=小段/切片 ≤256MiB,以通道返回为准)与可选材料,产出五段纪要——基本信息、逐字带时间锚、话题分段(归类是笔记法非原文)、决策与待办每条挂原话锚、待核清单。适合「这段录音整理成纪要」「会是哪几件事谁负责」「纪要逐条对回原话」等场景。Do NOT use for: 实时转写、超长整场录音不切片直接投喂、替你把纪要改写成「更漂亮」的版本。Triggers: 会议纪要 / 录音整理 / 谁负责什么 / 待办提取 / 逐字回查; meeting minutes / audio to notes"
-version: "0.1.0"
+version: "0.2.0"
 license: MIT
 metadata:
   requires:
