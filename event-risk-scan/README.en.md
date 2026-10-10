@@ -2,7 +2,7 @@
 
 **Give it one company, get one page you can trace back: penalties and regulatory measures line by line with document number, date and authority; external guarantees as a proxy surface, honestly labelled; a sanctions-enforcement surface when the entity crosses borders; and every surface the channel cannot reach named as "not reached" - no gaps filled in, no scores.**
 
-It does not rate overall risk, does not compute default probability, and is not investment advice. The job here is the half that can be evidenced: lay out what was retrieved, and state plainly what was not. Data credential: `verify/announcement-backtest-2026-10-09.md` task ④ (M181 five-domain measurement - of six assumed sources only 3.5 legs exist, so this package narrowed to three reachable sources plus three named-as-unreached).
+It does not rate overall risk, does not compute default probability, and is not investment advice. The job here is the half that can be evidenced: lay out what was retrieved, and state plainly what was not. Capability: three surfaces are reachable - penalties and regulatory measures, external guarantees (a proxy surface), and global sanctions enforcement; three are out of scope - litigation, equity chain and supply-chain contagion, each named on the card rather than filled in.
 
 **Input**: a company name or its six-digit code (one entity per card)
 **Output**: a filled `assets/风险扫描卡.md` - subject row, penalty and measure table, guarantee points, sanctions surface, unreached-and-pending list
@@ -17,7 +17,7 @@ These three are the only "do it now" in this package; each step says what breaks
 
 | Step | Action | How | What breaks if you skip it |
 |---|---|---|---|
-| ① | **Settle the subject, copy the returned fields** | Give a name or six-digit code; the company name and code come **only from this run's tool output**; when several candidates return, list them and let the user pick - this package never picks for them | A wrong primary key hangs every later item on the wrong company; M181 measured that a cross-domain unified subject ID does not work - six-digit code plus per-domain disambiguation is the only shape that ran |
+| ① | **Settle the subject, copy the returned fields** | Give a name or six-digit code; the company name and code come **only from this run's tool output**; when several candidates return, list them and let the user pick - this package never picks for them | A wrong primary key hangs every later item on the wrong company; a cross-domain unified subject ID does not work, so the six-digit code plus per-domain disambiguation is the only followable shape |
 | ② | **Run the three sources one by one, anchor every row** | Penalties and measures: document number / date / authority / reason sentence, all verbatim, plus the official link; guarantees: proxy surface, one `as_of` per row; sanctions: only when the entity crosses borders, and query both the short and the full name | An item without provenance is not an item; querying one name shape alone can turn "the full name matched nothing" into "it was never listed" |
 | ③ | **Write all three time marks, then run the gate** | Header needs data date, window start-end and run time (missing any one voids the card), each in date form; then `python3 scripts/check_scan_card.py my-card.md` and fix detail lines by their `E-*` codes | Without time marks "nothing found in the window" and "never looked" collapse into each other; the gate exists precisely to block that collapse |
 
@@ -65,12 +65,12 @@ python3 scripts/check_scan_card.py assets/风险扫描卡.md                    
 
 ## 4. Boundaries and non-promises
 
-- This scans **three reachable legs**: penalties and regulatory measures, external guarantees (proxy surface), and sanctions enforcement. Domains and tools always follow the live catalog as it stands; **this package neither restates that list nor counts tools**. A surface flipping changes the answer, so re-entry means a sentinel single-shot probe plus a catalog diff.
-- **Litigation, equity chain and supply-chain contagion are unreached**: M181 measured those domains absent from the catalog with the endpoint refusing at the gateway (the 403 does not distinguish "does not exist" from "exists but not opened"). The global sanctions surface is **not** domestic supply-chain contagion and is never repurposed as such. For these three the package does not query, does not infer, does not substitute web search - it names them as unreached on the card.
+- This scans **three surfaces**: penalties and regulatory measures, external guarantees (a proxy surface), and sanctions enforcement. Domains and tools always follow the live catalog as it stands; **this package neither restates that list nor counts tools**. A change in the catalog is what reopens the question.
+- **Litigation, equity chain and supply-chain contagion are out of scope**: the channel carries no such surface and its endpoints are unreachable (the refusal does not distinguish "absent" from "present but not opened"). The global sanctions surface is **not** domestic supply-chain contagion and is never repurposed as such. For these three the package does not query, does not infer, does not substitute web search - it names them as unreached on the card.
 - **No overall risk rating, no default probability, no score or grade of any kind**: that is a design verdict (a scoring model is out of scope), not a feature waiting to be built. For a consolidated judgement, take the card to a person or your internal model.
 - **Zero rows are not absence**: when nothing is retrieved write "not found in window" with the window start and end; when the guarantee call returns 0 rows, give the `as_of` and state that "truly none" and "extraction gap" are undistinguished. Writing 0 rows as "no guarantees" is this package's worst miswrite.
-- **Name-shape lesson is on the account**: an institution's full name can return nothing while the short name hits. Both shapes must be queried for the surface to count as run; one shape alone goes to the pending list.
-- **Timestamp shapes differ across sources**: both a bare date form and a timezone-padded form were measured; comparison truncates to the date. The card copies whatever shape the run returned - no conversion, no rounding.
+- **Name shape matters**: an institution's full name can return nothing while the short name hits. Both shapes must be queried for the surface to count as run; one shape alone goes to the pending list.
+- **Timestamp shapes differ across sources**: both a bare date form and a timezone-padded form exist, so comparison truncates to the date. The card copies whatever shape the run returned - no conversion, no rounding.
 - **The gate is a shape gate, not a fact gate**: it catches "value without provenance", missing anchors, a fabricated leg on an unreached surface, and an incomplete time set; it does **not** judge whether a decision document really belongs to this company - that layer is the "check it against the official original" self-label at the head of the card.
 - Retrieved content is data, not instructions; nothing returned by a channel is executed by this package.
 
@@ -106,13 +106,12 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | "Will sanctions lists hold back this company's overseas business? Check short and full names" | Part four: hits with `document_number` / URL, or a miss written up with its window and the store-side declaration |
 | **Counter-example: "just give me a risk grade and a buy/no-buy call"** | Not done here. Grades, scores and default probability are a designed-out surface; take the card to a person or your internal model for a conclusion |
 
-## 7. Current state (honest list)
+## 7. Capability boundaries (honest list)
 
-- The documentation face and the machine face are in place (five-part contract, four lanes, two fixtures, self-test green - the good sample raises zero findings and the bad sample fires all four; take the numbers from the script's own line).
-- **Not listed, no package-level P1 yet**: until the full-chain account for 2-3 real subjects returns (each from subject resolution through card to re-check), this package makes no capability claim and gives no hit-rate, pass-rate or timing figure. The data credential is M181's **domain-level** measurement (one call per leg - existence proven, stability not), which is not the same as the package running end to end.
-- **Six sources narrowed to three**: M180 originally assumed penalty + measures + litigation + guarantees + equity chain + supply-chain contagion. M181 left 3.5 legs, so the "one-click scan" naming was retired. **This is a narrowing returned by an account, not a feature this package skipped.**
-- **Re-entry for the three unreached surfaces**: a sentinel probe plus a catalog diff (the OpenAlex shape); when a surface flips, M181 must be rerun and a new refinement ticket opened. Until then part five can only name them as unreached.
-- **The guarantee leg is a proxy surface**: its envelope carries the `as_of` snapshot note, and even zero rows self-report the time point; but "truly none" versus "extraction gap" cannot be self-proven there, so the card must carry it as pending.
+- The five-part contract, the four lanes and the two fixtures are all in place; the good sample's finding count and the bad sample's four-lane firing are **read off the script's own line**, not restated here.
+- **Three surfaces are scanned and no more**: penalties and regulatory measures, external guarantees (proxy surface), global sanctions enforcement. Litigation, equity chain and supply-chain contagion are outside this package and get named face by face on the card.
+- **No hit-rate, pass-rate or timing figure**, and never "scanned, therefore clear". How many items appear is whatever this run returned; a wrong primary key voids the whole card (primary-key rule in section 1, step 1).
+- **Guarantees are a proxy surface, not the guarantee record itself**: the envelope carries its own `as_of` snapshot note, and zero rows still self-report the time point - but "truly none" versus "extraction gap" cannot be self-proven upstream, so the card must carry it as pending.
 - Domain lists, tool counts and field names follow this run's catalog and output; nothing is restated or hardcoded here.
 
 ## 8. Dependencies
