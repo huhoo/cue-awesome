@@ -962,6 +962,9 @@ def main():
     else:
         with open(args.json, encoding="utf-8") as f:
             data = json.load(f)
+    if not args.md and not any(k in data for k in ("markdown", "grounding", "outline")):
+        raise SystemExit("omni2docx: 输入不是中间 JSON（缺 markdown/grounding/outline 任一键）——"
+                         "请按 SKILL 步骤 2 从 Omni 回执组装中间 JSON，或改用 --md 直出")
     if want_strip:
         data["markdown"] = strip_emoji(data.get("markdown") or "")
 

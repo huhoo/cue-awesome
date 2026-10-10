@@ -3,7 +3,7 @@ name: omni2docx
 slug: cue-omni2docx
 displayName: "Omni 解析保真转 Word·源页分页带溯源"
 summary: "把 Omni 解析结果重建为保真 .docx：源页分页、真标题目录、表格/脚注/溯源标注还原，按场景制式排版；markdown 产物可直出。"
-description: "将 Omni Reader 解析结果重建为保真 Word：grounded 页锚点→源页分页符、官方 outline→真标题+目录、GFM 表格/脚注/〔来源〕标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报等制式排版，markdown 可直出。Do NOT use for: 像素级版面复刻、PPTX/PDF 输出、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / grounded rebuild / scan to Word"
+description: "将 Omni Reader 解析结果重建为保真 Word：grounded 页锚点→源页分页符、官方 outline→真标题+目录、GFM 表格/脚注/〔来源〕标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报等制式排版，markdown 可直出。Do NOT use for: 像素级版面复刻、PPTX/PDF 输出、无 omni-reader 的解析层能力（--md 除外）；Triggers: Omni 转 Word / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / grounded rebuild / scan to Word"
 version: "0.1.0"
 license: MIT
 metadata:
