@@ -85,8 +85,12 @@ Windows 目标路径：`C:\Users\<用户名>\.workbuddy\skills\`——三步与�
 提交前先看 [`CONTRIBUTING.md`](CONTRIBUTING.md)：commit / PR 规范、新增 skill 清单、禁止提交的内容。全仓门禁每次 push 与 PR 都会跑：
 
 ```bash
-python scripts/check_skills.py
+python scripts/check_skills.py                                # 结构、frontmatter、CHANGELOG 形制
+python scripts/check_public_hygiene.py --selftest             # 公开面卫生闸先自证守护样能红能绿
+python scripts/check_public_hygiene.py                        # 五禁扫描全部公开面
 ```
+
+卫生闸的计数是**工作树现值快照，不是稳定量**：树里动一笔它就动，要引就带时间戳，否则不引。它的详行带稳定码（`H-TICKET`、`H-PATH`、`H-POINTER`、`H-STATE`、`H-DATE`、`H-ATTRIB`），按码追责即可。
 
 新 skill 提案：用 issue 模板「新 skill 提案」开一个。
 

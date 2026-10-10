@@ -85,8 +85,12 @@ Docs are bilingual: `README.md` (English) / `README.zh-CN.md` (Chinese). Skill i
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR: commit format, the checklist for adding a skill, and what must never be committed. The gate runs on every push and PR:
 
 ```bash
-python scripts/check_skills.py
+python scripts/check_skills.py                                # structure, frontmatter, changelog shape
+python scripts/check_public_hygiene.py --selftest             # public-surface hygiene gate proves its own guard samples
+python scripts/check_public_hygiene.py                        # five-ban scan of every published surface
 ```
+
+The hygiene gate's counts are a **working-tree snapshot, not a stable quantity**: they move with every edit in the tree, so cite them with a timestamp or not at all. Its finding lines carry stable codes instead (`H-TICKET`, `H-PATH`, `H-POINTER`, `H-STATE`, `H-DATE`, `H-ATTRIB`).
 
 New skill proposals: open an issue with the **new skill proposal** template.
 

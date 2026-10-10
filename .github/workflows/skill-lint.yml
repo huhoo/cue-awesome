@@ -28,6 +28,17 @@ jobs:
       - name: Repo skill lint
         run: python scripts/check_skills.py
 
+      # 公开面卫生闸（CONTRIBUTING §公开面卫生 的可执行形，M199）。
+      # 闸本体必须先自证非恒真——这一步永远是硬门。
+      - name: Public-surface hygiene gate selftest (guard samples)
+        run: python -B scripts/check_public_hygiene.py --selftest
+
+      # 全仓扫描现为报账态：成品面 68 条 ERROR 是 M198 的清理清单。
+      # M198 交卷清零后，删掉 continue-on-error 这一行，本步即成发布硬门。
+      - name: Public-surface hygiene scan (blocking after M198 clears)
+        run: python -B scripts/check_public_hygiene.py
+        continue-on-error: true
+
       - name: Ontology regression suite
         run: python -B cue-omni-ontology/scripts/test_ontology.py
 
