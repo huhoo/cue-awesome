@@ -4,7 +4,7 @@
 
 **Paste in a freshly published A-share interim announcement and get back a five-part triage card: key figures copied verbatim with a source anchor, impact chains listed only as candidates, and everything needing a human parked in the pending list.**
 
-This is not a research note and not investment advice. What it manages is the moment right after an announcement lands: facts and provenance first. The demand evidence sits in the repository at `verify/demand-mining-2026-10-09.md` (the largest first cluster of the platform's raw stream).
+This is not a research note and not investment advice. What it manages is the moment right after an announcement lands: facts and provenance first, official sources preferred - a reposted screenshot drops to C-grade and gets flagged for the original.
 
 **Input**: a public announcement URL / the announcement text pasted in / an attachment file - all three work
 **Output**: one filled-in `assets/公告速读卡.md` card - event type, key figures, impact-chain candidates, prior-filing comparison, pending list
@@ -103,15 +103,15 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | "This is a penalty decision - list the clauses a person has to read" | Part five: the pending list plus the `[待人工]` roll-up |
 | **Counter-example: "is this bullish, will it rise tomorrow?"** | Not answered here. Direction and ratings stay `[待人工]`; the skill gives verbatim facts with provenance and leaves judgement to a person |
 
-## 7. Current state (honest list)
+## 7. Capability boundaries (honest list)
 
-- The documentation face and the machine face are in place (five-part contract, four lanes, two fixtures, self-test green).
-- **P1 account (4 real announcements, 2026-10-09)**: `verify/event-brief-p1-2026-10-09.md` - pass rate **4/4**, every card exits 0 under `check_card.py`, and all four break-probes exit 1 (the gate really can fail). Covers four event types (buyback / regulatory letter / administrative penalty / periodic report), one subject each; six other types (earnings pre-announcements, suspensions, equity changes, etc.) are not covered - **4/4 does not extrapolate to "all ten types pass"**. Three honest limits: channel full text hard-truncates at 3000 chars (financial/penalty figures need the official page or PDF as a second leg); Shenzhen regulatory measures return fields only, so their substance goes to the pending list; extracted page footers may differ by ±1 from the report's own table of contents, so cards note "defer to the physical PDF page".
-- Timing figures stay removed from name and blurb faces: 4/4 is a verbatim re-check pass rate, **not an accuracy or a duration figure**; those return only with a ticket carrying measurements.
-- **Listing status: listed** (the P1 account came back, so the skeleton-era hold is lifted - this lifts a constraint, it is not a new capability claim).
-- Channels follow the live catalog as it stands: no domain list, no tool count, no unopened-domain promise. The data leg's measurements are on the M179/M189 accounts (paths in this section); anything not retrieved still goes to the pending list.
-- The comparison part depends on the search face; when no search runs, the legal answer is to tick "not found" / "search not covered, pending", and the gate accepts that declaration.
-- The card is a working draft. Checking the key figures against the official filing before quoting them is not a disclaimer - it is the reason part five exists.
+- The five-part contract, the four lanes and the two fixtures are in place; the good sample's finding count and the bad sample's four-lane firing are **read off the script's own line**, not restated here.
+- **Four real announcements were measured**: every card exits 0 under `check_card.py`, all four single-point break probes exit 1 (the gate really can fail), and the verbatim re-check pass rate is **4/4**. Coverage is four event types (buyback / regulatory letter / administrative penalty / periodic report), one subject each; six other types (earnings pre-announcements, suspensions, equity changes and so on) are not covered, so **4/4 is not "all ten types pass"**. The full-chain account lives in the internal ledger and can be provided on request.
+- **Three measured limits, stated plainly**: the channel truncates full text at a length limit (whatever it returns now governs), so financial and penalty amounts need the official page or PDF as a second data leg; the Shenzhen regulatory-measure channel returns fields but not body text, so that type's reason sentence goes to the pending list; the extraction footer and the report's own table-of-contents page differ by ±1, so page numbers are always annotated "as in the PDF itself".
+- **4/4 is a verbatim re-check pass rate - not an accuracy figure and not a duration figure**; this package gives no timing, hit-rate or growth number, and the name and blurb faces carry no duration wording either.
+- Channels follow the live catalog as it stands: no domain list, no tool count, no unopened-domain promise; anything not retrieved still goes to the pending list.
+- The same-kind comparison depends on the search surface; when no search runs, the legal answer is to tick "not found" / "search not covered, pending", and the gate accepts that declaration.
+- The card is a working draft. Checking key figures against the official filing before quoting them is not a disclaimer - it is the reason part five exists.
 
 ## 8. Dependencies
 
