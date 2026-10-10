@@ -29,13 +29,13 @@ The citation network and the review scaffold come **after** these three: the fir
 
 | Part | Content | What the gate enforces |
 |---|---|---|
-| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` in the anchor cell | Content without anchor -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
+| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` in the anchor cell | Content without anchor -> `E-ANCHOR`; an anchor number beyond the page set on the card (e.g. `P99` when the set says 共 13 页) -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
 | 2 Reproducibility list | Dataset availability, whether a code link exists, parameter completeness - **gaps only, never a verdict on reproducibility** | Fewer than three accounted items -> `E-COVERAGE`; "`应该能复现`" style claims -> `E-BANWORD` |
 | 3 Citation network | Entries taken only from the paper's own reference list, each with a locator; citation counts declared when not retrieved | Entry without locator -> `E-ANCHOR`; neither entries nor a ticked declaration -> `E-COVERAGE` |
 | 4 Review scaffold | Thesis slots belong to the user: given by them, or inferred and then explicitly confirmed; material sentences must be anchored, otherwise leave `空槽（不硬填）` | Unanchored material -> `E-ANCHOR`; unconfirmed inferred slot or unticked origin -> `E-COVERAGE` |
 | 5 Pending list | Everything that needs the original text, with academic judgement under `[待人工]` | Missing the `[待人工]` roll-up -> `E-COVERAGE` |
 
-The header has its own hard set: **the three self-labels** (`AI 研读整理`, `观点请回原文核对`, `不构成学术评价`) **plus** the file this read is based on and the paper edition (or `缺`). Any of them missing is an `E-FORMAT`.
+The header has its own hard set: **the three self-labels** (`AI 研读整理`, `观点请回原文核对`, `不构成学术评价`) **plus** the file this read is based on, the paper edition (or `缺`), and the **channel page set** - whatever the parse echoed, written as `共 N 页`; when it is not available write `未取` and declare `页集比对跳过` on the same line. Any of them missing or still a placeholder is an `E-FORMAT`. When the page set is recorded, the gate compares every page anchor against it - **an anchor beyond the set fires `E-ANCHOR`**; a missing set without that declaration fires `E-COVERAGE`.
 
 ## 3. Getting started
 
@@ -58,16 +58,19 @@ Read `assets/论文研读卡.md` first (that is the five-part shape), then `SKIL
 ```bash
 python3 scripts/check_study_card.py --help                            # usage; no network
 python3 scripts/check_study_card.py --selftest                        # good sample must pass, bad sample must fire all four lanes
-python3 scripts/check_study_card.py scripts/fixtures/good-study-card.md   # PASS (scans 56 lines, 0 findings)
-python3 scripts/check_study_card.py scripts/fixtures/bad-study-card.md    # FAIL (15 findings, all four codes)
-python3 scripts/check_study_card.py assets/论文研读卡.md                   # FAIL (6 findings - a blank card failing the gate is the design, not a defect)
+python3 scripts/check_study_card.py scripts/fixtures/good-study-card.md   # should PASS
+python3 scripts/check_study_card.py scripts/fixtures/bad-study-card.md    # should FAIL, all four codes
+python3 scripts/check_study_card.py assets/论文研读卡.md                   # should FAIL - a blank card failing the gate is the design, not a defect
 ```
+
+**Take every count from the script's own report line** (`FAIL: … (N items)` and the `扫过 N 行，发条 0 条` line under `PASS:`); this file does not restate them - a restated count becomes a second source of truth and drifts on every script change. **Two line-count conventions**: `扫过 N 行` counts `split('\n')` elements, which is `wc -l` **+1** (the trailing newline occupies one); when reporting a line count, report the convention with it so nobody reads the gap as a counting error.
 
 ## 4. Boundaries and non-promises
 
 - This produces **study working drafts**: not ghostwriting, not paraphrase-for-lowering-similarity, not polished submission text, and not a substitute for your judgement. Such requests are declined and pointed back to this section.
 - **Paper content may only come from the file actually read this time.** Nothing is supplied from memory; quotations and figures stay verbatim - no rewriting, no rounding, no hedging.
 - Inventing citations, page numbers or conclusions is this package's worst failure mode - the `E-ANCHOR` lane exists to stop it: **delete a row whose locator you cannot produce instead of guessing one.**
+- **Anchor validity is carried by an external verbatim re-checker; the gate is a shape gate, not a fact gate.** It catches "content without a locator" and "anchor beyond the page set on the card"; it cannot tell whether a sentence really sits on page N. That layer belongs to a checker that compares each quoted fragment **byte for byte** against the text the parser returned, and its result travels with the deliverable (part 3 of each case in this package's P1 account shows that shape). The page set itself comes from the parse echo, never from memory.
 - The **academic search augmentation leg is not established as of 2026-10-09**: M182 measured the literature leg at 4/4 HTTP 429 with zero data, so it does not stand, and **the throttling is unattributed** (shared pool, local quota and upstream limiting against the channel are all unexcluded - only the fact is recorded). This package therefore writes no "papers are searchable" sentence and never promises citation counts. Grant and project sources (NIH, NSF and the like; the domain list follows the live catalog) each returned one live positive and are **auxiliary background only** - existence proven, stability not. Re-entry: a sentinel single-shot probe for the 429->200 flip plus a catalog diff, then rerun that account to fill in fields, date shapes, PDF anchors and the Chinese-corpus face.
 - Input format, size and whether something parses follow **the actual channel response**; when an input does not fit, the skill stops and says why, rather than pretending it read the document.
 - **One explicit confirmation for inferred thesis slots**: a slot this skill guesses stays marked "inferred, awaiting user confirmation" until you answer clearly, and only then becomes "confirmed: <date>"; bare replies like "ok", "mm" or "sure" are not confirmation. Before that, completed-form wording ("I've built your review for you") stays out of the text.
@@ -79,7 +82,7 @@ python3 scripts/check_study_card.py assets/论文研读卡.md                   
 
 **Error-level findings are blockers**: never describe them as harmless, ignorable, or shippable-as-is - fix them, or declare them explicitly on the deliverable.
 
-The output shape is taken from a live run of `check_study_card.py` as it now stands: a failure prints one line `FAIL: <file> (N items)`, then each detail line **starts with an error code (one of four `E-*`)** such as `[E-FORMAT]`, `[E-ANCHOR]`, `[E-BANWORD]`, followed by the lane name, the line number and that lane's spec; the last line `码表:` lists only the codes actually used and what they mean. A pass prints `PASS: <file> (...)` plus two counts - lines scanned, findings raised.
+The output shape is taken from a live run of `check_study_card.py` as it now stands: a failure prints one line `FAIL: <file> (N items)`, then each detail line **starts with an error code (one of four `E-*`)** such as `[E-FORMAT]`, `[E-ANCHOR]` (its `页集` lane marks an anchor beyond the page set), `[E-BANWORD]`, followed by the lane name, the line number and that lane's spec; the last line `码表:` lists only the codes actually used and what they mean. A pass prints `PASS: <file> (...)` plus two counts - lines scanned, findings raised - **read off that line, with the `split('\n')` convention (one more than `wc -l`) named alongside**.
 
 This package uses **four** codes, byte-identical to the sibling packages' table. The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
 
@@ -87,11 +90,12 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 
 | Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `[E-FORMAT]` header or source lanes | One of the three self-labels missing, the source file still a placeholder, or the edition has neither year/volume/issue nor `缺` | Complete the header; take the edition from inside the paper; write `缺` when the text does not state it - this cell is never guessed |
+| `[E-FORMAT]` header or source lanes | One of the three self-labels missing; or the source file, the paper edition or the channel page set is still a placeholder or absent | Complete the header; take the edition from inside the paper and the page set from the parse echo; write `缺` / `未取` when the run did not give them - neither cell is ever guessed |
 | `[E-FORMAT]` section lanes | A part is missing or out of order | Restore the order from section 2; keep the template's section names verbatim, because renaming them hides the section from the gate |
 | `[E-ANCHOR]` paper-card, citation or slot lanes | Content without a locator; a cited work whose position in the paper cannot be given; slot material without an anchor | Add a proper locator (P3 / page 8 / section 4 / references); **if you cannot, delete the row - an invented citation is the worst failure this package has** |
+| `[E-ANCHOR]` 页集 lane | An anchor larger than the card's `共 N 页`, or a model string standing in as a locator | Use a real page inside the set; a model name (a `P100`-style string) is not a locator and never belongs in the anchor cell; if the page set truly is unavailable, write `未取` and declare `页集比对跳过` |
 | `[E-BANWORD]` inference, overstep, hedge or judgement lanes | `应该能复现` style verdict; ghostwriting or similarity-lowering offers; hedged numbers; judgement sentences without `[待人工]` | List gaps without a verdict; decline and point back to section 4; re-copy the number verbatim; move judgement into the pending list marked `[待人工]` |
-| `[E-COVERAGE]` gap, citation, count, slot or declaration lanes | Reproducibility items not accounted one by one; neither citations nor a declaration; a citation count written without ticking "retrieved"; slot origin unticked or an inferred slot unconfirmed; pending list without the roll-up | Name all three items (write "not seen" when absent); tick the declaration; drop the count or tick "retrieved and listed"; tick a slot origin and run the confirmation; restore the `[待人工]` roll-up |
+| `[E-COVERAGE]` gap, citation, count, slot, declaration or page-set lanes | Reproducibility items not accounted one by one; neither citations nor a declaration; a citation count written without ticking "retrieved"; slot origin unticked or an inferred slot unconfirmed; pending list without the roll-up; page set recorded as neither `共 N 页` nor a skip declaration | Name all three items (write "not seen" when absent); tick the declaration; drop the count or tick "retrieved and listed"; tick a slot origin and run the confirmation; restore the `[待人工]` roll-up; fill the page set or add the skip declaration |
 
 ## 6. How to ask (three positive examples, one counter-example)
 
@@ -107,7 +111,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 ## 7. Current state (honest list)
 
 - The documentation face and the machine face are in place (five-part contract, four lanes, two fixtures, self-test green).
-- **Not listed, not measured**: until the P1 verbatim re-check account exists (N real papers, every sentence on the card traced back), this package makes no capability claim and gives no accuracy or timing figure - that line is inherited verbatim from the P0 skeleton README (lead's own wording) and is lifted with the account, not before.
+- **P1 verbatim re-check account is in (3 real papers, 2026-10-09)**: `verify/paper-study-p1-2026-10-09.md` - all three cards exit 0 under `check_study_card.py`; the verbatim pass reports **56/56 quoted fragments found** (16 + 23 + 17, zero misses, zero anchor mismatches); six counter-evidence probes (five single-point breaks, one each lane firing its expected code; one reverse probe that exposed the older gate letting an out-of-range anchor through - the page-set comparison added in 0.2.2 is the response). Details as measured: CLIP arXiv:2103.00020v1 (48 pages), Attention Is All You Need arXiv:1706.03762v7 (15 pages), GLUE arXiv:1804.07461 (20 pages) - all **English open preprints, one parse each**; **the Chinese-paper corpus is untested**, and 3/3 is not extrapolated to any other layout or language. Extraction shapes measured here bound how far a re-check can go (two-column text is not adjacent across lines, a URL split over two lines, reference numbering can drop out, tables arrive as pipe tables), so whole-sentence and whole-table judgements stay `[待人工]`. **56/56 is a verbatim re-check pass rate - not an accuracy figure and not a timing figure**; this package gives neither. **Listing status: not listed** - shipping is the lead's call, and this file does not claim otherwise.
 - **The augmentation verdict was rewritten against the M182 account (0.2.1 / M192)**: the literature leg **does not stand**, so the SKILL §2 line now reads "not established as of 2026-10-09 + unattributed throttling + NIH/NSF as auxiliary sources only + the sentinel hook on record" (the superseded wording lives in this repository's git history). All four faces - this README, the card template and the checker - are synced, none writes a "papers are searchable" sentence, and the gate still **checks no academic search results**: a copy rewrite does not loosen that.
 - When no search runs, the legal answer in the citation network is to tick "not found" / "surface not covered, pending"; the gate accepts that declaration.
 - Channel shapes (page anchors, section locators, accepted formats and sizes) follow the actual response; this package neither restates that list nor counts tools.

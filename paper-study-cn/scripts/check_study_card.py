@@ -13,13 +13,20 @@
     全过 = 一行 "PASS: <文件>（…）"，并印「扫过行数」与「发条数」两类计数。
 
 四道是什么（判定全集在本脚本，本文只指路，不复述细节）：
-    道一 形制：头部自标三件套＋本次读取依据与论文版本就位＋五段齐且有序
-    道二 锚：论文卡每行、引用网络每条、槽材料句每句都要有页／节锚；取不到写「缺」并注「不适用」
+    道一 形制：头部自标三件套＋本次读取依据与论文版本与通道页集就位（占位即发）＋五段齐且有序
+    道二 锚：论文卡每行、引用网络每条、槽材料句每句都要有页／节锚；取不到写「缺」并注「不适用」；
+            头部记了「共 N 页」时，本道另核**锚号 ≤ N**（越界即发 E-ANCHOR）；页集未记则这条比对跳过
     道三 红线：禁"应该能复现"式推断、禁代写·降重·润色交稿类话术、学术评价类语句必须挂 [待人工]
-    道四 计数与申报：复现三项逐个交代；引用无条目必须勾选声明；推断槽必须带确认标记；待核段必须有 [待人工] 汇总
+    道四 计数与申报：复现三项逐个交代；引用无条目必须勾选声明；推断槽必须带确认标记；待核段必须有 [待人工] 汇总；
+            页集取不到时必须在头部申报「页集比对跳过」（不申报即发，机检不替你猜页集）
+
+计数口径（M194 落注）：PASS 行的「扫过 N 行」按 `split('\\n')` 口径计，比 `wc -l` 现值多 1（行尾换行也占一格）；
+            报「扫过 N 行」时请连口径一起报，免得与 wc 对不上被误判成计数错。
 
 学术检索增强腿经 M182 实测**未立**（文献腿 4/4 撞 HTTP 429、零数据，归因未辨；NIH／NSF 只作辅助源），因此本脚本**不校验任何学术域检索结果**——
 未立的面上不建闸，免得把没跑过的能力说成已可核对；此判据不因 §2 文案改写而放松。
+本脚本是**形制闸，不是事实闸**（M194 落死）：它核卡面形制与「锚号 ≤ 卡面页集」，**不**判「那句话是否真在这一页」——
+那一层由卡外的逐字复验器（把引句与解析返回文本逐字节比对）承担，交付时须随件说明其存在与结果。
 """
 
 from __future__ import annotations
@@ -49,6 +56,12 @@ GHOST = re.compile(r'代写|降重|润色交稿|已为你改写|已帮你改写|
 JUDGE = re.compile(r'值得推广|结论可靠|证明了?有效性|建议(录用|拒稿)|审稿意见|创新性不足|质量很高')
 REPRINT = re.compile(r'被引\s*\d+|\d+\s*次引用|引用量\s*\d+')
 NEG = ('不', '非', '拒', '未', '勿', '婉')
+
+# 页集自证（M194）：头部记「共 N 页」则道二核锚号 ≤ N；取不到须在头部申报这句话
+PAGE_SET_KEY = '通道页集'
+PAGE_DECL = '页集比对跳过'
+PAGE_N = re.compile(r'共\s*(\d+)\s*页')
+PNUM = re.compile(r'[Pp]\s*(\d+)')
 
 
 def ghost_hit(line):
@@ -126,6 +139,34 @@ def check(path: Path):
                 elif key == '论文版本' and not re.search(r'\d{4}|缺|文内未见', ln):
                     add('E-FORMAT', '来源', j + 1, f"「{key}」既无年卷期也未标「缺」（规格：{spec}）")
 
+    # ---- 页集自证（供道二核锚号、道四核申报） ----
+    n_pages = None
+    if hi:
+        h0 = hi[0]
+        h1 = min([i for i, ln in enumerate(lines) if i > h0 and ln.startswith('## ')], default=len(lines))
+        pg = [j for j in range(h0, h1) if PAGE_SET_KEY in lines[j]]
+        if not pg:
+            add('E-FORMAT', '来源', h0 + 1, f"头部缺「{PAGE_SET_KEY}」行（规格：解析回显共几页写「共 N 页」；取不到写「未取」并申报『{PAGE_DECL}』）")
+        elif '__' in re.split(r'[:：]', lines[pg[0]], 1)[-1]:
+            add('E-FORMAT', '来源', pg[0] + 1, f"「{PAGE_SET_KEY}」仍是占位（规格：「共 N 页」取自解析回显，或写「未取」并申报『{PAGE_DECL}』；机检不替你猜页集）")
+        else:
+            # 只核冒号后的**值面**：标签文字里本就带着「共 N 页」「页集比对跳过」两个字面，
+            # 整行去比会永远命中申报——那样这道闸就是假的。
+            value = re.split(r'[:：]', lines[pg[0]], 1)[-1]
+            m = PAGE_N.search(value)
+            if m:
+                n_pages = int(m.group(1))
+            elif PAGE_DECL not in value:
+                add('E-COVERAGE', '页集申报', pg[0] + 1, f"页集值面既无「共 N 页」也未申报跳过（规格：取不到就写「未取」＋一句『{PAGE_DECL}』,让比对不成立这件事写在卡面上；标签文字里的这四个字不算申报）")
+
+    def check_pages(cs, j, lane):
+        """锚号 ≤ 页集：只在卡面记了「共 N 页」时核。"""
+        if n_pages is None or len(cs) < 3:
+            return
+        for k in (int(x) for x in PNUM.findall(cs[2])):
+            if k > n_pages:
+                add('E-ANCHOR', '页集', j + 1, f"锚号 P{k} 超出卡面页集（共 {n_pages} 页）（规格：锚号以解析回显为准；超界即视为可疑锚,删该行或改回页集内页码）")
+
     secs = section_ranges(lines)
     for n, name in zip(CN_NUM, SECTIONS):
         if name not in secs:
@@ -143,6 +184,7 @@ def check(path: Path):
                 continue
             if blank(cs[2]) or not (ANCHOR_PAT.search(cs[2]) or MISSING_MARK.match(cs[2])):
                 add('E-ANCHOR', '论文卡', j + 1, f"「{cs[0]}」行有内容无锚（锚样：P×／×页／第×节／参考文献区；取不到则内容写「缺」并锚写「不适用」）")
+            check_pages(cs, j, '论文卡')
     if '引用网络' in secs:
         i0, i1 = secs['引用网络']
         for j, cs in row_items(lines, i0, i1):
@@ -150,6 +192,7 @@ def check(path: Path):
                 continue
             if blank(cs[2]) or not ANCHOR_PAT.search(cs[2]):
                 add('E-ANCHOR', '引文', j + 1, "被引文献无文内定位（规格：只列参考文献区里真有的条目，逐条带页／节定位；无定位即视为可疑条目，删该行）")
+            check_pages(cs, j, '引文')
     if '综述脚手架' in secs:
         i0, i1 = secs['综述脚手架']
         for j, cs in row_items(lines, i0, i1):
@@ -157,6 +200,7 @@ def check(path: Path):
                 continue
             if not ANCHOR_PAT.search(cs[2]):
                 add('E-ANCHOR', '槽材料', j + 1, "论点槽的材料句无页／节锚（规格：料必须可回查；没有料就写「空槽（不硬填）」）")
+            check_pages(cs, j, '槽材料')
 
     # ---- 道三 红线 ----
     for j, ln in enumerate(lines):
