@@ -30,16 +30,18 @@ require a connected omni-reader MCP (scenario ① does not).
 # ① agent markdown direct output (no intermediate JSON)
 python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers
 
-# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding (+ same-session read_outline) → intermediate JSON
+# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding from the inline receipt (outline optional) → intermediate JSON
 python scripts/build_docx.py --json intermediate.json --out deliverable.docx --profile legal --page-marks
 
 # Acceptance (mandatory): zero character loss + structure checks
 python scripts/validate_docx.py --json intermediate.json --docx deliverable.docx
 ```
 
-Omni discipline: use the agent-native MCP tools throughout (parse /
-get_parse_status / read_outline / read_result) **within the same session** — do
-not write spawn scripts around omni (cross-process read_* calls fail by design).
+Omni discipline: retrieval rests first on the **inline receipt** of parse / get_parse_status - small
+results return both parts inline, and what actually comes back governs even when the artifact form is
+requested. The read_* continuation calls are an **optional branch**: use them when available; when they
+are not (`RESULT_NOT_FOUND`, or no cursor to start from) keep working from the inline receipt and let
+the engine rebuild the outline from markdown - no retries, no failure reported.
 
 ## Scenario profiles (--profile)
 
@@ -57,8 +59,10 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
 
 - Fidelity is **page-level** (grounded); element-level bbox data is available via
   `detail=layout`, engine consumption is a later stage.
-- `read_result` / `read_outline` are bound to a **same-session constraint**
-  (`local_result_cache` lives with the bridge process); fine inside an agent-native session.
+- `read_result` / `read_outline` are **optional continuation calls with no availability guarantee** (the
+  same result_id can answer `RESULT_NOT_FOUND`, non-retryable; without a cursor `read_result` cannot
+  start). This package does not depend on them: retrieval comes from the inline receipt and the engine
+  rebuilds the heading tree from markdown by default - the normal path, not a degraded one.
 - Paragraphs spanning page boundaries belong to the page where they start.
 - Complex markdown (nested tables, math) degrades to text; tables are layout-faithful, not pixel-faithful.
 - `.docx` output only; CJK font names (SimSun, FangSong_GB2312, KaiTi…) are

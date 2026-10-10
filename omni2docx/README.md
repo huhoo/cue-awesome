@@ -27,15 +27,16 @@ Word 原生对象——通用转换只吃 markdown，拿不到这些。
 # ① agent markdown 直出（免中间 JSON）
 python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers
 
-# ②③ Omni 解析重建：parse(grounded) 取 markdown+grounding(+同会话 read_outline) 落盘中间 JSON
+# ②③ Omni 解析重建：parse(grounded) 从内联回执取 markdown+grounding（outline 可选）→ 落盘中间 JSON
 python scripts/build_docx.py --json 中间.json --out 交付.docx --profile legal --page-marks
 
 # 验收（必做）：字符零丢失 + 结构核对
 python scripts/validate_docx.py --json 中间.json --docx 交付.docx
 ```
 
-Omni 取数纪律：全程用 agent 原生 MCP 工具（parse / get_parse_status / read_outline /
-read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨进程调 read_* 必然失败）。
+Omni 取数纪律：第一性只依赖 parse / get_parse_status 的**内联回执**——小包两枚 part 随回执返回，
+即使请求了 artifact 形制也以实际返回为准。read_* 两个续调用是**可选支路**：可得就用，不可得
+（`RESULT_NOT_FOUND`、或没有 cursor 可起步）就走内联件与引擎从 markdown 重建目录，不重试、不报故障。
 
 ## 场景制式（--profile）
 
@@ -50,7 +51,7 @@ read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨�
 ## 能力边界（诚实清单）
 
 - 保真级别为**页级**（grounded）；元素级 bbox 数据可经 `detail=layout` 产出，引擎消费为后续阶段。
-- `read_result` / `read_outline` 受**同会话约束**（`local_result_cache` 绑定 bridge 进程）；agent 原生会话内使用无碍。
+- `read_result` / `read_outline` 是**可选续调用，不保证可得**（同一 result_id 上可能返回不可重试的 `RESULT_NOT_FOUND`；无 cursor 时 `read_result` 也无法起步）。本件不依赖它们工作：取数走内联回执，目录缺省由引擎从 markdown 重建——这是常规路径，不是降级异常。
 - 段落跨源页边界时归入其起始字节所在页。
 - 复杂 markdown（嵌套表、数学公式）按文本降级；表格为版式保真非像素级还原。
 - 仅 `.docx` 输出；中文字体名（宋体/仿宋_GB2312/楷体等）在非 Windows 环境由 Word/WPS 自动替换，制式文档建议在 Windows/WPS 打开验收。

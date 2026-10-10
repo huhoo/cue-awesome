@@ -960,8 +960,12 @@ def main():
         with open(args.md, encoding="utf-8") as f:
             data = {"markdown": f.read(), "source": args.md, "detail": "agent-markdown"}
     else:
-        with open(args.json, encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(args.json, encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise SystemExit("omni2docx: --json 指向的不是可解析的 JSON（%s）——整份 markdown 请改用 --md 直出；"
+                             "中间 JSON 请按 SKILL 步骤 2 从 Omni 回执组装" % exc)
     if not args.md and not any(k in data for k in ("markdown", "grounding", "outline")):
         raise SystemExit("omni2docx: 输入不是中间 JSON（缺 markdown/grounding/outline 任一键）——"
                          "请按 SKILL 步骤 2 从 Omni 回执组装中间 JSON，或改用 --md 直出")
