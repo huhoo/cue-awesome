@@ -4,7 +4,7 @@
 
 **A meeting recording goes in, and a minutes card where every sentence can be traced back to the tape comes out: verbatim lines carry [mm:ss] anchors, topic grouping is self-labelled as `此归类非原文所有` (this grouping is not in the original), decisions and action items each carry a verbatim anchor, and everything unclear sits under `[待人工]`.**
 
-No real-time mode, no rewriting, no filling in what was not said - and no names supplied from memory. The demand account is `verify/enterprise-zone-study-2026-10-09.md` in this repository (the vacancy ledger across the enterprise hot list).
+No real-time mode, no rewriting, no filling in what was not said - and no names supplied from memory. Material comes through one door only: a local recording (a clip or split) or a parsable link, with format and size governed by whatever the channel returns; real-time transcription is out of scope.
 
 **Input**: a recording path (inside a Bridge-authorized directory) or a parseable link; optionally an agenda or whiteboard photo (same parsing route)
 **Output**: one filled-in `assets/会议纪要卡.md` card - basic info, anchored verbatim, topic segments, decisions and actions, pending list
@@ -108,9 +108,9 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 ## 7. Current state (honest list)
 
 - The documentation face and the machine face are in place (five-part contract, four lanes, two fixtures, self-test green).
-- **P1 account (7 real-meeting cards, 2026-10-09)**: `verify/meeting-minutes-p1-2026-10-09.md` - all 7 cards pass the gate; 90/90 verbatim quotes byte-match the parsed artifacts; 6 break-probes all exit 1; the re-check probe itself was break-tested (an altered quote gets caught). Three honest limits: N=2 meetings, both investor-relations calls - real votes and task assignments unproven; speaker identity only via "self-reported + anchor", channel labels are never names; the blocking condition is **bytes, not duration** (an 87-minute full audio, 21 MB, passed direct - 1 case; a 1.4 GB full video hit the 256 MiB gate - 1 case). Still no timing figure; the pass rate is a verbatim re-check rate, not an accuracy.
-- **The package-level P1 account (a verbatim re-check over N real meeting recordings) belongs to 2.1's M190** and was not run under this ticket; figures return only with that ticket as their source.
-- The one account this package can cite is **av-backtest**: audio works as a bounded local clip/split workflow (≤256 MiB), three 90-second clips from two meetings completed the chain with 8/8 verbatim re-checks, five public full-length URL attempts were refused, a local full file is stopped at 268,435,456 bytes, and cross-clip continuity is not established. That is the **parsing channel's** ledger, not a minutes-quality ledger - the latter waits for M190.
+- **Real-meeting measurement (7 cards)**: the verbatim re-check account lives in the internal ledger and can be provided on request - all 7 cards pass the gate; 90/90 verbatim quotes byte-match the parsed artifacts; 6 break-probes all exit 1; the re-check probe itself was break-tested (an altered quote gets caught). Three honest limits: N=2 meetings, both investor-relations calls - real votes and task assignments unproven; speaker identity only via "self-reported + anchor", channel labels are never names; the blocking condition is **bytes, not duration** (an 87-minute full audio, 21 MB, passed direct - 1 case; a 1.4 GB full video hit the 256 MiB gate - 1 case). Still no timing figure; the pass rate is a verbatim re-check rate, not an accuracy.
+- **The verbatim re-check over real recordings is the seven cards above**; that surface is measured by the seven cards above and is not extrapolated beyond them.
+- The one account this package can cite is **av-backtest**: audio works as a bounded local clip/split workflow (≤256 MiB), three 90-second clips from two meetings completed the chain with 8/8 verbatim re-checks, five public full-length URL attempts were refused, a local full file is stopped at 268,435,456 bytes, and cross-clip continuity is not established. That is the **parsing channel's** ledger, not a minutes-quality ledger - that quality rests on the seven cards above.
 - Channel shapes and billing follow the actual response; this package neither restates a domain list, counts tools, nor prices anything.
 
 ## 8. Dependencies
