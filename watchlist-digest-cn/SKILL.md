@@ -4,7 +4,7 @@ slug: cue-watchlist-digest-cn
 displayName: "自选清单增量日报"
 summary: "对你维护的自选清单跑每日增量:回购/股权激励/两融标的与折算率/公告/监管措施五腿,逐条带出处与 asof;无新增也明写,不评风险不预测。"
 description: "自选清单日报(状态文件驱动):把一组公司名或 6 位代码落成 watchlist.json,每次运行从既有域取数并与上次快照做差,产出「今日新增/近端变更/需人工」日报,每条挂官方出处＋asof;同日重跑幂等,不重复计新。适合「我这几只票今天有什么新公告」「回购和激励推进到哪了」这类逐日重复的读盘需求。Do NOT use for: 行情、涨跌、资金流与北向(该域未开放,以 catalog 现值为准,本件不装)、风险评分或评级、一次性历史复盘。Triggers: 自选清单日报 / 我的票今天有什么新消息 / 盯公告 / watchlist daily digest"
-version: "0.1.0"
+version: "0.2.0"
 license: MIT
 metadata:
   requires:
