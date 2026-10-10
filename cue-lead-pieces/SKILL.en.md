@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Agent 思考,Cue 感知:用 Cue Omni Reader 把公司自己的披露(A股巨潮/美股SEC EDGAR)解析成带原PDF页码的原文,产出信用线索件,并逐句核对答案引文是否逐字出自所注页;--fix 改正页码、换回原句、删掉原文没有的。可选 Cue data-MCP 列公告、cue-research 补背景;未开通 Cue 时本地解析兜底。实测(本地解析、单一模型与宿主、24家):裸Agent引文39%对不上,用本件流程95%逐字可查。不适合：投资与信贷建议。Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.4.6"
+version: "0.4.7"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露,建带页码的信用线索件,逐句核对引文是否出自所注页,对不上的标出或改回。"
