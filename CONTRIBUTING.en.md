@@ -8,6 +8,17 @@ Different people and different agent sessions add skills to this repo, so the ru
 
 ## 0. Three hard lines (violations are rejected outright)
 
+### Public-face hygiene (hard pre-listing gate, added 2026-10-10)
+
+**A published package is a finished product for users, not a construction log.** Five kinds of process telemetry are banned from every public face (`SKILL*.md`, `README*.md`, `assets/`, `references/`; CHANGELOG.md follows items 1/3/4/5):
+1. ticket ids (M1xx, PR# and other internal serials);
+2. dangling workspace paths (`verify/`, `logs/`, `dispatch/`, BOARD) - pointers inside a package must be package-relative and the target file must actually exist;
+3. build-state language ("evidence ticket in transit", "awaiting the ledger", "pending Owner ruling");
+4. internal timestamps ("not established as of 2026-xx-xx") - state the boundary itself ("this skill does not search academic databases"), not when it was measured;
+5. provenance narration in product faces ("demand basis = the 311K-listed rival skill", "measured by M18x") - that belongs to internal accounts; the product states conclusions only (what it does, what it does not, what is authoritative - e.g. "audio/video: local short clips/slices supported, full-length video not; defer to the channel response").
+Standard: capability sentences stated directly, links followable, attribution kept internal. Violations block publication, same tier as the wording red lines.
+
+
 1. **No secrets or personal data**: tokens, API keys, `.env`, private keys, internal domains, internal addresses, undesensitized client or natural-person information.
 2. **No build artifacts**: `dist/`, `build/`, `*.zip`, `__pycache__/`, `*.pyc`.
 3. **No fabricated sources**: every factual statement and external link must carry a verifiable source. If you cannot find one, leave it empty — never invent a URL.
