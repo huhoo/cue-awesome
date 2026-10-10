@@ -91,7 +91,7 @@ This skill's own scripts and flow stay offline. Both channels below are **auxili
 
 **Material channel · `cue-omni-reader`**: when evidence is a scan, a recording, a video or a packed bundle and the agent's own upload path refuses it (format or size), have this tool parse it into **locatable text** (page and time anchors included) before it enters the case directory. Every bound, none dropped:
 
-- **Formats follow the local allowlist as it now stands**: `rar`/`tar`/`tgz`/`gz`/`bz2` are included, `parquet`/`xmind`/`mmap` are not - the authoritative table is that package's `references/compatibility.md`; a copy here would start rotting at once, so none is made.
+- **Formats follow the local allowlist as it now stands**: `rar`/`tar`/`tgz`/`gz`/`bz2` are included, `parquet`/`xmind`/`mmap` are not - the authoritative table is that package's own allowlist; a copy here would start rotting at once, so none is made.
 - **Per source ≤256 MiB**: larger inputs are stopped before parsing by the `constraints.max_bytes` gate (measured 268,435,456 bytes) - that is not a parse failure.
 - **Audio/video is proven only as bounded local clips/splits**: full-length meeting parsing is not established (measured: three 90-second clips from two meetings completed the chain with 8/8 verbatim re-checks; five public full-length URL attempts were refused, and a local full file is stopped by the cap above).
 - **Whether a source parses, and what it costs, are decided by the service response**: this package claims no unopened domain and infers no rate.
