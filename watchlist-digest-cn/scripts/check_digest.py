@@ -4,8 +4,12 @@
 
 用法：
     python3 check_digest.py <digest.md> [--run <run.json>]      校验一份日报（--run 缺省取同目录 run.json）
-    python3 check_digest.py --selftest                          跑包内三枚日报样：好样与零新增样须过、坏样四道全发
+    python3 check_digest.py --selftest                          四档自证：好样／零新增样须过、坏样四道全发、反证矩阵逐枚自报
     python3 check_digest.py --help                              本说明
+
+第四档＝反证矩阵（长在包里，不靠外部脚本）：对好样做单点破坏，每枚必须发出预期的码与道名；
+另附一枚正向不误拦（合法形必须零发条）。锚点是「好样里唯一命中的那行」——锚失配即判该枚 FAIL，
+所以守护样一旦漂移，矩阵会先叫，不会静默恒真。
 
 出口形制（与姊妹件同族）：失败＝一行 "FAIL: <文件>（N 条）" ＋逐条先打 `E-*` 码的详行 ＋末行「码表:」；
 全过＝一行 "PASS: <文件>（…）" 并印「扫过行数」「发条数」两类计数。
@@ -26,7 +30,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -259,6 +265,99 @@ def report(path, finds, n):
     return 0
 
 
+def _lane(finding):
+    m = re.match(r'\[(E-[A-Z]+)\] \[([^\]]+)\]', finding)
+    return (m.group(1), m.group(2)) if m else ('?', '?')
+
+
+def probe_matrix(md, run, tmp: Path):
+    """第四档：单点破坏每枚必须发出预期的码与道名；一枚正向不误拦（合法形须零发条）。
+
+    锚点从好样文本里现场取（要求唯一命中）；锚失配＝该枚判 FAIL 并说明锚在文本里出现几处——
+    这样守护样漂移会先叫出来，而不是让破坏样悄悄"通过"（防恒真）。"""
+    out = []
+
+    def one(name, expect, md2, run2, anchor_n=1, drop_run=False):
+        exp = expect if isinstance(expect, str) else '%s／%s' % expect
+        if anchor_n != 1:
+            out.append((name, exp, '锚失配（好样里命中 %d 处）' % anchor_n, False, []))
+            return
+        d = tmp / name
+        d.mkdir(parents=True, exist_ok=True)
+        f = d / 'digest.md'
+        f.write_text(md2, encoding='utf-8')
+        rp = d / 'run.json'
+        if drop_run:
+            rp = d / 'run.absent.json'
+        else:
+            rp.write_text(json.dumps(run2, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+        finds, _n = check(f, rp)
+        lanes = [_lane(x) for x in finds]
+        if expect == '零发条':
+            got = '零发条' if not lanes else '误拦：%s／%s（共 %d 条）' % (lanes[0][0], lanes[0][1], len(lanes))
+            out.append((name, exp, got, not lanes, finds))
+        else:
+            hit = next((i for i, l in enumerate(lanes, 1) if l == expect), 0)
+            got = ('%s／%s（第 %d／共 %d 条）' % (expect[0], expect[1], hit, len(lanes)) if hit else
+                   ('未命中：零发条' if not lanes else
+                    '未命中：首条 %s／%s（共 %d 条）' % (lanes[0][0], lanes[0][1], len(lanes))))
+            out.append((name, exp, got, bool(hit), finds))
+
+    def only(prefix):
+        hits = [ln for ln in md.split('\n') if ln.startswith(prefix)]
+        return (hits[0] if len(hits) == 1 else None, len(hits))
+
+    asof_row, n1 = only('| asof 时刻 |')
+    size_row, n2 = only('| 清单规模 |')
+    called_row, n3 = only('| 本次实跑域数 |')
+    off_row, n4 = only('| 清单外返货')
+    leg_rows = [ln for ln in md.split('\n') if '本腿未取到' in ln]
+    add_rows = [ln for ln in md.split('\n') if re.match(r'^\| \d+ \| .+（\d{6}） \|', ln)]
+    decl_rows = [ln for ln in md.split('\n') if '零新增声明' in ln]
+    blank = '| 1 | | | | | |'
+
+    one('PB1-缺第五段', ('E-FORMAT', '五段'), re.sub(r'\n## 五、来源索引[\s\S]*', '\n', md), run)
+    one('PB2-时点占位', ('E-FORMAT', '时点'), md.replace(asof_row, '| asof 时刻 | ____ |', 1) if n1 == 1 else md, run, n1)
+    one('PB3-出处删空', ('E-ANCHOR', '新增出处'),
+        md.replace(add_rows[0], add_rows[0].rsplit('|', 2)[0] + '| | |', 1) if add_rows else md, run,
+        1 if add_rows else 0)
+    one('PB4-评级入正文', ('E-BANWORD', '评级行情'),
+        md.replace(add_rows[0], add_rows[0] + '\n> 机构给予买入评级，目标价 30 元。\n', 1) if add_rows else md,
+        run, 1 if add_rows else 0)
+    one('PB5-规模虚报', ('E-COVERAGE', '计数比对'),
+        md.replace(size_row, '| 清单规模 | 9 家 |', 1) if n2 == 1 else md, run, n2)
+    one('PB6-缺腿未点名', ('E-COVERAGE', '缺腿点名'),
+        md.replace(leg_rows[0], '| 2 | 其他事项 | `[待人工]` |', 1) if len(leg_rows) == 1 else md, run, len(leg_rows))
+    one('PB9-清单外数虚报', ('E-COVERAGE', '计数比对'),
+        md.replace(off_row, re.sub(r'\d+', '9999', off_row, count=1), 1) if n4 == 1 else md, run, n4)
+    one('PB10-清单外行删掉', ('E-FORMAT', '时点'),
+        md.replace('\n' + off_row, '', 1) if n4 == 1 else md, run, n4)
+    # PB7：实况记零新增、表里空行、两条声明都没勾 → 必须发「零新增未申报」
+    if len(decl_rows) == 1 and len(add_rows) >= 1:
+        md7 = md.replace(decl_rows[0], decl_rows[0].replace('☑', '☐'), 1)
+        for r in add_rows:
+            md7 = md7.replace(r, blank, 1)
+        r7 = dict(run)
+        r7['new_count'] = 0
+        one('PB7-零新增未勾', ('E-COVERAGE', '零新增申报'), md7, r7, 1)
+    else:
+        out.append(('PB7-零新增未勾', 'E-COVERAGE／零新增申报',
+                    '锚失配（声明行 %d 处／新增行 %d 处）' % (len(decl_rows), len(add_rows)), False, []))
+    one('PB8-无run成对', ('E-FORMAT', '实况'), md, run, 1, drop_run=True)
+    # 正向一枚：把「实跑 5 域／返货 3 域＋缺腿点名」改成两数相等且删掉点名行——合法形，不许误拦
+    if n3 == 1 and len(leg_rows) == 1:
+        md3 = md.replace(called_row, re.sub(r'\d+', '3', called_row, count=1), 1)
+        md3 = md3.replace(leg_rows[0], '', 1)
+        md3 = re.sub(r'\n{3,}', '\n\n', md3)
+        r3 = dict(run)
+        r3.update({'legs_called': 3, 'legs_returned': 3, 'missing_legs': []})
+        one('POS-无缺腿合法形', '零发条', md3, r3, 1)
+    else:
+        out.append(('POS-无缺腿合法形', '零发条',
+                    '锚失配（实跑域数行 %d 处／点名行 %d 处）' % (n3, len(leg_rows)), False, []))
+    return out
+
+
 def selftest():
     gd = HERE / 'fixtures' / 'good-digest.md'
     gr = HERE / 'fixtures' / 'good-run.json'
@@ -276,11 +375,11 @@ def selftest():
     got = {re.match(r'\[(E-[A-Z]+)\]', x).group(1) for x in bf}
     want = set(E_LEGEND)
     ok = True
-    print(f"selftest 好样：{gd.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
+    print(f"selftest 一档好样：{gd.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
     for x in gf:
         print('   意外发条 → ' + x)
         ok = False
-    print(f"selftest 零新增样：{zd.name} 扫过 {znl} 行，发条 {len(zf)} 条（规格 0，形制＝第二段勾「未检索到新增」带窗口）")
+    print(f"selftest 二档零新增样：{zd.name} 扫过 {znl} 行，发条 {len(zf)} 条（规格 0，形制＝第二段勾「未检索到新增」带窗口）")
     for x in zf:
         print('   意外发条 → ' + x)
         ok = False
@@ -290,12 +389,26 @@ def selftest():
     if zrun.get('new_count') != 0 or not any('未检索到' in w and DATE.search(w) for w in zticked):
         print('   零新增样自身不合式 → new_count=%s，勾选项=%s' % (zrun.get('new_count'), zticked))
         ok = False
-    print(f"selftest 坏样：{bd.name} 扫过 {bnl} 行，发条 {len(bf)} 条（规格 ≥1 且四道全发）")
+    print(f"selftest 三档坏样：{bd.name} 扫过 {bnl} 行，发条 {len(bf)} 条（规格 ≥1 且四道全发）")
     missing = sorted(want - got)
     if missing:
         print('   未发出的码 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 零新增样 0/{len(zf)} · 坏样四道 {len(got)}/{len(want)}）")
+    tmp = Path(tempfile.mkdtemp(prefix='check-digest-selftest-'))
+    try:
+        res = probe_matrix(gd.read_text(encoding='utf-8'), json.loads(gr.read_text(encoding='utf-8')), tmp)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    bad = [x for x in res if not x[3]]
+    print(f"selftest 四档反证矩阵：{len(res)} 枚（单点破坏 {len(res) - 1} ＋正向不误拦 1），未达预期 {len(bad)} 枚")
+    for name, exp, gotv, passed, finds in res:
+        print('   %-18s 期望 %-24s 实得 %-28s %s' % (name, exp, gotv, '符合' if passed else '不符'))
+        if not passed and finds:
+            for x in finds[:2]:
+                print('      实发详行 → ' + x[:120])
+    if bad:
+        ok = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 二档 0/{len(zf)} · 三档四道 {len(got)}/{len(want)} · 四档 {len(res) - len(bad)}/{len(res)}）")
     return 0 if ok else 1
 
 

@@ -55,12 +55,14 @@ Read `assets/自选清单日报.md` first (that is the five-part shape), then `S
 
 ```bash
 python3 scripts/check_digest.py --help                      # usage; no network
-python3 scripts/check_digest.py --selftest                   # good and zero-new samples must pass, bad sample must fire all four lanes
+python3 scripts/check_digest.py --selftest                   # four tiers: good and zero-new must pass, bad fires all four lanes, counter-evidence matrix reports item by item
 python3 scripts/check_digest.py scripts/fixtures/good-digest.md --run scripts/fixtures/good-run.json    # should PASS
 python3 scripts/check_digest.py scripts/fixtures/zero-digest.md --run scripts/fixtures/zero-run.json    # should PASS (zero-new shape)
 python3 scripts/check_digest.py scripts/fixtures/bad-digest.md --run scripts/fixtures/bad-run.json      # should FAIL, all four codes
 python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtures/good-run.json              # should FAIL - a blank template failing the gate is the design
 ```
+
+**The counter-evidence lives inside the package**: tier four of `--selftest` applies ten single-point breakages to the good fixture (missing part five, placeholder in the time row, source cell emptied, a rating sentence in the body, inflated list size, unnamed missing leg, inflated off-list count, deleted off-list row, unticked zero-new declaration, digest without its run.json) - each must raise the expected code and lane - plus one positive that must not be blocked (equal domain and leg counts with no missing-leg line has to stay clean). Anchors are "the single line in the good fixture that matches": **an anchor that misses makes that item fail**, so a drifting fixture or a weakened lane gets shouted out instead of passing silently - the probes cannot be tautological.
 
 **Take every count from the script's own report line** (`FAIL: … (N items)` and the `扫过 N 行，发条 0 条` line under `PASS:`); this file does not restate them - a restated count becomes a second source of truth. `扫过 N 行` counts `split('\n')` elements, which is `wc -l` **+1**; report the convention with the number.
 
@@ -110,7 +112,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 ## 7. Running status and measurement progress (honest list)
 
 - **Not listed, no package-level measurement yet**: until the full-chain account on real lists (several subjects, multi-day reruns, a missing-leg case) is in, this package makes no capability claim and gives no hit-rate, pass-rate or timing figure.
-- The documentation and machine faces are in place: the five-part contract, four lanes and three digest fixtures - good, zero-new and bad (`--selftest` green; counts come from the script's own line).
+- The documentation and machine faces are in place: the five-part contract, four lanes, three digest fixtures (good, zero-new, bad) and the eleven-item counter-evidence matrix in tier four of `--selftest` - counts come from the script's own line.
 - What each of the five legs fetches and which shape constraints apply are in `SKILL.md` §2. **The scripts themselves are zero-network**: they only read the events file you transcribed from the tool output - no retrieval inside the script, no credentials, no hardcoded tool or domain lists.
 - No gate on unproven surfaces: the checker does not verify whether a leg is open today, nor whether an announcement is true - the first follows the live catalog, the second is on the official original.
 - **The snapshot is the only evidence for idempotence and for "new"**: deleting snapshot.prev.json resets history, and the digest will count old events as new again. That behaviour is stated here rather than pretended away.
@@ -130,7 +132,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | `scripts/init_watchlist.py` | List landing: name or code → watchlist.json (never picks the subject for you) |
 | `scripts/digest.py` | Idempotent increment digest plus three self-evidence files; an empty transcription (blank file or a `_kind=header` line) produces the nothing-found shape; `--check` speaks only through exit codes (0/10/1) |
 | `scripts/check_digest.py` | Four-lane gate (shape / anchor / red line / count and declaration) |
-| `scripts/fixtures/` | Three digest fixtures - good, zero-new, bad - each with its run.json |
+| `scripts/fixtures/` | Three digest fixtures - good, zero-new, bad - each with its run.json; the counter-evidence matrix lives inside `check_digest.py --selftest`, not in an outside script |
 | `README.en.md` | English translation of this file |
 
 See `CHANGELOG.md` for versions.

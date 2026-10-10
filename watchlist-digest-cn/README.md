@@ -55,12 +55,14 @@ python3 ~/.workbuddy/skills/watchlist-digest-cn/scripts/check_digest.py ./mywatc
 
 ```bash
 python3 scripts/check_digest.py --help                      # 参数说明，零网络
-python3 scripts/check_digest.py --selftest                   # 好样与零新增样须过、坏样四道全发
+python3 scripts/check_digest.py --selftest                   # 四档：好样与零新增样须过、坏样四道全发、反证矩阵逐枚自报
 python3 scripts/check_digest.py scripts/fixtures/good-digest.md --run scripts/fixtures/good-run.json   # 应 PASS
 python3 scripts/check_digest.py scripts/fixtures/zero-digest.md --run scripts/fixtures/zero-run.json   # 应 PASS（零新增形）
 python3 scripts/check_digest.py scripts/fixtures/bad-digest.md --run scripts/fixtures/bad-run.json      # 应 FAIL，四码齐发
 python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtures/good-run.json              # 应 FAIL——空模板过不了闸是设计
 ```
+
+**反证矩阵长在包里**：`--selftest` 第四档对好样做 10 枚单点破坏（缺段／时点占位／出处删空／评级入正文／规模虚报／缺腿未点名／清单外数虚报／清单外行删掉／零新增未勾／无 run 成对），每枚必须发出预期的码与道名；另附一枚正向不误拦（两数相等且无缺腿点名的合法形须零发条）。锚点是「好样里唯一命中的那行」——**锚失配即判该枚不符**，所以守护样一旦漂移、或某道判定被拆弱，矩阵会先叫，不会静默恒真。
 
 **枚数与行数一律取脚本自报行**（`FAIL: <文件>（N 条）`／`PASS: <文件>（…）` 后那行「扫过 N 行，发条 0 条」），本文不复写计数——一复写就成了第二个真值源。`扫过 N 行` 按脚本 `split('\n')` 计，等于 `wc -l` 现值 **+1**；报数请连口径一起报。
 
@@ -110,7 +112,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 ## 七、运行状态与实测进度（诚实清单）
 
 - **未上架、件级实测未做**：真清单跑通全链（多主体、多日重跑、缺腿场景）的账未回之前，本件不作能力宣称，也不给命中率、通过率或耗时数字。
-- 文档面与机检面就位：五段契约、四道闸、三枚守护样（`--selftest` 好样与零新增样各 0 发条、坏样四道齐发——枚数取脚本自报行）。
+- 文档面与机检面就位：五段契约、四道闸、三枚守护样（好样／零新增样／坏样）＋`--selftest` 第四档反证矩阵 11 枚——枚数与行数一律取脚本自报行。
 - 五腿取什么、形制约束写在哪，见 `SKILL.md` §2；**脚本自身零网络**：只读你把返货转写成的事件文件，不在脚本里取数、不写凭据、不硬编码工具名与域清单。
 - 已知未证面不建闸：本件的机检不校验「某腿今天到底有没有开」，也不校验公告内容真假——前者以 catalog 现值为准，后者由回官方原文承担。
 - 快照是**幂等与新增判定的唯一凭据**：删掉 snapshot.prev.json 等于把历史清零重跑，日报会重新把旧事件算作新增——这条行为本件明写，不装作不会发生。
@@ -130,7 +132,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 | `scripts/init_watchlist.py` | 清单落盘：名或码 → watchlist.json（不代选主体） |
 | `scripts/digest.py` | 幂等增量日报与三件自证产物；零条转写件（空文件或 `_kind=header` 声明件）按「未检索到新增」出件；`--check` 只用退出码说话（0/10/1） |
 | `scripts/check_digest.py` | 四道机检（形制／锚／红线／计数与申报） |
-| `scripts/fixtures/` | 三枚日报样（好样／零新增样／坏样），各带配套 run.json |
+| `scripts/fixtures/` | 三枚日报样（好样／零新增样／坏样），各带配套 run.json；反证矩阵在 `check_digest.py --selftest` 第四档内，不落外部脚本 |
 | `README.en.md` | 本文件的英文译文 |
 
 版本见 `CHANGELOG.md`。
