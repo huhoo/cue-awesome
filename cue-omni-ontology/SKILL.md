@@ -2,7 +2,7 @@
 name: cue-omni-ontology
 description: "从用户指定的公开文档建可追溯业务知识包:宿主模型抽取实体、口径与断言,工具把逐字摘录绑定为字节级证据(可带入 Omni 原生页码),并执行打包、更新、跨期变化/冲突列表、查询与变化简报;可选数字包只校验宿主算出的数字与来源页逐字一致。工具不判断事实真伪、不做预警或风险发现,结论须人工核对证据。适合:披露跟踪、供应商/产品变化、口径核对、业绩会音视频（本地小段/切片≤256 MiB）。Triggers: ontology extraction, disclosure tracking, evidence briefs, numeric pack, 知识包, 变化简报。"
 license: MIT
-version: "0.3.4"
+version: "0.3.5"
 slug: cue-omni-ontology
 displayName: 任意文档·建逐句可回查知识库
 summary: "从公开资料建可追溯业务知识包:逐字证据锚、口径、跨期变化与变化简报;可选数字包校验数字逐字出处;音视频限本地小段/切片。工具不判断真伪、不预警,须人工核证据。"
@@ -48,7 +48,7 @@ python3 "$SKILL_DIR/scripts/ontology.py" omni-source "$RUN_DIR/omni/r1.json" --o
 
 它逐字写出 content（先核对 Omni 给的 sha256 digest）和带 `page_spans` 的来源记录（basis `omni_native_source_pdf_page`，`parse_origin` 默认 `omni_live`，复用旧结果时加 `--parse-origin omni_replay`）；把记录贴进 draft.json 的 `sources` 即可 `prepare`。`--fy 2025` 另写数字包用的 `FY2025.pages.jsonl`。只认 `source_pdf_page_1_based` 锚；跨页段、仅有渲染页锚的段、无锚文字和页间分隔不给页码，落到 text_range，不猜页。本命令不发起解析、不读 key、不花额度。
 
-2026-10-07 实测的四点（Bridge 1.8.3–1.8.6）：
+实测稳定的四点（Bridge 版本以通道现值为准）：
 
 1. 用 `save_result` 落盘或只存 Markdown 会丢掉 grounding 页码。保留 structuredContent 或完整 JSON；工具拒收纯 Markdown，除非显式加 `--text-only`（无页码，全部 text_range）。
 2. 即使请求 `result_delivery=artifact`，小结果仍会内联返回（storage `inline`）。两种都要接住：artifact 部分由 Bridge 本地 `read_result` 读回（不计费）；结果过期后重新解析可能计费，先问用户。
