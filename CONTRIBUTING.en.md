@@ -16,7 +16,7 @@ Different people and different agent sessions add skills to this repo, so the ru
 3. build-state language ("evidence ticket in transit", "awaiting the ledger", "pending Owner ruling");
 4. internal timestamps ("not established as of 2026-xx-xx") - state the boundary itself ("this skill does not search academic databases"), not when it was measured;
 5. provenance narration in product faces ("demand basis = the 311K-listed rival skill", "measured by M18x") - that belongs to internal accounts; the product states conclusions only (what it does, what it does not, what is authoritative - e.g. "audio/video: local short clips/slices supported, full-length video not; defer to the channel response").
-Standard: capability sentences stated directly, links followable, attribution kept internal. Violations block publication, same tier as the wording red lines.
+Standard: capability sentences stated directly, links followable, attribution kept internal. Violations block publication, same tier as the wording red lines. **History is not rewritten** (trace-preservation): CHANGELOG entries added from this rule's effective date must comply; existing entries get cleaned when their file next takes a version slot - hygiene never burns a slot on its own. Product faces (SKILL/README/assets/references) are cleaned in full, not deferred.
 
 
 1. **No secrets or personal data**: tokens, API keys, `.env`, private keys, internal domains, internal addresses, undesensitized client or natural-person information.
