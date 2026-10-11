@@ -1,13 +1,5 @@
 # CHANGELOG(omni2docx)
 
-### 仓库基础设施（不计入运行时版本）— 2026-10-11
-
-- 新增 `omni2docx/tests/` 回归套件，把渲染引擎的"闭环"固化进仓库、可复现：
-  - `run_matrix_test.py`（docx 12 例 + XML 级断言：PAGE 域/emoji 剥离/引用块楷体/嵌套 inline）、`run_matrix_multi.py`（三格式 34 例：13 例 ×HTML/PPTX + 4 专项）、`run_all.py`（CI 总入口）。
-  - `fixtures/` 全部为**合成占位语料**（`generate_fixtures.py` 生成 + 手写 `edge_case.md`），与任何真实机构/个人/数据无关，可安全公开、对任意 clone 可复现；结构等价真实语料并保留断言锚点。
-  - `out/` 生成物 `.gitignore`；新增 `.github/workflows/omni2docx-regression.yml`（python-docx + python-pptx，push/PR 触发）。
-  - 套件实测：docx 12/12、三格式 34/34，合计 46 全 PASS；`check_skills.py --strict` 全仓 18 skill 0/0。
-
 ### 0.3.0 — 2026-10-11（效果维度：视觉评审驱动 + 无分隔行表格 + 目录治理）
 
 - 效果验证新增两链：**视觉评审**（headless 浏览器截图逐制式人审——本轮即靠它抓出四项）与**几何审计**（`validate_pptx.py` 内置形状越界/文本框重叠/过小字号检查，信息项输出）。
@@ -18,6 +10,13 @@
 - PPTX 几何审计实测 13 例真实语料全 0（越界/重叠/过小字号）；视觉复审三制式截图确认四项全消。
 - 版本位：0.2.1 → 0.3.0（新 CLI 参数 + 解析行为增强）。
 
+### 仓库基础设施（不计入运行时版本）— 2026-10-11
+
+- 新增 `omni2docx/tests/` 回归套件，把渲染引擎的"闭环"固化进仓库、可复现：
+  - `run_matrix_test.py`（docx 12 例 + XML 级断言：PAGE 域/emoji 剥离/引用块楷体/嵌套 inline）、`run_matrix_multi.py`（三格式 34 例：13 例 ×HTML/PPTX + 4 专项）、`run_all.py`（CI 总入口）。
+  - `fixtures/` 全部为**合成占位语料**（`generate_fixtures.py` 生成 + 手写 `edge_case.md`），与任何真实机构/个人/数据无关，可安全公开、对任意 clone 可复现；结构等价真实语料并保留断言锚点。
+  - `out/` 生成物 `.gitignore`；新增 `.github/workflows/omni2docx-regression.yml`（python-docx + python-pptx，push/PR 触发）。
+  - 套件实测：docx 12/12、三格式 34/34，合计 46 全 PASS；`check_skills.py --strict` 全仓 18 skill 0/0。
 ### 0.2.1 — 2026-10-11（验收闭环：HTML/PPTX 验收器 + 两处保真修复）
 
 - 新增 `scripts/validate_html.py`：HTML 产物验收器，与 `validate_docx.py` 同口径（字符级 CJK 覆盖率 ≥99% 判 PASS，emoji 以 `--strip-emoji` 同口径从源文剥离防误报），附加目录/锚点/源页标注/溯源附录/自包含（无外链）结构检查；`--json`/`--md` 二选一，与渲染输入保持一致。
