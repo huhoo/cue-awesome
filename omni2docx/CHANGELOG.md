@@ -1,5 +1,39 @@
 # CHANGELOG(omni2docx)
 
+### 仓库基础设施（不计入运行时版本）— 2026-10-11
+
+- 新增 `omni2docx/tests/` 回归套件，把渲染引擎的"闭环"固化进仓库、可复现：
+  - `run_matrix_test.py`（docx 12 例 + XML 级断言：PAGE 域/emoji 剥离/引用块楷体/嵌套 inline）、`run_matrix_multi.py`（三格式 34 例：13 例 ×HTML/PPTX + 4 专项）、`run_all.py`（CI 总入口）。
+  - `fixtures/` 全部为**合成占位语料**（`generate_fixtures.py` 生成 + 手写 `edge_case.md`），与任何真实机构/个人/数据无关，可安全公开、对任意 clone 可复现；结构等价真实语料并保留断言锚点。
+  - `out/` 生成物 `.gitignore`；新增 `.github/workflows/omni2docx-regression.yml`（python-docx + python-pptx，push/PR 触发）。
+  - 套件实测：docx 12/12、三格式 34/34，合计 46 全 PASS；`check_skills.py --strict` 全仓 18 skill 0/0。
+
+### 0.3.0 — 2026-10-11（效果维度：视觉评审驱动 + 无分隔行表格 + 目录治理）
+
+- 效果验证新增两链：**视觉评审**（headless 浏览器截图逐制式人审——本轮即靠它抓出四项）与**几何审计**（`validate_pptx.py` 内置形状越界/文本框重叠/过小字号检查，信息项输出）。
+- 修复**来源路径泄漏**：HTML 页首不再印原始解析路径（含本机目录，丑且泄隐私）；需要溯源用 `render_html.py --source-label "XX研报"` 显式署名。
+- 表格识别兼容**无分隔行表格**：连续 `|` 行（xlsx/部分导出常见）按表处理、首行作表头（≥2 行且八成以上行含 ≥2 单元格才判表；不达标的孤立 `|` 行按普通段消费——本分支必须至少消费 1 行，否则 para 空转死循环，实测已踩）。正文内嵌 `|` 分隔文本属源数据质量，原样保留不猜结构。
+- 目录治理：`render_html.py --toc-depth N`（默认 2）控目录深度；目录列表去 `<ol>` 自动编号（标题多自带"一、/3.1"编号，叠加即双重编号）。
+- OCR 件已知边界：逐字母拆字标题词边界不可还原，引擎不强修；SKILL.md 明确建议 agent 渲染前先清洗 markdown。
+- PPTX 几何审计实测 13 例真实语料全 0（越界/重叠/过小字号）；视觉复审三制式截图确认四项全消。
+- 版本位：0.2.1 → 0.3.0（新 CLI 参数 + 解析行为增强）。
+
+### 0.2.1 — 2026-10-11（验收闭环：HTML/PPTX 验收器 + 两处保真修复）
+
+- 新增 `scripts/validate_html.py`：HTML 产物验收器，与 `validate_docx.py` 同口径（字符级 CJK 覆盖率 ≥99% 判 PASS，emoji 以 `--strip-emoji` 同口径从源文剥离防误报），附加目录/锚点/源页标注/溯源附录/自包含（无外链）结构检查；`--json`/`--md` 二选一，与渲染输入保持一致。
+- 新增 `scripts/validate_pptx.py`：PPTX 产物验收器，**幻灯片正文 + 表格单元格 + 演讲者备注合并计入覆盖口径**（汇报版式"要点上页、正文进备注"）；附加空页/页数/表格/图像/截断检查。
+- 修复 `render_pptx.py` 尾部正文静默丢失：deck 正常时，最后一段纯正文节（如免责声明）残留在 `pending_notes` 被丢弃——实测 61k 字法务研报覆盖率仅 66.86%；现追加到最后一张幻灯片备注，同源复测 99.17%（剩余 0.83% 为源文档逐页重复的页眉页脚 chrome 行，非正文）。
+- 修复 `render_pptx.py` 空节标题丢失：标题下只有图片/分隔线的节（如"## 6. 图像与分隔"），标题只存 `cur_title`，被下一标题覆盖丢失；现空节标题保入备注流。
+- 回归升级：`run_matrix_multi.py` 改为直接调用随包验收器（回归同时覆盖验收器本身），并新增专项用例——多源合并（3 源 + analysis）、`--md` 直出、空 markdown、纯表格，共 34 例全 PASS；docx 12 例矩阵回归无回归。
+- 版本位：0.2.0 → 0.2.1（新增验收器 = minor 伴随修复，docx/HTML/PPTX 渲染口径不变）。
+
+### 0.2.0 — 2026-10-11（多格式：展示 HTML + 汇报 PPT + 打印 PDF）
+
+- 新增 `scripts/render_html.py`（展示）：把同一份解析结果渲染为**自包含单文件 HTML**——目录锚点跳转、源页标注（grounded）、GFM 表格/引用（楷体）/脚注尾注/溯源标注段还原，内联 CSS 按 `--profile` 制式（字体/字号/行距/首行缩进/页边距），打印样式 `@page A4`；`--pdf` 调用本机 headless 浏览器（Edge/Chrome/Chromium）导出打印件，缺浏览器时明确提示跳过、不静默失败。
+- 新增 `scripts/render_pptx.py`（汇报）：标题页 / 章节页 / 要点页 / 表格页；**要点上页、正文细节进演讲者备注**（汇报语义，避免长文档被逐段平铺成上百页）；要点超 `--max-bullets`/`--max-chars` 自动续页；表格按列数降字号、超长标题自动降字号；支持 `data:image` 图像嵌入；无标题层级的文档有兜底分页；`--max-slides`（默认 80）截断并告警，提示先提炼提纲。
+- 架构取舍：不重构为 block IR，采用**轻量契约**（markdown + grounding + outline + profile，各渲染器自消费），docx 引擎零改动、旧产出不受影响。
+- 实测：真实语料 13 例 ×（HTML 覆盖率 + PPTX 页数/可打开）全 PASS，HTML CJK 覆盖率 100%；docx 侧 12 例矩阵回归无回归；HTML→PDF 打印件中文抽取 100%。
+
 ### 0.1.2 — 2026-10-10（大结果取数路径改正为条件句：按该 part 的存储形制分流＋选 detail 口径）
 
 - 凭据＝双 part artifact 实据的四条读数（①侧车可按游标分块读回，条件是服务端把该 part 判为 artifact，游标绑死 part 与 offset；②`save_result` 只交 content，两种交付形制都交不出侧车；③`result_delivery_effective` 四种组合都不回显于 MCP 回执；④换 detail 只换侧车表示、正文不动）。本轮未复跑任何付费件，字节数与跳数以那份账为准，成品面只写形制不写数。
