@@ -166,3 +166,5 @@ CI: `.github/workflows/skill-lint.yml` runs on every push / PR (errors fail, war
 - Secrets, tokens, personal data, internal domains
 - Fabricated source links, undesensitized client or personal information (see `journal-draft/NOTICE.md` for the desensitization pattern)
 - Straight copies of other people's skills (if adapted, state the source and license)
+
+> **The template itself must pass the gate** (reported by 4.1 after testing): phrasing like "the word list lives only in tickets and internal ledgers" re-triggers the scan — both English and Chinese forms of that process word are in the banned-work-status list. Working substitutes: refer to a removed clause as "that clause described a third party's data-source requirements", and describe the key list as living only in internal reconciliation records. (This file keeps 5 self-scan findings because the rule definitions must cite the banned patterns themselves — a known exception, escalated separately. This commit also corrects an earlier one: its message cited a nonexistent hash prefix "9f0…" for the previous commit, which is actually `def3c78` — an identifier written without assertion.)
