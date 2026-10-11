@@ -45,6 +45,7 @@ CASES = [
     ("M10_truncated_default", "m10_truncated.omni.md", "default", [], []),
     ("M11_edge_all_flags", "edge_case.md", "academic", ["--page-numbers", "--strip-emoji"], ["page_field", "no_emoji", "quote_kaiti", "nested_inline"]),
     ("M12_edge_default_noStrip", "edge_case.md", "default", [], ["emoji_kept", "nested_inline"]),
+    ("M13_ocr_spacing", "m11_ocr_spacing.omni.md", "default", [], ["cjk_space_clean", "latin_space_preserved"]),
 ]
 
 results = []
@@ -121,6 +122,16 @@ def assert_flags(flag: str, docx_path: Path) -> str:
                     return "PASS"
                 return f"FAIL(粗体 run 缺 {missing} 或残留 *)"
         return "FAIL(找不到嵌套行内段)"
+    if flag == "cjk_space_clean":
+        if "他 们" in text:
+            return "FAIL(CJK 逐字空格未被清理)"
+        if "他们讨论" not in text:
+            return "FAIL(清理后 CJK 正文缺失)"
+        return "PASS"
+    if flag == "latin_space_preserved":
+        if "W e d i s c u s s e d" in text:
+            return "PASS"
+        return "FAIL(拉丁 OCR 拆字被意外合并/丢失)"
     return "SKIP"
 
 

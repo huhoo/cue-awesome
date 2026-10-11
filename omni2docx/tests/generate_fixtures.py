@@ -159,6 +159,19 @@ T h e y s h o w e d u s a n e x a m p l e o f t h e s y s t e m .
 上述英文为示例 OCR 拆字，验证渲染不崩溃；中文正文保持正常覆盖。
 """
 
+# D11：OCR 间距专项——CJK 逐字空格应被清理，拉丁逐字母空格属已知限制应保留
+D11_OCR_SPACING = f"""# 示例 OCR 间距稿（合成语料）
+{DISCLAIMER}
+他 们 讨 论 了 方 案 的 细 节 ， 并 形 成 了 书 面 记 录 。
+
+W e d i s c u s s e d t h e p l a n a n d r e c o r d e d i t .
+
+示例正常段落：引擎应清理紧贴 CJK 字符的空格，但保留拉丁 OCR 拆字（已知限制，不在本引擎修复范围）。
+
+## 对照说明
+第一段为 CJK 逐字空格（应被 clean_cjk_spaces 去除）；第二段为拉丁逐字母空格（已知限制，应原样保留）。
+"""
+
 D10_TRUNC = f"""# 示例截断文档（合成语料）
 {DISCLAIMER}
 ## 第一节
@@ -194,6 +207,7 @@ DOCS = {
     "m08_jpg_ocr": D8_OCR,
     "m09_huge1000p": build_huge(),
     "m10_truncated": D10_TRUNC,
+    "m11_ocr_spacing": D11_OCR_SPACING,
 }
 
 # docx 矩阵用的 .omni.md 文件名（中性名，去本机路径）
@@ -208,6 +222,7 @@ DOCX_NAMES = {
     "m08_jpg_ocr": "m08_jpg_ocr.omni.md",
     "m09_huge1000p": "m09_huge1000p.omni.md",
     "m10_truncated": "m10_truncated.omni.md",
+    "m11_ocr_spacing": "m11_ocr_spacing.omni.md",
 }
 
 # 三格式矩阵用的中间件 JSON 文件名

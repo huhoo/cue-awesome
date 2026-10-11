@@ -17,6 +17,7 @@
   - `fixtures/` 全部为**合成占位语料**（`generate_fixtures.py` 生成 + 手写 `edge_case.md`），与任何真实机构/个人/数据无关，可安全公开、对任意 clone 可复现；结构等价真实语料并保留断言锚点。
   - `out/` 生成物 `.gitignore`；新增 `.github/workflows/omni2docx-regression.yml`（python-docx + python-pptx，push/PR 触发）。
   - 套件实测：docx 12/12、三格式 34/34，合计 46 全 PASS；`check_skills.py --strict` 全仓 18 skill 0/0。
+- 回归套件增补 **OCR 间距专项用例 M13**（`generate_fixtures.py` 新增 `D11_OCR_SPACING` → `m11_ocr_spacing.omni.md`，`run_matrix_test.py` 加 `cjk_space_clean` / `latin_space_preserved` 两项 XML 级断言）：确定性固化 OCR 已知限制行为——CJK 逐字空格被 `clean_cjk_spaces` 清理、拉丁逐字母空格按已知限制原样保留（引擎不修）。套件现 docx 13 例、三格式 34 例；P2 真机另以一份 1990 年 USPTO 图像型专利（12 页真实扫描件）走全链路，确认真实扫描 PDF 可正常解析渲染，但该件 omni 重 OCR 干净、未触发拆字，印证限制为**源质量依赖型**（须低质量 CJK 扫描件才暴露）。
 ### 0.2.1 — 2026-10-11（验收闭环：HTML/PPTX 验收器 + 两处保真修复）
 
 - 新增 `scripts/validate_html.py`：HTML 产物验收器，与 `validate_docx.py` 同口径（字符级 CJK 覆盖率 ≥99% 判 PASS，emoji 以 `--strip-emoji` 同口径从源文剥离防误报），附加目录/锚点/源页标注/溯源附录/自包含（无外链）结构检查；`--json`/`--md` 二选一，与渲染输入保持一致。
