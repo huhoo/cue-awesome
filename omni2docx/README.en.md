@@ -37,7 +37,7 @@ with an explicit message if absent).
 # ① agent markdown direct output (no intermediate JSON)
 python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers
 
-# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding taken per part by its storage.kind (inline straight from the receipt / artifact along the cursor; outline optional) → intermediate JSON
+# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding (+ same-session read_outline) → intermediate JSON
 python scripts/build_docx.py --json intermediate.json --out deliverable.docx --profile legal --page-marks
 
 # Acceptance (mandatory): zero character loss + structure checks
@@ -50,16 +50,9 @@ python scripts/render_html.py --json intermediate.json --out showcase.html --pro
 python scripts/render_pptx.py --md slide-outline.md --out deck.pptx --profile finance --max-slides 30
 ```
 
-Omni discipline: retrieval follows the `storage.kind` each part declares in the receipt - an `inline`
-part is taken whole from the parse / get_parse_status receipt; a part judged `artifact` is read back hop
-by hop with `read_result` along the cursor the server issued for that part (the cursor is bound to its
-part and offset: borrowing it across parts or forging an advance offset yields `INVALID_RESULT_CURSOR`,
-and there is no public way to jump on your own; measured, the cursor read-back is byte-exact).
-**Requesting `artifact` does not change the delivery shape you get**, and `result_delivery_effective` is
-not echoed in the MCP receipt, so only the actual return governs. `read_outline` stays an **optional call
-with no availability guarantee**: when it is unavailable the engine rebuilds the heading tree from
-markdown - no retries, no failure reported. Never take the sidecar from `save_result`'s export: measured,
-under both delivery shapes it hands over the content file only.
+Omni discipline: use the agent-native MCP tools throughout (parse /
+get_parse_status / read_outline / read_result) **within the same session** — do
+not write spawn scripts around omni (cross-process read_* calls fail by design).
 
 ## Scenario profiles (--profile)
 
@@ -76,14 +69,9 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
 ## Capability boundaries (honest list)
 
 - Fidelity is **page-level** (grounded); element-level bbox data is available via
-  `detail=layout`, engine consumption is a later stage. **Changing detail does not change the text**:
-  measured, the content part of one document carries identical bytes and an identical digest under both
-  representations, so choosing page anchors versus layout coordinates needs no re-check of the body.
-- `read_result` is **the branch for artifact parts**: a part judged `artifact` is read back along its
-  cursor (measured byte-exact), while an `inline` part needs no cursor and has none to start from.
-  `read_outline` is an **optional continuation call with no availability guarantee** (the same result_id
-  can answer `RESULT_NOT_FOUND`, non-retryable). This package does not depend on the outline: the engine
-  rebuilds the heading tree from markdown by default - the normal path, not a degraded one.
+  `detail=layout`, engine consumption is a later stage.
+- `read_result` / `read_outline` are bound to a **same-session constraint**
+  (`local_result_cache` lives with the bridge process); fine inside an agent-native session.
 - Paragraphs spanning page boundaries belong to the page where they start.
 - Complex markdown (nested tables, math) degrades to text; tables are layout-faithful, not pixel-faithful.
 - CJK font names (SimSun, FangSong_GB2312, KaiTi…) are substituted automatically
@@ -98,8 +86,11 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
 
 ## Acceptance
 
-`validate_docx.py` checks character-level CJK coverage (PASS at ≥99%) plus anchor
-phrases and structure counts (page breaks / headings / tables). A real-corpus
+Each format ships its own validator, all judging on **character-level CJK
+coverage** (PASS at ≥99%): `validate_docx.py` (plus anchor phrases and structure
+counts), `validate_html.py` (plus TOC/anchors/source-page marks/self-containment),
+and `validate_pptx.py` (slide text + table cells + speaker notes counted together,
+plus empty-page/truncation checks). A real-corpus
 matrix (xlsx / PDF reports / HTML / audio transcripts / docx / PPTX / JPG OCR /
 1000-page PDF / truncated PDF / edge cases, across profiles) measured 100%
 coverage on every case.
@@ -113,3 +104,5 @@ coverage on every case.
 | `scripts/validate_docx.py` | fidelity + structure validator (docx) |
 | `scripts/render_html.py` | HTML showcase renderer (self-contained file, optional `--pdf`) |
 | `scripts/render_pptx.py` | PPTX deck renderer (bullets on slides, detail in notes) |
+| `scripts/validate_html.py` | HTML validator (coverage + TOC/anchors/self-containment) |
+| `scripts/validate_pptx.py` | PPTX validator (coverage incl. speaker notes + empty-page/truncation) |

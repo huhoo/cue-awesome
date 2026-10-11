@@ -246,7 +246,11 @@ def build(md, cfg, title=None, section_level=1, split_level=2, max_bullets=7,
         notes = "\n".join(x for x in (pending_notes + cur_notes) if x).strip() or None
         if not (cur_items or cur_tables or cur_images):
             # 无要点可上页：正文留作备注，顺延到下一页，避免产出空页
-            pending_notes = pending_notes + cur_notes
+            if cur_title and cur_title != "要点":
+                # 空节标题（标题下只有图片/分隔线）不得被下一标题覆盖丢失
+                pending_notes = pending_notes + [cur_title] + cur_notes
+            else:
+                pending_notes = pending_notes + cur_notes
             cur_notes = []
             return
         t = cur_title or "要点"
@@ -308,7 +312,7 @@ def build(md, cfg, title=None, section_level=1, split_level=2, max_bullets=7,
         elif prose == "notes":
             cur_notes.append(text)
     flush()
-    # 兜底：文档无标题层级（扫描件/纯正文）时，正文全落备注会产出空 deck——
+    # 兜底一：文档无标题层级（扫描件/纯正文）时，正文全落备注会产出空 deck——
     # 此时按要点页平铺，保证有可讲的内容页（agent 若要更精炼，自行提炼提纲）。
     leftover = [x for x in (pending_notes + cur_notes) if x]
     if leftover and deck.n_slides <= (1 if doc_title else 0):
@@ -317,6 +321,16 @@ def build(md, cfg, title=None, section_level=1, split_level=2, max_bullets=7,
             if not room():
                 break
             deck.content_slide("要点" if pi == 0 else "要点（续 %d）" % (pi + 1), pg)
+        leftover = []
+    # 兜底二：deck 正常时，尾部纯正文（如免责声明节）残留的备注不得静默丢弃——
+    # 追加到最后一张幻灯片的演讲者备注，保证正文零丢失。
+    if leftover and deck.prs.slides:
+        try:
+            last = deck.prs.slides[-1]
+            tf = last.notes_slide.notes_text_frame
+            tf.text = (tf.text or "") + ("\n" if tf.text else "") + "\n".join(leftover)
+        except Exception:
+            pass
     if capped[0]:
         sys.stderr.write("警告：达到 --max-slides=%d 上限，已截断；"
                          "建议 agent 先提炼提纲再渲染 deck。\n" % max_slides)

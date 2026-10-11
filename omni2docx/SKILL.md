@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
-version: "0.2.0"
+version: "0.2.1"
 license: MIT
 metadata:
   requires:
@@ -234,11 +234,14 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 
 ### 步骤 4 — 验收（产品级，必做）
 
-用 `validate_docx.py` 对产出做保真 + 结构校验，确认**字符零丢失（覆盖率≥99%）**&#x4E14;  
-分页/标题/表格数量符合预期，再 `present_files` 交付：
+对产出做保真 + 结构校验，确认**字符零丢失（覆盖率≥99%）**且分页/标题/表格数量  
+符合预期，再 `present_files` 交付。三种格式各有对应验收器（`--json`/`--md` 与渲染  
+时输入保持一致）：
 
 ```
 python <skill_dir>/validate_docx.py --json <中间json> --docx <输出.docx>
+python <skill_dir>/validate_html.py --json <中间json> --html <输出.html>   # 或 --md <源md>
+python <skill_dir>/validate_pptx.py --json <中间json> --pptx <输出.pptx>   # 备注/正文/表格合并计入覆盖口径
 ```
 
 ### 步骤 5 — 交付

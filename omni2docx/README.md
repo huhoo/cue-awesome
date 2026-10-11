@@ -32,7 +32,7 @@ PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Ch
 # ① agent markdown 直出（免中间 JSON）
 python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers
 
-# ②③ Omni 解析重建：parse(grounded) 按该 part 的 storage.kind 现值取 markdown+grounding（inline 直取／artifact 顺游标；outline 可选）→ 落盘中间 JSON
+# ②③ Omni 解析重建：parse(grounded) 取 markdown+grounding(+同会话 read_outline) 落盘中间 JSON
 python scripts/build_docx.py --json 中间.json --out 交付.docx --profile legal --page-marks
 
 # 验收（必做）：字符零丢失 + 结构核对
@@ -43,15 +43,14 @@ python scripts/render_html.py --json 中间.json --out 展示.html --profile gov
 
 # 汇报：deck（要点上页、正文进备注）；长文档建议 agent 先提炼提纲
 python scripts/render_pptx.py --md slide提纲.md --out 汇报.pptx --profile finance --max-slides 30
+
+# HTML / PPTX 同口径验收（备注/正文/表格合并计入覆盖口径）
+python scripts/validate_html.py --json 中间.json --html 展示.html
+python scripts/validate_pptx.py --json 中间.json --pptx 汇报.pptx
 ```
 
-Omni 取数纪律：分流依据＝回执里各 part 自己的 `storage.kind` 现值——`inline` 直接从 parse /
-get_parse_status 的回执取整段；被判 `artifact` 的 part 才用 `read_result` 顺服务端为该 part 发的
-游标逐跳读回（游标绑死 part 与 offset，跨 part 借游标或自造前进 offset 一律 `INVALID_RESULT_CURSOR`，
-没有自主跳转的公开出口；实测按游标读回字节级无损）。**请求 artifact 不改变实际交付形制**，
-`result_delivery_effective` 也不回显在 MCP 回执里，所以只以实际返回为准。`read_outline` 仍是
-**不保证可得**的可选续调用：不可得就由引擎从 markdown 重建目录，不重试、不报故障。侧车不取
-`save_result` 的导出件——实测两种交付形制下它都只交正文一枚文件。
+Omni 取数纪律：全程用 agent 原生 MCP 工具（parse / get_parse_status / read_outline /
+read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨进程调 read_* 必然失败）。
 
 ## 场景制式（--profile）
 
@@ -65,8 +64,8 @@ get_parse_status 的回执取整段；被判 `artifact` 的 part 才用 `read_re
 
 ## 能力边界（诚实清单）
 
-- 保真级别为**页级**（grounded）；元素级 bbox 数据可经 `detail=layout` 产出，引擎消费为后续阶段。**换 detail 不动正文**——同一件在两种表示下 content part 的字节与 digest 实测逐字同值，选「页码保真」还是「版面坐标」不必重跑正文核对。
-- `read_result` 是**按 part 分流的一环**：被判 `artifact` 的 part 顺游标逐跳读回（实测无损），`inline` 的 part 不需要它也没有游标可起步。`read_outline` 是**不保证可得**的可选续调用（同一 result_id 上可能返回不可重试的 `RESULT_NOT_FOUND`）。本件不依赖 outline 工作：目录缺省由引擎从 markdown 重建——这是常规路径，不是降级异常。
+- 保真级别为**页级**（grounded）；元素级 bbox 数据可经 `detail=layout` 产出，引擎消费为后续阶段。
+- `read_result` / `read_outline` 受**同会话约束**（`local_result_cache` 绑定 bridge 进程）；agent 原生会话内使用无碍。
 - 段落跨源页边界时归入其起始字节所在页。
 - 复杂 markdown（嵌套表、数学公式）按文本降级；表格为版式保真非像素级还原。
 - 中文字体名（宋体/仿宋_GB2312/楷体等）在非 Windows 环境由 Word/WPS 自动替换，制式文档建议在 Windows/WPS 打开验收。
@@ -76,8 +75,11 @@ get_parse_status 的回执取整段；被判 `artifact` 的 part 才用 `read_re
 
 ## 验收口径
 
-`validate_docx.py` 以**字符级 CJK 覆盖率**（≥99% 判 PASS）+ 锚句命中 + 结构统计（分页/标题/表格数）
-对产物做保真校验。真实语料矩阵（xlsx / PDF 研报 / HTML / 音频转写 / docx / PPTX /
+三种格式各有验收器，同以**字符级 CJK 覆盖率**（≥99% 判 PASS）为准：
+`validate_docx.py`（+ 锚句命中 + 结构统计：分页/标题/表格数）、
+`validate_html.py`（+ 目录/锚点/源页标注/自包含检查）、
+`validate_pptx.py`（幻灯片正文+表格+演讲者备注合并计入覆盖口径，+ 空页/截断检查）。
+真实语料矩阵（xlsx / PDF 研报 / HTML / 音频转写 / docx / PPTX /
 JPG OCR / 千页 PDF / 截断 PDF / 边界用例，多制式组合）实测覆盖率全部 100%。
 
 ## 文件
@@ -89,3 +91,5 @@ JPG OCR / 千页 PDF / 截断 PDF / 边界用例，多制式组合）实测覆�
 | `scripts/validate_docx.py` | 保真+结构校验器（docx） |
 | `scripts/render_html.py` | HTML 展示渲染器（自包含单文件，可 `--pdf`） |
 | `scripts/render_pptx.py` | PPTX 汇报渲染器（deck，要点上页/细节进备注） |
+| `scripts/validate_html.py` | HTML 验收器（覆盖率 + 目录/锚点/自包含） |
+| `scripts/validate_pptx.py` | PPTX 验收器（覆盖率含备注 + 空页/截断） |
