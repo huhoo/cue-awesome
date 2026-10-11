@@ -3,6 +3,7 @@
 **[English](README.md) · [中文](README.zh-CN.md)**
 
 个人自研的 WorkBuddy / Cue 技能集合仓。每个子目录是一个独立 skill，可单独复制使用。
+数据腿由 Cue 通道提供：配置一把 api key 即可使用，无需自备数据源或自建数据层。不含未开放域；域清单与工具面以 catalog 现值为准（`GET https://cuecue.cn/api/mcp-catalog`）。
 
 ## 先试一次公开资料知识更新
 
