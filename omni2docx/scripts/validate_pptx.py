@@ -38,35 +38,62 @@ def source_markdown(data):
 
 
 def deck_text(path):
-    """收集全部文本：形状文本 + 表格单元格 + 演讲者备注。"""
+    """收集全部文本（形状/表格单元格/演讲者备注）+ 空页数 + 几何审计。"""
     from pptx import Presentation
+    from pptx.util import Emu
     prs = Presentation(path)
-    texts, n_tables, n_pics, empty = [], 0, 0, 0
+    W, H = prs.slide_width, prs.slide_height
+    tol = Emu(9525)  # 1px 容差
+    texts, empty = [], 0
+    n_tables = n_pics = 0
+    geo = {"越界": 0, "重叠": 0, "过小字号": 0}
     for slide in prs.slides:
-        page_has_text = False
+        has_content = False
+        boxes = []
         for shape in slide.shapes:
+            try:
+                l, t, w, h = shape.left, shape.top, shape.width, shape.height
+            except Exception:
+                l = None
+            if l is not None:
+                if l < -tol or t < -tol or l + w > W + tol or t + h > H + tol:
+                    geo["越界"] += 1
             if shape.has_text_frame:
-                t = shape.text_frame.text
-                if t.strip():
-                    texts.append(t)
-                    page_has_text = True
+                t_ = shape.text_frame.text
+                if t_.strip():
+                    texts.append(t_)
+                    has_content = True
+                    boxes.append((l, t, w, h))
+                    small = any(r.font.size and r.font.size.pt < 10
+                                for p in shape.text_frame.paragraphs for r in p.runs)
+                    if small:
+                        geo["过小字号"] += 1
             if getattr(shape, "has_table", False) and shape.has_table:
                 n_tables += 1
+                has_content = True
                 for row in shape.table.rows:
                     for cell in row.cells:
                         if cell.text.strip():
                             texts.append(cell.text)
-                            page_has_text = True
             if shape.shape_type == 13:  # PICTURE
                 n_pics += 1
-        if slide.has_notes_slide:
-            nt = slide.notes_slide.notes_text_frame.text
-            if nt.strip():
-                texts.append(nt)
-                page_has_text = True
-        if not page_has_text:
+                has_content = True
+        for a in range(len(boxes)):
+            for b in range(a + 1, len(boxes)):
+                l1, t1, w1, h1 = boxes[a]
+                l2, t2, w2, h2 = boxes[b]
+                if None in (l1, l2):
+                    continue
+                ox = max(0, min(l1 + w1, l2 + w2) - max(l1, l2))
+                oy = max(0, min(t1 + h1, t2 + h2) - max(t1, t2))
+                if ox * oy > 0.3 * min(w1 * h1, w2 * h2):
+                    geo["重叠"] += 1
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip():
+            texts.append(slide.notes_slide.notes_text_frame.text)
+            has_content = True
+        if not has_content:
             empty += 1
-    return len(prs.slides), texts, n_tables, n_pics, empty
+    return len(prs.slides), texts, n_tables, n_pics, empty, geo
 
 
 def main():
@@ -84,7 +111,7 @@ def main():
     else:
         src_md = source_markdown(json.load(open(args.json, encoding="utf-8")))
 
-    n_slides, texts, n_tables, n_pics, empty = deck_text(args.pptx)
+    n_slides, texts, n_tables, n_pics, empty, geo = deck_text(args.pptx)
     out_text = "\n".join(texts)
 
     src_cjk = Counter(norm_chars(src_md))
@@ -109,6 +136,8 @@ def main():
     print("  空页数 :", empty)
     print("  表格数 :", n_tables)
     print("  图像数 :", n_pics)
+    print("  几何审计（信息项）: 越界 %d / 重叠 %d / 过小字号 %d"
+          % (geo["越界"], geo["重叠"], geo["过小字号"]))
 
     problems = []
     if coverage < 0.99:

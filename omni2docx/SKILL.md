@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
-version: "0.2.1"
+version: "0.3.0"
 license: MIT
 metadata:
   requires:
@@ -219,6 +219,8 @@ python <skill_dir>/scripts/build_docx.py --md <agent产出.md> --out <输出.doc
 # HTML：展示（浏览器打开 / 分享 / 可打印）
 python <skill_dir>/scripts/render_html.py --json <中间json> --out <输出.html> --profile gov
 python <skill_dir>/scripts/render_html.py --md <agent产出.md> --out <输出.html> --pdf   # 同时导出 PDF
+#   --toc-depth N 控制目录深度（默认 2）；需要来源署名用 --source-label "XX研报"
+#   （默认不显示原始路径——含本机目录，既丑又泄隐私）
 
 # PPT：汇报（deck，要点上页、细节进备注）
 python <skill_dir>/scripts/render_pptx.py --md <slide提纲.md> --out <输出.pptx> --profile finance
@@ -231,6 +233,10 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 - `--no-pagebreak` 忽略分页；`--no-toc` 忽略章节重建（仅纯 markdown + 表格/列表）；  
   `--page-marks` 分页处标注「源第 N 页」（核对原件）；`--profile` 套制式——预设名  
   （gov/legal/finance/academic/default）或自定义 JSON（内联或 .json 文件，参数见上节表）。
+- 表格识别兼容两种形态：带 `| --- |` 分隔行的规范 GFM 表；无分隔行的连续 `|` 行  
+  （xlsx/部分导出常见，首行作表头）。正文段落里内嵌的 `|` 分隔文本是源数据质量，  
+  原样保留不猜结构。OCR 件标题常有逐字母空格/拆字（词边界不可还原），渲染前  
+  agent 宜先清洗 markdown 再转换。
 
 ### 步骤 4 — 验收（产品级，必做）
 

@@ -38,13 +38,13 @@ python scripts/build_docx.py --json 中间.json --out 交付.docx --profile lega
 # 验收（必做）：字符零丢失 + 结构核对
 python scripts/validate_docx.py --json 中间.json --docx 交付.docx
 
-# 展示：自包含 HTML（可加 --pdf 同时导出打印件）
+# 展示：自包含 HTML（可加 --pdf 同时导出打印件；--toc-depth 控目录深度）
 python scripts/render_html.py --json 中间.json --out 展示.html --profile gov --page-marks --pdf
 
 # 汇报：deck（要点上页、正文进备注）；长文档建议 agent 先提炼提纲
 python scripts/render_pptx.py --md slide提纲.md --out 汇报.pptx --profile finance --max-slides 30
 
-# HTML / PPTX 同口径验收（备注/正文/表格合并计入覆盖口径）
+# HTML / PPTX 同口径验收（备注/正文/表格合并计入覆盖口径；含越界/重叠/字号几何审计）
 python scripts/validate_html.py --json 中间.json --html 展示.html
 python scripts/validate_pptx.py --json 中间.json --pptx 汇报.pptx
 ```

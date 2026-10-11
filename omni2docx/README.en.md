@@ -43,11 +43,16 @@ python scripts/build_docx.py --json intermediate.json --out deliverable.docx --p
 # Acceptance (mandatory): zero character loss + structure checks
 python scripts/validate_docx.py --json intermediate.json --docx deliverable.docx
 
-# Showcase: self-contained HTML (add --pdf to also export a print-ready PDF)
+# Showcase: self-contained HTML (add --pdf to also export a print-ready PDF; --toc-depth caps TOC depth)
 python scripts/render_html.py --json intermediate.json --out showcase.html --profile gov --page-marks --pdf
 
 # Presentation: deck (bullets on slides, prose in notes); refine the outline first for long documents
 python scripts/render_pptx.py --md slide-outline.md --out deck.pptx --profile finance --max-slides 30
+
+# HTML / PPTX acceptance, same coverage yardstick (slide text + tables + speaker notes
+# combined; includes out-of-bounds / overlap / tiny-font geometry audit)
+python scripts/validate_html.py --json intermediate.json --html showcase.html
+python scripts/validate_pptx.py --json intermediate.json --pptx deck.pptx
 ```
 
 Omni discipline: use the agent-native MCP tools throughout (parse /

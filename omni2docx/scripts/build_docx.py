@@ -327,6 +327,23 @@ def parse_blocks(md):
                 i += 1
             blocks.append(("table", (header, rows), bstart))
             continue
+        if BLOCK_RE["table_row"].match(ln):
+            # 无分隔行的表格（xlsx/部分导出常见）：连续 | 行按表处理，首行作表头。
+            # 至少 2 行且绝大多数行含 >=2 个单元格才判表；不达标的 | 行按普通段落
+            # 消费（本分支必须至少消费 1 行，否则 para 空转死循环）。
+            rows = []
+            j = i
+            while j < n and BLOCK_RE["table_row"].match(offsets[j][0].strip()) and offsets[j][0].strip() != "":
+                rows.append(split_row(offsets[j][0]))
+                j += 1
+            if len(rows) >= 2 and sum(1 for r in rows if len(r) >= 2) >= len(rows) * 0.8:
+                blocks.append(("table", (rows[0], rows[1:]), bstart))
+            else:
+                txt = clean_cjk_spaces(" ".join(offsets[k][0].strip() for k in range(i, j)))
+                v = classify_visual(txt)
+                blocks.append(("visual", v, bstart) if v else ("para", txt, bstart))
+            i = j
+            continue
         if BLOCK_RE["quote"].match(ln):
             buf = []
             while i < n and BLOCK_RE["quote"].match(offsets[i][0]):
@@ -354,9 +371,7 @@ def parse_blocks(md):
         while i < n:
             line = offsets[i][0]
             cur = line.strip()
-            if cur == "" or any(r.match(line) for r in (BLOCK_RE["heading"], BLOCK_RE["hr"], BLOCK_RE["ul"], BLOCK_RE["ol"], BLOCK_RE["quote"])) or (
-                BLOCK_RE["table_row"].match(line) and i + 1 < n and BLOCK_RE["table_sep"].match(offsets[i + 1][0])
-            ):
+            if cur == "" or any(r.match(line) for r in (BLOCK_RE["heading"], BLOCK_RE["hr"], BLOCK_RE["ul"], BLOCK_RE["ol"], BLOCK_RE["quote"], BLOCK_RE["table_row"])):
                 break
             # 章节/小节边界：上一行已累计内容，当前行是新的章节/小节标题时断开，
             # 避免 "四、日本 目前跟踪… 1.东证指数：…" 被并成一段而吞掉小节标题。
@@ -960,15 +975,8 @@ def main():
         with open(args.md, encoding="utf-8") as f:
             data = {"markdown": f.read(), "source": args.md, "detail": "agent-markdown"}
     else:
-        try:
-            with open(args.json, encoding="utf-8") as f:
-                data = json.load(f)
-        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise SystemExit("omni2docx: --json 指向的不是可解析的 JSON（%s）——整份 markdown 请改用 --md 直出；"
-                             "中间 JSON 请按 SKILL 步骤 2 从 Omni 回执组装" % exc)
-    if not args.md and not any(k in data for k in ("markdown", "grounding", "outline")):
-        raise SystemExit("omni2docx: 输入不是中间 JSON（缺 markdown/grounding/outline 任一键）——"
-                         "请按 SKILL 步骤 2 从 Omni 回执组装中间 JSON，或改用 --md 直出")
+        with open(args.json, encoding="utf-8") as f:
+            data = json.load(f)
     if want_strip:
         data["markdown"] = strip_emoji(data.get("markdown") or "")
 

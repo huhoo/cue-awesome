@@ -241,14 +241,20 @@ def render_source(md, outline, grounding, pcfg, used, page_marks=False, level_of
     return body, toc_items, footnotes, foot
 
 
-def toc_html(items):
+def toc_html(items, depth=2):
     if not items:
         return ""
     li = []
     for lvl, text, sid in items:
-        li.append('<li style="margin-left:%dem"><a href="#%s">%s</a></li>'
-                  % (max(lvl - 1, 0) * 1.2, sid, esc(text)))
-    return ('<nav class="toc"><details open><summary>目录</summary><ol>%s</ol></details></nav>'
+        if lvl > depth:
+            continue
+        li.append('<li style="margin-left:%dem;list-style:none"><a href="#%s">%s</a></li>'
+                  % (max(lvl - 1, 0) * 1.4, sid, esc(text)))
+    if not li:
+        return ""
+    # 无序列表且去自动编号：标题多自带编号（"一、"/"3.1"），ol 的序号会叠加成双重编号
+    return ('<nav class="toc"><details open><summary>目录</summary>'
+            '<ul style="padding-left:0;margin:0">%s</ul></details></nav>'
             % "".join(li))
 
 
@@ -311,10 +317,12 @@ def main():
     ap.add_argument("--profile", default="default",
                     help="场景制式：预设名（gov/legal/finance/academic/default）或内联 JSON / .json 文件")
     ap.add_argument("--no-toc", action="store_true", help="不生成目录")
+    ap.add_argument("--toc-depth", type=int, default=2, help="目录收录的最大标题层级（默认 2）")
     ap.add_argument("--page-marks", action="store_true", help="标注源页码（需 grounding）")
     ap.add_argument("--strip-emoji", action="store_true", help="剥离 emoji/装饰符号")
     ap.add_argument("--pdf", action="store_true", help="同时用 headless 浏览器导出 PDF（打印保真）")
     ap.add_argument("--title", help="覆盖文档标题")
+    ap.add_argument("--source-label", help="页首来源署名（默认不显示原始路径；需要溯源时显式给名）")
     args = ap.parse_args()
     if not args.json and not args.md:
         ap.error("--json 或 --md 必须提供一个")
@@ -388,10 +396,11 @@ def main():
 
     if doc_title:
         parts_head.append('<h1 class="doc-title">%s</h1>' % esc(doc_title))
-    if data.get("source") and not (data.get("sources") or data.get("analysis")):
-        parts_head.append('<p class="meta">来源：%s</p>' % esc(str(data["source"])))
+    # 来源行：默认不印（原始路径含本机目录，既丑又泄隐私）；需要溯源用 --source-label 显式给名
+    if args.source_label:
+        parts_head.append('<p class="meta">来源：%s</p>' % esc(args.source_label))
     if not args.no_toc:
-        parts_head.append(toc_html(all_toc))
+        parts_head.append(toc_html(all_toc, args.toc_depth))
 
     doc = ("<!DOCTYPE html>\n<html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
