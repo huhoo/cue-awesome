@@ -2,7 +2,7 @@
 
 **Draft an investment-committee discussion memo for one company: seven structured parts, every number carrying its official source and a locator, missing data named line by line, and at least one bull case plus one bear case - if either side is absent the memo is not written. It does not decide, does not rate, and contains no valuation computation.**
 
-Sections are not the scarce thing; **a memo a person can verify line by line is**. The differentiation sits in three hard gates - every figure anchored, every gap named, and refusal to produce text when one side of the argument is missing - not in the template. Comparable tool sets lean on data the user brings and leave completeness to the reader; this package puts checkability into the gate.
+Sections are not the scarce thing; **a memo a person can verify line by line is**. The differentiation sits in three hard gates - every figure anchored, every gap named, and refusal to produce text when one side of the argument is missing - not in the template. This package puts checkability into the gate.
 
 **Input**: one company (name or 6-digit code) plus this run's per-leg output transcribed to files, or the materials in your hands
 **Output**: a seven-part draft in the shape of `assets/投决备忘录.md`, with run.json and sources.jsonl as self-evidence

@@ -1,5 +1,12 @@
 # CHANGELOG（ic-memo-cn）
 
+### 0.2.1 — 2026-10-11（公开面零提及清理：定位段删去一句转述同类实践的对比句；闸、模板与契约面零改动）
+
+- 面：`README.md` 与 `README.en.md` 定位段各删一个子句（中文「同类工具集多靠用户自带数据、把完整性交给读者自查；」／英文 "Comparable tool sets lean on data the user brings and leave completeness to the reader; "），差异化陈述由此只作自我陈述——保留「本件把「可回查」做进门禁里」／"this package puts checkability into the gate"。两面各改 1 行（增删各 1）；七节模板、两支脚本、三枚夹具、`SKILL.md` 契约面与本条以上历史条目一字未动。
+- 清理依据＝套件级纪律：公开面对第三方同类实践零提及，不因赛道或竞争形态变化而放松；违例出在本包自己的定位段，故按成品面全量清理、不等下次自然触面。
+- 现跑复测（与上一版交卷同值，全取脚本自报行）：`--selftest` ALL GREEN——一档 `扫过 84 行，发条 0 条`；二档反方缺一侧 `发条 1 条` 命中 `E-COVERAGE／反方缺一侧` 第 1／共 1 条；二档无锚数 `发条 11 条` 首中 `E-ANCHOR／数值锚` 第 1／共 11 条；三档空模板 `FAIL: 投决备忘录.md（7 条）`；四档反证矩阵 16 枚未达预期 0——**删句不伤闸**。两面卫生闸 exit 0；全仓违禁对比词复算＝自带数据 0／同类工具 0／某同类 0／他们 0／data the user brings 0／Comparable tool sets 0；`check_skills.py --strict` 自报 18 skill(s), 0 error(s), 0 warning(s)。
+- 版本位：0.2.0 → 0.2.1（清理＝patch；本件唯一版本锁在 `SKILL.md`，改后该面旧字面复算＝0）。名述面三枚未变（frontmatter 只动 version 行）：displayName 12／summary 62／description 287。
+
 ### 0.2.0 — 2026-10-11（细化四件：README 双语九节＋七节模板＋两支脚本（落成／四道机检含反证矩阵）＋三枚守护样；SKILL 契约一字未改）
 
 - 面：`README.md` 重写为九节（第一节＝动词级三步四列门牌表，句序「定主体 → 转写落成 → 过机检交人」），新增 `README.en.md`（九节对点 9＝9；代码块外含中文的行 13 枚，全是逐字引用的自标／边界句／`[待人工]`／包内文件名，裸中文散文 0 行）；新增 `assets/投决备忘录.md`（七节模板，段名与 SKILL §3 逐字一致）；新增 `scripts/build_memo.py`（六类计数落 run.json、缺锚行路由进第五节并给原因、反方缺一侧拒绝成文）、`scripts/check_memo.py`（四道）＋`scripts/fixtures/` 三枚草稿样（合规稿／反方缺一侧／无锚数，各带配套 run.json；合规稿＝build_memo 真实产出形制、内容全虚构，两枚违例样由合规稿派生而非另抄）。`SKILL.md` 只动 `version:` 一行。
