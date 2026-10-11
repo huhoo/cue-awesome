@@ -30,18 +30,23 @@ require a connected omni-reader MCP (scenario ① does not).
 # ① agent markdown direct output (no intermediate JSON)
 python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers
 
-# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding from the inline receipt (outline optional) → intermediate JSON
+# ②③ Omni parse rebuild: parse(grounded) → markdown+grounding taken per part by its storage.kind (inline straight from the receipt / artifact along the cursor; outline optional) → intermediate JSON
 python scripts/build_docx.py --json intermediate.json --out deliverable.docx --profile legal --page-marks
 
 # Acceptance (mandatory): zero character loss + structure checks
 python scripts/validate_docx.py --json intermediate.json --docx deliverable.docx
 ```
 
-Omni discipline: retrieval rests first on the **inline receipt** of parse / get_parse_status - small
-results return both parts inline, and what actually comes back governs even when the artifact form is
-requested. The read_* continuation calls are an **optional branch**: use them when available; when they
-are not (`RESULT_NOT_FOUND`, or no cursor to start from) keep working from the inline receipt and let
-the engine rebuild the outline from markdown - no retries, no failure reported.
+Omni discipline: retrieval follows the `storage.kind` each part declares in the receipt - an `inline`
+part is taken whole from the parse / get_parse_status receipt; a part judged `artifact` is read back hop
+by hop with `read_result` along the cursor the server issued for that part (the cursor is bound to its
+part and offset: borrowing it across parts or forging an advance offset yields `INVALID_RESULT_CURSOR`,
+and there is no public way to jump on your own; measured, the cursor read-back is byte-exact).
+**Requesting `artifact` does not change the delivery shape you get**, and `result_delivery_effective` is
+not echoed in the MCP receipt, so only the actual return governs. `read_outline` stays an **optional call
+with no availability guarantee**: when it is unavailable the engine rebuilds the heading tree from
+markdown - no retries, no failure reported. Never take the sidecar from `save_result`'s export: measured,
+under both delivery shapes it hands over the content file only.
 
 ## Scenario profiles (--profile)
 
@@ -58,10 +63,13 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
 ## Capability boundaries (honest list)
 
 - Fidelity is **page-level** (grounded); element-level bbox data is available via
-  `detail=layout`, engine consumption is a later stage.
-- `read_result` / `read_outline` are **optional continuation calls with no availability guarantee** (the
-  same result_id can answer `RESULT_NOT_FOUND`, non-retryable; without a cursor `read_result` cannot
-  start). This package does not depend on them: retrieval comes from the inline receipt and the engine
+  `detail=layout`, engine consumption is a later stage. **Changing detail does not change the text**:
+  measured, the content part of one document carries identical bytes and an identical digest under both
+  representations, so choosing page anchors versus layout coordinates needs no re-check of the body.
+- `read_result` is **the branch for artifact parts**: a part judged `artifact` is read back along its
+  cursor (measured byte-exact), while an `inline` part needs no cursor and has none to start from.
+  `read_outline` is an **optional continuation call with no availability guarantee** (the same result_id
+  can answer `RESULT_NOT_FOUND`, non-retryable). This package does not depend on the outline: the engine
   rebuilds the heading tree from markdown by default - the normal path, not a degraded one.
 - Paragraphs spanning page boundaries belong to the page where they start.
 - Complex markdown (nested tables, math) degrades to text; tables are layout-faithful, not pixel-faithful.

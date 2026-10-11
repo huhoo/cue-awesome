@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析保真转 Word·源页分页带溯源"
 summary: "把 Omni 解析结果重建为保真 .docx：源页分页、真标题目录、表格/脚注/溯源标注还原，按场景制式排版；markdown 产物可直出。"
 description: "将 Omni Reader 解析结果重建为保真 Word：grounded 页锚点→源页分页符、官方 outline→真标题+目录、GFM 表格/脚注/〔来源〕标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报等制式排版，markdown 可直出。Do NOT use for: 像素级版面复刻、PPTX/PDF 输出、无 omni-reader 的解析层能力（--md 除外）；Triggers: Omni 转 Word / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / grounded rebuild / scan to Word"
-version: "0.1.1"
+version: "0.1.2"
 license: MIT
 metadata:
   requires:
@@ -82,9 +82,9 @@ Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
 
 | 能力                | 状态                 | 本 skill 用法                                                                                                                                                                                                                   |
 | ----------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| content（markdown） | ✅ 可用               | **从 `parse` 内联回执取** `structuredContent.result.parts.content.storage.text`                                                                                                                                                    |
-| grounded（页锚点）     | ✅ 可用               | 同上 `parts.grounding.storage.value`（kind=`inline`），页级锚点                                                                                                                                                                       |
-| `read_result` 工具  | **条件可用**           | 需要 cursor 才能起步，而 cursor 只在回执给出续读游标时才存在。**本件取数第一性＝`parse`／`get_parse_status` 的内联回执**（`parts.content.storage.text` 与 `parts.grounding.storage.value`）：小包两枚 part 一律内联返回，即使请求了 artifact 形制也以实际返回为准，不必也不靠这个工具。起步失败（如 `INVALID_RESULT_CURSOR`）时不重试、不报故障，用内联件继续 |
+| content（markdown） | ✅ 可用               | **按该 part 的 `storage.kind` 现值取**：`inline` 直取 `structuredContent.result.parts.content.storage.text`；被判 `artifact` 才顺游标逐跳读回（见步骤 1 大件分支）                                                                                     |
+| grounded（页锚点）     | ✅ 可用               | 同上分流：`inline` 取 `parts.grounding.storage.value`（页级锚点），被判 `artifact` 才走游标。`save_result` 实测两种交付形制下都只交正文一枚文件、侧车交不出，所以内联侧车要当场整段存住                                                            |
+| `read_result` 工具  | **按 part 分流时可用**     | 起步必须有服务端为该 part 逐跳发出的游标；游标是 base64(JSON)＋签名，**绑死 part 与 offset**——跨 part 借游标、自造前进 offset 一律 `INVALID_RESULT_CURSOR`（`retryable:false`、`billed:false`），没有自主跳转的公开出口。**取数第一性＝回执里各 part 自己的 `storage.kind` 现值**：`inline` 直取（`parts.content.storage.text` 与 `parts.grounding.storage.value`），`artifact` 才用本工具逐跳读回（实测字节级无损）。`result_delivery_effective` 不回显于 MCP 回执，故不得据请求值推交付形制；起步失败时不重试、不报故障，按回执现值继续 |
 | `read_outline` 工具 | **不保证可得**         | 可选续调用，**可能不可得**：同一 result_id 上可返回 `RESULT_NOT_FOUND`（含 `retryable:false`），而同一时刻 `save_result`／`get_parse_status` 仍成功。因此 **outline 缺省是本件的常规路径**——引擎从干净 markdown 重建章节层级，不重试、不报故障、不猜原因。可得时（`coverage=complete`）引擎优先采用官方层级；`coverage=none, nodes=[]`＝文档无可识别标题，属正常语义 |
 | layout（逐元素 bbox）  | ✅ 可用               | `detail=layout` 实测 COMPLETED，`segments[].layout.items[]` 带 `bbox`/`font`/`size`，`availability=available`。若遇故障不预设结论（瞬时/条件触发/低频均有可能）——先排除调用侧问题，仍失败则降级 `grounded` 并如实报告                                                         |
 
@@ -130,25 +130,44 @@ agent 按对场景的理解自行决定取舍——例如诉讼证据文书通�
 
 ## 工作流（必须用 Omni 原生工具取数，不自造解析器）
 
-> **使用纪律**：取数只依赖 `parse` / `get_parse_status` 的**内联回执**——两枚 part（content 与
-> grounding）随回执同进程返回，不需要额外脚本、也不需要为取数另起进程。
-> `read_*` 两个续调用属于**可选支路**：可得就用，不可得（`RESULT_NOT_FOUND`／无 cursor 可起步）
-> 就走内联回执与引擎重建，不把它当故障处理，也不预设原因。
+> **使用纪律**：取数按**回执里各 part 自己声明的 `storage.kind`** 分流——`inline` 就直接从
+> `parse` / `get_parse_status` 的回执取整段文本，被判 `artifact` 的 part 才用 `read_result`
+> 顺服务端为该 part 发的游标逐跳读回（字节级无损已验，见步骤 1 的大件分支）。
+> **请求 `result_delivery="artifact"` 不改变实际交付形制**，`result_delivery_effective` 也不回显在
+> MCP 回执里，所以分流依据只有回执现值这一条。
+> `read_*` 两个续调用按条件走：`read_result` 只在对应 part 有游标时起步；`read_outline` 仍属
+> **不保证可得**的可选支路——不可得（`RESULT_NOT_FOUND`／无 cursor 可起步）就走内联回执与引擎重建，
+> 不把它当故障处理，也不预设原因。
 
 ### 步骤 1 — 原生 parse（grounded，内联取数）
 
 调用 `mcp__omni_reader__parse`：
 
 - `source`：本地文件路径（须在 omni 允许的根目录内，即 Bridge 的 allowed roots）或 URL。
-- `detail`：`"grounded"`（务必）。
-- `result_delivery`：`"artifact"`（内联回执同样返回 bundle；**请求 artifact 不改变实际交付形制**——小包两枚 part 仍内联返回，一切以实际返回为准）。  
+- `detail`：本件产页级 docx，取 `"grounded"`；要元素级坐标（`bbox`/`font`/`size`）时改取 `"layout"`——
+  **换 detail 不动正文**：同一件文档在两种表示下 content part 的字节与 digest 实测逐字同值，改的只是
+  侧车表示（侧车是否走 artifact 只看该 part 自身的字节数，与请求值无关）。所以「要页码用 grounded、
+  要坐标用 layout」可按需求选，不必因为换了 detail 就重跑正文核对。注意本件映射引擎当前消费的是
+  页级锚，取 layout 时坐标字段照存进中间 JSON，版面级重建属后续阶段。
+- `result_delivery`：`"artifact"`。**请求 artifact 不改变实际交付形制**：走 inline 还是 artifact 由
+  该 part 自身的字节数单独决定（与另一枚 part 无关、与请求值无关），而 `result_delivery_effective`
+  不回显在 MCP 回执里——本地记录里有、回执里没有，所以文案与判断都只写实际返回。  
   轮询 `mcp__omni_reader__get_parse_status` 至 `COMPLETED`。
 
-**取数（从 parse 内联回执，不要调 read_result）**：解析 `parse` 最终回执的  
+**取数（按回执里该 part 的 `storage.kind` 现值分流）**：解析 `parse` 最终回执的  
 `structuredContent.result.parts`：
 
 - `parts.content.storage.text` → markdown 正文
 - `parts.grounding.storage.value`（kind=`inline`）→ `omni.grounding.v1` bundle
+
+**大件分支（正文被判 artifact 时）**：`kind=artifact` 的 part 随回执带 `next_cursor`，顺它逐跳
+调 `read_result` 读到 `next_cursor` 消失，再把各跳字节按序拼回，与回执声明的 `parts.<part>.digest`
+对拍（实测按游标读回是字节级无损的；每跳上限由服务端定，跳长会字符边界让位，不切 UTF-8 字符）。
+游标是 base64(JSON)＋签名，**同时绑死 part 与 offset**：跨 part 借游标、自造前进 offset 一律返回
+`INVALID_RESULT_CURSOR`（`retryable:false`、`billed:false`），不存在自主跳转的公开出口。
+**两枚 part 各走各的路径，不混用**：`inline` 的侧车必须当场从回执整段存住（事后无游标可补取，
+`save_result` 也交不出侧车——实测两种交付形制下它都只落正文一枚文件），被判 `artifact` 的侧车才按
+游标逐跳读回；Bridge 的私有缓存不是公开面，本件不依赖它。
 
 **可选官方 outline（不保证可得）**：若要从 `get_parse_status` 回执取 `local_result_cache.result_id`
 试一次 `read_outline(result_id)` → `{coverage, nodes:[{id, level, title}]}`，
@@ -274,11 +293,15 @@ python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.d
 ## 已知限制
 
 1. 保真级别为**页级**（grounded）。元素级（bbox）数据可经 `detail=layout` 产出（实测  
-   `layout.items[].bbox/font/size`），引擎消费 layout 的升级为后续阶段。
-2. `read_result` / `read_outline` 是**可选续调用，不保证可得**（受缓存条目、进程状态与有效期共同影响；
-   同一 result_id 上可返回不可重试的 `RESULT_NOT_FOUND`，无 cursor 时 `read_result` 也不可起步）。
-   **本件不依赖它们工作**：取数走内联回执，章节层级缺省由引擎从 markdown 重建——一条已实测的常规路径，
-   不是降级异常；outline 可得时引擎优先采用官方层级。
+   `layout.items[].bbox/font/size`），引擎消费 layout 的升级为后续阶段。**换 detail 不动正文**：
+   同一件在 grounded 与 layout 下 content part 的字节与 digest 实测逐字同值，所以按需求在
+   「页码保真」与「版面坐标」之间选，不必重跑正文核对。
+2. `read_result` 是**按 part 分流的一环**：被判 `artifact` 的 part 顺服务端发的游标逐跳读回（实测
+   字节级无损），`inline` 的 part 不需要它、也没有游标可起步。`read_outline` 仍是**不保证可得**的
+   可选续调用（受缓存条目、进程状态与有效期共同影响；同一 result_id 上可返回不可重试的
+   `RESULT_NOT_FOUND`）。**本件不依赖 outline 工作**：章节层级缺省由引擎从 markdown 重建——一条
+   已实测的常规路径，不是降级异常；outline 可得时引擎优先采用官方层级。侧车一律不取
+   `save_result` 的导出件：实测两种交付形制下它都只交正文一枚文件。
 3. 段落跨源页边界时归入其起始字节所在页（MVP 简化）。
 4. **图像/音频不嵌入，但溯源标注保留**：Omni 多模态解析不返回图像/音频字节，docx 亦不含  
    多媒体；但 Omni 产出的**文本溯源标注**（视频帧 `[画面 HH:MM]`、说话人转写  
