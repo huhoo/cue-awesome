@@ -1,3 +1,12 @@
+### 0.4.8 — 2026-10-10（大结果取数句改成正条件句：按该 part 自己的存储形制分流，游标绑 part 与 offset）
+
+- 凭据＝双 part artifact 实据（四条读数：①侧车可按游标分块读回，条件是该 part 被判 artifact，游标为 base64(JSON)＋签名、同时绑住 part 与 offset，改体改位一律 `INVALID_RESULT_CURSOR`（`retryable:false`、`billed:false`）；②`save_result` 只交 content，两种交付形制都交不出侧车；③`result_delivery_effective` 四种组合都不回显于 MCP 回执；④换 detail 只换侧车表示、正文一字节不动）。**本轮未复跑任何付费件**，字节数与跳数以那份账为准，成品面只写形制不写数。
+- `SKILL.md`／`SKILL.en.md` 步骤 1 取数句：原「按游标从 Bridge 本地读回正文和页码 sidecar（不再计费）」改为按 part 分流——正文被判 artifact 才顺服务端逐跳发出的游标读回（读回实测未另计费，句形仍写「计费以返回为准」），`grounded` 的页码 sidecar 实测多为内联、直接从完成回执取；同段加「请求 artifact 不改变实际交付形制，`result_delivery_effective` 不回显——一律以回执内该 part 自己的 `storage.kind` 现值为准」；`save_result` 那句补「两种交付形制都只交正文一枚、侧车交不出，Bridge 的私有缓存不是公开出口、本件不依赖它」——**不写任何缓存旁路建议**。
+- `README.md`／`README.en.md` 同段三处同步：命令表 `ingest` 行的「大结果…不再计费」改为「被判 artifact 的 part 按游标逐跳读回，计费以返回为准」；故障面 `INVALID_RESULT_CURSOR` 行的成因由「大结果存在 Bridge 本地」改为「游标绑死 part 与 offset，改体改位一律拒，无自造出口；过期另按 `expires_at` 判」；`page_basis=block` 行补「侧车内联时要当场整段存住」的因由。
+- 代码一字未动：`cue.py` 的 `bundle_from_response` 本就按 `storage.kind` 逐 part 分流、artifact 侧逐跳读到 eof 并以 `parts.content.digest` 复算 sha256——那句文案是**写窄了（描述缺陷），不是功能缺陷**，真件凭证在账。
+- 版本锁五处字面同锁 0.4.7 → 0.4.8：`SKILL.md`、`SKILL.en.md`、`cue.py` 的 __version__、回归样同一行的两处断言；改后这四面旧字面各复算＝0（CHANGELOG 历史条目里的 0.4.7 不回改，故口径写作「非 CHANGELOG 面残留 0」）。
+- 复验（取脚本自报行）：件内回归面全绿；`check_skills.py --strict` 自报 17 skill(s), 0 error(s), 0 warning(s)，本包 OK v0.4.8；成品面逐面卫生闸 exit 0；旧句「按游标从 Bridge 本地读回正文和页码 sidecar」grep＝0 命中，条件句关键词（游标／以返回为准／`storage.kind`）在同段共现。
+
 ### 0.4.7 — 2026-10-10（公开面卫生：一处类别名用词改等长同义表述）
 
 - 成品面 1 处改净（`SKILL.md` §红线）：「那一类判…」的类别名换为等长同义表述，禁面范围与判据一字未动；`SKILL.en.md` 为镜像同文，本轮无该词，未改。

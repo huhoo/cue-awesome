@@ -82,7 +82,7 @@ npx skills add huhoo/cue-awesome --skill cue-lead-pieces
 | `cue.py fetch DIR --cn 600606` / `--us LESL` | 列出近 12 个月的公开文件和下载地址（不下载、零消耗） |
 | `cue.py fetch DIR --list list.json --company X --market CN` | 登记从别处（如 Cue data-MCP）找到的文件 |
 | `cue.py omni DIR [来源…] [--yes]` | 经 Omni Bridge 做 grounded 解析并入库（会计费；不带 `--yes` 只列计划）；默认跳过 SEC EDGAR 来源 |
-| `cue.py ingest DIR --omni-dir DIR/omni` | 读入 Agent 存下的 Omni 解析结果（`<sid>.json` 为 parse 完成时返回的 JSON，大结果经 Bridge 本地读回、不再计费；`<sid>.md` 为纯文本，按文本块入库） |
+| `cue.py ingest DIR --omni-dir DIR/omni` | 读入 Agent 存下的 Omni 解析结果（`<sid>.json` 为 parse 完成时返回的 JSON，被判 artifact 的 part 按游标经 Bridge 本地逐跳读回、实测未另计费（计费以返回为准）；`<sid>.md` 为纯文本，按文本块入库） |
 | `cue.py local DIR [来源…]` | 本地解析兜底：下载并按页抽取文本；`fetch … --local` 一步完成 |
 | `cue.py brief DIR` | 一次给全：材料目录（含解析通道）+ 线索件 + 可直接粘贴的逐字证据 |
 | `cue.py find DIR <关键词…>` | 含关键词的原句，可直接粘贴 |
@@ -127,9 +127,9 @@ python3 scripts/cue.py --help
 - Omni 返回 `UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE` → 这份文件拿不到带页码的 grounded 结果 → 用默认文本结果存成 `<sid>.md` 再 `ingest`，页码会标成文本块号；要原页码就对这份走 `cue.py local`。
 - `ingest` 输出 `warning: incomplete page [...]` 或 `truncated` → Omni 这次有页面没解析完 → 这些页的引文核对不到；对这份重新解析前先问用户（可能再次计费），或对这份走 `cue.py local`。
 - Omni 对 SEC EDGAR 地址返回 `SOURCE_ACCESS_DENIED`（实测，未计费）→ Omni 目前抓不到 EDGAR → 美股文件运行 `cue.py local DIR`；`omni` 默认已跳过 EDGAR 来源。
-- `ingest` 报 `read_result(...) failed: INVALID_RESULT_CURSOR` 或提示结果过期 → 大结果存在 Bridge 本地，过了 `expires_at` 就读不回 → 重新解析前先问用户（会再次计费），或对这份走 `cue.py local`。
+- `ingest` 报 `read_result(...) failed: INVALID_RESULT_CURSOR` → 游标绑死 part 与 offset（实测改体、改位一律拒，`retryable:false`、`billed:false`），存的 JSON 里那枚游标不属于当前这个 part 或已走过 → 用完成回执里为该 part 原样发出的游标顺跳，不要自造；若提示结果过期（过了 `expires_at`）→ 重新解析前先问用户（会再次计费），或对这份走 `cue.py local`。
 - `ingest` 报 `content does not match its sha256 digest` → 读回的正文不完整 → 没有入库；重跑 `ingest`（零消耗），仍不行就走 `cue.py local`。
-- `ingest` 输出 `page_basis=block` / `text-only result` → 存下的是 Markdown（`save_result` 导出或工具返回的文本），没有页码 sidecar → 改存 parse 完成时返回的 JSON（小结果的页码只在 `structuredContent` 里），或直接用 `cue.py omni`。
+- `ingest` 输出 `page_basis=block` / `text-only result` → 存下的是 Markdown（`save_result` 导出或工具返回的文本），没有页码 sidecar（实测两种交付形制下 `save_result` 都只交正文一枚文件，侧车交不出）→ 改存 parse 完成时返回的 JSON（侧车内联时页码就在 `structuredContent` 里，要当场整段存住；被判 artifact 时才按游标读回），或直接用 `cue.py omni`。
 - `cannot start the Omni Bridge` → 没装 Node.js 或 `CUE_OMNI_BRIDGE` 指错 → 安装 Node.js，或把 `CUE_OMNI_BRIDGE` 设为你的 omni-reader 启动命令。
 - `fetch` 报网络错误或 SEC 返回 403 → 网络不通或没有表明身份 → 检查网络，设置 `CUE_SEC_UA` 后重试。
 - A 股 `local` 报找不到 `pdftotext` → 没装 PyMuPDF 也没装 poppler → `pip install pymupdf` 或安装 poppler。

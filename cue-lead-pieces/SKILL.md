@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Agent 思考,Cue 感知:用 Cue Omni Reader 把公司自己的披露(A股巨潮/美股SEC EDGAR)解析成带原PDF页码的原文,产出信用线索件,并逐句核对答案引文是否逐字出自所注页;--fix 改正页码、换回原句、删掉原文没有的。可选 Cue data-MCP 列公告、cue-research 补背景;未开通 Cue 时本地解析兜底。实测(本地解析、单一模型与宿主、24家):裸Agent引文39%对不上,用本件流程95%逐字可查。不适合：投资与信贷建议。Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.4.7"
+version: "0.4.8"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露,建带页码的信用线索件,逐句核对引文是否出自所注页,对不上的标出或改回。"
@@ -48,8 +48,8 @@ Agent 思考，Cue 感知。用 Cue 的通道读一家公司自己披露的文�
    - A 股：`python3 CUE fetch DIR --cn 600606 [--months 12]`；美股：`python3 CUE fetch DIR --us LESL [--months 12]`（也可给 CIK；建议先设 `CUE_SEC_UA="你的名字 你的邮箱"`）。
    - 已开通 data-MCP 时，可用 `disclosure_cn` / `disclosure` 域核对补漏；补充的文件写成 JSON 列表（每项 `sid, kind, date, title, source_url`），用 `python3 CUE fetch DIR --list list.json --company 公司名 --market CN` 登记。
 1. **解析（主通道：Cue Omni Reader，花之前必问）**：告诉用户要解析几份、各是什么，征得同意后二选一：
-   - 推荐一条命令：`python3 CUE omni DIR --yes`。脚本经 Omni Bridge 逐份 `parse`（`detail="grounded"`、`result_delivery="artifact"`），轮询到完成，按游标从 Bridge 本地读回正文和页码 sidecar（不再计费），存 `DIR/omni/<sid>.json` 并直接入库；逐份打印服务端返回的 `credits_charged` 和合计。不带 `--yes` 只列计划、不花费；只解析部分来源时在 DIR 后列出 SID。Bridge 命令取 `CUE_OMNI_BRIDGE`（例如用户自己的 omni-reader 启动脚本），默认 `npx -y @cueai/omni-reader-mcp@1.8.6`；密钥由 Bridge 自己读取，脚本不碰。
-   - 或由你调用 cue-omni-reader：`parse` 传 `source`（该 URL）、`detail="grounded"`、`result_delivery="artifact"`，按 `operation_id` 轮询 `get_parse_status`；把完成时返回的 JSON 原样写入 `DIR/omni/<sid>.json`：大结果的工具文本就是一段带游标的 JSON；小结果即使传了 `result_delivery="artifact"` 也会内联返回（实测），页码 sidecar 只在 `structuredContent` 里——你的宿主只给你 Markdown 文本时，改用上面的 `cue.py omni`，再**一次**运行 `python3 CUE ingest DIR --omni-dir DIR/omni`。artifact 结果由 `ingest` 经 Bridge 本地读回（零消耗，须在 `expires_at` 之前）。**不要**存 `save_result` 导出的 Markdown 或只存工具返回的 Markdown 文本：其中没有页码 sidecar，只能按文本块入库。
+   - 推荐一条命令：`python3 CUE omni DIR --yes`。脚本经 Omni Bridge 逐份 `parse`（`detail="grounded"`、`result_delivery="artifact"`），轮询到完成，按**回执里各 part 自己声明的存储形制**分流取回：正文被判为 artifact 时顺服务端逐跳发出的游标读回（游标绑死 part 与 offset，改体改位一律 `INVALID_RESULT_CURSOR`，没有自造跳转的出口；实测读回不再计费，句形仍按返回记），页码 sidecar 在 `grounded` 下实测多为内联、直接从完成回执里取，存 `DIR/omni/<sid>.json` 并直接入库；逐份打印服务端返回的 `credits_charged` 和合计。不带 `--yes` 只列计划、不花费；只解析部分来源时在 DIR 后列出 SID。Bridge 命令取 `CUE_OMNI_BRIDGE`（例如用户自己的 omni-reader 启动脚本），默认 `npx -y @cueai/omni-reader-mcp@1.8.6`；密钥由 Bridge 自己读取，脚本不碰。
+   - 或由你调用 cue-omni-reader：`parse` 传 `source`（该 URL）、`detail="grounded"`、`result_delivery="artifact"`，按 `operation_id` 轮询 `get_parse_status`；把完成时返回的 JSON 原样写入 `DIR/omni/<sid>.json`：大结果的工具文本就是一段带游标的 JSON；小结果即使传了 `result_delivery="artifact"` 也会内联返回（实测），页码 sidecar 只在 `structuredContent` 里——你的宿主只给你 Markdown 文本时，改用上面的 `cue.py omni`，再**一次**运行 `python3 CUE ingest DIR --omni-dir DIR/omni`。被判为 artifact 的 part 由 `ingest` 经 Bridge 本地按游标逐跳读回（实测不再计费，计费仍以返回为准；须在 `expires_at` 之前）。**请求 `artifact` 不改变实际交付形制**，`result_delivery_effective` 也不回显在 MCP 回执里——一律以回执内各 part 自己的 `storage.kind` 现值为准。**不要**存 `save_result` 导出的 Markdown 或只存工具返回的 Markdown 文本：实测两种交付形制下它都只交正文一枚文件、侧车交不出（Bridge 的私有缓存不是公开出口，本件不依赖它），其中没有页码 sidecar，只能按文本块入库。
    - 美股 SEC EDGAR：实测 Omni 抓取 EDGAR 地址返回 `SOURCE_ACCESS_DENIED`（未计费），美股文件走 `python3 CUE local DIR`；`omni` 默认跳过 EDGAR 来源。
    - `grounded` 不可用（`UNSUPPORTED_DETAIL` / `DETAIL_CAPABILITIES_UNAVAILABLE`）时用默认文本结果，存成 `DIR/omni/<sid>.md`；`ingest` 会标 `page_basis=block`，这时“页码”是文本块号，回答里要说明。
    - 未开通 Omni，或用户不同意花费：`python3 CUE local DIR`（本地解析兜底；也可只给部分来源：`python3 CUE local DIR AR2025 ANN-2026-05-14-1`）。一步到位的旧做法：`fetch ... --local`。
