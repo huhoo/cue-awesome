@@ -1,25 +1,27 @@
 ---
 name: omni2docx
 slug: cue-omni2docx
-displayName: "Omni 解析保真转 Word·源页分页带溯源"
-summary: "把 Omni 解析结果重建为保真 .docx：源页分页、真标题目录、表格/脚注/溯源标注还原，按场景制式排版；markdown 产物可直出。"
-description: "将 Omni Reader 解析结果重建为保真 Word：grounded 页锚点→源页分页符、官方 outline→真标题+目录、GFM 表格/脚注/〔来源〕标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报等制式排版，markdown 可直出。Do NOT use for: 像素级版面复刻、PPTX/PDF 输出、无 omni-reader 的解析层能力（--md 除外）；Triggers: Omni 转 Word / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / grounded rebuild / scan to Word"
-version: "0.1.2"
+displayName: "Omni 解析转 Word·HTML·PPT"
+summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
+description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
+version: "0.2.0"
 license: MIT
 metadata:
   requires:
     bins: ["python3"]
-tags: [文档转换, Word, 解析重建, 公文, 诉讼, 研报]
+tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 ---
 
 # omni2docx — 双层管线：Omni 解析（Agent 层）× 格式生成（人层）
 
 ## 前置条件
 
-| 依赖                          | 用途                | 缺失时                                        |
-| --------------------------- | ----------------- | ------------------------------------------ |
-| **omni-reader MCP** 已连接（Bridge 就绪） | 解析层：parse / read_outline / read_result | 场景②③（grounded 重建/多源合并）不可用，先引导用户安装配置 omni-reader MCP；**场景①（--md 直出）不依赖 omni，仍可用** |
-| **Python 3.9+ 且已装 `python-docx`**（`pip install python-docx`） | 渲染层：build_docx.py / validate_docx.py | 引擎无法运行，先装依赖；调用方式用用户环境通用的 `python`，不假设任何特定安装路径 |
+| 依赖                                                           | 用途                                     | 缺失时                                                                              |
+| ------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------- |
+| **omni-reader MCP** 已连接（Bridge 就绪）                           | 解析层：parse / read_outline / read_result | 场景②③（grounded 重建/多源合并）不可用，先引导用户安装配置 omni-reader MCP；**场景①（--md 直出）不依赖 omni，仍可用** |
+| **Python 3.9+ 且已装 `python-docx`**（`pip install python-docx`） | 渲染层：build_docx.py / validate_docx.py   | 引擎无法运行，先装依赖；调用方式用用户环境通用的 `python`，不假设任何特定安装路径                                    |
+| **`python-pptx`**（`pip install python-pptx`；仅 PPTX 输出）  | 汇报渲染：render_pptx.py                    | 仅 PPTX 不可用；docx / HTML 输出不受影响                                                                  |
+| **headless 浏览器**（Edge/Chrome/Chromium；仅 `--pdf`）      | HTML → 打印件 PDF                        | 明确提示"未找到浏览器，跳过 PDF"，**不静默失败**；用户装浏览器后再跑 `--pdf` 即可                                          |
 
 - 跨平台：引擎为纯 Python + python-docx，Windows / macOS / Linux 均可运行；示例命令用相对路径与 `python`，不写死文件系统布局。
 - 字体说明：预设制式用中文字体名（宋体/黑体/仿宋_GB2312/楷体）。docx 只携带字体名，在非 Windows 环境打开时 Word/WPS 会自动替换为本机字体；公文/法律等制式文档建议在 Windows/WPS 环境打开验收。
@@ -59,6 +61,19 @@ Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
 | **① Agent 产出 → 可交付文档**             | agent 默认生成 markdown，用户实际要 docx/pptx/pdf | 引擎天然支持**纯 markdown 输入**（无 grounding/outline 自动降级）：中文标题重建 + 真 TOC + 宋体/黑体 + 表格/列表/行内样式。后续接 PPTX/PDF 输出                                                   |
 | **② Scanned PDF/不可编辑件 → 可编辑 Word** | 转换后版式对不上，核对/编辑工作量大                      | Omni 解析 scanned PDF → **页级分页保真**（grounded 源页锚点）；`--page-marks` 在每页边界标注「── 源第 N 页 ──」，改稿时直接对照原件；扫描件里的图章/签名/照片由 Omni 转成视觉描述，引擎渲染为带底纹的【图说】标注段              |
 | **③ 多源证据整合 → 诉讼文书等**               | 证据来自截图/录音/照片/视频/规章，需保留各自格式与可溯源引用        | **多源合并模式**（`sources` 数组 → 每源一章 + 总目录 + 章间分页）；录音转写 `[说话人0 00:00-01:20]` → **说话人+时间戳标注段**（正文色，可直接引用"某时某人说"）；视频帧 `[画面 HH:MM]` → 带底纹视觉描述段；图像引用剥离 base64 留说明 |
+
+## 输出格式：按用途选（agent 判断，不硬编码映射）
+
+同一份解析结果可渲染为四种交付物，**选哪个取决于文档拿去干什么**——由 agent 结合场景知识判断，必要时向用户确认：
+
+| 交付物     | 用途        | 语义                                                    | 引擎                                      | 依赖                                   |
+| ------- | --------- | ----------------------------------------------------- | --------------------------------------- | ------------------------------------ |
+| **docx** | 递交 / 编辑 / 归档 | **保真**：grounded 页锚点→分页符、outline→真标题+目录、表格/脚注/溯源标注逐项还原     | `scripts/build_docx.py`                 | python-docx                          |
+| **HTML** | **展示**    | **可读可分享**：自包含单文件、目录锚点跳转、源页标注、表格/引用还原、打印样式；`--pdf` 可导打印件 | `scripts/render_html.py`                | 无额外（PDF 需本机 headless 浏览器）           |
+| **PPTX** | **汇报**    | **可讲**：标题页/章节页/要点页/表格页；**要点上页、正文细节进演讲者备注**；超页自动续页并告警    | `scripts/render_pptx.py`                | python-pptx                          |
+| **PDF**  | 打印 / 定稿   | 走 HTML→headless 浏览器打印，与 HTML 版面一致（不做像素级复刻）             | `render_html.py --pdf`                  | Edge/Chrome/Chromium                 |
+
+**汇报（PPTX）的协作约定**：引擎不替 agent 决定讲什么。agent 按 slide 组织 markdown（`##` 一页、要点用列表、数据用表格），引擎只负责映射与制式；直接喂长文档时引擎按层级切页并对 `≤--split-level` 的标题分页，正文进备注，`--max-slides`（默认 80）兜底截断并提示先提炼。
 
 ## 为什么不是又一个 markdown→docx
 
@@ -191,17 +206,24 @@ agent 按对场景的理解自行决定取舍——例如诉讼证据文书通�
 }
 ```
 
+
 - `outline` 提供且 coverage=complete 时引擎**优先用官方层级**；缺失或 none 时从 markdown 重建。
 
-### 步骤 3 — 运行映射引擎
+### 步骤 3 — 运行渲染引擎（按场景选格式）
 
 ```
+# Word：保真重建（递交/编辑/归档）
 python <skill_dir>/scripts/build_docx.py --json <中间json> --out <输出.docx>
-
-# agent 工作产物直出（场景①）：免中间 JSON
 python <skill_dir>/scripts/build_docx.py --md <agent产出.md> --out <输出.docx>
-```
 
+# HTML：展示（浏览器打开 / 分享 / 可打印）
+python <skill_dir>/scripts/render_html.py --json <中间json> --out <输出.html> --profile gov
+python <skill_dir>/scripts/render_html.py --md <agent产出.md> --out <输出.html> --pdf   # 同时导出 PDF
+
+# PPT：汇报（deck，要点上页、细节进备注）
+python <skill_dir>/scripts/render_pptx.py --md <slide提纲.md> --out <输出.pptx> --profile finance
+python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx> --max-slides 30
+```
 
 - 自动：封面标题提取（"标题：xxx"）→ 中文字体 → markdown 章节重建 → 真标题 +  
   文首目录 → grounded 源页分页符 → 表格/列表/引用/行内样式 → 脚注上标 + 文末注释 +  
@@ -216,12 +238,12 @@ python <skill_dir>/scripts/build_docx.py --md <agent产出.md> --out <输出.doc
 分页/标题/表格数量符合预期，再 `present_files` 交付：
 
 ```
-python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.docx>
+python <skill_dir>/validate_docx.py --json <中间json> --docx <输出.docx>
 ```
 
 ### 步骤 5 — 交付
 
-`present_files` 打开/交付 `.docx`。
+`present_files` 打开/交付 `.docx` / `.html` / `.pptx`（`.html` 可在内置预览直接看）。
 
 ## 映射引擎字段约定（build_docx.py）
 
@@ -267,8 +289,8 @@ python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.d
 
 | 文档                   | 字符覆盖率    | 分页符       | 标题/目录                             | 表格                                   |
 | -------------------- | -------- | --------- | --------------------------------- | ------------------------------------ |
-| ETF 文章（PDF 源） | **100%** | 7 段→**6** | 6×H1(国家)+8×H2(指数) + 13 条目录 + 封面标题 | 0（基金池在文末被截断）                         |
-| 券商研报（PDF 源）    | **100%** | 4 段→**3** | 4×H3(###标题) + 目录                  | **5**（含"会计年度"5 列财务表，单元格数值与源一一对应，已抽检） |
+| ETF 文章（etf_real.pdf） | **100%** | 7 段→**6** | 6×H1(国家)+8×H2(指数) + 13 条目录 + 封面标题 | 0（基金池在文末被截断）                         |
+| 券商研报（燕京啤酒 000729）    | **100%** | 4 段→**3** | 4×H3(###标题) + 目录                  | **5**（含"会计年度"5 列财务表，单元格数值与源一一对应，已抽检） |
 | 金融短视频（mp4，多模态）       | **100%** | —         | **48 个【画面】标注段**全部带底纹，与正文区分        | —                                    |
 
 | 网页（含 base64 图像引用） | **100%** | — | 2 处图像引用 → 【图片：alt】说明，base64 字节零残留（docx 136KB→40KB） | — |  
@@ -284,7 +306,7 @@ python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.d
 | agent 整合分析          | 网页/文本       | 纯文本（无结构化锚点）                                       |
 | 金融短视频               | 视频/图片（画面描述） | 48 个画面时间点（首 00:00 … 末 01:18）；1 段转写（说话人 0，00:00 起） |
 | 录音 web.m4a          | 音视频（说话人转写）  | 7 段转写（说话人 0、1，00:00-01:20 起）                      |
-| 券商研报（PDF 源） | PDF/文档（页锚点） | 第 1–4 页                                           |
+| research_report.pdf | PDF/文档（页锚点） | 第 1–4 页                                           |
 
 - 字节偏移换算：中文 6239 字符 = 14861 UTF-8 字节，映射无截断。
 - 标题提升覆盖"段落型"与"有序列表型"小节；修复了"小节被并入父段落"导致吞掉子标题的缺陷。
@@ -308,4 +330,9 @@ python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.d
    `[说话人N MM:SS-MM:SS]`、场景描述）由引擎识别并渲染为区分明显的标注段；  
    `![…](data:base64…)` 引用剥离字节、保留 alt 说明。
 5. 复杂 markdown（嵌套表、脚注、数学公式）按文本降级；表格为**版式保真**非像素级还原。
-6. 仅 `.docx` 输出；PPTX / PDF（坐标保真）为后续阶段。
+6. **PPTX 是汇报 deck，不是版面复刻**：按标题层级切页、要点上页、正文进备注；不做"每源页一页"  
+   的机械平铺，也不做像素级还原。表格按列数自动降字号，超长标题自动降字号。
+7. **PDF 走 HTML 打印**（headless 浏览器），版面与 HTML 一致；本机无浏览器时明确提示跳过。  
+   不做原生 PDF 排版（reportlab 路线），避免字体嵌入/分页/脚注的重复实现。
+8. PDF 抽取/OCR 的**逐字母空格**（"T h e y"）不可还原词边界，不强修（强拼会产出  
+   "demonstrateprecisionan" 这类错误串）；CJK 字间空格由 `clean_cjk_spaces` 正常消除。

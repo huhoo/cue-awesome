@@ -1,17 +1,22 @@
-# omni2docx — Rebuild Omni parse results as fidelity Word
+# omni2docx — Omni parse results to Word / HTML / PPT
 
-Rebuilds Omni Reader parse results into **human-readable, editable .docx**. Not
+Rebuilds Omni Reader parse results into **human-readable deliverables**. Not
 another markdown→docx converter: it maps the structured information Omni already
 computed during parsing (page anchors, heading levels, frame/transcript metadata)
-back into native Word objects — generic converters only see the markdown and lose
+back into native objects — generic converters only see the markdown and lose
 all of it.
+
+One parse result, four deliverables by purpose: **docx** (fidelity, for
+submission/editing), **HTML** (showcase — readable, shareable, printable),
+**PPTX** (deck — bullets on slides, detail in speaker notes), **PDF** (print,
+HTML through a headless browser).
 
 ## What it is / what it is not
 
 | It is | It is not |
 |---|---|
 | grounded page anchors → native Word page breaks (page-level fidelity) | pixel-perfect layout cloning |
-| official outline → real Heading levels + visible TOC | PPTX / PDF output (later stage) |
+| official outline → real Heading levels + visible TOC | PPT layout cloning (PPTX output is a presentation deck, split by heading levels) |
 | GFM tables / superscript footnotes + notes section / gray source tags | embedding image/audio bytes (Omni returns no bytes; text provenance tags are kept) |
 | multi-source merge + auto "provenance appendix" (pages / timestamps / speakers) | investment advice, content creation |
 
@@ -24,7 +29,9 @@ all of it.
 ## Getting started (three steps)
 
 Prerequisites: `python3` + `pip install python-docx`; scenarios ②③ additionally
-require a connected omni-reader MCP (scenario ① does not).
+require a connected omni-reader MCP (scenario ① does not). PPTX output needs
+`pip install python-pptx`; `--pdf` needs a local Edge/Chrome/Chromium (skipped
+with an explicit message if absent).
 
 ```bash
 # ① agent markdown direct output (no intermediate JSON)
@@ -35,6 +42,12 @@ python scripts/build_docx.py --json intermediate.json --out deliverable.docx --p
 
 # Acceptance (mandatory): zero character loss + structure checks
 python scripts/validate_docx.py --json intermediate.json --docx deliverable.docx
+
+# Showcase: self-contained HTML (add --pdf to also export a print-ready PDF)
+python scripts/render_html.py --json intermediate.json --out showcase.html --profile gov --page-marks --pdf
+
+# Presentation: deck (bullets on slides, prose in notes); refine the outline first for long documents
+python scripts/render_pptx.py --md slide-outline.md --out deck.pptx --profile finance --max-slides 30
 ```
 
 Omni discipline: retrieval follows the `storage.kind` each part declares in the receipt - an `inline`
@@ -73,9 +86,15 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
   rebuilds the heading tree from markdown by default - the normal path, not a degraded one.
 - Paragraphs spanning page boundaries belong to the page where they start.
 - Complex markdown (nested tables, math) degrades to text; tables are layout-faithful, not pixel-faithful.
-- `.docx` output only; CJK font names (SimSun, FangSong_GB2312, KaiTi…) are
-  substituted automatically by Word/WPS on non-Windows systems — acceptance for
-  format-regulated documents should happen on Windows/WPS.
+- CJK font names (SimSun, FangSong_GB2312, KaiTi…) are substituted automatically
+  by Word/WPS on non-Windows systems — acceptance for format-regulated documents
+  should happen on Windows/WPS.
+- PPTX output is a presentation deck: slides split by heading levels, prose goes
+  to speaker notes, `--max-slides` (default 80) truncates with a warning; no
+  mechanical "one slide per source page" tiling.
+- PDF is exported via HTML + headless browser printing; no native PDF layout engine.
+- Letter-spaced OCR artifacts ("T h e y") cannot restore word boundaries and are
+  left as-is; CJK inter-character spaces are removed normally.
 
 ## Acceptance
 
@@ -90,5 +109,7 @@ coverage on every case.
 | File | Purpose |
 |---|---|
 | `SKILL.md` | agent-facing instructions (full workflow, field contract, parse-side capability notes) |
-| `scripts/build_docx.py` | rendering engine (single source / multi-source merge / markdown direct) |
-| `scripts/validate_docx.py` | fidelity + structure validator |
+| `scripts/build_docx.py` | Word rendering engine (single source / multi-source merge / markdown direct) |
+| `scripts/validate_docx.py` | fidelity + structure validator (docx) |
+| `scripts/render_html.py` | HTML showcase renderer (self-contained file, optional `--pdf`) |
+| `scripts/render_pptx.py` | PPTX deck renderer (bullets on slides, detail in notes) |

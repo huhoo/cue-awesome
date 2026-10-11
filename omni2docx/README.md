@@ -1,15 +1,19 @@
-# omni2docx — Omni 解析保真转 Word
+# omni2docx — Omni 解析结果转 Word / HTML / PPT
 
-把 Omni Reader 的解析结果重建为**人可读可编辑的 .docx**：不是又一个 markdown→docx，
+把 Omni Reader 的解析结果重建为**人可读可交付的文档**：不是又一个 markdown→docx，
 而是把 Omni 解析时已算出的结构化信息（源页锚点、章节层级、画面/转写元数据）映射回
-Word 原生对象——通用转换只吃 markdown，拿不到这些。
+原生对象——通用转换只吃 markdown，拿不到这些。
+
+同一份解析结果可输出四种交付物，按用途选：**docx 保真**（递交/编辑/归档）、
+**HTML 展示**（可读可分享、可打印）、**PPTX 汇报**（deck，要点上页、细节进备注）、
+**PDF 打印**（HTML 走浏览器打印）。
 
 ## 是什么 / 不是什么
 
 | 是 | 不是 |
 |---|---|
 | grounded 页锚点 → Word 源页分页符（页级保真） | 像素级版面复刻 |
-| 官方 outline → 真 Heading 层级 + 可见目录 | PPTX / PDF 输出（后续阶段） |
+| 官方 outline → 真 Heading 层级 + 可见目录 | PPT 的版面复刻（PPTX 是汇报 deck，按层级切页） |
 | GFM 表格 / 脚注上标+注释节 / 〔来源〕灰标 / 上标引用 | 图像/音频字节嵌入（Omni 不返回字节，保留文本溯源标注） |
 | 多源合并 + 自动「证据溯源附录」（页码/时间点/说话人） | 投资建议、内容创作 |
 
@@ -22,6 +26,7 @@ Word 原生对象——通用转换只吃 markdown，拿不到这些。
 ## 上手（三步）
 
 前置：`python3` + `pip install python-docx`；场景②③另需 omni-reader MCP 已连接（场景①不需要）。
+PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Chrome/Chromium（缺则明确提示跳过）。
 
 ```bash
 # ① agent markdown 直出（免中间 JSON）
@@ -32,6 +37,12 @@ python scripts/build_docx.py --json 中间.json --out 交付.docx --profile lega
 
 # 验收（必做）：字符零丢失 + 结构核对
 python scripts/validate_docx.py --json 中间.json --docx 交付.docx
+
+# 展示：自包含 HTML（可加 --pdf 同时导出打印件）
+python scripts/render_html.py --json 中间.json --out 展示.html --profile gov --page-marks --pdf
+
+# 汇报：deck（要点上页、正文进备注）；长文档建议 agent 先提炼提纲
+python scripts/render_pptx.py --md slide提纲.md --out 汇报.pptx --profile finance --max-slides 30
 ```
 
 Omni 取数纪律：分流依据＝回执里各 part 自己的 `storage.kind` 现值——`inline` 直接从 parse /
@@ -58,7 +69,10 @@ get_parse_status 的回执取整段；被判 `artifact` 的 part 才用 `read_re
 - `read_result` 是**按 part 分流的一环**：被判 `artifact` 的 part 顺游标逐跳读回（实测无损），`inline` 的 part 不需要它也没有游标可起步。`read_outline` 是**不保证可得**的可选续调用（同一 result_id 上可能返回不可重试的 `RESULT_NOT_FOUND`）。本件不依赖 outline 工作：目录缺省由引擎从 markdown 重建——这是常规路径，不是降级异常。
 - 段落跨源页边界时归入其起始字节所在页。
 - 复杂 markdown（嵌套表、数学公式）按文本降级；表格为版式保真非像素级还原。
-- 仅 `.docx` 输出；中文字体名（宋体/仿宋_GB2312/楷体等）在非 Windows 环境由 Word/WPS 自动替换，制式文档建议在 Windows/WPS 打开验收。
+- 中文字体名（宋体/仿宋_GB2312/楷体等）在非 Windows 环境由 Word/WPS 自动替换，制式文档建议在 Windows/WPS 打开验收。
+- PPTX 为汇报 deck：按标题层级切页、正文进演讲者备注、`--max-slides`（默认 80）截断并告警；不做每源页一页的机械平铺。
+- PDF 经 HTML + headless 浏览器打印导出，版面与 HTML 一致；不做原生 PDF 排版。
+- PDF 抽取的逐字母空格（"T h e y"）不可还原词边界，不强修；CJK 字间空格正常消除。
 
 ## 验收口径
 
@@ -71,5 +85,7 @@ JPG OCR / 千页 PDF / 截断 PDF / 边界用例，多制式组合）实测覆�
 | 文件 | 说明 |
 |---|---|
 | `SKILL.md` | agent 主指令（完整工作流、字段约定、解析侧能力现状） |
-| `scripts/build_docx.py` | 渲染引擎（单源/多源合并/markdown 直出） |
-| `scripts/validate_docx.py` | 保真+结构校验器 |
+| `scripts/build_docx.py` | Word 渲染引擎（单源/多源合并/markdown 直出） |
+| `scripts/validate_docx.py` | 保真+结构校验器（docx） |
+| `scripts/render_html.py` | HTML 展示渲染器（自包含单文件，可 `--pdf`） |
+| `scripts/render_pptx.py` | PPTX 汇报渲染器（deck，要点上页/细节进备注） |
