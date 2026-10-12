@@ -305,14 +305,17 @@ class Deck:
                  color=self.theme["ink"], space_after=8)
         self._rect(s, self.M, Inches(1.65), Inches(1.6), Pt(1.5), self.theme["accent"])
         top = Inches(2.1)
-        row_h = max(Inches(0.62), min(Inches(0.92), (self.H - top - Inches(0.8)) / max(len(entries), 1)))
+        # 行高自适应：条目多时压缩（不得溢出页底）；>10 条同步降字号保持可读
+        avail = self.H - top - Inches(0.85)
+        row_h = min(Inches(0.92), avail / max(len(entries), 1))
+        tsize = self.cfg.get("body_size", 19) if len(entries) <= 10 else 16
         for i, e in enumerate(entries):
             ey = top + row_h * i
             tfi = self._tb(s, self.M, ey, Inches(0.8), row_h)
             add_line(tfi, "%02d" % (i + 1), 14, self.cfg.get("title_east", "微软雅黑"),
                      bold=True, color=self.theme["faint"])
             tf = self._tb(s, self.M + Inches(0.95), ey, self.mw - Inches(0.95), row_h)
-            add_line(tf, e, self.cfg.get("body_size", 19),
+            add_line(tf, e, tsize,
                      self.cfg.get("body_east", "微软雅黑"), color=self.theme["ink"])
         self._footer(s, source)
         return s
@@ -458,12 +461,11 @@ class Deck:
             r.font.color.rgb = rgb(self.theme["muted"]); set_east(r, east)
             return
         if kind == "ol":
-            marker = (self.theme["ink"], "%02d" % (idx + 1))
             lead, rest = self._split_keyword(text)
             p = tf.paragraphs[0] if (not tf.paragraphs[0].runs and not tf.paragraphs[0].text) else tf.add_paragraph()
             p.space_after = Pt(space)
-            rm = p.add_run(); rm.text = marker[1] + "  "; rm.font.size = Pt(size)
-            rm.font.bold = True; rm.font.color.rgb = rgb(marker[0]); set_east(rm, east)
+            rm = p.add_run(); rm.text = "%02d  " % (idx + 1); rm.font.size = Pt(size)
+            rm.font.bold = True; rm.font.color.rgb = rgb(self.theme["ink"]); set_east(rm, east)
             self._kw_runs(p, lead, rest, size, east)
             return
         # bullet / text：灰色短引导符 + 加粗首关键词
@@ -482,14 +484,14 @@ class Deck:
             return m.group(1), m.group(2)
         return text, ""
 
-    @staticmethod
-    def _kw_runs(p, lead, rest, size, east):
+    def _kw_runs(self, p, lead, rest, size, east):
+        """加粗首关键词（墨色）+ 正文（次级墨色）；颜色走主题，不硬编码。"""
         if lead:
             r = p.add_run(); r.text = lead; r.font.size = Pt(size); r.font.bold = True
-            r.font.color.rgb = rgb("#0F172A"); set_east(r, east)
+            r.font.color.rgb = rgb(self.theme["ink"]); set_east(r, east)
         if rest:
             r = p.add_run(); r.text = rest; r.font.size = Pt(size); r.font.bold = False
-            r.font.color.rgb = rgb("#334155"); set_east(r, east)
+            r.font.color.rgb = rgb(self.theme["text"]); set_east(r, east)
 
     def closing_slide(self, source):
         s = self.slide()

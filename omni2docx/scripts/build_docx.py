@@ -199,13 +199,14 @@ def accent_heading(p, level, theme=None):
 
 
 def cover(doc, title_text, source="", theme=None, kicker="", date_str=None):
-    """编辑式极简封面：Title 样式大标题（墨色）+ 标题下细灰线 + 来源/日期灰副标；
-    无 kicker 角标、无顶部 accent 线（区别于 kimi）。标题仍用 Title 样式（校验器要求）。"""
+    """编辑式极简封面：Title 样式大标题（墨色）+ 标题下 accent 短细线（全格式唯一强调点，
+    与 PPTX 封面/HTML hero 一致）+ 来源/日期灰副标；无 kicker 角标、无顶部线（区别于 kimi）。
+    标题仍用 Title 样式（校验器要求）。kicker 参数保留仅为调用兼容，不再渲染。"""
     theme = theme or THEME["default"]
     t = doc.add_heading(level=0)
     t.add_run(title_text)
     t.paragraph_format.space_after = Pt(14)
-    add_para_border(t, "bottom", theme["hairline"], sz=14, space=8)
+    add_para_border(t, "bottom", theme["accent"], sz=16, space=8)
     sub = doc.add_paragraph()
     txt = source or ""
     if date_str:
@@ -785,7 +786,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_mar
                 for c in range(ncol):
                     cells[c].text = ""
                     add_inline(cells[c].paragraphs[0], row[c] if c < len(row) else "")
-            style_table(t, theme)  # kimi：表头填充+斑马纹+细边框
+            style_table(t, theme)  # 编辑式极简：表头墨色加粗+底线、行间 hairline、无填充
     # 文末「注释」节：脚注定义（agent 产物引用约定的落点）
     if footnotes:
         h = doc.add_heading(level=min(1 + level_offset, 6))
@@ -1086,7 +1087,7 @@ def render_provenance_appendix(doc, prov_rows, table_style="Table Grid", theme=N
         for c, val in enumerate((name, kind, loc)):
             cells[c].text = ""
             add_inline(cells[c].paragraphs[0], val)
-    style_table(t, theme)  # kimi：表头填充+斑马纹+细边框
+    style_table(t, theme)  # 编辑式极简：表头墨色加粗+底线、行间 hairline、无填充
 
 
 # --------------------------------------------------------------------------- #
@@ -1192,7 +1193,7 @@ def main():
 
         # 前置：文档标题 + 总目录（附录恒在文末，目录可预置）
         if doc_title:
-            cover(doc, doc_title, source, theme, kicker="多源证据整合", date_str=today)
+            cover(doc, doc_title, source, theme, date_str=today)
         if not args.no_appendix:
             combined_outline.append((1, "证据溯源附录"))
         if not args.no_toc and combined_outline:
@@ -1273,7 +1274,7 @@ def main():
 
     blocks = parse_blocks(md)
     if title_text:
-        cover(doc, title_text, source, theme, kicker="Omni 解析重建", date_str=today)
+        cover(doc, title_text, source, theme, date_str=today)
     page_breaks = render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_marks=args.page_marks, footnotes=footnotes, indent_first=indent_pt, table_style=tstyle, quote_east=quote_east, theme=theme)
     doc.save(args.out)
 

@@ -171,7 +171,7 @@ tbody tr:last-child td{border-bottom:1px solid var(--hairline)}
 blockquote{margin:1em 0;padding:.4em 0 .4em 1em;border-left:2px solid var(--hairline);
  font-family:%s;color:#444}
 code{font-family:Consolas,Monaco,monospace;background:#f2f2f2;padding:.1em .3em;
- border-radius:3px;font-size:.9em;color:#444}
+ border-radius:0;font-size:.9em;color:#444}
 .srcnote{color:#9aa0a6;font-size:.85em}
 .cjk-em{font-weight:600;color:var(--ink)}
 .fn a{text-decoration:none;color:var(--accent)}
