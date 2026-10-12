@@ -1,6 +1,6 @@
 # omni2docx — Omni 解析结果转 Word / HTML / PPT
 
-把 Omni Reader 的解析结果重建为**人可读可交付的文档**：不是又一个 markdown→docx，
+把 Omni Reader 的解析结果重建为**用户可读可交付的文档**：不是又一个 markdown→docx，
 而是把 Omni 解析时已算出的结构化信息（源页锚点、章节层级、画面/转写元数据）映射回
 原生对象——通用转换只吃 markdown，拿不到这些。
 
