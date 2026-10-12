@@ -83,7 +83,7 @@ import time
 # --------------------------------------------------------------------------- #
 # 全程统一一套色：primary 主 + accent 强调 + ink 墨；背景以白/极浅灰为主。
 # 编辑式极简主题：近单色 + 单一克制强调色（仅用于微小标记：序号、短细线），
-# 不铺色块、不用左 accent 竖条、不用表头填充——区别于 kimi 的色块语言。
+# 不铺色块、不用左 accent 竖条、不用表头填充——区别于 第三方同类产品 的色块语言。
 # hairline=细灰线；muted=灰字；primary 保留为强调色别名。正文与标题文字保持深墨色。
 THEME = {
     "default":  {"primary": "#8C6A3F", "ink": "#1A1A1A", "accent": "#8C6A3F",
@@ -112,7 +112,7 @@ def theme_for(profile):
 
 def add_para_border(paragraph, side, color_hex, sz=12, space=4):
     """给段落加单边边框（bottom/left/top/right），w:sz 单位 1/8 磅。
-    用于封面下划、标题 accent 下划/左条、页脚细线——kimi 克制的装饰语言。"""
+    用于封面下划、标题 accent 下划/左条、页脚细线——克制的装饰语言。"""
     pPr = paragraph._p.get_or_add_pPr()
     pBdr = pPr.find(qn("w:pBdr"))
     if pBdr is None:
@@ -141,7 +141,7 @@ def set_cell_shading(cell, fill):
 
 def style_table(t, theme=None):
     """编辑式极简表格：表头加粗墨色 + 表头底部墨色粗线；行间 hairline；
-    无填充、无竖线、无外框（区别于 kimi 的表头填充+斑马纹+四边细框）。"""
+    无填充、无竖线、无外框（区别于 第三方同类产品 的表头填充+斑马纹+四边细框）。"""
     theme = theme or THEME["default"]
     if not t.rows:
         return
@@ -189,7 +189,7 @@ def style_table(t, theme=None):
 
 def accent_heading(p, level, theme=None):
     """编辑式标题装饰：仅 H1 底部一道细灰线（hairline），H2 及以下靠字号层级区分，
-    不加左色条/不加粗色块（区别于 kimi）。标题文字始终深墨色。"""
+    不加左色条/不加粗色块（区别于 第三方同类产品）。标题文字始终深墨色。"""
     theme = theme or THEME["default"]
     if level <= 1:
         add_para_border(p, "bottom", theme["hairline"], sz=12, space=6)
@@ -200,7 +200,7 @@ def accent_heading(p, level, theme=None):
 
 def cover(doc, title_text, source="", theme=None, kicker="", date_str=None):
     """编辑式极简封面：Title 样式大标题（墨色）+ 标题下 accent 短细线（全格式唯一强调点，
-    与 PPTX 封面/HTML hero 一致）+ 来源/日期灰副标；无 kicker 角标、无顶部线（区别于 kimi）。
+    与 PPTX 封面/HTML hero 一致）+ 来源/日期灰副标；无 kicker 角标、无顶部线（区别于 第三方同类产品）。
     标题仍用 Title 样式（校验器要求）。kicker 参数保留仅为调用兼容，不再渲染。"""
     theme = theme or THEME["default"]
     t = doc.add_heading(level=0)
@@ -742,7 +742,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_mar
                 add_inline(p, payload, fmt=lambda r: set_run_east(r, quote_east))
             else:
                 add_inline(p, payload)
-            # CJK 伪斜体渲染难看：引用块用灰色 + 细灰左线区分，不用斜体、不用底纹（区别于 kimi）
+            # CJK 伪斜体渲染难看：引用块用灰色 + 细灰左线区分，不用斜体、不用底纹（区别于 第三方同类产品）
             for r in p.runs:
                 r.font.color.rgb = RGBColor(0x59, 0x59, 0x59)
         elif btype == "visual":

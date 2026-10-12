@@ -110,7 +110,7 @@ def spacing_css(ls):
 
 
 # 编辑式极简主题（与 PPTX/Word 同一套）：近单色 + 单一克制强调色 + 细灰 hairline；
-# 不铺色块、不用左 accent 竖条、不用表头填充——区别于 kimi 的色块语言。
+# 不铺色块、不用左 accent 竖条、不用表头填充——区别于 第三方同类产品 的色块语言。
 HTML_THEMES = {
     "default":  {"primary": "#8C6A3F", "ink": "#1A1A1A", "accent": "#8C6A3F",
                  "hairline": "#DCDCDC", "panel": "#FAFAFA", "muted": "#6E6E6E"},

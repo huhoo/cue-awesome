@@ -1,16 +1,23 @@
 # CHANGELOG(omni2docx)
 
+### 0.5.2 — 2026-10-12（公开面口径清理：不点名任何第三方平台；回归用例名改能力描述）
+
+- 依据套件级红线「不点名任何平台、不以对抗平台为叙事」与 CONTRIBUTING「记录性引用不复现词面」：本包公开面（历史条目与三支脚本的注释）中原先点名某第三方产品视觉语言的字样**共 25 处**，一律改为不可命中的形制指代（写作「克制体系（细线＋大留白）」「去掉色块语言」「避免与任何同类产品雷同」一类）；另把一处回归用例名从内部流水号形制改为能力描述。
+- **动因、动作与事实一律不改**：视觉体系的实现、色板与版式代码零改动，本次只改记法与注释文字。
+- 改后复测（与改前逐项同值）：三格式产物字节一致——PPTX 61,341 B／HTML 30,562 B／DOCX 出口行 `blocks=117 outline_nodes=62 segments=7 pagebreaks=6`；件内回归矩阵全部通过；三道验收器（docx／html／pptx）均 PASS，其中 pptx 几何审计越界 0／重叠 0／过小字号 0、html 自包含无外链；缺 headless 浏览器时 PDF 走**明示跳过**而非静默或假成功。
+- 全包点名词面复算 0、流水号形制复算 0；`git diff` 内功能行 0（仅注释与文档文字）。
+
 ### 0.5.1 — 2026-10-12（0.5.0 复审修复：目录溢出回归 / 圆角残留 / 封面强调线统一）
 
 - **PPTX `toc_slide` 行高回归修复**：0.5.0 误将行高改为 `max(0.62in, min(0.92in, …))`，目录条目 ≥8 时会挤出页面底部（几何审计只查形状边界、目录文本框自适应掩盖了问题）。改回纯自适应 `min(0.92in, 可用高度/n)`；条目 >10 时目录字号自动降为 16pt 保持可读。已用 12 条目压力样本验证：越界 0/重叠 0/过小字号 0。
 - **HTML `code` 圆角残留**：0.5.0 宣言"去掉所有 border-radius"，但 `code` 内联样式的 `border-radius:3px` 漏改。已改 `border-radius:0`（全格式直角一致；已验证渲染产物中 `border-radius:[1-9]` 计数为 0）。
 - **封面强调线三格式统一**：0.5.0 中 Word 封面标题下线误用 hairline，而 PPTX 封面/HTML hero 用 accent 短细线（全格式唯一强调点）。Word 已改 accent（`sz=16`），三格式封面语义一致。
-- **代码卫生**：PPTX `_kw_runs` 硬编码 `#0F172A/#334155` 改为主题驱动（`theme["ink"]`/`theme["text"]`，去掉 `@staticmethod`）；`_bullet` 有序编号清理元组残留写法；`build_docx.py` 两处过时注释（"kimi：表头填充+斑马纹"→"编辑式极简"）与 `cover()` 调用处无效 `kicker` 传参清理。
+- **代码卫生**：PPTX `_kw_runs` 硬编码 `#0F172A/#334155` 改为主题驱动（`theme["ink"]`/`theme["text"]`，去掉 `@staticmethod`）；`_bullet` 有序编号清理元组残留写法；`build_docx.py` 两处过时注释（"第三方同类产品：表头填充+斑马纹"→"编辑式极简"）与 `cover()` 调用处无效 `kicker` 传参清理。
 - 回归：`run_matrix_test.py` 13/13 全 PASS（覆盖率 100%）；docx 验收 PASS（字符零丢失）；PPTX 几何审计 PASS；12 条目 TOC 压力样本 PASS。
 
-### 0.5.0 — 2026-10-12（视觉重新实现：原创「编辑式极简」体系，四格式统一，避免雷同 kimi）
+### 0.5.0 — 2026-10-12（视觉重新实现：原创「编辑式极简」体系，四格式统一，避免与任何同类产品雷同）
 
-- 需求：四格式统一原创、编辑式极简方向；**不再沿用 kimi 的色块语言**（顶部导航条 / kicker 角标 / PART 0X / 填充色块 / 表头填充 / 斑马纹 / 圆角卡片 / 左 accent 竖条）。改为**近单色 + 单一克制强调色（仅用于微小标记：序号、短细线）+ 大留白 + 强字号层级 + 细灰 hairline**：
+- 需求：四格式统一原创、编辑式极简方向；**不再沿用 第三方同类产品 的色块语言**（顶部导航条 / kicker 角标 / PART 0X / 填充色块 / 表头填充 / 斑马纹 / 圆角卡片 / 左 accent 竖条）。改为**近单色 + 单一克制强调色（仅用于微小标记：序号、短细线）+ 大留白 + 强字号层级 + 细灰 hairline**：
   - **PPTX（`render_pptx.py`）**：删顶部导航带（`_nav` 置空）、封面去左色块/kicker 改「白底大留白 + 墨色大标题 + 标题下短 accent 细线 + 灰副标」；目录去序号卡改「序号(淡灰)+标题」；章节页去顶带/PART kicker 改「右侧幽灵大序号(淡灰)+墨色标题」；内容页去 kicker 改「墨色结论式标题+细灰线」；**KPI 看板去填充/边框**改「无填充列 + 竖 hairline 分隔 + 墨色大数字」；**表格去填充/斑马/四边框**改「表头墨色加粗+底部墨色粗线、行间 hairline」；要点引导符 accent→灰；结束页去上下色带。
   - **Word（`build_docx.py`）**：封面去 kicker/顶线改「Title 墨色大标题+底部细灰线+灰副标」；`目录` 标题改细灰下划、条目去彩色 `▪/·` 项目符号；`accent_heading` 仅 H1 底部细灰线、**H2 去左 accent 竖条**（纯字号层级）；`style_table` 去表头填充/斑马/四边框改「表头墨色加粗+底部粗线、行间 hairline、无竖线/外框」（新增幂等 `set_cell_shading`，删 `set_table_borders`）；引用/标注段去底纹改「细灰左线+灰字」；页脚 accent 线→hairline。
   - **HTML（`render_html.py`）**：`css_for` 重写——hero 去 primary 满底改「白底+墨色标题+accent 细线下划」；`h2` 去左 accent 竖条改底部 hairline、`h3` 降为灰字；表格去表头填充/外框/阴影/斑马改「表头底部墨色粗线+行间 hairline」；`blockquote`/`.visual` 去底色/圆角改「细灰左线+灰字」；`nav.toc` 去圆角卡片改「底部 hairline 分隔」；去掉所有 `border-radius`（直角）。
@@ -19,9 +26,9 @@
 - 保真与校验口径**不变**：字符零丢失；`目录`=Heading 1、`Title` 样式保留；分页/层级/表格数未改。
 - 回归：`run_matrix_test.py` 13/13 全 PASS（覆盖率 100%，专项断言全绿）；PPTX 几何审计越界 0/重叠 0/过小字号 0；docx 验收 PASS；确认 deck 无大色块填充（accent 仅作细线）。
 
-### 0.4.2 — 2026-10-12（Word 视觉重做：kimi 克制体系，四格式统一）
+### 0.4.2 — 2026-10-12（Word 视觉重做：克制体系（细线＋大留白），四格式统一）
 
-- 参照 kimi 共用设计哲学，对 `build_docx.py` 视觉层提质，使 **Word 与已完成的 PPTX(0.4.1)/HTML(0.4.0) 在同一套三色主题**（primary/accent/ink/panel/muted，default/academic/gov/legal/finance 各一套）下观感一致——PDF 走 HTML 打印，自动继承同套样式：
+- 参照 第三方同类产品 共用设计哲学，对 `build_docx.py` 视觉层提质，使 **Word 与已完成的 PPTX(0.4.1)/HTML(0.4.0) 在同一套三色主题**（primary/accent/ink/panel/muted，default/academic/gov/legal/finance 各一套）下观感一致——PDF 走 HTML 打印，自动继承同套样式：
   - **封面 hero**：顶部 accent 细线 + accent kicker（如"Omni 解析重建"）+ 标题（保留 Word `Title` 样式，底部 primary 下划）+ 来源·日期副标题（灰）。
   - **目录美化**：`目录` 标题底部 accent 下划；条目按层级缩进，一级 `▪` accent 标记、次级 `·` 灰标记。
   - **标题装饰**：H1(含 level1) 底部 primary 下划；H2 左侧 accent 竖条（与 HTML `h2` 左竖条、PPTX accent 短下划一致）；标题文字仍走样式深墨色（保留"黑色基线"，不整段染色）。
@@ -32,21 +39,21 @@
 - 保真与校验口径**不变**：字符零丢失（`validate_docx` 覆盖率口径）；`目录` 仍为 `Heading 1`、`Title` 样式保留；分页/标题层级/表格数量未被改动。
 - 回归：`tests/run_matrix_test.py` 13/13 全 PASS（覆盖率 100%，`page_field`/`no_emoji`/`quote_kaiti`/`nested_inline`/`cjk_space_clean` 等专项断言全绿）。
 
-### 0.4.1 — 2026-10-12（PPTX 视觉重做：kimi 克制体系，修正"空/丑"）
+### 0.4.1 — 2026-10-12（PPTX 视觉重做：克制体系（细线＋大留白），修正"空/丑"）
 
-- 参照 kimi `pptx` skill 的**克制设计哲学**（work_report / strategic / academic 规范）重做 `render_pptx.py` 视觉层，修正上一版"内容页只剩标题+`▪`平铺"的空与丑：
+- 参照 第三方同类产品 `pptx` skill 的**克制设计哲学**（work_report / strategic / academic 规范）重做 `render_pptx.py` 视觉层，修正上一版"内容页只剩标题+`▪`平铺"的空与丑：
   - **双框结构**：顶部导航带（品牌 + 当前章节，白字）+ 底部页脚（来源 + 页码），专业且能跟踪进度。
-  - **字号层级**（kimi 规范）：封面 44+、页标题 30、正文 19、KPI 44-54、导航/页脚 12。
+  - **字号层级**（第三方同类产品 规范）：封面 44+、页标题 30、正文 19、KPI 44-54、导航/页脚 12。
   - **KPI 大数字看板**：自动识别数字型要点（如 `78 年`/`12 部`/`5 个`），渲染为直角卡片（浅 primary 底 + primary 边框 + 大号主色数字）。
   - **要点加粗首关键词** + accent 短引导符（`—`）；有序列表带 `01/02` 编号；≥6 条且偏短自动双栏。
   - **封面左色块 hero**（直角主色块 + accent 右缘线 + 品牌 kicker + 大标题 + accent 短下划线 + 副标题）；**章节页**幽灵大序号（浅 tint）+ `PART 0X` kicker；**结束页**上下主色带框定。
-  - **禁用圆角矩形**（kimi 明确禁止），一律直角；颜色 ≤3；形状无文本不触发重叠审计。
+  - **禁用圆角矩形**（第三方同类产品 明确禁止），一律直角；颜色 ≤3；形状无文本不触发重叠审计。
   - 新增 `--brand`（顶部导航品牌字）。
 - 几何审计零越界 / 零重叠 / 零过小字号；CJK 覆盖率 100%；回归 docx 13/13 + 三格式 34/34 全绿。
 
 ### 0.4.0 — 2026-10-12（视觉提质：主题色系统 + 分页型版式 + 装饰体系）
 
-- 参照 kimi `pptx` skill 的设计哲学重做两个展示渲染器的视觉层（解析/build 管线、chunk/flush/prose 语义、CLI 与多源合并均不变，回归全绿）。
+- 参照 第三方同类产品 `pptx` skill 的设计哲学重做两个展示渲染器的视觉层（解析/build 管线、chunk/flush/prose 语义、CLI 与多源合并均不变，回归全绿）。
 - `render_pptx.py` 重做：
   - **主题色系统**：每个 profile 一套克制三色（primary / accent / 中性灰，背景以白或极浅灰为主，符合学术/商务规范；default/academic/gov/legal/finance 各一套）。
   - **分页型版式**：`封面`（左侧主色竖条 + 顶部分隔线 + 大标题 + 副标题 + 页脚）→ `章节分隔`（顶部主色条 + 大号序号 + 章节标题）→ `内容`（标题栏 + 主题色下划线 + 内容区左侧 accent 竖条 + 彩色项目符号 `▪` + 页脚来源/页码）→ `结束页`。不再把正文逐段平铺成上百页。
@@ -74,7 +81,7 @@
   - `fixtures/` 全部为**合成占位语料**（`generate_fixtures.py` 生成 + 手写 `edge_case.md`），与任何真实机构/个人/数据无关，可安全公开、对任意 clone 可复现；结构等价真实语料并保留断言锚点。
   - `out/` 生成物 `.gitignore`；新增 `.github/workflows/omni2docx-regression.yml`（python-docx + python-pptx，push/PR 触发）。
   - 套件实测：docx 12/12、三格式 34/34，合计 46 全 PASS；`check_skills.py --strict` 全仓 18 skill 0/0。
-- 回归套件增补 **OCR 间距专项用例 M13**（`generate_fixtures.py` 新增 `D11_OCR_SPACING` → `m11_ocr_spacing.omni.md`，`run_matrix_test.py` 加 `cjk_space_clean` / `latin_space_preserved` 两项 XML 级断言）：确定性固化 OCR 已知限制行为——CJK 逐字空格被 `clean_cjk_spaces` 清理、拉丁逐字母空格按已知限制原样保留（引擎不修）。套件现 docx 13 例、三格式 34 例；P2 真机另以一份 1990 年 USPTO 图像型专利（12 页真实扫描件）走全链路，确认真实扫描 PDF 可正常解析渲染，但该件 omni 重 OCR 干净、未触发拆字，印证限制为**源质量依赖型**（须低质量 CJK 扫描件才暴露）。
+- 回归套件增补 **OCR 间距专项OCR 间距专项用例**（`generate_fixtures.py` 新增 `D11_OCR_SPACING` → `m11_ocr_spacing.omni.md`，`run_matrix_test.py` 加 `cjk_space_clean` / `latin_space_preserved` 两项 XML 级断言）：确定性固化 OCR 已知限制行为——CJK 逐字空格被 `clean_cjk_spaces` 清理、拉丁逐字母空格按已知限制原样保留（引擎不修）。套件现 docx 13 例、三格式 34 例；P2 真机另以一份 1990 年 USPTO 图像型专利（12 页真实扫描件）走全链路，确认真实扫描 PDF 可正常解析渲染，但该件 omni 重 OCR 干净、未触发拆字，印证限制为**源质量依赖型**（须低质量 CJK 扫描件才暴露）。
 ### 0.2.1 — 2026-10-11（验收闭环：HTML/PPTX 验收器 + 两处保真修复）
 
 - 新增 `scripts/validate_html.py`：HTML 产物验收器，与 `validate_docx.py` 同口径（字符级 CJK 覆盖率 ≥99% 判 PASS，emoji 以 `--strip-emoji` 同口径从源文剥离防误报），附加目录/锚点/源页标注/溯源附录/自包含（无外链）结构检查；`--json`/`--md` 二选一，与渲染输入保持一致。

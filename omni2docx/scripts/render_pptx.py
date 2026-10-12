@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """omni2docx — PPTX 汇报渲染器（汇报场景：把文档/提纲变成可讲的 deck）
 
-设计（原创「编辑式极简」体系，离线可复现、零外部资源；有意区别于 kimi 的色块语言）：
+设计（原创「编辑式极简」体系，离线可复现、零外部资源；有意区别于 第三方同类产品 的色块语言）：
 - 近单色 + 单一克制强调色：墨色(ink)为主，强调色仅用于微小标记（序号、短细线），不铺色块。
 - 无顶部导航条、无 kicker 角标、无 PART 0X、无填充色块——靠大留白与字号层级建立结构。
 - 分页型版式：封面（大留白 + 墨色标题 + 标题下短细线 + 灰副标）→ 目录（序号+标题，无卡片）
@@ -35,7 +35,7 @@ from pptx.util import Inches, Pt, Emu  # noqa: E402
 from pptx.oxml.ns import qn  # noqa: E402
 from pptx.dml.color import RGBColor  # noqa: E402
 
-# deck 字体/字号制式（汇报场景字号显著大于文档场景，遵循 kimi 字号层级）
+# deck 字体/字号制式（汇报场景字号显著大于文档场景，遵循 第三方同类产品 字号层级）
 PPT_PROFILES = {
     "default": {"title_east": "微软雅黑", "body_east": "微软雅黑",
                 "title_size": 30, "body_size": 19, "section_size": 34},
@@ -50,7 +50,7 @@ PPT_PROFILES = {
 }
 
 # 编辑式极简主题：近单色 + 单一克制强调色（仅用于微小标记：序号、短细线），
-# 不铺色块、不建顶部导航条、不用 kicker 角标——区别于 kimi 的色块语言。
+# 不铺色块、不建顶部导航条、不用 kicker 角标——区别于 第三方同类产品 的色块语言。
 # primary 保留为强调色别名；hairline=细灰线；muted/faint=灰阶层级。
 THEMES = {
     "default":  {"primary": "#8C6A3F", "ink": "#1A1A1A", "accent": "#8C6A3F",
@@ -256,7 +256,7 @@ class Deck:
 
     # ---------- 顶栏/页脚 ----------
     def _nav(self, s, section):
-        """编辑式极简：不设顶部导航条（区别于 kimi）。保留接口为空。"""
+        """编辑式极简：不设顶部导航条（区别于 第三方同类产品）。保留接口为空。"""
         return s
 
     def _footer(self, s, source):
@@ -277,7 +277,7 @@ class Deck:
     def cover_slide(self, title, subtitle, source):
         s = self.slide()
         # 编辑式极简封面：白底、大留白、墨色大标题、标题下一道短细线、底部灰副标。
-        # 无左侧色块、无 kicker 角标、无 accent 色块（区别于 kimi）。
+        # 无左侧色块、无 kicker 角标、无 accent 色块（区别于 第三方同类产品）。
         rx = self.M
         rw = self.mw
         tf = self._tb(s, rx, Inches(2.3), rw, Inches(2.6))
@@ -323,7 +323,7 @@ class Deck:
     def section_slide(self, title, idx):
         s = self.slide()
         # 大留白 + 右侧幽灵大序号（淡灰，无文本装饰）+ 左侧墨色章节标题 + 底部短细线。
-        # 无顶部色带、无 PART 0X kicker（区别于 kimi）。
+        # 无顶部色带、无 PART 0X kicker（区别于 第三方同类产品）。
         nf = self._tb(s, self.W - Inches(5.0), Inches(1.2), Inches(4.3), Inches(4.0))
         add_line(nf, "%02d" % (idx or 1), 180, self.cfg.get("title_east", "微软雅黑"),
                  bold=True, color=self.theme["faint"])
@@ -335,7 +335,7 @@ class Deck:
         return s
 
     def _title_block(self, s, kicker, title):
-        """结论式大标题（墨色）+ 标题下细灰线；无 kicker 角标（区别于 kimi）。返回正文起始 y。"""
+        """结论式大标题（墨色）+ 标题下细灰线；无 kicker 角标（区别于 第三方同类产品）。返回正文起始 y。"""
         tf = self._tb(s, self.M, Inches(0.6), self.mw, Inches(0.95))
         t = len(title)
         ts = (self.cfg.get("title_size", 30) - 6 if t > 70 else
@@ -499,7 +499,7 @@ class Deck:
         add_line(tf, "谢谢", self.cfg.get("section_size", 34) + 16,
                  self.cfg.get("title_east", "微软雅黑"), bold=True,
                  color=self.theme["ink"], align=2)
-        # 中央短细线（强调色，克制）+ 灰副标；无上下色带（区别于 kimi）
+        # 中央短细线（强调色，克制）+ 灰副标；无上下色带（区别于 第三方同类产品）
         self._rect(s, (self.W - Inches(1.8)) / 2, Inches(4.3), Inches(1.8), Pt(1.5), self.theme["accent"])
         tf2 = self._tb(s, self.M, Inches(4.6), self.mw, Inches(0.6))
         add_line(tf2, "Omni 解析重建 · 汇报版", 13, self.cfg.get("body_east", "微软雅黑"),
