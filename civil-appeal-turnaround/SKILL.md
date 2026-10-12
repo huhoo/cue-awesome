@@ -5,7 +5,7 @@ displayName: 民事二审翻案工程·论断逐条带出处
 summary: "一审败诉后建二审作战体系:判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见,条号递交前核对。"
 description: "民事一审败诉后的翻案工程:还原法官推理链、定位争点被框错的层;证据逐字比对截断/省略/割裂;请求权铺主攻/备位/兜底阶梯;事实台账三级出处;文书包同日递交与自行诉讼操作。不提供法律意见、不替代律师,条号与费用标准递交前核对。脚本与流程离线自包含。Triggers: 一审败诉上诉 / 二审上诉状 / 判决书拆解 / 为什么败诉 / 上诉期与继续保全 / 自行诉讼; lost at first instance / civil appeal / appeal deadline / self-represented litigant Do NOT use for: legal advice."
 agent_created: true
-version: "0.3.0"
+version: "0.3.1"
 license: MIT
 metadata:
   requires:
@@ -114,10 +114,10 @@ metadata:
 
 | 动词 | 细则 | 方法文档 | 落点 |
 |---|---|---|---|
-| **盘点** | Phase 1 拆推理链、三面归置；**Phase 3 重铺阶梯** | `references/01`（含 §三面归置）、`references/03` | `判决书拆解表.md` + `败诉三面表.md` + `法律阶梯表.md` |
-| **搜集** | Phase 2 逐字比对；Phase 5 的三份申请（调取证据／责令提交／新证据清单） | `references/02`、`references/05` §八 §九 | `证据比对表.md` + 三份申请 |
-| **查证** | Phase 4（**贯穿 Phase 1-3，不是最后才做**） | `references/04` | `事实台账.md` + 红线清单 |
-| **todo** | Phase 0 前提确认、Phase 6 重排与递交 | `references/05` | 主控清单（前提确认表 + 待办表） |
+| **盘点** | Phase 1 拆推理链、三面归置；**Phase 3 重铺阶梯** | `references/01-judgment-reverse-engineering.md`（含 §三面归置）、`references/03-legal-ladder.md` | `判决书拆解表.md` + `败诉三面表.md` + `法律阶梯表.md` |
+| **搜集** | Phase 2 逐字比对；Phase 5 的三份申请（调取证据／责令提交／新证据清单） | `references/02-evidence-diff-protocol.md`、`references/05-self-represented-filing.md` §八 §九 | `证据比对表.md` + 三份申请 |
+| **查证** | Phase 4（**贯穿 Phase 1-3，不是最后才做**） | `references/04-fact-ledger-and-discipline.md` | `事实台账.md` + 红线清单 |
+| **todo** | Phase 0 前提确认、Phase 6 重排与递交 | `references/05-self-represented-filing.md` | 主控清单（前提确认表 + 待办表） |
 
 每份 references 开头都有同一格式的**门牌锚点**（动词／Phase／落点／读到哪为止），按锚点走即可，不必回查本表。
 

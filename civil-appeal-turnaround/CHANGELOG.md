@@ -1,5 +1,12 @@
 # CHANGELOG（civil-appeal-turnaround）
 
+### 0.3.1 — 2026-10-12（动词表五枚方法文档指路换全名，发布物内可跟随）
+
+- 动词表「方法文档」列原写缩略号 `references/01`…`references/05`（表内共六枚字面，其中 05 出现两次），包内真身是长名件；现全部换成全名——`references/01-judgment-reverse-engineering.md`、`references/02-evidence-diff-protocol.md`、`references/03-legal-ladder.md`、`references/04-fact-ledger-and-discipline.md`、`references/05-self-represented-filing.md`。节级附注（含 §三面归置、§八 §九）原位保留。
+- 为什么改：缩略号人眼接得到、脚本与发布物自跑闸接不到，读者照表去开文件会空手。表内其它列、Phase 编号与落点件名一字未动。
+- 复验：包内 `references/` 七枚长名件俱在，表里用到的五枚逐名核过存在；成品面逐面现跑全「PASS 五禁零命中、指路可跟随」。本包不含夹具与自测入口（形制如此，非缺项）。
+- 版本位：0.3.0 → 0.3.1（指路形制收口＝patch，无能力增减）。历史条目不回改。
+
 ### 0.3.0 — 2026-10-10（minor·新增 Word 递交稿导出链）
 
 Added
