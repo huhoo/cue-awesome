@@ -201,7 +201,7 @@ def _table_hairlines(tbl, n_rows, n_cols, theme):
 class Deck:
     """带主题与分页型版式的 deck 构造器（原创编辑式极简体系：大留白、细线、近单色）。"""
 
-    def __init__(self, cfg, theme, ratio="16:9", brand="Omni 解析重建"):
+    def __init__(self, cfg, theme, ratio="16:9"):
         self.prs = Presentation()
         if ratio == "16:9":
             self.prs.slide_width, self.prs.slide_height = Inches(13.333), Inches(7.5)
@@ -223,7 +223,6 @@ class Deck:
         self.M = Inches(0.55)            # 统一页边距
         self.mw = self.W - 2 * self.M   # 内容宽度
         self.page_no = 0
-        self.brand = brand[:18]
 
     def slide(self, bg=None):
         s = self.prs.slides.add_slide(self.blank)
@@ -617,7 +616,7 @@ def scan_layouts(md):
 
 def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullets=6,
           max_chars=760, ratio="16:9", strip=False, embed_images=True, prose="notes",
-          max_slides=80, source="", brand="Omni 解析重建"):
+          max_slides=80, source=""):
     """prose：正文段落去向——notes（默认，进演讲者备注）/ body（上正文区）/ skip（丢弃）。
 
     汇报语义：要点、表格、图像上页；正文细节进备注页，避免长文档被逐段平铺成上百页。
@@ -629,7 +628,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
     md, layouts = scan_layouts(md)  # 版式指令：<!-- layout:xxx --> 绑定到其后第一个标题
     doc_title = title or t_title
     blocks = parse_blocks(md)
-    deck = Deck(cfg, theme, ratio, brand=brand)
+    deck = Deck(cfg, theme, ratio)
 
     if doc_title:
         deck.cover_slide(doc_title, None, source)
@@ -776,12 +775,11 @@ def main():
     ap.add_argument("--prose", default="notes", choices=["notes", "body", "skip"],
                     help="正文段落去向：notes=演讲者备注（默认，汇报语义）/ body=上正文区 / skip=丢弃")
     ap.add_argument("--ratio", default="16:9", help="16:9 / 4:3 / 自定义 'w,h'（英寸）")
-    ap.add_argument("--strip-emoji", action="store_true")
+    ap.add_argument("--strip-emoji", action="store_true", help="剥离 emoji/装饰符（验收器同口径）")
     ap.add_argument("--no-images", action="store_true", help="不嵌入 data:image 图像")
     ap.add_argument("--max-slides", type=int, default=80,
                     help="deck 页数上限（默认 80；超出即截断并告警）。0=不限")
     ap.add_argument("--source-label", default="", help="页脚来源署名（默认空）")
-    ap.add_argument("--brand", default="Omni 解析重建", help="顶部导航品牌字（默认 Omni 解析重建）")
     args = ap.parse_args()
     if not args.json and not args.md:
         ap.error("--json 或 --md 必须提供一个")
@@ -834,13 +832,13 @@ def main():
                      section_level=args.section_level, split_level=args.split_level,
                      max_bullets=args.max_bullets, max_chars=args.max_chars,
                      ratio=args.ratio, strip=args.strip_emoji,
-                     embed_images=not args.no_images, source=src_label, brand=args.brand)
+                     embed_images=not args.no_images, source=src_label)
     else:
         deck = build(sources[0].get("markdown") or "", cfg, theme, title=args.title,
                      section_level=args.section_level, split_level=args.split_level,
                      max_bullets=args.max_bullets, max_chars=args.max_chars,
                      ratio=args.ratio, strip=args.strip_emoji,
-                     embed_images=not args.no_images, source=src_label, brand=args.brand)
+                     embed_images=not args.no_images, source=src_label)
     deck.save(args.out)
     from pptx import Presentation as P
     n = len(P(args.out).slides)
