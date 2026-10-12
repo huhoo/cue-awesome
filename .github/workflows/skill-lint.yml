@@ -39,6 +39,18 @@ jobs:
         run: python -B scripts/check_public_hygiene.py
         continue-on-error: true
 
+      # 发布物自跑闸（CONTRIBUTING §发布物自跑 的可执行形）。闸本体必须先自证非恒真——这一步永远是硬门。
+      # 体积那条只认发布物 zip 字节：仓内 du 与解包目录和都不是它的对象。
+      - name: Shipment self-run gate selftest (guard samples)
+        run: python -B scripts/check_shipment.py --selftest
+
+      # CI 拿不到渠道供体，就按老配方（剔 fixtures/｜tests/）从工作树逐包建 zip 再判——报账态起步。
+      # 逐包补发把 B 态（连样本一起发）跑绿后，删掉 continue-on-error 这一行，本步即成发布硬门；
+      # 真发之前仍须对**渠道回下载的那枚字节**现验：python -B scripts/check_shipment.py <file.zip> --repo <包目录>
+      - name: Shipment self-run scan (tree-built; becomes blocking when per-package backfill is done)
+        run: python -B scripts/check_shipment.py --repo-scan . --quiet
+        continue-on-error: true
+
       - name: Ontology regression suite
         run: python -B cue-omni-ontology/scripts/test_ontology.py
 
