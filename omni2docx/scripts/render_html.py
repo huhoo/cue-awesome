@@ -109,7 +109,21 @@ def spacing_css(ls):
     return ("%gpt" % val) if val >= 12 else ("%g" % val)
 
 
-def css_for(pcfg, page_marks):
+HTML_THEMES = {
+    "default":  {"primary": "#2563EB", "ink": "#1E293B", "accent": "#0EA5E9",
+                 "panel": "#F1F5F9", "muted": "#64748B"},
+    "academic": {"primary": "#1E3A8A", "ink": "#0F172A", "accent": "#B45309",
+                 "panel": "#F8FAFC", "muted": "#475569"},
+    "gov":      {"primary": "#B91C1C", "ink": "#7F1D1D", "accent": "#C8A24B",
+                 "panel": "#FEF2F2", "muted": "#6B7280"},
+    "legal":    {"primary": "#9A2D2D", "ink": "#5B1616", "accent": "#B8862B",
+                 "panel": "#FBF4F4", "muted": "#6B7280"},
+    "finance":  {"primary": "#0F766E", "ink": "#134E4A", "accent": "#B45309",
+                 "panel": "#F0FDFA", "muted": "#64748B"},
+}
+
+
+def css_for(pcfg, page_marks, theme=None):
     east = pcfg.get("body_east", "宋体")
     latin = pcfg.get("body_latin")
     heast = pcfg.get("heading_east", "黑体")
@@ -125,56 +139,73 @@ def css_for(pcfg, page_marks):
     family = ('"%s",%s,"Microsoft YaHei","PingFang SC",sans-serif'
               % (east, ('"%s",' % latin) if latin else ""))
     hfamily = '"%s","Microsoft YaHei","PingFang SC",sans-serif' % heast
+    th = theme or HTML_THEMES["default"]
     return """
 %s
-:root{--f:%s;--hf:%s;--body:%gpt;--lh:%s}
+:root{--f:%s;--hf:%s;--body:%gpt;--lh:%s;--primary:%s;--ink:%s;--accent:%s;
+ --panel:%s;--muted:%s}
 *{box-sizing:border-box}
-body{margin:0 auto;max-width:52rem;padding:2.5rem 1.5rem;font-family:var(--f);
- font-size:var(--body);line-height:var(--lh);color:#1a1a1a;background:#fff}
-h1,h2,h3,h4,h5,h6{font-family:var(--hf);color:#000;font-weight:600;
- line-height:1.4;margin:1.4em 0 .6em}
-h1{%gpt}h2{%gpt}h3{%gpt}h4{%gpt}h5{%gpt}h6{%gpt}
-.doc-title{font-size:%gpt;text-align:center;margin:0 0 1.2em}
+body{margin:0 auto;max-width:52rem;padding:0 1.5rem 2.5rem;font-family:var(--f);
+ font-size:var(--body);line-height:var(--lh);color:#1f2937;background:#fff}
+.hero{margin:0 -1.5rem 2.2rem;padding:3rem 2rem 2.4rem;background:var(--primary);
+ color:#fff;border-bottom:5px solid var(--accent)}
+.hero h1{color:#fff;font-size:%gpt;margin:0 0 .35em;line-height:1.25;
+ font-family:var(--hf);font-weight:700}
+.hero .sub{color:rgba(255,255,255,.85);font-size:1.02em;margin:.2em 0 0}
+.hero .src{color:rgba(255,255,255,.7);font-size:.85em;margin-top:1em}
+h1,h2,h3,h4,h5,h6{font-family:var(--hf);color:var(--ink);font-weight:600;
+ line-height:1.4;margin:1.5em 0 .6em}
+h1{font-size:%gpt}h2{font-size:%gpt}h3{font-size:%gpt}h4{font-size:%gpt}
+h5{font-size:%gpt}h6{font-size:%gpt}
+h2{border-left:4px solid var(--accent);padding-left:.5em}
+h3{border-left:3px solid var(--panel);padding-left:.45em}
 p{margin:.5em 0;text-align:justify%s}
 ul,ol{margin:.5em 0 .5em 1.6em;padding:0}
 li{margin:.25em 0}
-table{border-collapse:collapse;width:100%%;margin:1em 0;font-size:.95em}
-th,td{border:1px solid #b9b9b9;padding:.35em .6em;text-align:left;vertical-align:top}
-th{background:#f2f2f2;font-family:var(--hf)}
-blockquote{margin:1em 0;padding:.6em 1em;border-left:3px solid #c8c8c8;
- background:#fafafa;font-family:%s;color:#333}
-code{font-family:Consolas,Monaco,monospace;background:#f4f4f4;padding:.1em .3em;
- border-radius:3px;font-size:.9em}
-.srcnote{color:#8a8a8a;font-size:.85em}
-.cjk-em{font-weight:600}
-.fn a{text-decoration:none;color:#185FA5}
-.visual{background:#f5f5f0;border-left:3px solid #d0d0c0;padding:.5em .9em;
- margin:.8em 0;color:#555;font-size:.92em}
-.img-note{color:#8a8a8a;font-size:.85em}
+table{border-collapse:collapse;width:100%%;margin:1em 0;font-size:.95em;
+ box-shadow:0 1px 2px rgba(0,0,0,.06)}
+th,td{border:1px solid #cfd6e4;padding:.4em .65em;text-align:left;vertical-align:top}
+th{background:var(--primary);color:#fff;font-family:var(--hf);font-weight:600}
+tbody tr:nth-child(even){background:var(--panel)}
+blockquote{margin:1em 0;padding:.6em 1em;border-left:4px solid var(--accent);
+ background:var(--panel);font-family:%s;color:#334155;border-radius:0 6px 6px 0}
+code{font-family:Consolas,Monaco,monospace;background:#eef1f6;padding:.1em .3em;
+ border-radius:3px;font-size:.9em;color:#be123c}
+.srcnote{color:#94a3b8;font-size:.85em}
+.cjk-em{font-weight:600;color:var(--primary)}
+.fn a{text-decoration:none;color:var(--primary)}
+.visual{background:var(--panel);border-left:4px solid var(--accent);padding:.5em .9em;
+ margin:.8em 0;color:#475569;font-size:.92em;border-radius:0 6px 6px 0}
+.img-note{color:#94a3b8;font-size:.85em}
 figure.img{margin:1em 0}figure.img img{max-width:100%%}
-figure.img figcaption{color:#777;font-size:.85em;text-align:center;margin-top:.3em}
-nav.toc{background:#fafafa;border:1px solid #e3e3e3;border-radius:8px;
+figure.img figcaption{color:#64748b;font-size:.85em;text-align:center;margin-top:.3em}
+nav.toc{background:var(--panel);border:1px solid #e3e8f0;border-radius:10px;
  padding:1em 1.2em;margin:0 0 2em}
-nav.toc summary{cursor:pointer;font-family:var(--hf);font-weight:600}
-nav.toc ol{margin:.6em 0 0 1.2em;padding:0;line-height:1.9}
-nav.toc a{color:#185FA5;text-decoration:none}
+nav.toc summary{cursor:pointer;font-family:var(--hf);font-weight:600;color:var(--ink);
+ font-size:1.05em}
+nav.toc ul{list-style:none;padding:0;margin:.6em 0 0;display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));gap:.2em .8em}
+nav.toc li{margin:0;padding:.15em 0}
+nav.toc a{color:var(--primary);text-decoration:none}
 nav.toc a:hover{text-decoration:underline}
 .pagemark{display:block;color:#b0b0b0;font-size:.78em;margin:1.1em 0 .2em;
  border-top:1px dashed #e0e0e0;padding-top:.3em}
-.meta{color:#777;font-size:.85em;text-align:center;margin:.2em 0 1.6em}
+.meta{color:#64748b;font-size:.85em;text-align:center;margin:.2em 0 1.6em}
 hr{border:0;border-top:1px solid #e0e0e0;margin:1.6em 0}
 section.endnotes{margin-top:2.5em;border-top:1px solid #e0e0e0;padding-top:1em;
  font-size:.9em;color:#444}
 section.endnotes ol{margin-left:1.4em}
 section.appendix{margin-top:2.5em}
 @media print{nav.toc{display:none}body{padding:0;max-width:none}
+ .hero{margin:0 0 2em;-webkit-print-color-adjust:exact;print-color-adjust:exact}
  a{color:#000;text-decoration:none}}
 """ % (
         mgc, family, hfamily, body, lh,
+        th["primary"], th["ink"], th["accent"], th["panel"], th["muted"],
+        title,
         float(hs[0] if len(hs) > 0 else 16), float(hs[1] if len(hs) > 1 else 14),
         float(hs[2] if len(hs) > 2 else 13), float(hs[3] if len(hs) > 3 else 12),
         float(hs[4] if len(hs) > 4 else 12), float(hs[5] if len(hs) > 5 else 12),
-        title,
         (";text-indent:%gem" % ind) if ind else "",
         '"%s",serif' % pcfg.get("quote_east", "楷体"),
     )
@@ -346,6 +377,11 @@ def main():
 
     want_strip = args.strip_emoji or bool(pcfg.get("strip_emoji"))
 
+    # 主题解析（与 PPTX 同套配色，保证跨格式视觉一致）
+    pk = args.profile.strip()
+    theme = HTML_THEMES.get(pk if not (pk.startswith("{") or pk.endswith(".json")) else "",
+                           HTML_THEMES["default"])
+
     def prep(md):
         if want_strip:
             md = strip_emoji(md)
@@ -394,18 +430,22 @@ def main():
         parts_body.append(endnotes_html(foot))
         all_toc.extend(toc_items)
 
+    # 封面 hero（主题色块 + 标题 + 来源/日期），替代旧居中 doc-title
     if doc_title:
-        parts_head.append('<h1 class="doc-title">%s</h1>' % esc(doc_title))
-    # 来源行：默认不印（原始路径含本机目录，既丑又泄隐私）；需要溯源用 --source-label 显式给名
-    if args.source_label:
-        parts_head.append('<p class="meta">来源：%s</p>' % esc(args.source_label))
+        sub = ""
+        if args.source_label:
+            sub = ('<p class="sub">%s</p>' % esc(args.source_label))
+        parts_head.append(
+            '<header class="hero"><h1>%s</h1>%s'
+            '<p class="src">Omni 解析重建 · 展示版</p></header>'
+            % (esc(doc_title), sub))
     if not args.no_toc:
         parts_head.append(toc_html(all_toc, args.toc_depth))
 
     doc = ("<!DOCTYPE html>\n<html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
            "<title>%s</title><style>%s</style></head><body>%s%s</body></html>\n"
-           % (esc(doc_title or "Omni 文档"), css_for(pcfg, args.page_marks),
+           % (esc(doc_title or "Omni 文档"), css_for(pcfg, args.page_marks, theme),
               "".join(parts_head), "".join(parts_body)))
 
     out = os.path.abspath(args.out)
