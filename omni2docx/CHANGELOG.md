@@ -127,4 +127,4 @@
 - 校验：`validate_docx.py` 字符级 CJK 覆盖率（≥99% PASS）+ 锚句命中 + 结构统计，与 `--strip-emoji` 同口径防误报。
 - 实测：真实语料矩阵 12 例（xlsx/PDF 研报/债券书/HTML/音频/docx/PPTX/JPG OCR/千页 PDF/截断 PDF/边界×2）× 多制式，覆盖率全部 100%；端到端（原生 parse→渲染→校验）通过。已知限制见 README「能力边界」。
 
-> CI：本目录改动由 GitHub Actions「omni2docx regression」自动跑 13 例回归矩阵（见 .github/workflows/omni2docx-regression.yml）。
+> CI：本目录改动由 GitHub Actions「omni2docx regression」自动跑回归矩阵（`run_all.py` 自报两组：docx 侧 13 例与三格式侧 34 例），入口与清单见 .github/workflows/omni2docx-regression.yml。
