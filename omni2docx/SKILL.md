@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件、--inline 粘贴微信公众号不重排，PPT 版式池 layout:kpi/compare/timeline。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck"
-version: "0.6.3"
+version: "0.6.4"
 license: MIT
 metadata:
   requires:
@@ -95,15 +95,17 @@ Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
 
 > 一句话差异化：**通用转换丢结构、排版糙；本 skill 用 Omni 的 grounded 分页 + 章节重建 + 专业中文排版把结构与原貌重建回来。**
 
-## 解析侧能力现状
+## 解析侧能力现状（决策要点；完整取数纪律见「工作流」步骤 1）
 
-| 能力                | 状态                 | 本 skill 用法                                                                                                                                                                                                                   |
-| ----------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| content（markdown） | ✅ 可用               | **按该 part 的 `storage.kind` 现值取**：`inline` 直取 `structuredContent.result.parts.content.storage.text`；被判 `artifact` 才顺游标逐跳读回（见步骤 1 大件分支）                                                                                     |
-| grounded（页锚点）     | ✅ 可用               | 同上分流：`inline` 取 `parts.grounding.storage.value`（页级锚点），被判 `artifact` 才走游标。`save_result` 实测两种交付形制下都只交正文一枚文件、侧车交不出，所以内联侧车要当场整段存住                                                            |
-| `read_result` 工具  | **按 part 分流时可用**     | 起步必须有服务端为该 part 逐跳发出的游标；游标是 base64(JSON)＋签名，**绑死 part 与 offset**——跨 part 借游标、自造前进 offset 一律 `INVALID_RESULT_CURSOR`（`retryable:false`、`billed:false`），没有自主跳转的公开出口。**取数第一性＝回执里各 part 自己的 `storage.kind` 现值**：`inline` 直取（`parts.content.storage.text` 与 `parts.grounding.storage.value`），`artifact` 才用本工具逐跳读回（实测字节级无损）。`result_delivery_effective` 不回显于 MCP 回执，故不得据请求值推交付形制；起步失败时不重试、不报故障，按回执现值继续 |
-| `read_outline` 工具 | **不保证可得**         | 可选续调用，**可能不可得**：同一 result_id 上可返回 `RESULT_NOT_FOUND`（含 `retryable:false`），而同一时刻 `save_result`／`get_parse_status` 仍成功。因此 **outline 缺省是本件的常规路径**——引擎从干净 markdown 重建章节层级，不重试、不报故障、不猜原因。可得时（`coverage=complete`）引擎优先采用官方层级；`coverage=none, nodes=[]`＝文档无可识别标题，属正常语义 |
-| layout（逐元素 bbox）  | ✅ 可用               | `detail=layout` 实测 COMPLETED，`segments[].layout.items[]` 带 `bbox`/`font`/`size`，`availability=available`。若遇故障不预设结论（瞬时/条件触发/低频均有可能）——先排除调用侧问题，仍失败则降级 `grounded` 并如实报告                                                         |
+| 能力 | 状态 | 一句话口径 |
+| --- | --- | --- |
+| content / grounded | ✅ 可用 | 按该 part 的 `storage.kind` 现值分流：`inline` 直取回执（`parts.content.storage.text` / `parts.grounding.storage.value`），`artifact` 才顺游标逐跳读回（字节级无损已验） |
+| `read_result` | 按 part 分流时可用 | 游标绑死 part 与 offset：跨 part 借用、自造 offset 一律 `INVALID_RESULT_CURSOR`（不可重试、不计费）；只在 `artifact` part 上起步 |
+| `read_outline` | **不保证可得** | 同一 result_id 上可返回不可重试的 `RESULT_NOT_FOUND`；**缺省是常规路径**——引擎从 markdown 重建层级，可得且 `coverage=complete` 时才优先用官方层级 |
+| layout（bbox） | ✅ 可用 | `detail=layout` 产出 `segments[].layout.items[]`（bbox/font/size）；**换 detail 不动正文**（content part 同字节同 digest），引擎当前消费页级锚 |
+
+> `result_delivery` 请求值不改变实际交付形制、`result_delivery_effective` 也不回显——分流依据只有回执现值一条。
+
 
 ## 排版能力（--profile）：制式由 agent 按场景知识决定
 
@@ -296,7 +298,7 @@ python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.p
 
 内部逻辑：
 
-- **封面标题**：行首 `标题：xxx` 提取为 Word `Title` 样式（研报/文章常见），并从正文去除以免重复。
+- **封面标题**：行首显式标记 `标题：xxx` / `题目：xxx` / `Title: xxx`（大小写不敏感）提取为 Word `Title` 样式（研报/文章常见），并从正文去除以免重复。只认显式标记——"首行像标题就提"的启发式会误提正文首行、静默毁结构；也可用 `--title` 直接指定。
 - **中文字体**：正文 `宋体`、标题/封面 `黑体`，均设 `w:eastAsia`，避免西文字体渲染中文导致缺字/不一致。
 - **章节重建（无 outline 时）**：从 markdown 保守识别三类高置信结构 —— 行首中文序号 `一、二、…`  
   → H1；`N.XX指数` → H2（以"指数"识别，排除含 ETF/基金代码的推荐列表项）；文档自带  
@@ -320,33 +322,12 @@ python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.p
   文末自动渲染「注释」节；`〔…〕` → 灰色小字（约定放"来源：…"）。注释节随所在  
   文档/章节收尾，合并模式下每章各自收尾。
 
-## 验收口径（真实数据实测通过）
+## 验收口径（要点；逐版实测数据见 CHANGELOG）
 
-两份**真实** Omni grounded parse 文档，经 `validate_docx.py` 校验：
+- 三个验收器同口径：**字符级 CJK 覆盖率 ≥99% 判 PASS**。附加项：docx 查锚句命中（参考项）+ 分页/标题/表格计数；pptx 备注/正文/表格合计计入覆盖 + 越界/重叠/字号几何审计 + 设计铁律；html 查目录/锚点/源页标注/自包含。渲染未开目录的 html/pptx 加 `--no-toc`。
+- 源输入与渲染时实际输入一致：`--json`（场景②③）/ `--md`（场景①）。
+- 实测结论：真实语料矩阵（xlsx / 研报 PDF / 网页 / 录音 / docx / PPTX / JPG OCR / 千页 PDF / 截断 PDF / 边界用例 / 多源合并 / `--md` 直出 / `--inline` 公众号导出，多制式组合）覆盖率全部 100%；唯一非 100% 为 99.4%——「标题」二字被提为封面标题所致（符合预期，非丢失）。三格式闭环回归含 inline 用例共 35 例全 PASS（`tests/run_all.py` 可复现）。
 
-| 文档                   | 字符覆盖率    | 分页符       | 标题/目录                             | 表格                                   |
-| -------------------- | -------- | --------- | --------------------------------- | ------------------------------------ |
-| ETF 文章（etf_real.pdf） | **100%** | 7 段→**6** | 6×H1(国家)+8×H2(指数) + 13 条目录 + 封面标题 | 0（基金池在文末被截断）                         |
-| 券商研报（燕京啤酒 000729）    | **100%** | 4 段→**3** | 4×H3(###标题) + 目录                  | **5**（含"会计年度"5 列财务表，单元格数值与源一一对应，已抽检） |
-| 金融短视频（mp4，多模态）       | **100%** | —         | **48 个【画面】标注段**全部带底纹，与正文区分        | —                                    |
-| 网页（含 base64 图像引用） | **100%** | — | 2 处图像引用 → 【图片：alt】说明，base64 字节零残留（docx 136KB→40KB） | — |
-| 会议录音（m4a，场景③） | **100%** | — | **7/7 说话人转写段**带【说话人N 时间段】标签（加粗蓝，正文色可引用） | — |
-| 三源合并（视频+录音+研报，场景③） | **100%** | 章2 + 章3**5** | Title + 总目录 + 3 章 H1 + 章内 H4×4（层级与目录一致） | 5（研报章内完整保留） |
-| Agent 产物直出（--md，场景①） | **99.4%**（"标题"2 字被提为封面所致） | — | 封面 Title + 2×H1 + 3×H2 + 目录；**上标引用 1/2/3（正文+表格）+ 文末注释 3 条 + 〔来源〕灰标 4 处** | 1 |
-| **完整链路**（分析+视频+录音+研报，四源合一） | **100%** | 章间分页 + 研报章 3 | Title + 总目录（5 条 H1 含附录）+ 首章=agent 分析（上标引用+注释） | 6（研报 5 + **溯源附录表**） |
-
-完整链路的**证据溯源附录**实测（元数据自动回灌，非手填）：
-
-| 证据源                 | 类型（自动推断）    | 可溯源位置                                             |
-| ------------------- | ----------- | ------------------------------------------------- |
-| agent 整合分析          | 网页/文本       | 纯文本（无结构化锚点）                                       |
-| 金融短视频               | 视频/图片（画面描述） | 48 个画面时间点（首 00:00 … 末 01:18）；1 段转写（说话人 0，00:00 起） |
-| 录音 web.m4a          | 音视频（说话人转写）  | 7 段转写（说话人 0、1，00:00-01:20 起）                      |
-| research_report.pdf | PDF/文档（页锚点） | 第 1–4 页                                           |
-
-- 字节偏移换算：中文 6239 字符 = 14861 UTF-8 字节，映射无截断。
-- 标题提升覆盖"段落型"与"有序列表型"小节；修复了"小节被并入父段落"导致吞掉子标题的缺陷。
-- 真实财务表（会计年度/资产负债表/评级标准）列数一致，正确还原；真实研报 GFM 表格语法已确认（`| --- | --- |` 分隔）。
 
 ## 已知限制
 
@@ -372,3 +353,7 @@ python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.p
    不做原生 PDF 排版（reportlab 路线），避免字体嵌入/分页/脚注的重复实现。
 8. PDF 抽取/OCR 的**逐字母空格**（"T h e y"）不可还原词边界，不强修（强拼会产出  
    "demonstrateprecisionan" 这类错误串）；CJK 字间空格由 `clean_cjk_spaces` 正常消除。
+9. **HTML/PDF 打印无页码**：Word 有 `--page-numbers`（页脚 PAGE 域）、PPTX 页脚有页码，但
+   HTML 打印走浏览器，Chromium 系不支持 `@page` margin-box 的 `counter(page)`——要页码只能
+   引入 paged-media polyfill（外部 JS，违背自包含单文件原则），故不做。**需要页码的定稿
+   走 Word 或 PPTX**；HTML/PDF 面向屏幕阅读与分享，源页信息用 `--page-marks` 文内标注。

@@ -65,6 +65,8 @@ read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨�
 
 质量基线：标题一律黑色并按层级设字号、全文零 CJK 伪斜体（中文强调→加粗）、
 `--page-numbers` 页脚 PAGE 域、`--strip-emoji` 剥离装饰符。
+封面标题：源文行首显式标记 `标题：` / `题目：` / `Title:` 提取为封面 Title（三种标记，不做启发式），
+或用 `--title` 直接指定。
 
 ## 能力边界（诚实清单）
 
@@ -75,6 +77,7 @@ read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨�
 - 中文字体名（宋体/仿宋_GB2312/楷体等）在非 Windows 环境由 Word/WPS 自动替换，制式文档建议在 Windows/WPS 打开验收。
 - PPTX 为汇报 deck：按标题层级切页、正文进演讲者备注、`--max-slides`（默认 80）截断并告警；不做每源页一页的机械平铺。
 - PDF 经 HTML + headless 浏览器打印导出，版面与 HTML 一致；不做原生 PDF 排版。
+- **打印页码只有 Word（`--page-numbers`）与 PPTX（页脚）有**：HTML/PDF 打印受浏览器限制（Chromium 不支持 `@page` margin-box 页码，polyfill 违背自包含原则），要页码的定稿走 Word/PPTX；HTML 的源页信息用 `--page-marks` 文内标注。
 - PDF 抽取的逐字母空格（"T h e y"）不可还原词边界，不强修；CJK 字间空格正常消除。
 
 ## 验收口径

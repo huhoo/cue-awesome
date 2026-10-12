@@ -980,11 +980,18 @@ def apply_doc_fonts(doc, cfg=None):
 
 
 def extract_title(md):
-    """从 '标题：xxx' 提取报告封面标题；返回 (title, md_without_title)。"""
-    m = re.match(r"^\s*标题[:：]\s*(.+?)\s*(?:\n|$)", md)
+    """从显式封面标记行提取标题；返回 (title, md_without_title)。
+
+    支持三种显式标记：`标题：xxx` / `题目：xxx` / `Title: xxx`（大小写不敏感）。
+    只认显式标记、不做"首行像标题就提"的启发式——误提正文首行会静默毁掉
+    正文结构（该行会从正文消失）；需要封面标题时 agent/用户显式给标记，
+    或用各渲染器的 --title 直接指定。
+    """
+    m = re.match(r"^\s*(?:标题|题目|title)\s*[:：]\s*(.+?)\s*(?:\n|$)", md, re.IGNORECASE)
     if not m:
         return None, md
-    return m.group(1).strip(), re.sub(r"^\s*标题[:：].*(?:\n|$)", "", md, count=1)
+    return m.group(1).strip(), re.sub(r"^\s*(?:标题|题目|title)\s*[:：].*(?:\n|$)", "", md,
+                                      count=1, flags=re.IGNORECASE)
 
 
 FOOTNOTE_DEF = re.compile(r"^\[\^([^\]]+)\]:\s*(.*)$")

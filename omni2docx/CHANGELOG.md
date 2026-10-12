@@ -1,5 +1,12 @@
 # CHANGELOG(omni2docx)
 
+### 0.6.4 — 2026-10-12（主指令瘦身 + 封面标记扩展 + 限制诚实化）
+
+- **SKILL.md 瘦身**（368→约 350 行决策面）：「解析侧能力现状」五行长单元格收敛为四行一句话口径表（决策要点保留，完整取数纪律仍在步骤 1，不丢信息）；「验收口径」两张大实测表 + 溯源附录实测表压成三条结论行，逐版数据指向 CHANGELOG——实测证据不删，只是从每次加载的主指令挪到版本史。
+- **封面标题标记扩展**：`extract_title`（build_docx，三渲染器共用）从只认「标题：」扩为三种显式标记 `标题：` / `题目：` / `Title:`（大小写不敏感）；仍**不做**「首行像标题就提」的启发式——误提正文首行会静默毁结构，需要封面时显式给标记或 `--title`。单测 5 例全过。
+- **HTML 打印页码：诚实记为限制而非假实现**：Chromium 不支持 `@page` margin-box 的 `counter(page)`，引入 paged-media polyfill 违背自包含单文件原则——不做。SKILL.md 已知限制第 9 条 + README 能力边界明示：要页码的定稿走 Word（`--page-numbers`）或 PPTX（页脚），HTML 源页信息用 `--page-marks` 文内标注。
+- 回归：`tests/run_all.py` 双套件全 PASS（extract_title 改动经 docx 矩阵覆盖）。
+
 ### 0.6.3 — 2026-10-12（验收入口补齐 + --inline 回归 + 文档口径）
 
 - **validate_docx.py 增加 `--md` 源输入**：此前只收 `--json`，场景①（`--md` 直出，无中间 JSON）的保真验收无路可走——README 上手流程照抄即报错。现与 validate_html/validate_pptx 同口径：`--json`（场景②③）/`--md`（场景①）互斥二选一。实测 edge_case `--md` 直出 + `--md` 验收 PASS。
