@@ -1,0 +1,22 @@
+name: omni2docx regression
+
+on:
+  push:
+    paths:
+      - 'omni2docx/**'
+  pull_request:
+    paths:
+      - 'omni2docx/**'
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        run: pip install python-docx python-pptx
+      - name: Run omni2docx regression
+        run: python3 omni2docx/tests/run_all.py
