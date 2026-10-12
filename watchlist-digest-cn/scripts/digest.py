@@ -185,6 +185,7 @@ def main() -> int:
     for e in rows:
         e.setdefault('name', names[e['code']])
     new_rows = [e for e in rows if e.get('kind', 'new') == 'new']
+    window_new = len(new_rows)          # 窗口存量：未经快照差集过滤，重放判据的对照面
     changed_rows = []
     for e in (r for r in rows if r.get('kind') == 'changed'):
         if 'before' in e and 'now' in e:
@@ -208,11 +209,18 @@ def main() -> int:
         if same_day_replay:
             return 10 if stored.get('new_count') else 0
         return 10 if first_seen else 0
+    day_fps = stored.get('new_fps')
+    if same_day_replay and day_fps is None and not args.check:
+        log('digest: 当日 run.json 里没有「new_fps」记账集（旧版留下的 run.json）——重放无从复用当日增量子集。'
+            '不写件，以免把窗口存量当新增重播；请按当日原始输入重跑一次即补记账，或删 run.json 与 snapshot.prev.json 后从头跑')
+        return 1
     if not same_day_replay:
         new_rows = first_seen
         prev_date = snap.get('asof_date', '无（首次运行）')
     else:
-        new_rows = [e for e in new_rows]
+        # 重放态：呈现与记账都取当日已记的那一子集，不重新判定，也不退回窗口存量
+        keep_day = set(day_fps)
+        new_rows = [e for e in new_rows if fp(e) in keep_day]
         prev_date = stored.get('prev_date', snap.get('asof_date'))
         legs_returned = stored.get('legs_returned', legs_returned)
         missing_legs = stored.get('missing_legs', missing_legs)
@@ -228,6 +236,7 @@ def main() -> int:
     run = {'asof': args.asof, 'asof_date': day, 'window': args.window, 'subjects': len(subjects),
            'legs_called': args.legs_called, 'legs_returned': legs_returned, 'new_count': len(new_rows),
            'changed_count': len(changed_rows), 'offlist_skipped': len(off), 'events_digest': digest_all,
+           'new_fps': sorted(fp(e) for e in new_rows), 'window_new_rows': window_new,
            'prev_date': prev_date,
            'missing_legs': missing_legs, 'billing': args.billing,
            'exit_code': 10 if new_rows else 0, 'idempotent_replay': same_day_replay}
@@ -237,7 +246,7 @@ def main() -> int:
         prev_f.write_text(json.dumps({'asof_date': day, 'fingerprints': sorted(keep)}, ensure_ascii=False,
                                      indent=2, sort_keys=True) + '\n', encoding='utf-8')
     if not args.quiet:
-        print(f'digest: {out.name} 新增 {len(new_rows)} 条／存量变更 {len(changed_rows)} 条；'
+        print(f'digest: {out.name} 新增 {len(new_rows)} 条／存量变更 {len(changed_rows)} 条（窗口存量 {window_new} 条）；'
               f'实跑域 {args.legs_called}／返货腿 {legs_returned}；同日重跑={same_day_replay}；退码 {run["exit_code"]}')
     return run['exit_code']
 

@@ -31,6 +31,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -358,6 +359,65 @@ def probe_matrix(md, run, tmp: Path):
     return out
 
 
+def replay_chain(tmp: Path):
+    """五档 跨日重放：包内夹具走 init → day1 → day2 → day2 重放，全链现场跑。
+
+    断言：①重放产物与当日首跑逐字节同；②new_count 不变（当日 1 条）；③run.json 至多差
+    idempotent_replay 一键；④首跑与重放两态都过四道闸（零发条）；⑤窗口存量（3 条）大于当日增量（1 条）——
+    这一条使「把重放退回窗口存量」的旧态必红：旧态会呈 3≠1，本档即判不符。"""
+    fx, dig, init = HERE / 'fixtures', HERE / 'digest.py', HERE / 'init_watchlist.py'
+    for n in ('replay-return.jsonl', 'replay-day1.jsonl', 'replay-day2.jsonl'):
+        if not (fx / n).is_file():
+            print(f'selftest 五档跨日重放：缺件 fixtures/{n}（规格：链上三件输入必须随包）')
+            return False
+    d = tmp / 'chain'
+    d.mkdir(parents=True, exist_ok=True)
+
+    def run(*args):
+        r = subprocess.run([sys.executable, '-B'] + [str(a) for a in args], capture_output=True, text=True)
+        return r.returncode, (r.stdout + r.stderr).strip()
+
+    rc_init, _o_init = run(init, '--run-dir', d, '--subject', '999901', '--subject', '999902',
+                          '--from-return', fx / 'replay-return.jsonl', '--quiet')
+    rc1, o1 = run(dig, '--run-dir', d, '--events', fx / 'replay-day1.jsonl', '--asof', '2026-10-11 07:30',
+                  '--window', '2026-09-11~2026-10-11', '--legs-called', '2', '--quiet')
+    day1_run = json.loads((d / 'run.json').read_text(encoding='utf-8')) if (d / 'run.json').is_file() else {}
+    rc2, o2 = run(dig, '--run-dir', d, '--events', fx / 'replay-day2.jsonl', '--asof', '2026-10-12 07:45',
+                  '--window', '2026-09-12~2026-10-12', '--legs-called', '3', '--quiet')
+    day_md = d / 'digest-2026-10-12.md'
+    first_md = day_md.read_bytes() if day_md.is_file() else b''
+    first_run = json.loads((d / 'run.json').read_text(encoding='utf-8')) if (d / 'run.json').is_file() else {}
+    rc3, o3 = run(dig, '--run-dir', d, '--events', fx / 'replay-day2.jsonl', '--asof', '2026-10-12 07:45',
+                  '--window', '2026-09-12~2026-10-12', '--legs-called', '3', '--quiet')
+    replay_md = day_md.read_bytes() if day_md.is_file() else b''
+    replay_run = json.loads((d / 'run.json').read_text(encoding='utf-8')) if (d / 'run.json').is_file() else {}
+    f_first, n_first = check(day_md, d / 'run.json') if day_md.is_file() else ([], 0)
+    diff_keys = sorted(set(first_run) ^ set(replay_run)) or         sorted(k for k in set(first_run) & set(replay_run) if first_run[k] != replay_run[k])
+    checks = [
+        ('init 退码', rc_init, 0),
+        ('day1 退码', rc1, 10),
+        ('day2 首跑退码', rc2, 10),
+        ('day2 重放退码', rc3, 10),
+        ('day1 当日增量', day1_run.get('new_count'), 2),
+        ('day1 窗口存量', day1_run.get('window_new_rows'), 2),
+        ('重放产物与当日首跑逐字节同', first_md == replay_md and bool(first_md), True),
+        ('new_count 不变', (first_run.get('new_count'), replay_run.get('new_count')), (1, 1)),
+        ('窗口存量大于增量（旧态在此必红）', replay_run.get('window_new_rows'), 3),
+        ('当日增量指纹集枚数', len(replay_run.get('new_fps') or []), 1),
+        ('run.json 至多差 idempotent_replay', diff_keys, ['idempotent_replay']),
+        ('重放态过闸零发条', len(f_first), 0),
+    ]
+    bad = [(n, got, want) for n, got, want in checks if got != want]
+    print('selftest 五档跨日重放：init→day1→day2→day2 重放 现场跑｜断言 %d 条，不符 %d 条｜重放产物逐字节同＝%s，new_count 首跑/重放=%s/%s，窗口存量=%s' % (
+        len(checks), len(bad), '是' if first_md == replay_md and first_md else '否',
+        first_run.get('new_count'), replay_run.get('new_count'), replay_run.get('window_new_rows')))
+    for n, got, want in bad:
+        print('   不符 → %s：实得 %s（规格 %s）' % (n, got, want))
+    for x in f_first[:3]:
+        print('   闸发条 → ' + x)
+    return not bad
+
+
 def selftest():
     gd = HERE / 'fixtures' / 'good-digest.md'
     gr = HERE / 'fixtures' / 'good-run.json'
@@ -397,8 +457,11 @@ def selftest():
     tmp = Path(tempfile.mkdtemp(prefix='check-digest-selftest-'))
     try:
         res = probe_matrix(gd.read_text(encoding='utf-8'), json.loads(gr.read_text(encoding='utf-8')), tmp)
+        chain_ok = replay_chain(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+    if not chain_ok:
+        ok = False
     bad = [x for x in res if not x[3]]
     print(f"selftest 四档反证矩阵：{len(res)} 枚（单点破坏 {len(res) - 1} ＋正向不误拦 1），未达预期 {len(bad)} 枚")
     for name, exp, gotv, passed, finds in res:
@@ -408,7 +471,7 @@ def selftest():
                 print('      实发详行 → ' + x[:120])
     if bad:
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 二档 0/{len(zf)} · 三档四道 {len(got)}/{len(want)} · 四档 {len(res) - len(bad)}/{len(res)}）")
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 二档 0/{len(zf)} · 三档四道 {len(got)}/{len(want)} · 四档 {len(res) - len(bad)}/{len(res)} · 五档跨日重放 {'通' if chain_ok else '不通'}）")
     return 0 if ok else 1
 
 

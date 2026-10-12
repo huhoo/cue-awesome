@@ -2,7 +2,7 @@
 
 **Give it a watchlist you maintain and get an increment digest you can check: today's additions, one line each with the official source and an `asof`; recent changes only as "previous value → current value"; nothing-found written as an empty window, never as "nothing happened"; ratings and buy/sell talk locked inside the human-review part.**
 
-The difference is not knowing more - it is that **the second run on the same list yields only the delta**. This turns "scan my tickers every day" into a generated artifact you can rerun, compare and hand to a person. It is not a market terminal, not a risk scorer, and it does not schedule itself.
+The difference is not knowing more - it is that **a same-day rerun recounts nothing and a next-day run yields only that day's delta**. This turns "scan my tickers every day" into a generated artifact you can rerun, compare and hand to a person. It is not a market terminal, not a risk scorer, and it does not schedule itself.
 
 **Input**: a set of company names or six-digit codes (plus your own scheduler)
 **Output**: a five-part digest in the shape of `assets/自选清单日报.md`, with run.json / sources.jsonl / snapshot.prev.json as self-evidence
@@ -18,7 +18,7 @@ These three are the only "do it now": **you give the list → it lands in watchl
 | Step | Action | How | What breaks if you skip it |
 |---|---|---|---|
 | ① | **Settle the list, never pick for you** | `python3 scripts/init_watchlist.py --run-dir <dir> --subject 600519 --subject "Some Corp" --from-return <subject-resolution output>`; a six-digit code is taken as is, a name binds only when it hits exactly one candidate in that output, otherwise candidates are listed for you to choose | A wrong primary key hangs the whole digest on the wrong company; there is no cross-domain unified subject ID, so the six-digit code is the key |
-| ② | **Run the increment, report only what is new** | Transcribe this run's per-leg output into an events file, then `python3 scripts/digest.py --run-dir <dir> --events <file> --asof "YYYY-MM-DD HH:MM" --window start~end --legs-called N`; "new" is decided only by fingerprint diffing against the previous snapshot (code + type + date + source digest), never by the wall clock. **An empty return is a normal entry**: an empty events file, or one line reading `{"_kind":"header"}`, is accepted and yields the "nothing found in window" shape with exit code 0 (a malformed row is still a retrieval error). **The file name takes only the date part of `asof`**: `digest-<YYYY-MM-DD>.md` - the `06:00` and `T06:20` spellings of the same day land in the same single file, and the clock time lives only in the asof line | Without the snapshot you replay the same filings every day; and "not retrieved" quietly turns into "did not happen"; with no entry for an empty return, a quiet day would be logged as an error and leave no artifact at all |
+| ② | **Run the increment, report only what is new** | Transcribe this run's per-leg output into an events file, then `python3 scripts/digest.py --run-dir <dir> --events <file> --asof "YYYY-MM-DD HH:MM" --window start~end --legs-called N`; "new" is decided only by fingerprint diffing against the previous snapshot (code + type + date + source digest), never by the wall clock. **Idempotence holds inside one calendar day only**: the first run of a day reports the snapshot delta, a later run of the same day reuses the increment that day's run.json recorded (`new_fps`) - it neither re-decides nor replays the window stock as new. **An empty return is a normal entry**: an empty events file, or one line reading `{"_kind":"header"}`, is accepted and yields the "nothing found in window" shape with exit code 0 (a malformed row is still a retrieval error). **The file name takes only the date part of `asof`**: `digest-<YYYY-MM-DD>.md` - the `06:00` and `T06:20` spellings of the same day land in the same single file, and the clock time lives only in the asof line | Without the snapshot you replay the same filings every day; and "not retrieved" quietly turns into "did not happen"; with no entry for an empty return, a quiet day would be logged as an error and leave no artifact at all |
 | ③ | **Pass the gate, then hand it to a person** | `python3 scripts/check_digest.py digest-<date>.md --run run.json`, fixing each `E-*` detail line; to hang this on your own scheduler use `--check`, which speaks only through exit codes: **0 = nothing new in the window, 10 = something new, 1 = retrieval or shape error** | Counts that do not match the run record, a silently missing leg, and rating talk leaking into the body all travel into your decision |
 
 One-off historical review is **not** in these three steps - that is a different package's job; this one only produces the delta against the previous snapshot.
@@ -55,12 +55,14 @@ Read `assets/自选清单日报.md` first (that is the five-part shape), then `S
 
 ```bash
 python3 scripts/check_digest.py --help                      # usage; no network
-python3 scripts/check_digest.py --selftest                   # four tiers: good and zero-new must pass, bad fires all four lanes, counter-evidence matrix reports item by item
+python3 scripts/check_digest.py --selftest                   # five tiers: good and zero-new must pass, bad fires all four lanes, the matrix reports item by item, the cross-day replay chain must come out byte-identical
 python3 scripts/check_digest.py scripts/fixtures/good-digest.md --run scripts/fixtures/good-run.json    # should PASS
 python3 scripts/check_digest.py scripts/fixtures/zero-digest.md --run scripts/fixtures/zero-run.json    # should PASS (zero-new shape)
 python3 scripts/check_digest.py scripts/fixtures/bad-digest.md --run scripts/fixtures/bad-run.json      # should FAIL, all four codes
 python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtures/good-run.json              # should FAIL - a blank template failing the gate is the design
 ```
+
+**Generator and gate share one live run**: tier five of `--selftest` takes the three in-package input samples (`replay-return.jsonl` / `replay-day1.jsonl` / `replay-day2.jsonl`), runs init -> day1 -> day2 -> **a day2 replay** live, and asserts the replayed artifact is byte-identical to that day's first run, that `new_count` is unchanged, that run.json differs in at most the `idempotent_replay` key, and that the window stock exceeds the day's increment - an implementation that replayed the window stock is failed by this tier on the spot.
 
 **The counter-evidence lives inside the package**: tier four of `--selftest` applies ten single-point breakages to the good fixture (missing part five, placeholder in the time row, source cell emptied, a rating sentence in the body, inflated list size, unnamed missing leg, inflated off-list count, deleted off-list row, unticked zero-new declaration, digest without its run.json) - each must raise the expected code and lane - plus one positive that must not be blocked (equal domain and leg counts with no missing-leg line has to stay clean). Anchors are "the single line in the good fixture that matches": **an anchor that misses makes that item fail**, so a drifting fixture or a weakened lane gets shouted out instead of passing silently - the probes cannot be tautological.
 
@@ -69,7 +71,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 ## 4. Boundaries and non-promises
 
 - **This package has no market-data leg and no money-flow leg.** Quotes, price direction, fund flow and northbound flows are out of scope: while that surface is not open in the catalog this package neither pretends nor advertises it, and it never uses it as copy decoration; if the live value changes, the data legs get re-measured first and only then the wording.
-- **It does not schedule itself.** There is only an idempotent command and three exit codes (**0 = nothing new / 10 = something new / 1 = error**). You may hang it on any scheduler of yours; sentences like "continuous monitoring", "automatic alerts", "delivered to you every day" are never written here.
+- **It does not schedule itself.** There is only a re-runnable command and three exit codes (**0 = nothing new / 10 = something new / 1 = error**; the first run of a day decides, later runs reuse that day's record). You may hang it on any scheduler of yours; sentences like "continuous monitoring", "automatic alerts", "delivered to you every day" are never written here.
 - **The margin leg is eligible-securities and margin conversion ratios, not fund flow** - calling it "the money side" misstates it.
 - **Every count carries its `asof`**: a filing list can go from 112 to 116 between two reads on the same day, so no cross-time reproducible number is written. A two-day comparison needs a snapshot on both days, and then only the two values are listed - no trend conclusion.
 - **The regulatory-measure leg returns fields, not body text**, and the full-text leg has a length ceiling: a truncation is declared, never completed by hand; a leg that returned nothing is named in part four while the other legs keep running.
@@ -111,11 +113,11 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 
 ## 7. Running status and measurement progress (honest list)
 
-- **Listed (first release); the per-list two-day case account is in progress**
-- The documentation and machine faces are in place: the five-part contract, four lanes, three digest fixtures (good, zero-new, bad) and the eleven-item counter-evidence matrix in tier four of `--selftest` - counts come from the script's own line.
+- **Listed; the two-day case account is complete**: the delta holds on real cross-day data (one new item on day two, first run and replay the same count); **same-day idempotence holds within one calendar day only**, and each day reports its own delta; four of the five legs carry anchors in the same shape on both days - the margin leg returns no source field, so the gap between `--legs-called` and `legs_returned` names it instead of pretending it is anchored. No hit-rate, pass-rate or timing claim is made from a two-day sample.
+- The documentation and machine faces are in place: the five-part contract, four lanes, three digest fixtures plus three replay input samples, and five self-test tiers (an eleven-item counter-evidence matrix and the cross-day replay chain) - counts come from the script's own line.
 - What each of the five legs fetches and which shape constraints apply are in `SKILL.md` §2. **The scripts themselves are zero-network**: they only read the events file you transcribed from the tool output - no retrieval inside the script, no credentials, no hardcoded tool or domain lists.
 - No gate on unproven surfaces: the checker does not verify whether a leg is open today, nor whether an announcement is true - the first follows the live catalog, the second is on the official original.
-- **The snapshot is the only evidence for idempotence and for "new"**: deleting snapshot.prev.json resets history, and the digest will count old events as new again. That behaviour is stated here rather than pretended away.
+- **The snapshot plus that day's record are the only evidence for idempotence and for "new"**: deleting snapshot.prev.json resets history and the digest counts old events as new again; deleting the day's run.json leaves the replay state without its increment record (`new_fps`), in which case `digest.py` refuses to write and prints one readable line. Both behaviours are stated here rather than pretended away.
 
 ## 8. Dependencies
 
@@ -130,9 +132,9 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | `SKILL.md` | Main instructions and the five-part contract (design authority, Chinese primary) |
 | `assets/自选清单日报.md` | Five-part digest template (or produced directly by digest.py) |
 | `scripts/init_watchlist.py` | List landing: name or code → watchlist.json (never picks the subject for you) |
-| `scripts/digest.py` | Idempotent increment digest plus three self-evidence files; an empty transcription (blank file or a `_kind=header` line) produces the nothing-found shape; `--check` speaks only through exit codes (0/10/1) |
+| `scripts/digest.py` | Increment digest plus three self-evidence files (the first run of a day decides, a later run reuses that day's record); an empty transcription (blank file or a `_kind=header` line) produces the nothing-found shape; `--check` speaks only through exit codes (0/10/1) |
 | `scripts/check_digest.py` | Four-lane gate (shape / anchor / red line / count and declaration) |
-| `scripts/fixtures/` | Three digest fixtures - good, zero-new, bad - each with its run.json; the counter-evidence matrix lives inside `check_digest.py --selftest`, not in an outside script |
+| `scripts/fixtures/` | Three digest fixtures (good, zero-new, bad, each with its run.json) plus three cross-day replay inputs (`replay-return` / `replay-day1` / `replay-day2`); the matrix and the replay chain both live inside `check_digest.py --selftest`, not in an outside script |
 | `README.en.md` | English translation of this file |
 
 See `CHANGELOG.md` for versions.
