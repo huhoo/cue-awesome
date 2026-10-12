@@ -48,7 +48,7 @@ SKILL.md                         master instruction: lifeblood rule / input cont
 README.md / README.en.md         this pair (Chinese source of truth / English translation)
 CHANGELOG.md                     version history
 references/section-skeleton.md   six sections with an [执行蓝图] each
-references/policy-timeline.md    policy-timeline row spec (statute anchor cites `catalyst-calendar/references/event-taxonomy.md`, not copied)
+references/policy-timeline.md    policy-timeline row spec (the statute three-part anchor spec lives in this file; machine check = `STATUTE_SPEC_RE` as it now stands)
 scripts/check_sector.py          four gates (word sets and guard inventory = the script and fixtures as they now stand; run the two lines below)
                                  note: which words count as verdict words, and which words are banned, is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
                                      grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py

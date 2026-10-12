@@ -1,8 +1,8 @@
 # 政策时间线行规格（sector-overview）
 
-statute 锚的**三件齐规格以姊妹件包内文件 `catalyst-calendar/references/event-taxonomy.md` 的法定锚值规格段为定义源**
-（形如 `statute:<法名>第N条(<要点短引>)`：名称+条号+短引、禁裸串）；机器侧实际判据=`check_sector.py` 里 `STATUTE_SPEC_RE` 现值，
-本文件只规定行业简报里的时间线行怎么用，不复制规格正文、也不另立第二份清单。
+statute 锚的**三件齐规格由本件自带**（本文件即规格所在）：
+形如 `statute:<法名>第N条(<要点短引>)`——名称+条号+短引三件齐、禁裸串、当场取回不写死；机器侧实际判据=`check_sector.py` 里 `STATUTE_SPEC_RE` 现值，
+本文件其余部分规定行业简报里的时间线行怎么用，与本行不一致时以 `STATUTE_SPEC_RE` 现值为准。
 
 ## 1. 时间线行形制
 

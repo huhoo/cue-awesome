@@ -52,7 +52,7 @@ SKILL.md                         主指令：命门纪律/输入契约/五段管
 README.md / README.en.md         本文件对
 CHANGELOG.md                     版本记录
 references/section-skeleton.md   六节骨架+每节 [执行蓝图]
-references/policy-timeline.md    政策时间线行规格（statute 三件齐锚口径见 `catalyst-calendar/references/event-taxonomy.md`，不复制）
+references/policy-timeline.md    政策时间线行规格（statute 三件齐锚规格自带于此文件；机器判据=`STATUTE_SPEC_RE` 现值）
 scripts/check_sector.py          四道机检（词面域与守护样清单=脚本与夹具现值，两条命令现跑见下）
                                  注：哪些词算判断词 / 哪些词是禁词，本文一律不列全量——判定=checker 现值，任意目录整行粘贴即可自查（命令自带安装后路径）：
                                      grep -n -A3 "JUDGE_PHRASE = \|JUDGE_SINGLE = \|BANNED_RE = \|GUESS_RE = " ~/.workbuddy/skills/sector-overview/scripts/check_sector.py
