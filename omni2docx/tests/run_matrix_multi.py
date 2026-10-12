@@ -127,11 +127,43 @@ def main():
         rows.append(("spec %s ·PPTX" % tag,
                      check_pptx(f, OUT / ("r_spec_%s.pptx" % tag), "default")))
 
+    # ---- 专项 4：--inline 公众号导出（0.6.0 起手工验证，补回归）----
+    # 断言：验收 PASS + style 属性内联落地 + var() 零残留 + 无外链（自包含保持）
+    inline_out = OUT / "r_spec_inline.html"
+    r = run([HTML, "--md", str(md_src), "--out", str(inline_out),
+             "--profile", "gov", "--inline"])
+    if r.returncode != 0:
+        rows.append(("spec --inline ·HTML",
+                     "FAIL(render): %s" % ((r.stderr.strip().splitlines() or ["?"])[-1][:90])))
+    else:
+        v = run([VH, "--md", str(md_src), "--html", str(inline_out)])
+        verdict_str = verdict(v.stdout) if v.returncode == 0 else "FAIL(验收): %s" % v.stdout.strip()[-90:]
+        if verdict_str != "PASS":
+            rows.append(("spec --inline ·HTML", verdict_str))
+        else:
+            h = inline_out.read_text(encoding="utf-8")
+            problems = []
+            n_inline_style = h.count('style="')
+            if n_inline_style < 20:  # 实测样本 55 元素级；留足余量防回归退化
+                problems.append("style 属性过少(%d)" % n_inline_style)
+            import re as _re
+            # <style> 块是刻意保留的（悬停/斑马纹本地不退化），var() 只允许出现在那里；
+            # style 属性里出现 var() 才说明变量没解掉（粘贴到剥离 <style> 的环境会掉样式）
+            h_nostyle = _re.sub(r"<style[\s\S]*?</style>", "", h)
+            if "var(" in h_nostyle:
+                problems.append("style 属性 var() 残留")
+            ext = _re.findall(r'(?:src|href)="(https?://[^"]+)"', h)
+            if ext:
+                problems.append("外链 %d 处" % len(ext))
+            rows.append(("spec --inline ·HTML",
+                         "PASS（内联 style %d 处）" % n_inline_style if not problems
+                         else "FAIL(%s)" % "; ".join(problems)))
+
     # ---- 汇总 ----
     print("=" * 72)
     bad = 0
     for name, res in rows:
-        ok = res == "PASS"
+        ok = res == "PASS" or res.startswith("PASS（")  # 带附加信息的 PASS 变体（如 --inline 内联计数）
         bad += 0 if ok else 1
         print("%-38s %s" % (name, res))
     print("=" * 72)

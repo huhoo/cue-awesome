@@ -9,7 +9,8 @@ validate_docx.py — Omni2Docx 产品级保真 + 结构校验器
 不是 demo 的自检——用真实数据证明"零/近零文本丢失 + 结构正确"。
 
 用法：
-  python validate_docx.py --json <combined.json> --docx <out.docx>
+  python validate_docx.py --json <combined.json> --docx <out.docx>   # 场景②③
+  python validate_docx.py --md <agent产出.md> --docx <out.docx>      # 场景①（--md 直出，无中间 JSON）
 """
 import argparse
 import json
@@ -100,12 +101,17 @@ def anchor_phrases(md, min_cjk=12):
 
 def main():
     ap = argparse.ArgumentParser(description="omni2docx Word 保真 + 结构校验器")
-    ap.add_argument("--json", required=True)
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--json", help="渲染时输入的中间 JSON（场景②③）")
+    g.add_argument("--md", help="--md 直出时的源 markdown（场景①，替代 --json 的源）")
     ap.add_argument("--docx", required=True)
     args = ap.parse_args()
 
-    data = json.load(open(args.json, encoding="utf-8"))
-    md = EMOJI_RE.sub("", data.get("markdown") or "")  # 与引擎 --strip-emoji 同口径
+    if args.md:
+        md = EMOJI_RE.sub("", open(args.md, encoding="utf-8").read())
+    else:
+        data = json.load(open(args.json, encoding="utf-8"))
+        md = EMOJI_RE.sub("", data.get("markdown") or "")
     doc = Document(args.docx)
 
     src_body = strip_markdown(md)

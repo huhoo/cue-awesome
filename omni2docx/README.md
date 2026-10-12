@@ -35,7 +35,8 @@ python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --pa
 # ②③ Omni 解析重建：parse(grounded) 取 markdown+grounding(+同会话 read_outline) 落盘中间 JSON
 python scripts/build_docx.py --json 中间.json --out 交付.docx --profile legal --page-marks
 
-# 验收（必做）：字符零丢失 + 结构核对
+# 验收（必做）：字符零丢失 + 结构核对（--json 与 --md 两种源，与渲染时输入一致）
+python scripts/validate_docx.py --md 产出.md --docx 交付.docx
 python scripts/validate_docx.py --json 中间.json --docx 交付.docx
 
 # 展示：自包含 HTML（可加 --pdf 同时导出打印件；--toc-depth 控目录深度）
@@ -78,12 +79,15 @@ read_result）且**同会话**调用——不要为 omni 写 spawn 脚本（跨�
 
 ## 验收口径
 
-三种格式各有验收器，同以**字符级 CJK 覆盖率**（≥99% 判 PASS）为准：
+三种格式各有验收器，源输入同口径（`--json` 场景②③ / `--md` 场景①，与渲染时实际输入一致），
+同以**字符级 CJK 覆盖率**（≥99% 判 PASS）为准：
 `validate_docx.py`（+ 锚句命中 + 结构统计：分页/标题/表格数）、
 `validate_html.py`（+ 目录/锚点/源页标注/自包含检查）、
-`validate_pptx.py`（幻灯片正文+表格+演讲者备注合并计入覆盖口径，+ 空页/截断检查）。
+`validate_pptx.py`（幻灯片正文+表格+演讲者备注合并计入覆盖口径，+ 越界/重叠/字号几何审计 + 设计铁律）。
+渲染时未开目录的 HTML/PPTX 验收另加 `--no-toc`。
 真实语料矩阵（xlsx / PDF 研报 / HTML / 音频转写 / docx / PPTX /
-JPG OCR / 千页 PDF / 截断 PDF / 边界用例，多制式组合）实测覆盖率全部 100%。
+JPG OCR / 千页 PDF / 截断 PDF / 边界用例、多源合并、`--md` 直出、`--inline` 公众号导出，
+多制式组合）实测覆盖率全部 100%。
 
 ## 文件
 

@@ -1,5 +1,13 @@
 # CHANGELOG(omni2docx)
 
+### 0.6.3 — 2026-10-12（验收入口补齐 + --inline 回归 + 文档口径）
+
+- **validate_docx.py 增加 `--md` 源输入**：此前只收 `--json`，场景①（`--md` 直出，无中间 JSON）的保真验收无路可走——README 上手流程照抄即报错。现与 validate_html/validate_pptx 同口径：`--json`（场景②③）/`--md`（场景①）互斥二选一。实测 edge_case `--md` 直出 + `--md` 验收 PASS。
+- **回归矩阵补 `--inline` 用例**（专项 4，此前 0.6.0 只靠手工验证）：渲染 `--inline` 后验收 PASS + 三条断言——style 属性内联落地（≥20 处）、`<style>` 块之外 var() 零残留（块内 var 是刻意保留的悬停/斑马纹，不算残留）、无外链（自包含保持）。实测样本 43 处内联 PASS。
+- **测试计数 bug 修复**：带附加信息的 PASS 变体（`PASS（…）`）被 `res == "PASS"` 误计为失败，改为前缀匹配。
+- **文档口径**：SKILL.md 步骤 4 补 validate_docx `--md` 与三验收器同口径说明；新增「PPTX `--profile` 与 Word 不同语义」段（deck 主题预设 vs Word 制式参数，HTML 与 Word 同口径）；README 上手补场景①验收命令、验收口径段补 `--no-toc` 与 `--inline` 矩阵覆盖说明。
+- 回归：`tests/run_all.py` 双套件全 PASS（docx 矩阵 + 三格式闭环 35 例，含新增 inline 用例）。
+
 ### 0.6.2 — 2026-10-12（用户视角全面打磨）
 
 - **修复 SKILL.md 结构缺陷**：步骤 4 验收器路径误写 `<skill_dir>/validate_*.py`（实际在 `scripts/` 下，照抄会 FileNotFoundError）；「验收口径」第二组实测行缺表头（markdown 断表，渲染为纯文本），并入上方主表；残留 HTML 实体 `&#x6210;` 改回「成」；步骤 3 开关清单补 `--page-numbers` / `--strip-emoji`。

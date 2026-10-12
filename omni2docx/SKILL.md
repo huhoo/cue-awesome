@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件、--inline 粘贴微信公众号不重排，PPT 版式池 layout:kpi/compare/timeline。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck"
-version: "0.6.2"
+version: "0.6.3"
 license: MIT
 metadata:
   requires:
@@ -74,6 +74,8 @@ Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
 | **PDF**  | 打印 / 定稿   | 走 HTML→headless 浏览器打印，与 HTML 版面一致（不做像素级复刻）             | `render_html.py --pdf`                  | Edge/Chrome/Chromium                 |
 
 **汇报（PPTX）的协作约定**：引擎不替 agent 决定讲什么。agent 按 slide 组织 markdown（`##` 一页、要点用列表、数据用表格），引擎只负责映射与制式；直接喂长文档时引擎按层级切页并对 `≤--split-level` 的标题分页，正文进备注，`--max-slides`（默认 80）兜底截断并提示先提炼。
+
+**PPTX `--profile` 与 Word 不同语义**：上文参数表（字体/字号/页边距/缩进）是 Word 制式口径；PPTX 的 `--profile` 只切**deck 主题预设**（default/academic/gov/legal/finance 五套近单色主题，字段为色板与正文字体），不接受页边距/缩进等 Word 参数——deck 的版面由版式池与字号层级决定。未知预设名会报错并列出可选值；HTML 的 `--profile` 与 Word 同口径（吃同一套 DOC_PROFILES）。
 
 ## 为什么不是又一个 markdown→docx
 
@@ -266,10 +268,15 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 时输入保持一致）：
 
 ```
-python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.docx>
+python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.docx>   # 场景②③
+python <skill_dir>/scripts/validate_docx.py --md <源md> --docx <输出.docx>          # 场景① --md 直出
 python <skill_dir>/scripts/validate_html.py --json <中间json> --html <输出.html>   # 或 --md <源md>
 python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.pptx>   # 备注/正文/表格合并计入覆盖口径
 ```
+
+三个验收器源输入同口径：`--json`（场景②③）或 `--md`（场景①直出的源 markdown），
+与渲染时实际输入保持一致；渲染时未开目录的 HTML/PPTX 另加 `--no-toc`（docx 验收器
+的目录项为信息项，不参与判定，无此开关）。
 
 ### 步骤 5 — 交付
 
