@@ -19,6 +19,43 @@ from collections import Counter
 CJK = re.compile(r"[\u4e00-\u9fff]")
 EMOJI = re.compile(
     "[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u2190-\u21FF\u2B00-\u2BFF]")
+# 设计铁律（业界同类排版工具的可机械判定铁律写法）：
+# 直角（禁圆角矩形）、禁阴影、有彩（chromatic）色数 ≤3、字号极端反差（最大 ≥2× 最小）
+MAX_CHROMATIC = 3
+MIN_CONTRAST = 2.0
+
+
+def _chroma(hex6):
+    """颜色的彩度：RGB 三通道极差。近灰（≤24）不算彩色。"""
+    r = int(hex6[0:2], 16); g = int(hex6[2:4], 16); b = int(hex6[4:6], 16)
+    return max(r, g, b) - min(r, g, b)
+
+
+def design_audit(path):
+    """设计铁律审计：圆角矩形 / 阴影 / 有彩色数 / 字号反差。"""
+    from pptx import Presentation
+    prs = Presentation(path)
+    rounded = shadows = 0
+    chroma = set()
+    sizes = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            xml = shape._element.xml
+            if "roundRect" in xml:
+                rounded += 1
+            if "<a:outerShdw" in xml or "<a:innerShdw" in xml:
+                shadows += 1
+            for m in re.finditer(r'srgbClr val="([0-9A-Fa-f]{6})"', xml):
+                if _chroma(m.group(1).upper()) > 24:
+                    chroma.add(m.group(1).upper())
+            if shape.has_text_frame:
+                for p in shape.text_frame.paragraphs:
+                    for r in p.runs:
+                        if r.font.size:
+                            sizes.append(r.font.size.pt)
+    contrast = (max(sizes) / min(sizes)) if sizes else 0.0
+    return {"rounded": rounded, "shadows": shadows,
+            "chroma": sorted(chroma), "contrast": contrast}
 
 
 def norm_chars(s):
@@ -112,6 +149,7 @@ def main():
         src_md = source_markdown(json.load(open(args.json, encoding="utf-8")))
 
     n_slides, texts, n_tables, n_pics, empty, geo = deck_text(args.pptx)
+    design = design_audit(args.pptx)
     out_text = "\n".join(texts)
 
     src_cjk = Counter(norm_chars(src_md))
@@ -138,6 +176,13 @@ def main():
     print("  图像数 :", n_pics)
     print("  几何审计（信息项）: 越界 %d / 重叠 %d / 过小字号 %d"
           % (geo["越界"], geo["重叠"], geo["过小字号"]))
+    print("[设计铁律]")
+    print("  圆角矩形 :", design["rounded"], "（铁律：0）")
+    print("  阴影效果 :", design["shadows"], "（铁律：0）")
+    print("  有彩色数 :", len(design["chroma"]), design["chroma"],
+          "（铁律：≤%d，近灰不计）" % MAX_CHROMATIC)
+    print("  字号反差 : %.2f（铁律：最大字号 ≥%.1f× 最小）"
+          % (design["contrast"], MIN_CONTRAST))
 
     problems = []
     if coverage < 0.99:
@@ -146,6 +191,14 @@ def main():
         problems.append("零页 deck")
     if empty > max(1, n_slides // 10):
         problems.append("空页过多（%d/%d）" % (empty, n_slides))
+    if design["rounded"]:
+        problems.append("出现圆角矩形 %d 处" % design["rounded"])
+    if design["shadows"]:
+        problems.append("出现阴影 %d 处" % design["shadows"])
+    if len(design["chroma"]) > MAX_CHROMATIC:
+        problems.append("有彩色 %d 种 >%d" % (len(design["chroma"]), MAX_CHROMATIC))
+    if design["contrast"] and design["contrast"] < MIN_CONTRAST:
+        problems.append("字号反差 %.2f <%.1f" % (design["contrast"], MIN_CONTRAST))
     print("判定 :", "PASS" if not problems else "FAIL（%s）" % "；".join(problems))
     sys.exit(0 if not problems else 1)
 

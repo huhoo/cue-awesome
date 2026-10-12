@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
-version: "0.5.2"
+version: "0.6.0"
 license: MIT
 metadata:
   requires:
@@ -219,6 +219,8 @@ python <skill_dir>/scripts/build_docx.py --md <agent产出.md> --out <输出.doc
 # HTML：展示（浏览器打开 / 分享 / 可打印）
 python <skill_dir>/scripts/render_html.py --json <中间json> --out <输出.html> --profile gov
 python <skill_dir>/scripts/render_html.py --md <agent产出.md> --out <输出.html> --pdf   # 同时导出 PDF
+python <skill_dir>/scripts/render_html.py --md <agent产出.md> --out <输出.html> --inline
+#   --inline：CSS 全部内联为 style 属性——粘贴微信公众号/富文本编辑器不重排（单文件照常自包含）
 #   --toc-depth N 控制目录深度（默认 2）；需要来源署名用 --source-label "XX研报"
 #   （默认不显示原始路径——含本机目录，既丑又泄隐私）
 
@@ -226,6 +228,18 @@ python <skill_dir>/scripts/render_html.py --md <agent产出.md> --out <输出.ht
 python <skill_dir>/scripts/render_pptx.py --md <slide提纲.md> --out <输出.pptx> --profile finance
 python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx> --max-slides 30
 ```
+
+**PPT 语义版式池**（版式锁死、数量由内容决定——在提纲 md 中用 HTML 注释指令把版式
+绑定到其后第一个标题；不写指令则 auto 自动选择）：
+
+```
+<!-- layout:kpi -->      KPI 塔看板：数字型要点渲染为大数字列（≤4），适合"数据一页看全"
+<!-- layout:compare -->  两栏对比：垂直 hairline 中分、左 Before/右 After（该节无表格/图像时生效）
+<!-- layout:timeline --> 纵向时间线：左 hairline 轴 + 方形节点，适合步骤/里程碑/时间序列
+```
+
+**Agent 编排约定（"不许编造"铁律）**：deck/doc 中的数字、日期、名称必须来自 Omni 解析
+原文，禁止为排版好看编造或改写数据；KPI 塔只接收源文真实数字；无数据可用就留白，不造。
 
 - 自动：封面标题提取（"标题：xxx"）→ 中文字体 → markdown 章节重建 → 真标题 +  
   文首目录 → grounded 源页分页符 → 表格/列表/引用/行内样式 → 脚注上标 + 文末注释 +  

@@ -89,6 +89,9 @@ def tint(hexstr, f):
 LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
 STAT_RE = re.compile(r"^(约?[\d][\d.,]*)\s*(%|％|倍|‰|个|万|亿|元|美元|￥|\$|年|pct|PP)?$")
+# kpi 版式（强制）用宽松抽取：数字开头即入塔，单位=1-2 汉字或 %类（贪婪；CJK 间
+# 空格可能已被 plain() 清洗，故不做空格 lookahead），剩余文本作看板标签
+STAT_LOOSE_RE = re.compile(r"^(约?[\d][\d.,]*)\s*([%％倍‰]|[一-鿿]{1,2})?\s*(.*)$")
 
 
 def plain(text):
@@ -346,8 +349,14 @@ class Deck:
         return Inches(1.85)
 
     def content_slide(self, title, kicker, items, tables=None, images=None, notes=None,
-                      source=None, section=None):
-        """items: [("bullet"|"text"|"note"|"ol", 文本)]；tables: [(header, rows)]。"""
+                      source=None, section=None, layout="auto"):
+        """items: [("bullet"|"text"|"note"|"ol", 文本)]；tables: [(header, rows)]。
+
+        layout（语义版式池，锁定契约——版式锁死、数量由内容决定）：
+        auto=现状（自动 KPI 抽取 + 要点/双栏）；kpi=强制 KPI 塔看板（≤4 数字要点）；
+        compare=两栏对比（垂直 hairline 中分）；timeline=纵向时间线（左轴+方形节点）。
+        前置条件不满足（如 compare 时有表格/图像）自动回退 auto。
+        """
         tables = tables or []
         images = images or []
         s = self.slide()
@@ -355,19 +364,34 @@ class Deck:
         top = self._title_block(s, kicker, title)
 
         # —— KPI 大数字看板：抽数字型要点，渲染为无填充列（竖 hairline 分隔 + 墨色大数字）——
+        # auto：仅纯"数字+单位"条目；kpi（强制）：宽松抽取，剩余文本作看板标签
+        max_stats = 3 if layout == "auto" else 4
         stats, rest = [], []
         for kind, text in items:
-            if kind in ("bullet", "ol") and STAT_RE.match(text.strip()) and len(stats) < 3:
-                m = STAT_RE.match(text.strip())
-                stats.append((m.group(1), m.group(2) or ""))
-            else:
-                rest.append((kind, text))
+            t = text.strip()
+            if kind in ("bullet", "ol") and len(stats) < max_stats:
+                if layout == "kpi":
+                    m = STAT_LOOSE_RE.match(t)
+                    if m:
+                        stats.append((m.group(1), m.group(2) or "",
+                                      (m.group(3) or "").strip()))
+                        continue
+                else:
+                    m = STAT_RE.match(t)
+                    if m:
+                        stats.append((m.group(1), m.group(2) or "", ""))
+                        continue
+            rest.append((kind, text))
+        if layout == "kpi" and not stats:
+            layout = "auto"  # 无数字要点，KPI 塔无从谈起——回退
+        if layout in ("compare", "timeline") and (tables or images):
+            layout = "auto"  # 版式前置条件不满足——回退
 
         cur_top = top
         if stats:
             n = len(stats)
             cw = self.mw / n
-            for i, (num, unit) in enumerate(stats):
+            for i, (num, unit, label) in enumerate(stats):
                 cx = self.M + cw * i
                 if i > 0:
                     self._rect(s, cx, cur_top + Inches(0.12), Pt(0.75), Inches(0.95), self.theme["hairline"])
@@ -376,19 +400,45 @@ class Deck:
                          self.cfg.get("title_east", "微软雅黑"), bold=True,
                          color=self.theme["ink"])
                 tfl = self._tb(s, cx + Inches(0.2), cur_top + Inches(0.82), cw - Inches(0.3), Inches(0.35))
-                add_line(tfl, "关键指标", 12, self.cfg.get("body_east", "微软雅黑"),
+                add_line(tfl, label or "关键指标", 12, self.cfg.get("body_east", "微软雅黑"),
                          color=self.theme["muted"])
             cur_top = cur_top + Inches(1.25) + Inches(0.2)
 
         avail_h = self.H - cur_top - Inches(0.7)
         left_w = self.mw * (0.58 if images else 1.0)
 
-        # —— 要点：加粗首关键词 + accent 引导符；≥6 条且偏短则双栏 ——
+        # —— 要点：按版式池分发 ——
         if rest:
             # bullet/text/ol 上页；note（引用/视觉标注）作为静音灰行上页，计入保真
             body_items = [(k, t) for k, t in rest if k in ("bullet", "text", "ol", "note")]
             two_col = len(body_items) >= 6 and all(len(t) <= 42 for _, t in body_items)
-            if two_col:
+            if layout == "compare" and len(body_items) >= 2:
+                # 两栏对比：垂直 hairline 中分，左 Before / 右 After
+                half = (len(body_items) + 1) // 2
+                cols = [body_items[:half], body_items[half:]]
+                mid = self.M + self.mw / 2
+                self._rect(s, mid, cur_top + Inches(0.05), Pt(0.75),
+                           avail_h - Inches(0.2), self.theme["hairline"])
+                col_w = self.mw / 2 - Inches(0.45)
+                for ci, col in enumerate(cols):
+                    cx = self.M if ci == 0 else mid + Inches(0.45)
+                    tf = self._tb(s, cx, cur_top, col_w, avail_h)
+                    for j, (kind, text) in enumerate(col):
+                        self._bullet(tf, kind, text, j, two_col=False)
+            elif layout == "timeline" and len(body_items) >= 3:
+                # 纵向时间线：左 hairline 轴 + 方形节点（直角铁律，不用圆点）+ 步骤文本
+                axis_x = self.M + Inches(0.14)
+                self._rect(s, axis_x, cur_top + Inches(0.08), Pt(1),
+                           avail_h - Inches(0.2), self.theme["hairline"])
+                row_h = min(Inches(1.15), (avail_h - Inches(0.2)) / max(len(body_items), 1))
+                for i, (kind, text) in enumerate(body_items):
+                    ny = cur_top + Inches(0.1) + row_h * i
+                    self._rect(s, axis_x - Inches(0.055), ny + Inches(0.12),
+                               Inches(0.11), Inches(0.11), self.theme["accent"])
+                    tf = self._tb(s, axis_x + Inches(0.35), ny,
+                                  self.mw - Inches(0.7), row_h)
+                    self._bullet(tf, "ol" if kind == "ol" else "bullet", text, i, two_col=False)
+            elif two_col:
                 half = (len(body_items) + 1) // 2
                 cols = [body_items[:half], body_items[half:]]
                 col_w = (left_w - Inches(0.3)) / 2
@@ -525,6 +575,46 @@ def chunk(items, max_bullets, max_chars):
     return pages or [[]]
 
 
+# --------------------------------------------------------------------------- #
+#  语义版式池（锁定版式契约：版式锁死、数量由内容决定，agent 按内容语义选用）
+# --------------------------------------------------------------------------- #
+LAYOUTS = ("auto", "kpi", "compare", "timeline")
+LAYOUT_RE = re.compile(r"<!--\s*layout\s*:\s*([a-zA-Z]+)\s*-->", re.S)
+HEAD_RE = re.compile(r"\s*#{1,6}\s+(.*)")
+
+
+def scan_layouts(md):
+    """扫描 markdown 中的版式指令：`<!-- layout:xxx -->`。
+
+    双向绑定：指令写在标题**之前**→绑定到下一个标题；紧跟标题**之后**→向后绑定
+    到该标题。返回 (清理后的 md, {标题文本: 版式名})。未知版式名按 auto 处理。
+    """
+    layouts, pending, out = {}, None, []
+    last_heading = None  # 最近一个尚未绑定版式的标题
+    for line in md.splitlines():
+        m = LAYOUT_RE.fullmatch(line.strip())
+        if m:
+            name = m.group(1).lower()
+            name = name if name in LAYOUTS else "auto"
+            if last_heading is not None and last_heading not in layouts:
+                layouts[last_heading] = name  # 向后绑定（指令紧跟标题之后）
+                last_heading = None
+            else:
+                pending = name  # 向前绑定（指令在标题之前）
+            continue
+        m2 = HEAD_RE.match(line)
+        if m2:
+            h = plain(m2.group(1)).strip()
+            if pending:
+                layouts[h] = pending
+                pending = None
+                last_heading = None
+            else:
+                last_heading = h
+        out.append(line)
+    return "\n".join(out), layouts
+
+
 def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullets=6,
           max_chars=760, ratio="16:9", strip=False, embed_images=True, prose="notes",
           max_slides=80, source="", brand="Omni 解析重建"):
@@ -536,6 +626,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
         md = strip_emoji(md)
     md, foot = extract_footnotes(md)
     t_title, md = extract_title(md)
+    md, layouts = scan_layouts(md)  # 版式指令：<!-- layout:xxx --> 绑定到其后第一个标题
     doc_title = title or t_title
     blocks = parse_blocks(md)
     deck = Deck(cfg, theme, ratio, brand=brand)
@@ -567,6 +658,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
             cur_notes = []
             return
         t = cur_title or "要点"
+        layout = layouts.get((cur_title or "").strip(), "auto") if cur_title else "auto"
         pages = chunk(cur_items, max_bullets, max_chars) if cur_items else [[]]
         for pi, pg in enumerate(pages):
             if not room():
@@ -575,7 +667,8 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
                                cur_section[0] or None, pg, cur_tables if pi == 0 else [],
                                cur_images if pi == 0 else [],
                                notes=(notes if pi == 0 else None), source=source,
-                               section=cur_section[0] or None)
+                               section=cur_section[0] or None,
+                               layout=layout)
         cur_items, cur_tables, cur_images, cur_notes = [], [], [], []
         pending_notes = []
 
