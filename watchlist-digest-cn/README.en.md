@@ -111,7 +111,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 
 ## 7. Running status and measurement progress (honest list)
 
-- **Not listed, no package-level measurement yet**: until the full-chain account on real lists (several subjects, multi-day reruns, a missing-leg case) is in, this package makes no capability claim and gives no hit-rate, pass-rate or timing figure.
+- **Listed (first release); the per-list two-day case account is in progress**
 - The documentation and machine faces are in place: the five-part contract, four lanes, three digest fixtures (good, zero-new, bad) and the eleven-item counter-evidence matrix in tier four of `--selftest` - counts come from the script's own line.
 - What each of the five legs fetches and which shape constraints apply are in `SKILL.md` §2. **The scripts themselves are zero-network**: they only read the events file you transcribed from the tool output - no retrieval inside the script, no credentials, no hardcoded tool or domain lists.
 - No gate on unproven surfaces: the checker does not verify whether a leg is open today, nor whether an announcement is true - the first follows the live catalog, the second is on the official original.
