@@ -1,3 +1,10 @@
+### 0.4.9 — 2026-10-12（对比演示图改文字说明：分发件里没有那张图，就不留包内相对路径）
+
+- `README.md` 与 `README.en.md` 首段：原句把对比演示图写成本包 assets 目录下的一枚 png 路径，同时已声明渠道包不随发图片。渠道对图片是拒收面（两试两拒），分发件里那条路径必然空手，所以本轮**撤掉该路径字面**，改为「图在仓库内本包 assets 目录可看（GitHub 直接渲染），渠道包不随发图片，分发件内不含这张图」，并把图里数字的口径去处指向下文「交付与验证」段。图片本体未动，也不改打包排除面去让路径「通过」。
+- 版本锁四处五枚字面同步 0.4.8→0.4.9：`SKILL.md` 与 `SKILL.en.md` 的 frontmatter、`scripts/cue.py` 的 `__version__`、`scripts/test_skill_regression.py` 内两枚断言字面——回归自测把 frontmatter 与码内版本对拍，锁没改齐它就不绿。
+- 复验（取脚本自报行）：`python3 scripts/test_skill_regression.py` 自报「Ran 12 tests」＋「OK」，退码 0；成品面逐面现跑全「PASS 五禁零命中、指路可跟随」；本包面内那枚 png 路径字面现值 0 枚（脚本数）。
+- 版本位：0.4.8 → 0.4.9（指路形制收口＝patch，无能力增减）。历史条目不回改。
+
 ### 0.4.8 — 2026-10-10（大结果取数句改成正条件句：按该 part 自己的存储形制分流，游标绑 part 与 offset）
 
 - 凭据＝双 part artifact 实据（四条读数：①侧车可按游标分块读回，条件是该 part 被判 artifact，游标为 base64(JSON)＋签名、同时绑住 part 与 offset，改体改位一律 `INVALID_RESULT_CURSOR`（`retryable:false`、`billed:false`）；②`save_result` 只交 content，两种交付形制都交不出侧车；③`result_delivery_effective` 四种组合都不回显于 MCP 回执；④换 detail 只换侧车表示、正文一字节不动）。**本轮未复跑任何付费件**，字节数与跳数以那份账为准，成品面只写形制不写数。
