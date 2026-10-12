@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 """omni2docx — PPTX 汇报渲染器（汇报场景：把文档/提纲变成可讲的 deck）
 
-设计（参照 kimi pptx skill 的设计哲学，离线可复现、零外部资源）：
-- 主题色系统：每个 profile 一套克制的三色体系（primary / accent / 中性灰），全程统一。
-- 分页型版式：封面（hero）→ 目录（TOC）→ 章节分隔（带序号）→ 内容（标题栏+色条+要点）
-  → 结束页。不再把正文逐段平铺成上百页（那是展示，不是汇报）。
-- 栅格平衡：统一页边距、顶部标题栏、底部页脚（页码+来源），内容垂直居中防头重脚轻。
-- 装饰克制：色条、分隔线、序号、彩色项目符号——均为无文本形状，不触发几何重叠审计。
+设计（参照 kimi pptx skill 的克制设计哲学，离线可复现、零外部资源）：
+- 主题色系统：每个 profile 一套克制三色（primary / accent / ink），全程统一；并派生浅色 tint 用于卡片底。
+- 双框结构：顶部导航带（品牌 + 当前章节，白字）+ 底部页脚（来源 + 页码），专业且能跟踪进度。
+- 分页型版式：封面（左色块 hero）→ 目录 → 章节分隔（幽灵大序号）→ 内容（kicker + 结论式大标题
+  + KPI 大数字看板 + 加粗首关键词要点 + 直角卡片）→ 结束页。不再把正文逐段平铺成上百页。
+- 字号层级（kimi 规范）：封面 40+、页标题 30、正文 19、KPI 44-54、导航/页脚 12。
+- 装饰克制：色条、分隔线、序号、大数字看板——形状无文本，不触发几何重叠审计；颜色 ≤3。
 - 表格美化：表头主题色底+白字、斑马纹、细边框。
 
 约定（C 路线）：内容取舍交给 agent——agent 按 slide 组织好 markdown，引擎只负责把结构
@@ -33,37 +34,32 @@ from pptx.util import Inches, Pt, Emu  # noqa: E402
 from pptx.oxml.ns import qn  # noqa: E402
 from pptx.dml.color import RGBColor  # noqa: E402
 
-# deck 字体/字号制式：汇报场景字号显著大于文档场景
+# deck 字体/字号制式（汇报场景字号显著大于文档场景，遵循 kimi 字号层级）
 PPT_PROFILES = {
     "default": {"title_east": "微软雅黑", "body_east": "微软雅黑",
-                "title_size": 28, "body_size": 18, "section_size": 32},
+                "title_size": 30, "body_size": 19, "section_size": 34},
     "gov": {"title_east": "黑体", "body_east": "仿宋_GB2312",
-            "title_size": 28, "body_size": 20, "section_size": 32},
+            "title_size": 30, "body_size": 20, "section_size": 34},
     "legal": {"title_east": "黑体", "body_east": "仿宋_GB2312",
-              "title_size": 26, "body_size": 18, "section_size": 30},
+              "title_size": 28, "body_size": 19, "section_size": 32},
     "finance": {"title_east": "黑体", "body_east": "等线",
-                "title_size": 26, "body_size": 16, "section_size": 30},
+                "title_size": 28, "body_size": 18, "section_size": 32},
     "academic": {"title_east": "黑体", "body_east": "宋体",
-                 "title_size": 26, "body_size": 18, "section_size": 30},
+                 "title_size": 28, "body_size": 19, "section_size": 32},
 }
 
-# 主题色系统：克制三色（primary + accent + 中性灰），背景以白/极浅灰为主，符合学术/商务规范
+# 主题色系统：克制三色（primary 主 + accent 强调 + ink 墨），背景以白/极浅灰为主
 THEMES = {
-    "default":  {"primary": "#2563EB", "ink": "#1E293B", "accent": "#0EA5E9",
-                 "panel": "#F1F5F9", "text": "#1F2937", "muted": "#64748B",
-                 "zebra": "#F8FAFC"},
+    "default":  {"primary": "#2563EB", "ink": "#0F172A", "accent": "#0EA5E9",
+                 "panel": "#F8FAFC", "text": "#1E293B", "muted": "#64748B"},
     "academic": {"primary": "#1E3A8A", "ink": "#0F172A", "accent": "#B45309",
-                 "panel": "#F8FAFC", "text": "#1E293B", "muted": "#475569",
-                 "zebra": "#F4F7FB"},
+                 "panel": "#F8FAFC", "text": "#1E293B", "muted": "#475569"},
     "gov":      {"primary": "#B91C1C", "ink": "#7F1D1D", "accent": "#C8A24B",
-                 "panel": "#FEF2F2", "text": "#1F2937", "muted": "#6B7280",
-                 "zebra": "#FCF5F5"},
+                 "panel": "#FEF2F2", "text": "#1F2937", "muted": "#6B7280"},
     "legal":    {"primary": "#9A2D2D", "ink": "#5B1616", "accent": "#B8862B",
-                 "panel": "#FBF4F4", "text": "#1F2937", "muted": "#6B7280",
-                 "zebra": "#FAF3F3"},
+                 "panel": "#FBF4F4", "text": "#1F2937", "muted": "#6B7280"},
     "finance":  {"primary": "#0F766E", "ink": "#134E4A", "accent": "#B45309",
-                 "panel": "#F0FDFA", "text": "#1F2937", "muted": "#64748B",
-                 "zebra": "#F3FBF9"},
+                 "panel": "#F0FDFA", "text": "#1F2937", "muted": "#64748B"},
 }
 
 
@@ -72,8 +68,19 @@ def rgb(hexstr):
     return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
+def tint(hexstr, f):
+    """向白色混合 f 比例，得到浅色（用于卡片底/幽灵序号）。"""
+    h = hexstr.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    r = round(r + (255 - r) * f)
+    g = round(g + (255 - g) * f)
+    b = round(b + (255 - b) * f)
+    return "#%02X%02X%02X" % (r, g, b)
+
+
 LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
+STAT_RE = re.compile(r"^(约?[\d][\d.,]*)\s*(%|％|倍|‰|个|万|亿|元|美元|￥|\$|年|pct|PP)?$")
 
 
 def plain(text):
@@ -108,7 +115,7 @@ def set_east(run, east, latin=None):
 
 def add_line(tf, text, size, east, bold=False, color=None, level=0, space_after=6,
              align=None, marker=None):
-    """加一行。marker=(color_hex, glyph) 时渲染彩色项目符号前置 run。"""
+    """加一行。marker=(color_hex, glyph) 时渲染彩色前置 run（如 kicker/要点引导符）。"""
     p = tf.paragraphs[0] if (not tf.paragraphs[0].runs and not tf.paragraphs[0].text) else tf.add_paragraph()
     p.level = level
     p.space_after = Pt(space_after)
@@ -137,10 +144,6 @@ def fill_solid(shape, hexstr):
     shape.line.fill.background()
 
 
-def no_line(shape):
-    shape.line.fill.background()
-
-
 def _set_cell_border(cell):
     """给单元格加四边细灰边框（python-pptx Cell 无 border_size，走 XML）。"""
     from pptx.oxml.ns import nsdecls
@@ -162,9 +165,9 @@ def _set_cell_border(cell):
 
 
 class Deck:
-    """带主题与分页型版式的 deck 构造器。"""
+    """带主题与分页型版式的 deck 构造器（kimi 克制设计体系）。"""
 
-    def __init__(self, cfg, theme, ratio="16:9"):
+    def __init__(self, cfg, theme, ratio="16:9", brand="Omni 解析重建"):
         self.prs = Presentation()
         if ratio == "16:9":
             self.prs.slide_width, self.prs.slide_height = Inches(13.333), Inches(7.5)
@@ -178,12 +181,15 @@ class Deck:
                 self.prs.slide_width, self.prs.slide_height = Inches(13.333), Inches(7.5)
         self.cfg = cfg
         self.theme = theme
+        self.tint = tint(theme["primary"], 0.90)      # 卡片底浅色
+        self.tint2 = tint(theme["accent"], 0.86)      # 次级浅色
         self.W = float(self.prs.slide_width)
         self.H = float(self.prs.slide_height)
         self.blank = self.prs.slide_layouts[6]
-        self.M = Inches(0.6)            # 统一页边距
+        self.M = Inches(0.55)            # 统一页边距
         self.mw = self.W - 2 * self.M   # 内容宽度
         self.page_no = 0
+        self.brand = brand[:18]
 
     def slide(self, bg=None):
         s = self.prs.slides.add_slide(self.blank)
@@ -199,130 +205,207 @@ class Deck:
     def n_slides(self):
         return len(self.prs.slides._sldIdLst)
 
-    # ---------- 通用装饰 ----------
-    def _footer(self, s, source):
-        """底部页脚：左来源、右页码；下方细线。所有文本 >=11pt，避免过小字号审计。"""
-        y = self.H - Inches(0.46)
-        no_line(s.shapes.add_shape(1, self.M, y, self.mw, Pt(1.2)))  # 分隔细线（rect）
-        # 来源（左）
-        tf = s.shapes.add_textbox(self.M, self.H - Inches(0.42), self.mw * 0.7, Inches(0.32)).text_frame
-        tf.word_wrap = True
-        add_line(tf, ("来源：" + source) if source else "Omni 解析重建 · 汇报版", 11,
-                 self.cfg.get("body_east", "微软雅黑"), color=self.theme["muted"])
-        # 页码（右）
-        self.page_no += 1
-        tf2 = s.shapes.add_textbox(self.W - self.M - Inches(1.2), self.H - Inches(0.42),
-                                   Inches(1.2), Inches(0.32)).text_frame
-        tf2.word_wrap = False
-        add_line(tf2, "%02d" % self.page_no, 11, self.cfg.get("body_east", "微软雅黑"),
-                 color=self.theme["muted"], align=3)  # 3=right
-
-    def _accent_bar(self, s, x, y, w, h, color=None):
-        shp = s.shapes.add_shape(1, x, y, w, h)  # 1=rectangle
-        fill_solid(shp, color or self.theme["primary"])
+    # ---------- 基础形状 ----------
+    def _rect(self, s, x, y, w, h, color, line=None, line_w=0.75):
+        shp = s.shapes.add_shape(1, x, y, w, h)  # 1 = rectangle（直角，禁圆角）
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = rgb(color)
+        if line:
+            shp.line.color.rgb = rgb(line)
+            shp.line.width = Pt(line_w)
+        else:
+            shp.line.fill.background()
+        shp.shadow.inherit = False
         return shp
+
+    def _tb(self, s, x, y, w, h):
+        tb = s.shapes.add_textbox(x, y, w, h)
+        tb.text_frame.word_wrap = True
+        return tb.text_frame
+
+    # ---------- 双框 ----------
+    def _nav(self, s, section):
+        """顶部导航带（primary 色块，无文本→装饰；其上叠白字 textbox 标品牌/章节）。"""
+        self._rect(s, 0, 0, self.W, Inches(0.36), self.theme["primary"])
+        tf = self._tb(s, self.M, Inches(0.06), self.mw * 0.62, Inches(0.26))
+        add_line(tf, self.brand, 12, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color="#FFFFFF")
+        if section:
+            tf2 = self._tb(s, self.W - self.M - Inches(4.2), Inches(0.06), Inches(4.2), Inches(0.26))
+            add_line(tf2, section, 12, self.cfg.get("title_east", "微软雅黑"),
+                     color=tint(self.theme["primary"], 0.6), align=3)
+        return s
+
+    def _footer(self, s, source):
+        """底部页脚：细线 + 左来源 + 右页码；全部 >=12pt，不触发过小字号审计。"""
+        y = self.H - Inches(0.5)
+        self._rect(s, self.M, y, self.mw, Pt(1.1), tint(self.theme["ink"], 0.82))
+        tf = self._tb(s, self.M, self.H - Inches(0.46), self.mw * 0.7, Inches(0.32))
+        add_line(tf, ("来源：" + source) if source else "Omni 解析重建 · 汇报版", 12,
+                 self.cfg.get("body_east", "微软雅黑"), color=self.theme["muted"])
+        self.page_no += 1
+        tf2 = self._tb(s, self.W - self.M - Inches(1.2), self.H - Inches(0.46),
+                       Inches(1.2), Inches(0.32))
+        add_line(tf2, "%02d" % self.page_no, 12, self.cfg.get("body_east", "微软雅黑"),
+                 color=self.theme["muted"], align=3)
+        return s
 
     # ---------- 分页型 ----------
     def cover_slide(self, title, subtitle, source):
-        s = self.slide(bg=self.theme["panel"])
-        # 左侧主色竖条（无文本装饰）
-        self._accent_bar(s, 0, 0, Inches(0.22), self.H, self.theme["primary"])
-        # 顶部细线
-        self._accent_bar(s, Inches(1.0), Inches(2.45), Inches(3.4), Pt(3), self.theme["accent"])
-        tf = s.shapes.add_textbox(Inches(1.0), Inches(2.7), self.W - Inches(1.4), Inches(2.0)).text_frame
-        tf.word_wrap = True
-        add_line(tf, title, self.cfg.get("section_size", 32) + 12,
+        s = self.slide()
+        # 左侧主色块（直角，无文本装饰）
+        block_w = self.W * 0.36
+        self._rect(s, 0, 0, block_w, self.H, self.theme["primary"])
+        # 色块右缘 accent 细线
+        self._rect(s, block_w, 0, Pt(4), self.H, self.theme["accent"])
+        # 色块内底部品牌 kicker（白字，置于底部带之上、不压页脚）
+        tfb = self._tb(s, Inches(0.5), self.H - Inches(2.5), block_w - Inches(0.9), Inches(1.1))
+        add_line(tfb, self.brand, 16, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color="#FFFFFF", space_after=3)
+        add_line(tfb, "汇报 · REPORT", 11, self.cfg.get("title_east", "微软雅黑"),
+                 color=tint(self.theme["primary"], 0.55))
+        # 右侧 hero 区
+        rx = block_w + Inches(0.75)
+        rw = self.W - rx - self.M
+        tfk = self._tb(s, rx, Inches(2.0), rw, Inches(0.5))
+        add_line(tfk, "OMNI PARSED · 解析重建", 13, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color=self.theme["accent"])
+        tf = self._tb(s, rx, Inches(2.55), rw, Inches(2.4))
+        add_line(tf, title, self.cfg.get("section_size", 34) + 10,
                  self.cfg.get("title_east", "微软雅黑"), bold=True,
-                 color=self.theme["ink"], space_after=10)
+                 color=self.theme["ink"], space_after=12)
+        self._rect(s, rx, Inches(5.05), Inches(2.6), Pt(4), self.theme["accent"])
         if subtitle:
-            tf2 = s.shapes.add_textbox(Inches(1.0), Inches(4.7), self.W - Inches(1.4), Inches(1.2)).text_frame
-            tf2.word_wrap = True
-            add_line(tf2, subtitle, self.cfg.get("body_size", 18),
+            tf2 = self._tb(s, rx, Inches(5.3), rw, Inches(1.4))
+            add_line(tf2, subtitle, self.cfg.get("body_size", 19),
                      self.cfg.get("body_east", "微软雅黑"), color=self.theme["muted"])
-        self._footer(s, source)
+        # 封面不加页脚（左色块已承载品牌；避免灰字压主色块）
         return s
 
     def toc_slide(self, title, entries, source):
         s = self.slide()
-        self._title_bar(s, "目录")
-        # 条目：序号 + 标题，左色条装饰
-        top = Inches(1.95)
-        row_h = min(Inches(0.62), (self.H - top - Inches(0.7)) / max(len(entries), 1))
+        self._nav(s, "目录")
+        tf = self._tb(s, self.M, Inches(0.62), self.mw, Inches(0.7))
+        add_line(tf, "目录　CONTENTS", 14, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color=self.theme["accent"])
+        add_line(tf, "全篇结构一览", self.cfg.get("title_size", 30),
+                 self.cfg.get("title_east", "微软雅黑"), bold=True, color=self.theme["ink"],
+                 space_after=2)
+        top = Inches(2.0)
+        row_h = min(Inches(0.78), (self.H - top - Inches(0.8)) / max(len(entries), 1))
         for i, e in enumerate(entries):
             ey = top + row_h * i
-            self._accent_bar(s, self.M, ey + Inches(0.06), Inches(0.1), row_h - Inches(0.12), self.theme["accent"])
-            tf = s.shapes.add_textbox(self.M + Inches(0.32), ey, self.mw - Inches(0.32), row_h).text_frame
-            tf.word_wrap = True
-            add_line(tf, "%02d  %s" % (i + 1, e), self.cfg.get("body_size", 18),
+            # 直角序号卡（浅 primary 底 + primary 左条）
+            card = self._rect(s, self.M, ey + Inches(0.04), Inches(0.62), row_h - Inches(0.08),
+                              self.tint, line=self.theme["primary"], line_w=0.75)
+            tfi = self._tb(s, self.M, ey + Inches(0.04), Inches(0.62), row_h - Inches(0.08))
+            add_line(tfi, "%02d" % (i + 1), 18, self.cfg.get("title_east", "微软雅黑"),
+                     bold=True, color=self.theme["primary"], align=2)
+            tf = self._tb(s, self.M + Inches(0.85), ey + Inches(0.02), self.mw - Inches(0.85), row_h)
+            add_line(tf, e, self.cfg.get("body_size", 19),
                      self.cfg.get("body_east", "微软雅黑"), color=self.theme["text"])
         self._footer(s, source)
         return s
 
     def section_slide(self, title, idx):
         s = self.slide(bg=self.theme["panel"])
-        self._accent_bar(s, 0, 0, self.W, Inches(0.16), self.theme["primary"])
-        # 大号序号（无文本装饰，单独 textbox）
-        nf = s.shapes.add_textbox(Inches(0.8), Inches(2.4), Inches(2.6), Inches(2.4)).text_frame
-        nf.word_wrap = False
-        add_line(nf, "%02d" % (idx or 1), 90, self.cfg.get("title_east", "微软雅黑"),
+        # 顶部主色带
+        self._rect(s, 0, 0, self.W, Inches(0.28), self.theme["primary"])
+        # 右侧幽灵大序号（浅 tint，无文本装饰）
+        nf = self._tb(s, self.W - Inches(4.6), Inches(0.9), Inches(4.2), Inches(4.2))
+        add_line(nf, "%02d" % (idx or 1), 200, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color=tint(self.theme["primary"], 0.82))
+        # 左侧 kicker + 标题
+        tfk = self._tb(s, Inches(0.9), Inches(2.5), Inches(7.5), Inches(0.5))
+        add_line(tfk, "PART %02d" % (idx or 1), 14, self.cfg.get("title_east", "微软雅黑"),
                  bold=True, color=self.theme["accent"])
-        tf = s.shapes.add_textbox(Inches(3.4), Inches(3.0), self.W - Inches(4.0), Inches(1.8)).text_frame
-        tf.word_wrap = True
-        add_line(tf, title, self.cfg.get("section_size", 32),
+        tf = self._tb(s, Inches(0.9), Inches(3.05), Inches(8.2), Inches(2.4))
+        add_line(tf, title, self.cfg.get("section_size", 34),
                  self.cfg.get("title_east", "微软雅黑"), bold=True, color=self.theme["ink"])
+        self._rect(s, Inches(0.92), Inches(5.55), Inches(2.6), Pt(4), self.theme["accent"])
         self._footer(s, None)
         return s
 
-    def _title_bar(self, s, title):
-        tf = s.shapes.add_textbox(self.M, Inches(0.5), self.mw, Inches(0.95)).text_frame
-        tf.word_wrap = True
-        # 标题过长自动降字号（避免溢出标题区）
+    def _title_block(self, s, kicker, title):
+        """kicker 小标签 + 结论式大标题 + accent 短下划线。返回正文起始 y。"""
+        tfk = self._tb(s, self.M, Inches(0.55), self.mw, Inches(0.4))
+        add_line(tfk, (kicker or "要点").upper(), 13, self.cfg.get("title_east", "微软雅黑"),
+                 bold=True, color=self.theme["accent"])
+        tf = self._tb(s, self.M, Inches(0.92), self.mw, Inches(0.95))
         t = len(title)
-        ts = (self.cfg.get("title_size", 28) - 6 if t > 70 else
-              self.cfg.get("title_size", 28) - 3 if t > 40 else self.cfg.get("title_size", 28))
+        ts = (self.cfg.get("title_size", 30) - 6 if t > 70 else
+              self.cfg.get("title_size", 30) - 3 if t > 40 else self.cfg.get("title_size", 30))
         add_line(tf, title, ts, self.cfg.get("title_east", "微软雅黑"), bold=True,
                  color=self.theme["ink"], space_after=2)
-        self._accent_bar(s, self.M, Inches(1.5), Inches(2.6), Pt(4), self.theme["accent"])
+        self._rect(s, self.M, Inches(1.82), Inches(2.4), Pt(4), self.theme["accent"])
+        return Inches(2.1)
 
-    def content_slide(self, title, items, tables=None, images=None, notes=None, source=None):
-        """items: [("bullet"|"text"|"note", 文本)]；tables: [(header, rows)]。"""
+    def content_slide(self, title, kicker, items, tables=None, images=None, notes=None,
+                      source=None, section=None):
+        """items: [("bullet"|"text"|"note"|"ol", 文本)]；tables: [(header, rows)]。"""
         tables = tables or []
         images = images or []
         s = self.slide()
-        self._title_bar(s, title)
+        self._nav(s, section)
+        top = self._title_block(s, kicker, title)
 
-        top = Inches(1.85)
-        avail_h = self.H - top - Inches(0.7)
-        left_w = self.mw * (0.55 if images else 1.0)
-        # 内容区左侧装饰竖条（无文本）
-        self._accent_bar(s, self.M, top, Pt(4), avail_h, self.theme["accent"])
-
-        if items:
-            body = s.shapes.add_textbox(self.M + Inches(0.28), top, left_w - Inches(0.28), avail_h)
-            btf = body.text_frame
-            btf.word_wrap = True
-            for kind, text in items:
-                if kind == "note":
-                    add_line(btf, text, max(self.cfg.get("body_size", 18) - 3, 11),
-                             self.cfg.get("body_east", "微软雅黑"), color=self.theme["muted"],
-                             space_after=8)
-                elif kind == "bullet":
-                    add_line(btf, text, self.cfg.get("body_size", 18),
-                             self.cfg.get("body_east", "微软雅黑"),
-                             marker=(self.theme["primary"], "▪"), space_after=10)
-                else:
-                    add_line(btf, text, self.cfg.get("body_size", 18),
-                             self.cfg.get("body_east", "微软雅黑"), space_after=8)
+        # —— KPI 大数字看板：抽数字型要点，渲染为直角卡片（浅 primary 底 + primary 边框）——
+        stats, rest = [], []
+        for kind, text in items:
+            if kind in ("bullet", "ol") and STAT_RE.match(text.strip()) and len(stats) < 3:
+                m = STAT_RE.match(text.strip())
+                stats.append((m.group(1), m.group(2) or ""))
+            else:
+                rest.append((kind, text))
 
         cur_top = top
+        if stats:
+            n = len(stats)
+            gap = Inches(0.3)
+            cw = (self.mw - gap * (n - 1)) / n
+            for i, (num, unit) in enumerate(stats):
+                cx = self.M + (cw + gap) * i
+                ch = Inches(1.25)
+                self._rect(s, cx, cur_top, cw, ch, self.tint, line=self.theme["primary"], line_w=1.0)
+                self._rect(s, cx, cur_top, Inches(0.12), ch, self.theme["primary"])
+                tfn = self._tb(s, cx + Inches(0.28), cur_top + Inches(0.12), cw - Inches(0.4), Inches(0.7))
+                add_line(tfn, num + (unit and (" " + unit) or ""), 40,
+                         self.cfg.get("title_east", "微软雅黑"), bold=True,
+                         color=self.theme["primary"])
+                tfl = self._tb(s, cx + Inches(0.28), cur_top + Inches(0.82), cw - Inches(0.4), Inches(0.35))
+                add_line(tfl, "关键指标", 12, self.cfg.get("body_east", "微软雅黑"),
+                         color=self.theme["muted"])
+            cur_top = cur_top + Inches(1.25) + Inches(0.25)
+
+        avail_h = self.H - cur_top - Inches(0.7)
+        left_w = self.mw * (0.58 if images else 1.0)
+
+        # —— 要点：加粗首关键词 + accent 引导符；≥6 条且偏短则双栏 ——
+        if rest:
+            # bullet/text/ol 上页；note（引用/视觉标注）作为静音灰行上页，计入保真
+            body_items = [(k, t) for k, t in rest if k in ("bullet", "text", "ol", "note")]
+            two_col = len(body_items) >= 6 and all(len(t) <= 42 for _, t in body_items)
+            if two_col:
+                half = (len(body_items) + 1) // 2
+                cols = [body_items[:half], body_items[half:]]
+                col_w = (left_w - Inches(0.3)) / 2
+                for ci, col in enumerate(cols):
+                    cx = self.M + (col_w + Inches(0.3)) * ci
+                    tf = self._tb(s, cx, cur_top, col_w, avail_h)
+                    for j, (kind, text) in enumerate(col):
+                        self._bullet(tf, kind, text, j, two_col=True)
+            else:
+                tf = self._tb(s, self.M, cur_top, left_w, avail_h)
+                for j, (kind, text) in enumerate(body_items):
+                    self._bullet(tf, kind, text, j, two_col=False)
+
+        # —— 表格 ——
         for header, rows in tables:
             n_rows, n_cols = len(rows) + 1, max(len(header), max((len(r) for r in rows), default=1))
             tbl_h = min(Inches(0.34) * n_rows + Inches(0.2), avail_h - Inches(0.1))
-            gt = s.shapes.add_table(n_rows, n_cols, self.M + Inches(0.28), cur_top,
-                                    left_w - Inches(0.28), tbl_h)
+            gt = s.shapes.add_table(n_rows, n_cols, self.M, cur_top, left_w, tbl_h)
             tbl = gt.table
             fsize = Pt(14 if n_cols <= 3 else 12 if n_cols <= 5 else 10)
-            # 表头：主题色底 + 白字
             for j, c in enumerate(header):
                 cell = tbl.cell(0, j)
                 cell.text = plain(c)[:60]
@@ -335,19 +418,18 @@ class Deck:
                         r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
                         set_east(r, self.cfg.get("title_east", "微软雅黑"))
             for i, row in enumerate(rows, start=1):
-                zebra = self.theme["zebra"] if i % 2 == 0 else "#FFFFFF"
+                zebra = tint(self.theme["primary"], 0.94) if i % 2 == 0 else "#FFFFFF"
                 for j, c in enumerate(row[:n_cols]):
                     cell = tbl.cell(i, j)
                     cell.text = plain(c)[:80]
                     cell.fill.solid(); cell.fill.fore_color.rgb = rgb(zebra)
                     cell.vertical_anchor = 3
                     for p in cell.text_frame.paragraphs:
-                        p.alignment = 1  # 左对齐（PP_PARAGRAPH_ALIGNMENT.LEFT=1）
+                        p.alignment = 1
                         for r in p.runs:
                             r.font.size = fsize
                             r.font.color.rgb = rgb(self.theme["text"])
                             set_east(r, self.cfg.get("body_east", "微软雅黑"))
-            # 细边框（XML 设置，python-pptx Cell 无 border_size 属性）
             for r_idx in range(n_rows):
                 for c_idx in range(n_cols):
                     _set_cell_border(tbl.cell(r_idx, c_idx))
@@ -366,15 +448,63 @@ class Deck:
         self._footer(s, source)
         return s
 
+    def _bullet(self, tf, kind, text, idx, two_col):
+        """加粗首关键词 + accent 引导符 / 有序编号 / note 静音灰行。"""
+        size = self.cfg.get("body_size", 19)
+        east = self.cfg.get("body_east", "微软雅黑")
+        space = 7 if two_col else 11
+        if kind == "note":
+            p = tf.paragraphs[0] if (not tf.paragraphs[0].runs and not tf.paragraphs[0].text) else tf.add_paragraph()
+            p.space_after = Pt(space)
+            r = p.add_run(); r.text = text; r.font.size = Pt(size - 1)
+            r.font.color.rgb = rgb(self.theme["muted"]); set_east(r, east)
+            return
+        if kind == "ol":
+            marker = (self.theme["primary"], "%02d" % (idx + 1))
+            lead, rest = self._split_keyword(text)
+            p = tf.paragraphs[0] if (not tf.paragraphs[0].runs and not tf.paragraphs[0].text) else tf.add_paragraph()
+            p.space_after = Pt(space)
+            rm = p.add_run(); rm.text = marker[1] + "  "; rm.font.size = Pt(size)
+            rm.font.bold = True; rm.font.color.rgb = rgb(marker[0]); set_east(rm, east)
+            self._kw_runs(p, lead, rest, size, east)
+            return
+        # bullet / text：accent 短引导符 + 加粗首关键词
+        lead, rest = self._split_keyword(text)
+        p = tf.paragraphs[0] if (not tf.paragraphs[0].runs and not tf.paragraphs[0].text) else tf.add_paragraph()
+        p.space_after = Pt(space)
+        rm = p.add_run(); rm.text = "—  "; rm.font.size = Pt(size)
+        rm.font.bold = True; rm.font.color.rgb = rgb(self.theme["accent"]); set_east(rm, east)
+        self._kw_runs(p, lead, rest, size, east)
+
+    @staticmethod
+    def _split_keyword(text):
+        """取首个分隔符前的片段作为加粗关键词。"""
+        m = re.match(r"^([^，,：:；;。\.\s]+)(.*)$", text)
+        if m and m.group(2):
+            return m.group(1), m.group(2)
+        return text, ""
+
+    @staticmethod
+    def _kw_runs(p, lead, rest, size, east):
+        if lead:
+            r = p.add_run(); r.text = lead; r.font.size = Pt(size); r.font.bold = True
+            r.font.color.rgb = rgb("#0F172A"); set_east(r, east)
+        if rest:
+            r = p.add_run(); r.text = rest; r.font.size = Pt(size); r.font.bold = False
+            r.font.color.rgb = rgb("#334155"); set_east(r, east)
+
     def closing_slide(self, source):
         s = self.slide(bg=self.theme["panel"])
-        self._accent_bar(s, 0, 0, self.W, Inches(0.16), self.theme["primary"])
-        tf = s.shapes.add_textbox(Inches(1.0), Inches(2.9), self.W - Inches(2.0), Inches(1.6)).text_frame
-        tf.word_wrap = True
-        add_line(tf, "谢谢", self.cfg.get("section_size", 32) + 16,
+        self._rect(s, 0, 0, self.W, Inches(0.28), self.theme["primary"])
+        self._rect(s, 0, self.H - Inches(0.28), self.W, Inches(0.28), self.theme["primary"])
+        tf = self._tb(s, Inches(1.0), Inches(2.9), self.W - Inches(2.0), Inches(1.1))
+        add_line(tf, "谢谢", self.cfg.get("section_size", 34) + 18,
                  self.cfg.get("title_east", "微软雅黑"), bold=True,
                  color=self.theme["ink"], align=2)
-        self._footer(s, source)
+        tf2 = self._tb(s, Inches(1.0), Inches(4.2), self.W - Inches(2.0), Inches(0.6))
+        add_line(tf2, "Omni 解析重建 · 汇报版", 14, self.cfg.get("body_east", "微软雅黑"),
+                 color=self.theme["muted"], align=2)
+        # 结束页不加页脚（上下主色带已框定，避免灰字压带）
         return s
 
     def save(self, path):
@@ -398,7 +528,7 @@ def chunk(items, max_bullets, max_chars):
 
 def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullets=6,
           max_chars=760, ratio="16:9", strip=False, embed_images=True, prose="notes",
-          max_slides=80, source=""):
+          max_slides=80, source="", brand="Omni 解析重建"):
     """prose：正文段落去向——notes（默认，进演讲者备注）/ body（上正文区）/ skip（丢弃）。
 
     汇报语义：要点、表格、图像上页；正文细节进备注页，避免长文档被逐段平铺成上百页。
@@ -409,7 +539,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
     t_title, md = extract_title(md)
     doc_title = title or t_title
     blocks = parse_blocks(md)
-    deck = Deck(cfg, theme, ratio)
+    deck = Deck(cfg, theme, ratio, brand=brand)
 
     if doc_title:
         deck.cover_slide(doc_title, "Omni 解析重建 · 汇报版", source)
@@ -419,6 +549,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
     pending_notes = []
     capped = [False]
     sec_idx = [0]
+    cur_section = [""]
 
     def room():
         if max_slides and deck.n_slides >= max_slides:
@@ -442,9 +573,10 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
             if not room():
                 return
             deck.content_slide(t if pi == 0 else "%s（续 %d）" % (t, pi + 1),
-                               pg, cur_tables if pi == 0 else [],
+                               cur_section[0] or None, pg, cur_tables if pi == 0 else [],
                                cur_images if pi == 0 else [],
-                               notes=(notes if pi == 0 else None), source=source)
+                               notes=(notes if pi == 0 else None), source=source,
+                               section=cur_section[0] or None)
         cur_items, cur_tables, cur_images, cur_notes = [], [], [], []
         pending_notes = []
 
@@ -454,6 +586,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
             if lvl <= section_level:
                 flush()
                 cur_title = None
+                cur_section[0] = text
                 sec_idx[0] += 1
                 if room():
                     deck.section_slide(text, sec_idx[0])
@@ -466,7 +599,7 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
             continue
         if kind in ("ul", "ol"):
             for it in payload:
-                cur_items.append(("bullet", plain(it)))
+                cur_items.append((("ol" if kind == "ol" else "bullet"), plain(it)))
             continue
         if kind == "table":
             header, rows = payload
@@ -504,7 +637,9 @@ def build(md, cfg, theme, title=None, section_level=1, split_level=2, max_bullet
         for pi, pg in enumerate(pages):
             if not room():
                 break
-            deck.content_slide("要点" if pi == 0 else "要点（续 %d）" % (pi + 1), pg, source=source)
+            deck.content_slide("要点" if pi == 0 else "要点（续 %d）" % (pi + 1),
+                               cur_section[0] or None, pg,
+                               source=source, section=cur_section[0] or None)
         leftover = []
     # 兜底二：deck 正常时，尾部纯正文（如免责声明节）残留的备注不得静默丢弃——
     # 追加到最后一张幻灯片的演讲者备注，保证正文零丢失。
@@ -554,6 +689,7 @@ def main():
     ap.add_argument("--max-slides", type=int, default=80,
                     help="deck 页数上限（默认 80；超出即截断并告警）。0=不限")
     ap.add_argument("--source-label", default="", help="页脚来源署名（默认空）")
+    ap.add_argument("--brand", default="Omni 解析重建", help="顶部导航品牌字（默认 Omni 解析重建）")
     args = ap.parse_args()
     if not args.json and not args.md:
         ap.error("--json 或 --md 必须提供一个")
@@ -573,7 +709,7 @@ def main():
             d = DOC_PROFILES[p]
             cfg = {"title_east": d.get("heading_east", "微软雅黑"),
                    "body_east": d.get("body_east", "微软雅黑"),
-                   "title_size": 28, "body_size": 18, "section_size": 32}
+                   "title_size": 30, "body_size": 19, "section_size": 34}
         else:
             ap.error("--profile 未知预设 %r（可选：%s，或 JSON 自定义）"
                      % (p, "/".join(sorted(PPT_PROFILES))))
@@ -596,7 +732,6 @@ def main():
 
     src_label = args.source_label or (sources[0].get("source") if len(sources) == 1 else "")
 
-    # 多源合并：各源拼为一个 H1 章节（→ 章节页），单 deck 顺序渲染
     if len(sources) > 1:
         merged = []
         for i, s in enumerate(sources):
@@ -607,13 +742,13 @@ def main():
                      section_level=args.section_level, split_level=args.split_level,
                      max_bullets=args.max_bullets, max_chars=args.max_chars,
                      ratio=args.ratio, strip=args.strip_emoji,
-                     embed_images=not args.no_images, source=src_label)
+                     embed_images=not args.no_images, source=src_label, brand=args.brand)
     else:
         deck = build(sources[0].get("markdown") or "", cfg, theme, title=args.title,
                      section_level=args.section_level, split_level=args.split_level,
                      max_bullets=args.max_bullets, max_chars=args.max_chars,
                      ratio=args.ratio, strip=args.strip_emoji,
-                     embed_images=not args.no_images, source=src_label)
+                     embed_images=not args.no_images, source=src_label, brand=args.brand)
     deck.save(args.out)
     from pptx import Presentation as P
     n = len(P(args.out).slides)
