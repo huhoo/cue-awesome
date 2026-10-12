@@ -59,7 +59,7 @@ SKIP_DIR_NAMES = {"__pycache__", "dist", "build", "node_modules", ".venv", "fixt
 RULES = (
     ("H-TICKET", "①", re.compile(r"(?<![A-Za-z0-9])M\d{2,4}(?![A-Za-z0-9])|(?<![A-Za-z])PR\s*#?\d{2,}"),
      "成品面与 CHANGELOG 不写内部流水号（工单/票号/PR 号）；要引能力来源就写能力本身"),
-    ("H-PATH", "②", re.compile(r"\bverify/|\blogs/|\bdispatch/|\bBOARD\b|dispatch\b"),
+    ("H-PATH", "②", re.compile(r"\bverify/|\blogs/|\bdispatch/|\bBOARD\b|(?<![\w_])dispatch(?![\w_])"),
      "仓外或他目录指路不得出现在成品面（verify/、logs/、dispatch/、BOARD）；指路只许相对本包"),
     ("H-STATE", "③", re.compile(r"在途|证据票|候账|候\s*(?:Owner|M\d|[1-6]\.1)|随我铃|收卷|交卷|派单|(?<!作)工单|候裁|候批|待你|等你一句"),
      "施工状态语禁入成品面（读者无从解释「在途/候账/随我铃」是什么意思）"),
@@ -318,6 +318,20 @@ def selftest() -> int:
         print(f"   CHANGELOG 面误判 ②：{sorted(cl_codes & {'H-PATH', 'H-POINTER'})}（章程 CHANGELOG 只守 ①③④⑤）")
         ok = False
     print(f"档①b CHANGELOG 面：发红 {len(cl)} 条，码 {sorted(cl_codes)}，②不判={'对' if not (cl_codes & {'H-PATH','H-POINTER'}) else '错'}")
+
+    # 档②′ M220⑦：正反样成对——YAML 键名行必须零发条，真悬空 dispatch/ 路径必须发红
+    yk = good / "references" / "yaml-keys.md"
+    dg = bad / "assets" / "dangling-dispatch.md"
+    if not (yk.is_file() and dg.is_file()):
+        print("   缺 M220⑦ 形态对样（yaml-keys.md / dangling-dispatch.md）→ 词面误拦无回归防线")
+        ok = False
+    else:
+        d_hit = [x for x in bad_f if x[0] == "H-PATH" and "dispatch/" in x[3]]
+        y_hit = [x for x in _fixture_findings(good) if x[2].endswith("yaml-keys.md")]
+        print(f"档②′ 词面鉴别力：真悬空 dispatch/ 发红 {len(d_hit)} 条＝{'对' if d_hit else '错（被窄化放掉了）'}；"
+              f"YAML 键名样发条 {len(y_hit)} 条＝{'对' if not y_hit else '错（workflow_dispatch 又被误拦）'}")
+        if not d_hit or y_hit:
+            ok = False
 
     good_f = _fixture_findings(good)
     print(f"档② 合规样：应零发条，实发 {len(good_f)} 条")
