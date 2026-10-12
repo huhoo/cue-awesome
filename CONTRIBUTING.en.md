@@ -24,6 +24,31 @@ Standard: capability sentences stated directly, links followable, attribution ke
 **Run the shipment, not the repo (last gate before listing, added 2026-10-12)**: every public sentence such as "ships with its own guard fixtures", "run `--selftest`" or "see `fixtures/…`" is a promise about the user's machine. **Green in the repository is not green in the artifact** - if the packaging exclusion list drops the sample directory, that capability sentence fails on the user's side. Three checks, run against the **unpacked artifact**: (1) every package-relative pointer made in a product face must actually exist inside the artifact; (2) if the artifact exposes a self-test entry point, it must be executed inside the unpacked copy and exit 0; (3) when the exclusion list conflicts with a capability claim, **trim the sample set - never delete the claim** (within the package size ceiling). Repo-level linters cannot see files missing from a zip, so these checks belong in a machine gate at the artifact layer, not in anyone's memory.
 
 
+**Two inputs, two gates (wording settled, added 2026-10-12)**: one and the same pointer is judged by two different gates over two different inputs, **and the two verdicts may differ without either being a contradiction** -
+
+- **The repository gate** asks whether a pointer in a product face exists **in the work tree**, and checks the five bans. A cross-package reference resolves here, so it passes.
+- **The shipment gate** asks whether that same pointer exists **in the unpacked artifact**, plus a real run of the self-test entry, plus size measured in zip bytes. A pointer that resolves in the work tree but is absent from the artifact reads red there.
+
+Two runnable commands, not pseudocode:
+
+```bash
+python3 scripts/check_public_hygiene.py            # repo: five bans plus pointer resolution across all product faces (exit 1 on ERROR)
+python3 scripts/check_shipment.py --repo-scan .    # artifact side: build each zip per the packing recipe, unpack, run the three checks (a trimmed sample dir reads red - which is the point)
+```
+
+The fully-shipped verdict (samples included) runs once you have the zip from the release side, against either the unpacked directory or the zip itself:
+
+```bash
+unzip -q <pkg>.zip -d <unpacked-dir>
+python3 scripts/check_shipment.py <unpacked-dir> --pkg <pkg>   # directory input: size is not judged, one WARN is recorded
+python3 scripts/check_shipment.py <pkg>.zip                    # zip input: size is judged, in zip bytes
+```
+
+**Rule: whenever you report "passed / red / the nth one is green", name the input shape** (repository work tree vs unpacked artifact vs the copy downloaded back from the channel). When the two gates disagree, compare inputs before comparing verdicts, and **never relay one gate's green as the other gate's green**. Work-tree bytes, self-built zip bytes and channel-returned zip bytes are **three different measures and must not be quoted interchangeably** - the exclusion list and the compression shape both differ.
+
+**One boundary: formats the channel refuses belong to the build exclusion list, and you must not smuggle a refused format into the package just to make a pointer resolve.** The fix is to rewrite that sentence as text, or point it at something the artifact genuinely carries - editing the exclusion list to talk the gate into green moves the promise somewhere the user cannot see.
+
+
 1. **No secrets or personal data**: tokens, API keys, `.env`, private keys, internal domains, internal addresses, undesensitized client or natural-person information.
 2. **No build artifacts**: `dist/`, `build/`, `*.zip`, `__pycache__/`, `*.pyc`.
 3. **No fabricated sources**: every factual statement and external link must carry a verifiable source. If you cannot find one, leave it empty — never invent a URL.
