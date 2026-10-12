@@ -75,6 +75,140 @@ from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_BREAK, WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+import time
+
+
+# --------------------------------------------------------------------------- #
+# 0b. 主题色系统（与 render_pptx.py / render_html.py 完全一致的克制三色）
+# --------------------------------------------------------------------------- #
+# 全程统一一套色：primary 主 + accent 强调 + ink 墨；背景以白/极浅灰为主。
+# 表头/封面带/标题装饰用 primary/accent；正文与标题文字保持深墨色（贴近"黑色"基线，
+# 避免 Office 模板蓝），不把标题整段染成彩色——克制、可辨识、跨格式一致。
+THEME = {
+    "default":  {"primary": "#2563EB", "ink": "#0F172A", "accent": "#0EA5E9",
+                 "panel": "#F8FAFC", "muted": "#64748B"},
+    "academic": {"primary": "#1E3A8A", "ink": "#0F172A", "accent": "#B45309",
+                 "panel": "#F8FAFC", "muted": "#475569"},
+    "gov":      {"primary": "#B91C1C", "ink": "#7F1D1D", "accent": "#C8A24B",
+                 "panel": "#FEF2F2", "muted": "#6B7280"},
+    "legal":    {"primary": "#9A2D2D", "ink": "#5B1616", "accent": "#B8862B",
+                 "panel": "#FBF4F4", "muted": "#6B7280"},
+    "finance":  {"primary": "#0F766E", "ink": "#134E4A", "accent": "#B45309",
+                 "panel": "#F0FDFA", "muted": "#64748B"},
+}
+
+
+def hex_to_rgb(h):
+    h = (h or "#000000").lstrip("#")
+    if len(h) != 6:
+        h = "000000"
+    return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def theme_for(profile):
+    return THEME.get(profile, THEME["default"])
+
+
+def add_para_border(paragraph, side, color_hex, sz=12, space=4):
+    """给段落加单边边框（bottom/left/top/right），w:sz 单位 1/8 磅。
+    用于封面下划、标题 accent 下划/左条、页脚细线——kimi 克制的装饰语言。"""
+    pPr = paragraph._p.get_or_add_pPr()
+    pBdr = pPr.find(qn("w:pBdr"))
+    if pBdr is None:
+        pBdr = OxmlElement("w:pBdr")
+        pPr.append(pBdr)
+    e = OxmlElement("w:%s" % side)
+    e.set(qn("w:val"), "single")
+    e.set(qn("w:sz"), str(sz))
+    e.set(qn("w:space"), str(space))
+    e.set(qn("w:color"), color_hex.lstrip("#"))
+    pBdr.append(e)
+
+
+def set_cell_shading(cell, fill):
+    """给表格单元格（tcPr）加底纹。"""
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), fill.lstrip("#"))
+    tcPr.append(shd)
+
+
+def set_table_borders(t, color="D0D7E2", sz=4):
+    """给整表加细灰边框（含内部横竖线）， crisp 观感、不依赖模板内置样式。"""
+    tblPr = t._tbl.tblPr
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        e = OxmlElement("w:%s" % edge)
+        e.set(qn("w:val"), "single")
+        e.set(qn("w:sz"), str(sz))
+        e.set(qn("w:space"), "0")
+        e.set(qn("w:color"), color)
+        borders.append(e)
+    tblPr.append(borders)
+
+
+def style_table(t, theme=None):
+    """kimi 表格：表头 primary 填充+白字、偶数行 panel 斑马纹、细灰边框。
+    覆盖模板内置表样式差异，保证跨 Word/WPS 观感一致。"""
+    theme = theme or THEME["default"]
+    primary = theme["primary"]
+    panel = theme["panel"]
+    set_table_borders(t, "D0D7E2", 4)
+    if not t.rows:
+        return
+    for cell in t.rows[0].cells:
+        set_cell_shading(cell, primary)
+        for para in cell.paragraphs:
+            for r in para.runs:
+                r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                r.bold = True
+    for i, row in enumerate(t.rows[1:], start=1):
+        if i % 2 == 0:
+            for cell in row.cells:
+                set_cell_shading(cell, panel)
+
+
+def accent_heading(p, level, theme=None):
+    """标题装饰：H1(含 level1) 底部 primary 下划；H2 左侧 accent 竖条；
+    与 HTML h2 border-left / PPTX accent 短下划一致。标题文字仍走样式深墨色。"""
+    theme = theme or THEME["default"]
+    if level <= 1:
+        add_para_border(p, "bottom", theme["primary"], sz=12, space=4)
+        p.paragraph_format.space_before = Pt(12)
+        p.paragraph_format.space_after = Pt(8)
+    elif level == 2:
+        add_para_border(p, "left", theme["accent"], sz=24, space=6)
+        p.paragraph_format.space_before = Pt(8)
+        p.paragraph_format.space_after = Pt(4)
+
+
+def cover(doc, title_text, source="", theme=None, kicker="Omni 解析重建", date_str=None):
+    """kimi 封面 hero：顶部 accent 细线 + accent kicker + 标题(Title 样式, 底部 primary 下划)
+    + 来源/日期副标题(灰)。标题仍用 Title 样式（校验器要求 style=='Title'）。"""
+    theme = theme or THEME["default"]
+    top = doc.add_paragraph()
+    top.paragraph_format.space_after = Pt(16)
+    add_para_border(top, "bottom", theme["accent"], sz=18, space=4)
+    k = doc.add_paragraph()
+    rk = k.add_run(kicker)
+    rk.font.size = Pt(11)
+    rk.font.bold = True
+    rk.font.color.rgb = hex_to_rgb(theme["accent"])
+    k.paragraph_format.space_after = Pt(4)
+    t = doc.add_heading(level=0)
+    t.add_run(title_text)
+    t.paragraph_format.space_after = Pt(12)
+    add_para_border(t, "bottom", theme["primary"], sz=20, space=10)
+    sub = doc.add_paragraph()
+    txt = source or ""
+    if date_str:
+        txt = (txt + "　·　" + date_str) if txt else date_str
+    rs = sub.add_run(txt)
+    rs.font.size = Pt(10.5)
+    rs.font.color.rgb = hex_to_rgb(theme["muted"])
+    sub.paragraph_format.space_after = Pt(20)
 
 
 # --------------------------------------------------------------------------- #
@@ -509,22 +643,29 @@ def add_inline(paragraph, text, fmt=None):
 # --------------------------------------------------------------------------- #
 # 6. 渲染 + 分页 + 标题提升 + 目录
 # --------------------------------------------------------------------------- #
-def insert_toc(doc, outline_map):
+def insert_toc(doc, outline_map, theme=None):
+    theme = theme or THEME["default"]
     h = doc.add_heading(level=1)
     add_inline(h, "目录")
+    add_para_border(h, "bottom", theme["accent"], sz=18, space=6)
     for lvl, title in outline_map:
         p = doc.add_paragraph()
-        p.paragraph_format.left_indent = Pt(18 * (lvl - 1))
+        p.paragraph_format.left_indent = Pt(18 * (lvl - 1) + 6)
+        p.paragraph_format.space_after = Pt(2)
+        m = p.add_run("▪  " if lvl == 1 else "·  ")
+        m.font.color.rgb = hex_to_rgb(theme["accent"])
+        m.font.size = Pt(11)
         r = p.add_run(title)
         if lvl == 1:
             r.bold = True
+        else:
+            r.font.color.rgb = hex_to_rgb(theme["muted"])
 
 
-def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_text=None, page_marks=False, level_offset=0, footnotes=None, indent_first=0, table_style="Light Grid Accent 1", quote_east=None):
-    if title_text:
-        doc.add_heading(title_text, level=0)  # 封面标题（Title 样式）
+def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_marks=False, level_offset=0, footnotes=None, indent_first=0, table_style="Light Grid Accent 1", quote_east=None, theme=None):
+    theme = theme or THEME["default"]
     if use_toc and outline_map:
-        insert_toc(doc, outline_map)
+        insert_toc(doc, outline_map, theme)
 
     prev_page = None
     page_breaks = 0
@@ -552,6 +693,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
                 lvl, heading, body = hit
                 h = doc.add_heading(level=min(lvl + level_offset, 6))
                 add_inline(h, heading)
+                accent_heading(h, min(lvl + level_offset, 6), theme)
                 if body:
                     p = doc.add_paragraph()
                     add_inline(p, body)
@@ -561,6 +703,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
             level, text = payload
             h = doc.add_heading(level=min(level + level_offset, 6))
             add_inline(h, text)
+            accent_heading(h, min(level + level_offset, 6), theme)
         elif btype == "para":
             p = doc.add_paragraph(); add_inline(p, payload)
             if indent_first:
@@ -568,7 +711,9 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
                 p.paragraph_format.first_line_indent = Pt(indent_first)
         elif btype == "hr":
             p = doc.add_paragraph()
-            p.add_run("—" * 20).font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            add_para_border(p, "bottom", theme["accent"], sz=12, space=2)
+            p.paragraph_format.space_after = Pt(6)
         elif btype in ("ul", "ol"):
             # 每个列表条目也按 outline 匹配：命中则提升为标题（小节标题），
             # 未命中保持列表项（真列表不受影响）。
@@ -579,6 +724,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
                     lvl, heading, body = hit
                     h = doc.add_heading(level=min(lvl + level_offset, 6))
                     add_inline(h, heading)
+                    accent_heading(h, min(lvl + level_offset, 6), theme)
                     if body:
                         p = doc.add_paragraph()
                         add_inline(p, body)
@@ -586,28 +732,31 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
                     p = doc.add_paragraph(style=style)
                     add_inline(p, it)
         elif btype == "quote":
-            p = doc.add_paragraph(); p.paragraph_format.left_indent = Pt(20)
+            p = doc.add_paragraph(); p.paragraph_format.left_indent = Pt(18)
+            add_para_border(p, "left", theme["accent"], sz=24, space=8)
             if quote_east:
                 add_inline(p, payload, fmt=lambda r: set_run_east(r, quote_east))
             else:
                 add_inline(p, payload)
-            # CJK 伪斜体渲染难看：引用块用灰色区分，不用斜体
+            # CJK 伪斜体渲染难看：引用块用灰色区分，不用斜体；accent 左条+浅灰底明示"引用"
+            set_shading(p, theme["panel"].lstrip("#"))
             for r in p.runs:
                 r.font.color.rgb = RGBColor(0x59, 0x59, 0x59)
         elif btype == "visual":
             label, body, kind = payload
             p = doc.add_paragraph()
-            p.paragraph_format.left_indent = Pt(18)
+            p.paragraph_format.left_indent = Pt(16)
+            add_para_border(p, "left", theme["accent"], sz=24, space=8)
             rl = p.add_run(label + ("  " if body else ""))
             rl.bold = True
-            rl.font.color.rgb = RGBColor(0x1F, 0x49, 0x7D)
+            rl.font.color.rgb = hex_to_rgb(theme["accent"])
             if body:
                 rb = p.add_run(body)
                 if kind == "desc":
                     # 视觉/场景描述：灰色 + 底纹，表明是 Omni 看见的，非原文
                     # （不用斜体——CJK 伪斜体渲染难看）
                     rb.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-                    set_shading(p, "F2F5FA")
+                    set_shading(p, theme["panel"].lstrip("#"))
                 # kind == "turn"：说话人/时间戳转写保持正文色，便于引用
         elif btype == "table":
             header, rows = payload
@@ -635,10 +784,12 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_te
                 for c in range(ncol):
                     cells[c].text = ""
                     add_inline(cells[c].paragraphs[0], row[c] if c < len(row) else "")
+            style_table(t, theme)  # kimi：表头填充+斑马纹+细边框
     # 文末「注释」节：脚注定义（agent 产物引用约定的落点）
     if footnotes:
         h = doc.add_heading(level=min(1 + level_offset, 6))
         add_inline(h, "注释")
+        accent_heading(h, min(1 + level_offset, 6), theme)
         for label, text in footnotes:
             p = doc.add_paragraph()
             r = p.add_run("[%s] " % label)
@@ -678,10 +829,21 @@ def set_run_east(run, eastasia):
     rf.set(qn("w:eastAsia"), eastasia)
 
 
-def add_page_number_footer(doc):
-    """页脚居中插入 PAGE 域页码（递交/打印件刚需；域随分页自动更新）。"""
-    p = doc.sections[0].footer.paragraphs[0]
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+def add_page_number_footer(doc, source="", theme=None):
+    """页脚：顶部 accent 细线 + 来源(左,灰) + PAGE 域页码(右)；域随分页自动更新。"""
+    theme = theme or THEME["default"]
+    sec = doc.sections[0]
+    p = sec.footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    add_para_border(p, "top", theme["accent"], sz=8, space=2)
+    if source:
+        rs = p.add_run(source)
+        rs.font.size = Pt(8)
+        rs.font.color.rgb = hex_to_rgb(theme["muted"])
+        p.add_run("\t")
+        from docx.enum.text import WD_TAB_ALIGNMENT
+        avail = sec.page_width - sec.left_margin - sec.right_margin
+        p.paragraph_format.tab_stops.add_tab_stop(avail, WD_TAB_ALIGNMENT.RIGHT)
     fld = OxmlElement("w:fldSimple")
     fld.set(qn("w:instr"), r"PAGE \* MERGEFORMAT")
     r = OxmlElement("w:r")
@@ -895,12 +1057,14 @@ def fmt_pages(pages):
     return "第 " + "、".join(("%d" % a) if a == b else ("%d–%d" % (a, b)) for a, b in runs) + " 页"
 
 
-def render_provenance_appendix(doc, prov_rows, table_style="Table Grid"):
+def render_provenance_appendix(doc, prov_rows, table_style="Table Grid", theme=None):
     """文末「证据溯源附录」：每源一行（源 | 类型 | 可溯源位置）。"""
+    theme = theme or THEME["default"]
     pb = doc.add_paragraph()
     pb.add_run().add_break(WD_BREAK.PAGE)
     h = doc.add_heading(level=1)
     add_inline(h, "证据溯源附录")
+    accent_heading(h, 1, theme)
     note = doc.add_paragraph()
     rn = note.add_run("以下位置由 Omni 解析元数据（grounded 页锚点 / 画面时间点 / 说话人转写）自动生成，"
                       "可直接对照原件定位。")
@@ -921,6 +1085,7 @@ def render_provenance_appendix(doc, prov_rows, table_style="Table Grid"):
         for c, val in enumerate((name, kind, loc)):
             cells[c].text = ""
             add_inline(cells[c].paragraphs[0], val)
+    style_table(t, theme)  # kimi：表头填充+斑马纹+细边框
 
 
 # --------------------------------------------------------------------------- #
@@ -982,11 +1147,13 @@ def main():
 
     source = data.get("source") or ""
     detail = data.get("detail") or "text"
+    theme = theme_for(args.profile)
+    today = time.strftime("%Y-%m-%d")
 
     doc = Document()
     apply_doc_fonts(doc, pcfg)  # 场景制式字体/字号/行距/页边距
     if want_pagenum:
-        add_page_number_footer(doc)  # 页脚 PAGE 域页码（域随分页自动更新）
+        add_page_number_footer(doc, source, theme)  # 页脚：来源+accent 细线+PAGE 域
 
     # ---- 多源合并模式（证据整合场景）：{"title","analysis":{...},"sources":[...]} ---- #
     # analysis = agent 整合分析产物（渲染为首章，带 [^n] 引用）；
@@ -1024,11 +1191,11 @@ def main():
 
         # 前置：文档标题 + 总目录（附录恒在文末，目录可预置）
         if doc_title:
-            doc.add_heading(doc_title, level=0)
+            cover(doc, doc_title, source, theme, kicker="多源证据整合", date_str=today)
         if not args.no_appendix:
             combined_outline.append((1, "证据溯源附录"))
         if not args.no_toc and combined_outline:
-            insert_toc(doc, combined_outline)
+            insert_toc(doc, combined_outline, theme)
 
         # 第二遍：逐章渲染（章间分页；章内分页/标题提升/溯源标注照常）
         for i, (chapter, t_title, md, om, seg, foot) in enumerate(chapters):
@@ -1037,13 +1204,14 @@ def main():
                 pb.add_run().add_break(WD_BREAK.PAGE)
             h = doc.add_heading(level=1)
             add_inline(h, chapter)
+            accent_heading(h, 1, theme)
             if t_title:
                 tp = doc.add_paragraph()
                 r = tp.add_run(t_title)
                 r.bold = True
             # 章内标题层级整体 +1：与总目录一致（章=H1，章内 H1→H2 …）
             blocks = parse_blocks(md)
-            render(doc, blocks, seg, om, bool(seg), False, None, args.page_marks, level_offset=1, footnotes=foot, indent_first=indent_pt, table_style=tstyle, quote_east=quote_east)
+            render(doc, blocks, seg, om, bool(seg), False, page_marks=args.page_marks, level_offset=1, footnotes=foot, indent_first=indent_pt, table_style=tstyle, quote_east=quote_east, theme=theme)
 
         # 证据溯源附录：把各源解析元数据（grounding 页锚点 / 画面时间点 / 说话人转写 /
         # outline 章节数）回灌到最终文档——人可按页码/时间点直接对照原件。
@@ -1067,7 +1235,7 @@ def main():
                 if pv["headings"]:
                     locs.append("%d 个章节" % pv["headings"])
                 prov_rows.append((name, pv["kind"], "；".join(locs) if locs else "纯文本（无结构化锚点）"))
-            render_provenance_appendix(doc, prov_rows, tstyle)
+            render_provenance_appendix(doc, prov_rows, tstyle, theme)
 
         sys.stderr.write(
             "omni2docx merge: sources=%d outline_nodes=%d detail=%s\n"
@@ -1103,7 +1271,9 @@ def main():
         doc.core_properties.comments = "generated by omni2docx (detail=%s)" % detail
 
     blocks = parse_blocks(md)
-    page_breaks = render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, title_text, args.page_marks, footnotes=footnotes, indent_first=indent_pt, table_style=tstyle, quote_east=quote_east)
+    if title_text:
+        cover(doc, title_text, source, theme, kicker="Omni 解析重建", date_str=today)
+    page_breaks = render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_marks=args.page_marks, footnotes=footnotes, indent_first=indent_pt, table_style=tstyle, quote_east=quote_east, theme=theme)
     doc.save(args.out)
 
     sys.stderr.write(

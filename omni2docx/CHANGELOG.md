@@ -1,5 +1,18 @@
 # CHANGELOG(omni2docx)
 
+### 0.4.2 — 2026-10-12（Word 视觉重做：kimi 克制体系，四格式统一）
+
+- 参照 kimi 共用设计哲学，对 `build_docx.py` 视觉层提质，使 **Word 与已完成的 PPTX(0.4.1)/HTML(0.4.0) 在同一套三色主题**（primary/accent/ink/panel/muted，default/academic/gov/legal/finance 各一套）下观感一致——PDF 走 HTML 打印，自动继承同套样式：
+  - **封面 hero**：顶部 accent 细线 + accent kicker（如"Omni 解析重建"）+ 标题（保留 Word `Title` 样式，底部 primary 下划）+ 来源·日期副标题（灰）。
+  - **目录美化**：`目录` 标题底部 accent 下划；条目按层级缩进，一级 `▪` accent 标记、次级 `·` 灰标记。
+  - **标题装饰**：H1(含 level1) 底部 primary 下划；H2 左侧 accent 竖条（与 HTML `h2` 左竖条、PPTX accent 短下划一致）；标题文字仍走样式深墨色（保留"黑色基线"，不整段染色）。
+  - **表格美化**：表头 primary 填充 + 白字、偶数行 panel 斑马纹、整表细灰边框（XML 直设，不依赖模板内置表样式，跨 Word/WPS 一致）。
+  - **引用/标注段**：accent 左条 + panel 浅灰底 + 灰字，明示"引用/视觉理解"区别于正文。
+  - **页脚**：顶部 accent 细线 + 来源(左,灰) + `PAGE` 域页码(右)，域随分页自动更新。
+  - **hr**：改为居中 accent 短下划（替代原灰色长虚线）。
+- 保真与校验口径**不变**：字符零丢失（`validate_docx` 覆盖率口径）；`目录` 仍为 `Heading 1`、`Title` 样式保留；分页/标题层级/表格数量未被改动。
+- 回归：`tests/run_matrix_test.py` 13/13 全 PASS（覆盖率 100%，`page_field`/`no_emoji`/`quote_kaiti`/`nested_inline`/`cjk_space_clean` 等专项断言全绿）。
+
 ### 0.4.1 — 2026-10-12（PPTX 视觉重做：kimi 克制体系，修正"空/丑"）
 
 - 参照 kimi `pptx` skill 的**克制设计哲学**（work_report / strategic / academic 规范）重做 `render_pptx.py` 视觉层，修正上一版"内容页只剩标题+`▪`平铺"的空与丑：
