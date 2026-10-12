@@ -59,10 +59,11 @@ Read `assets/投决备忘录.md` first (that is the seven-part shape), then `SKI
 
 ```bash
 python3 scripts/check_memo.py --help                      # usage; no network
-python3 scripts/check_memo.py --selftest                   # four tiers: good must pass, two violating samples must fire, blank template must FAIL, counter-evidence matrix item by item
+python3 scripts/check_memo.py --selftest                   # five tiers: good must pass; the build-then-check chain must be byte-identical and clean; two violating samples must fire; the blank template must FAIL; the counter-evidence matrix reports code, lane and real exit status per item
 python3 scripts/check_memo.py scripts/fixtures/good-memo.md --run scripts/fixtures/good-run.json          # should PASS
 python3 scripts/check_memo.py scripts/fixtures/weak-side-memo.md --run scripts/fixtures/weak-side-run.json  # should FAIL: one side missing
 python3 scripts/check_memo.py scripts/fixtures/no-anchor-memo.md --run scripts/fixtures/no-anchor-run.json  # should FAIL: figures without anchors
+python3 scripts/check_memo.py scripts/fixtures/live-memo.md --run scripts/fixtures/live-run.json    # should PASS - this sample is build_memo's own output, not hand-written
 python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/good-run.json                    # should FAIL - a blank template failing the gate is the design
 ```
 
@@ -118,8 +119,9 @@ Failure exits on the build side are readable too: a `--subject` that is not six 
 ## 7. Running status and measurement progress (honest list)
 
 - **Not listed; the per-company full-chain case account is not done**: until a real subject runs the whole chain (materials plus channel, seven parts written, anchors checked line by line), this package makes no capability claim and gives no hit-rate, pass-rate or timing figure.
-- The documentation and machine faces are in place: the seven-part contract, four lanes, three fixtures (compliant, one-side-missing, anchorless) and tier four of `--selftest` - counts come from the script's own line.
-- **The counter-evidence lives inside the package**: tier four applies single-point breakages to the compliant draft, each raising the expected code and lane, plus positives that must not be blocked; anchors must hit exactly one line, **so a drifting fixture or a weakened lane is shouted out instead of passing silently** - the probes cannot be tautological.
+- The documentation and machine faces are in place: the seven-part contract, four lanes, four fixtures (compliant, one-side-missing, anchorless, and one produced by the generator itself) and tiers one-b / four of `--selftest` - counts come from the script's own line.
+- **The counter-evidence lives inside the package**: tier four applies single-point breakages to the compliant draft, each raising the expected code and lane and self-reporting the gate's real exit status, plus positives that must not be blocked; anchors must hit exactly one line, **so a drifting fixture or a weakened lane is shouted out instead of passing silently** - the probes cannot be tautological.
+- **Generator and gate share one live run**: tier one-b runs `build_memo.py` on the in-package `live-facts.jsonl` plus `live-gaps.jsonl`, asserts the produced draft and run record are byte-identical to `live-memo.md` / `live-run.json`, and that the gate stays clean. This closes the seam where a hand-written sample passed while the generator's own output was not recognised by the gate - static samples age, a freshly generated one cannot hide it.
 - The scripts are zero-network: they read only the transcriptions and material lists you provide - no retrieval inside the script, no credentials, no hardcoded tool or domain lists.
 - No gate on unproven surfaces: the checker does not verify whether a leg is open today, nor whether an announcement is true - the first follows the live catalog, the second is on the official original.
 - Totals only ever add same-basis rows from this run; a group whose basis or unit differs is written as "not summed" rather than quietly forced into one number.
@@ -138,8 +140,8 @@ Failure exits on the build side are readable too: a `--subject` that is not six 
 | `SKILL.md` | Main instructions and the seven-part contract (design authority, Chinese primary) |
 | `assets/投决备忘录.md` | Seven-part draft template (or produced directly by build_memo.py) |
 | `scripts/build_memo.py` | Builds the seven-part draft plus sources.jsonl and run.json; routes gaps into part five; refuses to write when one side of the argument is missing (zero network, idempotent) |
-| `scripts/check_memo.py` | Four-lane gate (shape / anchor / count and both-sides / red line) plus the four-tier self-check with the counter-evidence matrix |
-| `scripts/fixtures/` | Three draft samples - compliant, one-side-missing, anchorless - each with its run.json |
+| `scripts/check_memo.py` | Four-lane gate (shape / anchor / count and both-sides / red line) plus the five-tier self-check (build-then-check chain and counter-evidence matrix) |
+| `scripts/fixtures/` | Four draft samples - compliant, one-side-missing, anchorless, and the generator's own output - each with its run.json; the generator sample also carries its inputs `live-facts.jsonl` / `live-gaps.jsonl` |
 | `README.en.md` | English translation of this file |
 
 See `CHANGELOG.md` for versions.

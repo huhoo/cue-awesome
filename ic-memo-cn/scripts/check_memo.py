@@ -4,11 +4,13 @@
 
 用法：
     python3 check_memo.py <memo.md> [--run <run.json>]     校验一份草稿（--run 缺省取同目录 run.json）
-    python3 check_memo.py --selftest                       四档自证（下详）
+    python3 check_memo.py --selftest                       档位自证：一档／一档b／二档／三档／四档（下详）
     python3 check_memo.py --help                           本说明
 
-四档自证（反证矩阵长在脚本里，不另出包外探针件）：
+档位自证（反证矩阵长在脚本里，不另出包外探针件）：
     一档 合规稿须过（发条 0）
+    一档b 生成→闸同源链：现场跑 build_memo（包内 live-facts／live-gaps），产出须与 live-memo／live-run 逐字节同，且过闸零发条
+         ——这一档治的是「手写夹具能过、真实产出不被闸认」那条缝；夹具漂了当场红
     二档 两枚违例样须各自发红、码与道名相符（反方缺一侧／无锚数）
     三档 空模板必须 FAIL（留占位＝违例，不是合规）
     四档 反证矩阵：对合规稿做单点破坏，每枚必须发出预期的码与道名；另附正向不误拦。
@@ -34,6 +36,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from decimal import Decimal, InvalidOperation
@@ -65,6 +68,7 @@ BANNED = re.compile(r'风险等级|风险评级|信用评级|主体评级|违约
 NEG_WORDS = ('不', '未', '禁', '勿', '拒', '非', '没')
 CLAUSE_SPLIT = re.compile(r'[。；;！!？?：:，,、〕）」』]')
 NUM = re.compile(r'(\d+)')
+SIDE_LABEL = re.compile(r'^\*\*(看多|看空)依据\*\*$')
 SUMMARY_COUNTS = re.compile(r'事实与数字 (\d+) 条、业务要点 (\d+) 条、看多 (\d+) 条、看空 (\d+) 条；缺数与未决 (\d+) 条')
 SIDE_COUNTS = re.compile(r'两方条数：看多 (\d+) 条、看空 (\d+) 条')
 
@@ -274,18 +278,26 @@ def check(path: Path, run_path: Path | None):
             listed['business_rows'] = len([cs for _, cs in table(lines, i0, i1) if '本次无' not in ' '.join(cs)])
         if '风险与反方' in secs:
             i0, i1 = secs['风险与反方']
-            side, b_rows, k_rows = None, [], []
+            side, b_rows, k_rows, orphan = None, [], [], 0
             for ln in lines[i0:i1]:
-                if '看多依据' in ln:
-                    side = 'b'
-                elif '看空依据' in ln:
-                    side = 'k'
-                elif ln.strip().startswith('|'):
-                    cs = cells(ln)
-                    if not cs or set(cs[0]) <= {'-'} or cs[0] == '#' or all(blank(c) for c in cs[1:]):
-                        continue
-                    (b_rows if side == 'b' else k_rows).append(cs)
+                s = ln.strip()
+                m = SIDE_LABEL.match(s)      # 结构精确式：独立成行的加粗标签才算分侧，行文本含同样字样不算
+                if m:
+                    side = 'b' if m.group(1) == '看多' else 'k'
+                    continue
+                if not s.startswith('|'):
+                    continue
+                cs = cells(ln)
+                if not cs or set(cs[0]) <= {'-'} or cs[0] == '#' or all(blank(c) for c in cs[1:]):
+                    continue
+                if side is None:
+                    orphan += 1              # 首个标签之前的表格行不归属任何一侧，宁少计不虚计
+                    continue
+                (b_rows if side == 'b' else k_rows).append(cs)
             listed['bull_rows'], listed['bear_rows'] = len(b_rows), len(k_rows)
+            if orphan:
+                add('E-COVERAGE', '反方缺一侧', i0 + 1,
+                    f"第四节首个侧标签之前有 {orphan} 行表格（无归属侧，未计入两侧）（规格：每行都要落在「**看多依据**」或「**看空依据**」标签之下，闸不猜归属）")
         if '缺数与未决' in secs:
             i0, i1 = secs['缺数与未决']
             listed['gap_rows'] = len([cs for _, cs in table(lines, i0, i1) if '本次无缺数' not in ' '.join(cs)])
@@ -387,6 +399,42 @@ def _lane(finding):
     return (m.group(1), m.group(2)) if m else ('?', '?')
 
 
+def chain_test(tmp: Path):
+    """一档b 生成→闸同源链：包内输入件喂 build_memo，产出必须与存夹具逐字节同，且过闸零发条。
+
+    这条是 M212 的止血闸：上一版缝就活在「手写夹具能过、真实产出不被识别」之间——
+    只存静态样不够，必须每次自测都现场跑一遍生成器，产出漂了就红。"""
+    fx = HERE / 'fixtures'
+    for n in ('live-facts.jsonl', 'live-gaps.jsonl', 'live-memo.md', 'live-run.json'):
+        if not (fx / n).is_file():
+            print('selftest 一档b同源链：缺件 fixtures/%s（规格：生成器输入与真实产出样必须同时在位）' % n)
+            return False
+    d = tmp / 'chain'
+    d.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run([sys.executable, '-B', str(HERE / 'build_memo.py'), '--run-dir', str(d),
+                        '--subject', '000001', '--subject-name', '冒烟主体',
+                        '--facts', str(fx / 'live-facts.jsonl'), '--gaps', str(fx / 'live-gaps.jsonl'),
+                        '--asof', '2026-10-12 15:00', '--quiet'], capture_output=True, text=True)
+    if r.returncode != 0:
+        print('selftest 一档b同源链：build_memo 退码=%d（规格 0）｜出口=%s' % (
+            r.returncode, (r.stdout + r.stderr).strip()[:120]))
+        return False
+    gen = d / 'memo-000001-2026-10-12.md'
+    if not gen.is_file():
+        print('selftest 一档b同源链：生成器未产出 memo-000001-2026-10-12.md')
+        return False
+    same_m = gen.read_bytes() == (fx / 'live-memo.md').read_bytes()
+    same_r = (d / 'run.json').read_bytes() == (fx / 'live-run.json').read_bytes()
+    finds, n = check(gen, d / 'run.json')
+    print('selftest 一档b同源链：现场 build_memo 退码 0｜产出与存夹具逐字节同＝memo %s／run %s｜闸发条 %d 条（规格 0，扫过 %d 行）' % (
+        '是' if same_m else '否', '是' if same_r else '否', len(finds), n))
+    for x in finds[:3]:
+        print('   意外发条 → ' + x)
+    if not (same_m and same_r):
+        print('   漂了：生成器产出与存夹具不一致——夹具是死的、产出是活的，以产出为准重出夹具（live-memo/live-run），不许只改闸')
+    return same_m and same_r and not finds
+
+
 def probe_matrix(md, run, tmp: Path):
     """第四档：单点破坏每枚必须发出预期的码与道名；正向不误拦必须零发条。
 
@@ -406,15 +454,21 @@ def probe_matrix(md, run, tmp: Path):
         rp = d / 'run.json'
         rp.write_text(json.dumps(run2, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
         finds, _n = check(f, rp)
+        # 真退码：同一对文件送 CLI 跑一遍，自报的 rc 与被检方拿到的 rc 同源
+        rr = subprocess.run([sys.executable, '-B', str(HERE / 'check_memo.py'), str(f), '--run', str(rp)],
+                            capture_output=True, text=True)
+        want_rc = 0 if expect == '零发条' else 1
         lanes = [_lane(x) for x in finds]
         if expect == '零发条':
             got = '零发条' if not lanes else '误拦：%s／%s（共 %d 条）' % (lanes[0][0], lanes[0][1], len(lanes))
-            out.append((name, exp, got, not lanes, finds))
+            passed = (not lanes) and rr.returncode == want_rc
+            out.append((name, exp, '%s｜闸退码=%s（规格 %s）' % (got, rr.returncode, want_rc), passed, finds))
         else:
             hit = next((i for i, l in enumerate(lanes, 1) if l == expect), 0)
             got = ('%s／%s（第 %d／共 %d 条）' % (expect[0], expect[1], hit, len(lanes)) if hit else
                    ('未命中：零发条' if not lanes else '未命中：首条 %s／%s（共 %d 条）' % (lanes[0][0], lanes[0][1], len(lanes))))
-            out.append((name, exp, got, bool(hit), finds))
+            passed = bool(hit) and rr.returncode == want_rc
+            out.append((name, exp, '%s｜闸退码=%s（规格 %s）' % (got, rr.returncode, want_rc), passed, finds))
 
     def replace_once(text, old, new, tag):
         n = text.count(old)
@@ -501,6 +555,10 @@ def probe_matrix(md, run, tmp: Path):
                     f'锚失配（缺数样行命中 {len(gap_lines)} 处）', False, []))
     t, n = replace_once(md, '\n同一事实多源时并列两源', '\n> 机构给予买入评级，目标价 30 元。\n\n同一事实多源时并列两源', 'PB13')
     one('PB13-判断词入正文', ('E-BANWORD', '判断词'), t, run, n)
+    t15, n15 = replace_once(md, bull_row, bull_row.replace('收入连续两期同口径增长', '收入连续两期同口径增长（看多依据）', 1), 'PB15') if bull_row else (md, 0)
+    one('PB15-行文本含标签字样', '零发条', t15, run, n15)
+    t16, n16 = replace_once(md, '**看空依据**\n\n', '', 'PB16')
+    one('PB16-删侧标签行', ('E-COVERAGE', '反方缺一侧'), t16, run, n16)
     if len(sec7) == 1:
         t = md[:sec7[0]]
         one('PB14-缺第七节', ('E-FORMAT', '七节'), t, run, 1)
@@ -523,6 +581,14 @@ def probe_matrix(md, run, tmp: Path):
 
 
 def selftest():
+    tmp = Path(tempfile.mkdtemp(prefix='check-memo-selftest-'))
+    try:
+        return selftest_body(tmp)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def selftest_body(tmp):
     gd = HERE / 'fixtures' / 'good-memo.md'
     gr = HERE / 'fixtures' / 'good-run.json'
     wd = HERE / 'fixtures' / 'weak-side-memo.md'
@@ -543,6 +609,9 @@ def selftest():
     for x in gf:
         print('   意外发条 → ' + x)
         ok = False
+    chain_ok = chain_test(tmp)
+    if not chain_ok:
+        ok = False
 
     def expect(name, finds, code, lane, path, nl):
         nonlocal ok
@@ -562,21 +631,17 @@ def selftest():
     if not tf:
         print('   意外：空模板过了闸（缺陷——占位必须判违例）')
         ok = False
-    tmp = Path(tempfile.mkdtemp(prefix='check-memo-selftest-'))
-    try:
-        res = probe_matrix(gd.read_text(encoding='utf-8'), json.loads(gr.read_text(encoding='utf-8')), tmp)
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+    res = probe_matrix(gd.read_text(encoding='utf-8'), json.loads(gr.read_text(encoding='utf-8')), tmp)
     bad = [x for x in res if not x[3]]
     print(f"selftest 四档反证矩阵：{len(res)} 枚，未达预期 {len(bad)} 枚")
     for name, exp, gotv, passed, finds in res:
-        print('   %-24s 期望 %-26s 实得 %-34s %s' % (name, exp, gotv, '符合' if passed else '不符'))
+        print('   %-26s 期望 %-26s 实得 %-52s %s' % (name, exp, gotv, '符合' if passed else '不符'))
         if not passed and finds:
             for x in finds[:2]:
                 print('      实发详行 → ' + x[:120])
     if bad:
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)}）")
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 一档b 同源链 {'通' if chain_ok else '不通'} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)}）")
     return 0 if ok else 1
 
 
@@ -585,7 +650,7 @@ def main() -> int:
                                  epilog='出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋两类计数。判定全集在本脚本现值。')
     ap.add_argument('memo', nargs='?', help='待校验的草稿（markdown）')
     ap.add_argument('--run', help='同次运行的 run.json（缺省取草稿同目录）')
-    ap.add_argument('--selftest', action='store_true', help='四档自证：合规稿须过、两枚违例样须发红、空模板必须 FAIL、反证矩阵逐枚自报')
+    ap.add_argument('--selftest', action='store_true', help='档位自证：一档合规稿须过、一档b 生成→闸同源链须同字节且零发条、二档两枚违例样须发红、三档空模板必须 FAIL、四档反证矩阵逐枚自报码与道名与真退码')
     args = ap.parse_args()
     if args.selftest:
         return selftest()

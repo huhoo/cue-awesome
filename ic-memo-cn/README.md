@@ -59,10 +59,11 @@ python3 ~/.workbuddy/skills/ic-memo-cn/scripts/check_memo.py \
 
 ```bash
 python3 scripts/check_memo.py --help                      # 参数说明，零网络
-python3 scripts/check_memo.py --selftest                   # 四档：合规稿须过、两枚违例样须发红、空模板必须 FAIL、反证矩阵逐枚自报
+python3 scripts/check_memo.py --selftest                   # 五档：合规稿须过、生成→闸同源链须同字节零发条、两枚违例样须发红、空模板必须 FAIL、反证矩阵逐枚自报码与道名与真退码
 python3 scripts/check_memo.py scripts/fixtures/good-memo.md --run scripts/fixtures/good-run.json          # 应 PASS
 python3 scripts/check_memo.py scripts/fixtures/weak-side-memo.md --run scripts/fixtures/weak-side-run.json  # 应 FAIL：反方缺一侧
 python3 scripts/check_memo.py scripts/fixtures/no-anchor-memo.md --run scripts/fixtures/no-anchor-run.json  # 应 FAIL：数值无锚
+python3 scripts/check_memo.py scripts/fixtures/live-memo.md --run scripts/fixtures/live-run.json    # 应 PASS——这枚是 build_memo 的真实产出，不是手抄
 python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/good-run.json                    # 应 FAIL——空模板过不了闸是设计
 ```
 
@@ -118,8 +119,9 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 ## 七、运行状态与实测进度（诚实清单）
 
 - **未上架、逐家真公司的全链案例账未做**：真主体跑通全链（材料＋通道双腿、七节成文、逐条锚回查）的账未回之前，本件不作能力宣称，也不给命中率、通过率或耗时数字。
-- 文档面与机检面就位：七节契约、四道闸、三枚守护样（合规稿／反方缺一侧／无锚数）＋`--selftest` 第四档反证矩阵——枚数与行数一律取脚本自报行。
-- **反证矩阵长在本件脚本里**：`--selftest` 对合规稿做单点破坏，每枚必须发出预期的码与道名，另附正向不误拦；锚点要求「合规稿内唯一命中」，**失配即判该枚不符**——所以守护样漂移或某道判定被拆弱都会先叫，反证能力不是恒真的。
+- 文档面与机检面就位：七节契约、四道闸、四枚守护样（合规稿／反方缺一侧／无锚数／生成器真实产出样）＋`--selftest` 一档b「生成→闸」同源链与四档反证矩阵——枚数与行数一律取脚本自报行。
+- **反证矩阵长在本件脚本里**：`--selftest` 对合规稿做单点破坏，每枚必须发出预期的码与道名、并自报闸的真退码，另附正向不误拦；锚点要求「合规稿内唯一命中」，**失配即判该枚不符**——所以守护样漂移或某道判定被拆弱都会先叫，反证能力不是恒真的。
+- **生成器与闸同源于一次现场跑**：一档b 每次自测都用包内 `live-facts.jsonl`＋`live-gaps.jsonl` 现跑 `build_memo.py`，断言产出与 `live-memo.md`／`live-run.json` 逐字节相同、且过闸零发条。这条治的是「手写夹具能过、真实产出不被闸认」的缝——静态夹具会老，现场生成的产出不会。
 - 脚本自身零网络：只读你转写好的事件文件与材料清单，不取数、不写凭据、不硬编码工具名与域清单。
 - 已知未证面不建闸：机检不判「某腿今天到底开没开」，也不判公告内容真假——前者以 catalog 现值为准，后者由逐字回原文承担。
 - 合计只由同口径分项相加：不同口径／单位的组，脚本写明「不合计」而不是硬凑一个数。
@@ -138,8 +140,8 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 | `SKILL.md` | 主指令与七节契约（设计权威，中文主） |
 | `assets/投决备忘录.md` | 七节草稿模板（或由 build_memo.py 直接产出） |
 | `scripts/build_memo.py` | 落成七节草稿＋sources.jsonl＋run.json；缺数落第五节；反方缺一侧拒绝成文（零网络，幂等） |
-| `scripts/check_memo.py` | 四道机检（形制／锚／计数与反方／红线）＋四档自证含反证矩阵 |
-| `scripts/fixtures/` | 三枚草稿样（合规稿／反方缺一侧／无锚数），各带配套 run.json |
+| `scripts/check_memo.py` | 四道机检（形制／锚／计数与反方／红线）＋五档自证（含生成→闸同源链与反证矩阵） |
+| `scripts/fixtures/` | 四枚草稿样（合规稿／反方缺一侧／无锚数／生成器真实产出样），各带配套 run.json；真实产出样另带其生成输入 `live-facts.jsonl`／`live-gaps.jsonl` |
 | `README.en.md` | 本文件的英文译文 |
 
 版本见 `CHANGELOG.md`。
