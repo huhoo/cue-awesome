@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
-version: "0.6.0"
+version: "0.6.1"
 license: MIT
 metadata:
   requires:
@@ -240,6 +240,12 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 
 **Agent 编排约定（"不许编造"铁律）**：deck/doc 中的数字、日期、名称必须来自 Omni 解析
 原文，禁止为排版好看编造或改写数据；KPI 塔只接收源文真实数字；无数据可用就留白，不造。
+
+**不变性承诺的边界（不要夸大为"同输入恒同输出"）**：引擎只对**原文/证据位**保持
+逐字不变——引文、数字、日期、名称、〔来源〕标注、说话人/画面转写、页码锚点、
+脚注；这些一经写入不得被排版或重写改动。标题措辞组织、切页、版式、要点取舍属
+设计决策，同一输入两次生成允许存在合理差异；验收（覆盖率/分页/表格数）也只对
+证据位与结构计数断言，不断言全产物逐字节恒同。
 
 - 自动：封面标题提取（"标题：xxx"）→ 中文字体 → markdown 章节重建 → 真标题 +  
   文首目录 → grounded 源页分页符 → 表格/列表/引用/行内样式 → 脚注上标 + 文末注释 +  
