@@ -82,19 +82,20 @@ import time
 # 0b. 主题色系统（与 render_pptx.py / render_html.py 完全一致的克制三色）
 # --------------------------------------------------------------------------- #
 # 全程统一一套色：primary 主 + accent 强调 + ink 墨；背景以白/极浅灰为主。
-# 表头/封面带/标题装饰用 primary/accent；正文与标题文字保持深墨色（贴近"黑色"基线，
-# 避免 Office 模板蓝），不把标题整段染成彩色——克制、可辨识、跨格式一致。
+# 编辑式极简主题：近单色 + 单一克制强调色（仅用于微小标记：序号、短细线），
+# 不铺色块、不用左 accent 竖条、不用表头填充——区别于 kimi 的色块语言。
+# hairline=细灰线；muted=灰字；primary 保留为强调色别名。正文与标题文字保持深墨色。
 THEME = {
-    "default":  {"primary": "#2563EB", "ink": "#0F172A", "accent": "#0EA5E9",
-                 "panel": "#F8FAFC", "muted": "#64748B"},
-    "academic": {"primary": "#1E3A8A", "ink": "#0F172A", "accent": "#B45309",
-                 "panel": "#F8FAFC", "muted": "#475569"},
-    "gov":      {"primary": "#B91C1C", "ink": "#7F1D1D", "accent": "#C8A24B",
-                 "panel": "#FEF2F2", "muted": "#6B7280"},
-    "legal":    {"primary": "#9A2D2D", "ink": "#5B1616", "accent": "#B8862B",
-                 "panel": "#FBF4F4", "muted": "#6B7280"},
-    "finance":  {"primary": "#0F766E", "ink": "#134E4A", "accent": "#B45309",
-                 "panel": "#F0FDFA", "muted": "#64748B"},
+    "default":  {"primary": "#8C6A3F", "ink": "#1A1A1A", "accent": "#8C6A3F",
+                 "hairline": "#DCDCDC", "muted": "#6E6E6E", "panel": "#FAFAFA"},
+    "academic": {"primary": "#2E4A7A", "ink": "#1A1A1A", "accent": "#2E4A7A",
+                 "hairline": "#DCDCDC", "muted": "#6E6E6E", "panel": "#FAFAFA"},
+    "gov":      {"primary": "#8A2B2B", "ink": "#1A1A1A", "accent": "#8A2B2B",
+                 "hairline": "#DCDCDC", "muted": "#6E6E6E", "panel": "#FAFAFA"},
+    "legal":    {"primary": "#7A3B2E", "ink": "#1A1A1A", "accent": "#7A3B2E",
+                 "hairline": "#DCDCDC", "muted": "#6E6E6E", "panel": "#FAFAFA"},
+    "finance":  {"primary": "#1F6F6B", "ink": "#1A1A1A", "accent": "#1F6F6B",
+                 "hairline": "#DCDCDC", "muted": "#6E6E6E", "panel": "#FAFAFA"},
 }
 
 
@@ -126,8 +127,11 @@ def add_para_border(paragraph, side, color_hex, sz=12, space=4):
 
 
 def set_cell_shading(cell, fill):
-    """给表格单元格（tcPr）加底纹。"""
+    """给表格单元格（tcPr）加底纹（幂等：先移除旧 shd，避免重复）。"""
     tcPr = cell._tc.get_or_add_tcPr()
+    for ex in list(tcPr):
+        if ex.tag == qn("w:shd"):
+            tcPr.remove(ex)
     shd = OxmlElement("w:shd")
     shd.set(qn("w:val"), "clear")
     shd.set(qn("w:color"), "auto")
@@ -135,72 +139,73 @@ def set_cell_shading(cell, fill):
     tcPr.append(shd)
 
 
-def set_table_borders(t, color="D0D7E2", sz=4):
-    """给整表加细灰边框（含内部横竖线）， crisp 观感、不依赖模板内置样式。"""
+def style_table(t, theme=None):
+    """编辑式极简表格：表头加粗墨色 + 表头底部墨色粗线；行间 hairline；
+    无填充、无竖线、无外框（区别于 kimi 的表头填充+斑马纹+四边细框）。"""
+    theme = theme or THEME["default"]
+    if not t.rows:
+        return
+    # 整表：仅底部外框 + 行间 hairline（无竖线、无顶框、无左/右边框）
     tblPr = t._tbl.tblPr
+    old = tblPr.find(qn("w:tblBorders"))
+    if old is not None:
+        tblPr.remove(old)
     borders = OxmlElement("w:tblBorders")
-    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+    for edge, (col, sz) in {"bottom": (theme["hairline"], 8),
+                            "insideH": (theme["hairline"], 4)}.items():
         e = OxmlElement("w:%s" % edge)
         e.set(qn("w:val"), "single")
         e.set(qn("w:sz"), str(sz))
         e.set(qn("w:space"), "0")
-        e.set(qn("w:color"), color)
+        e.set(qn("w:color"), col.lstrip("#"))
         borders.append(e)
     tblPr.append(borders)
-
-
-def style_table(t, theme=None):
-    """kimi 表格：表头 primary 填充+白字、偶数行 panel 斑马纹、细灰边框。
-    覆盖模板内置表样式差异，保证跨 Word/WPS 观感一致。"""
-    theme = theme or THEME["default"]
-    primary = theme["primary"]
-    panel = theme["panel"]
-    set_table_borders(t, "D0D7E2", 4)
-    if not t.rows:
-        return
-    for cell in t.rows[0].cells:
-        set_cell_shading(cell, primary)
-        for para in cell.paragraphs:
-            for r in para.runs:
-                r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                r.bold = True
-    for i, row in enumerate(t.rows[1:], start=1):
-        if i % 2 == 0:
-            for cell in row.cells:
-                set_cell_shading(cell, panel)
+    for ri, row in enumerate(t.rows):
+        for cell in row.cells:
+            set_cell_shading(cell, "FFFFFF")
+            for para in cell.paragraphs:
+                for r in para.runs:
+                    if ri == 0:
+                        r.font.color.rgb = hex_to_rgb(theme["ink"])
+                        r.bold = True
+                    else:
+                        r.font.color.rgb = hex_to_rgb("#2B2B2B")
+            if ri == 0:  # 表头底部墨色粗线
+                tcPr = cell._tc.get_or_add_tcPr()
+                bdr = tcPr.find(qn("w:tcBorders"))
+                if bdr is None:
+                    bdr = OxmlElement("w:tcBorders")
+                    tcPr.append(bdr)
+                for ex in list(bdr):
+                    if ex.tag == qn("w:bottom"):
+                        bdr.remove(ex)
+                e = OxmlElement("w:bottom")
+                e.set(qn("w:val"), "single")
+                e.set(qn("w:sz"), "12")
+                e.set(qn("w:space"), "0")
+                e.set(qn("w:color"), theme["ink"].lstrip("#"))
+                bdr.append(e)
 
 
 def accent_heading(p, level, theme=None):
-    """标题装饰：H1(含 level1) 底部 primary 下划；H2 左侧 accent 竖条；
-    与 HTML h2 border-left / PPTX accent 短下划一致。标题文字仍走样式深墨色。"""
+    """编辑式标题装饰：仅 H1 底部一道细灰线（hairline），H2 及以下靠字号层级区分，
+    不加左色条/不加粗色块（区别于 kimi）。标题文字始终深墨色。"""
     theme = theme or THEME["default"]
     if level <= 1:
-        add_para_border(p, "bottom", theme["primary"], sz=12, space=4)
+        add_para_border(p, "bottom", theme["hairline"], sz=12, space=6)
         p.paragraph_format.space_before = Pt(12)
         p.paragraph_format.space_after = Pt(8)
-    elif level == 2:
-        add_para_border(p, "left", theme["accent"], sz=24, space=6)
-        p.paragraph_format.space_before = Pt(8)
-        p.paragraph_format.space_after = Pt(4)
+    # H2+：不加任何边框，纯靠字号层级
 
 
-def cover(doc, title_text, source="", theme=None, kicker="Omni 解析重建", date_str=None):
-    """kimi 封面 hero：顶部 accent 细线 + accent kicker + 标题(Title 样式, 底部 primary 下划)
-    + 来源/日期副标题(灰)。标题仍用 Title 样式（校验器要求 style=='Title'）。"""
+def cover(doc, title_text, source="", theme=None, kicker="", date_str=None):
+    """编辑式极简封面：Title 样式大标题（墨色）+ 标题下细灰线 + 来源/日期灰副标；
+    无 kicker 角标、无顶部 accent 线（区别于 kimi）。标题仍用 Title 样式（校验器要求）。"""
     theme = theme or THEME["default"]
-    top = doc.add_paragraph()
-    top.paragraph_format.space_after = Pt(16)
-    add_para_border(top, "bottom", theme["accent"], sz=18, space=4)
-    k = doc.add_paragraph()
-    rk = k.add_run(kicker)
-    rk.font.size = Pt(11)
-    rk.font.bold = True
-    rk.font.color.rgb = hex_to_rgb(theme["accent"])
-    k.paragraph_format.space_after = Pt(4)
     t = doc.add_heading(level=0)
     t.add_run(title_text)
-    t.paragraph_format.space_after = Pt(12)
-    add_para_border(t, "bottom", theme["primary"], sz=20, space=10)
+    t.paragraph_format.space_after = Pt(14)
+    add_para_border(t, "bottom", theme["hairline"], sz=14, space=8)
     sub = doc.add_paragraph()
     txt = source or ""
     if date_str:
@@ -647,17 +652,15 @@ def insert_toc(doc, outline_map, theme=None):
     theme = theme or THEME["default"]
     h = doc.add_heading(level=1)
     add_inline(h, "目录")
-    add_para_border(h, "bottom", theme["accent"], sz=18, space=6)
+    add_para_border(h, "bottom", theme["hairline"], sz=14, space=6)
     for lvl, title in outline_map:
         p = doc.add_paragraph()
         p.paragraph_format.left_indent = Pt(18 * (lvl - 1) + 6)
         p.paragraph_format.space_after = Pt(2)
-        m = p.add_run("▪  " if lvl == 1 else "·  ")
-        m.font.color.rgb = hex_to_rgb(theme["accent"])
-        m.font.size = Pt(11)
         r = p.add_run(title)
         if lvl == 1:
             r.bold = True
+            r.font.color.rgb = hex_to_rgb(theme["ink"])
         else:
             r.font.color.rgb = hex_to_rgb(theme["muted"])
 
@@ -712,7 +715,7 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_mar
         elif btype == "hr":
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            add_para_border(p, "bottom", theme["accent"], sz=12, space=2)
+            add_para_border(p, "bottom", theme["hairline"], sz=8, space=2)
             p.paragraph_format.space_after = Pt(6)
         elif btype in ("ul", "ol"):
             # 每个列表条目也按 outline 匹配：命中则提升为标题（小节标题），
@@ -733,30 +736,28 @@ def render(doc, blocks, seg_index, outline_map, use_pagebreak, use_toc, page_mar
                     add_inline(p, it)
         elif btype == "quote":
             p = doc.add_paragraph(); p.paragraph_format.left_indent = Pt(18)
-            add_para_border(p, "left", theme["accent"], sz=24, space=8)
+            add_para_border(p, "left", theme["hairline"], sz=18, space=8)
             if quote_east:
                 add_inline(p, payload, fmt=lambda r: set_run_east(r, quote_east))
             else:
                 add_inline(p, payload)
-            # CJK 伪斜体渲染难看：引用块用灰色区分，不用斜体；accent 左条+浅灰底明示"引用"
-            set_shading(p, theme["panel"].lstrip("#"))
+            # CJK 伪斜体渲染难看：引用块用灰色 + 细灰左线区分，不用斜体、不用底纹（区别于 kimi）
             for r in p.runs:
                 r.font.color.rgb = RGBColor(0x59, 0x59, 0x59)
         elif btype == "visual":
             label, body, kind = payload
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Pt(16)
-            add_para_border(p, "left", theme["accent"], sz=24, space=8)
+            add_para_border(p, "left", theme["hairline"], sz=18, space=8)
             rl = p.add_run(label + ("  " if body else ""))
             rl.bold = True
-            rl.font.color.rgb = hex_to_rgb(theme["accent"])
+            rl.font.color.rgb = hex_to_rgb(theme["ink"])
             if body:
                 rb = p.add_run(body)
                 if kind == "desc":
-                    # 视觉/场景描述：灰色 + 底纹，表明是 Omni 看见的，非原文
-                    # （不用斜体——CJK 伪斜体渲染难看）
+                    # 视觉/场景描述：灰色 + 细灰左线，表明是 Omni 看见的，非原文
+                    # （不用斜体——CJK 伪斜体渲染难看；不铺底纹——编辑式极简）
                     rb.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-                    set_shading(p, theme["panel"].lstrip("#"))
                 # kind == "turn"：说话人/时间戳转写保持正文色，便于引用
         elif btype == "table":
             header, rows = payload
@@ -835,7 +836,7 @@ def add_page_number_footer(doc, source="", theme=None):
     sec = doc.sections[0]
     p = sec.footer.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    add_para_border(p, "top", theme["accent"], sz=8, space=2)
+    add_para_border(p, "top", theme["hairline"], sz=6, space=2)
     if source:
         rs = p.add_run(source)
         rs.font.size = Pt(8)

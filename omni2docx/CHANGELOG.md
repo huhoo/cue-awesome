@@ -1,5 +1,16 @@
 # CHANGELOG(omni2docx)
 
+### 0.5.0 — 2026-10-12（视觉重新实现：原创「编辑式极简」体系，四格式统一，避免雷同 kimi）
+
+- 需求：四格式统一原创、编辑式极简方向；**不再沿用 kimi 的色块语言**（顶部导航条 / kicker 角标 / PART 0X / 填充色块 / 表头填充 / 斑马纹 / 圆角卡片 / 左 accent 竖条）。改为**近单色 + 单一克制强调色（仅用于微小标记：序号、短细线）+ 大留白 + 强字号层级 + 细灰 hairline**：
+  - **PPTX（`render_pptx.py`）**：删顶部导航带（`_nav` 置空）、封面去左色块/kicker 改「白底大留白 + 墨色大标题 + 标题下短 accent 细线 + 灰副标」；目录去序号卡改「序号(淡灰)+标题」；章节页去顶带/PART kicker 改「右侧幽灵大序号(淡灰)+墨色标题」；内容页去 kicker 改「墨色结论式标题+细灰线」；**KPI 看板去填充/边框**改「无填充列 + 竖 hairline 分隔 + 墨色大数字」；**表格去填充/斑马/四边框**改「表头墨色加粗+底部墨色粗线、行间 hairline」；要点引导符 accent→灰；结束页去上下色带。
+  - **Word（`build_docx.py`）**：封面去 kicker/顶线改「Title 墨色大标题+底部细灰线+灰副标」；`目录` 标题改细灰下划、条目去彩色 `▪/·` 项目符号；`accent_heading` 仅 H1 底部细灰线、**H2 去左 accent 竖条**（纯字号层级）；`style_table` 去表头填充/斑马/四边框改「表头墨色加粗+底部粗线、行间 hairline、无竖线/外框」（新增幂等 `set_cell_shading`，删 `set_table_borders`）；引用/标注段去底纹改「细灰左线+灰字」；页脚 accent 线→hairline。
+  - **HTML（`render_html.py`）**：`css_for` 重写——hero 去 primary 满底改「白底+墨色标题+accent 细线下划」；`h2` 去左 accent 竖条改底部 hairline、`h3` 降为灰字；表格去表头填充/外框/阴影/斑马改「表头底部墨色粗线+行间 hairline」；`blockquote`/`.visual` 去底色/圆角改「细灰左线+灰字」；`nav.toc` 去圆角卡片改「底部 hairline 分隔」；去掉所有 `border-radius`（直角）。
+  - **PDF**：仍走 HTML→headless 打印，自动继承同套编辑式极简样式（`@media print` 保留 hero 与配色）。
+- 主题令牌：`THEME`/`THEMES`/`HTML_THEMES` 统一为 `ink(#1A1A1A)/muted(#6E6E6E)/faint(#9A9A9A)/hairline(#DCDCDC)` + 每 profile 单一强调色（default 铜 `#8C6A3F`、academic 蓝 `#2E4A7A`、gov 红 `#8A2B2B`、legal 褐红 `#7A3B2E`、finance 青 `#1F6F6B`）；`primary` 保留为强调色别名。
+- 保真与校验口径**不变**：字符零丢失；`目录`=Heading 1、`Title` 样式保留；分页/层级/表格数未改。
+- 回归：`run_matrix_test.py` 13/13 全 PASS（覆盖率 100%，专项断言全绿）；PPTX 几何审计越界 0/重叠 0/过小字号 0；docx 验收 PASS；确认 deck 无大色块填充（accent 仅作细线）。
+
 ### 0.4.2 — 2026-10-12（Word 视觉重做：kimi 克制体系，四格式统一）
 
 - 参照 kimi 共用设计哲学，对 `build_docx.py` 视觉层提质，使 **Word 与已完成的 PPTX(0.4.1)/HTML(0.4.0) 在同一套三色主题**（primary/accent/ink/panel/muted，default/academic/gov/legal/finance 各一套）下观感一致——PDF 走 HTML 打印，自动继承同套样式：
