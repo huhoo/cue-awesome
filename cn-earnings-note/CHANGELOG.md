@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.3.25 — 2026-10-12（research 通道两处发起姿势改回技能面，不再写成本包脚本）
+
+- 两处把通道写成本件脚本的句子收口：`references/data-channels.md` §3 第 2 条原句「怎么跑：`scripts/research_run.py` 后台发起」，与 `references/expectation-pool.md` §1 原句「`research_run.py --query "<下方模板>"`」——本件 `scripts/` 里从来没有这枚脚本（全仓现值也无），research 通道的真身是 frontmatter `optionalSkills` 里的 `cue-research` 技能。两处现统一改为**经 `cue-research` 技能发起**，调用形制与该技能工具面一律以本次返回现值为准，并直陈「本件不自带 research 脚本」。
+- 没动的部分：§3 其余四条（发起前必问、两次深研的用途、live 流缺 reporter 段、replay 兜底）逐字原样，取证模板正文与「本取证占 1 次槽位、与横向对照合计 ≤2」的纪律一字未改；后台跑、等启动信号行、禁止双发这三条行为约束也原样保留，只是发起对象从虚构脚本改回真技能。
+- 复验（取脚本自报行）：`bash scripts/fixtures/run_fixtures.sh` exit 0（逐条 ok，无 fail）；成品面逐面现跑全「PASS 五禁零命中、指路可跟随」；解包件内相对指路复扫＝断链 0。名述面三枚现值随交付回执报（脚本实测，非手数）。
+- 版本位：0.3.24 → 0.3.25（指路形制收口＝patch，无能力增减）。历史条目不回改。
+
 ### 0.3.24 — 2026-10-12（发布物随包补齐自测守护样）
 
 - 发布物随包补齐自测守护样：`scripts/fixtures/` 的守护样清单与 `run_fixtures.sh` 随发布物一起交付，装包后在本包目录内即可现跑复验，不必另找样本。

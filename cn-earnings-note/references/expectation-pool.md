@@ -14,7 +14,7 @@
 
 ## 1. 取证 prompt 模板（research 通道，free-form 发起）
 
-发起姿势：`research_run.py --query "<下方模板>"`（无 template-id，走自由深研），后台跑与确认流程全按
+发起姿势：经 `cue-research` 技能送自由深研（query=下方模板原文，无 template-id；调用形制与该技能工具面以本次返回现值为准，本件不自带 research 脚本），后台跑与确认流程全按
 `data-channels.md` §3 执行（花之前必问；本取证占本 run 的 1 次 research 槽位，与横向对照合计 ≤2 不变）。
 
 模板（尖括号处填实，其余原样送出）：
