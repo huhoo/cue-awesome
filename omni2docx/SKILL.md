@@ -3,8 +3,8 @@ name: omni2docx
 slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
-description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word; omni to docx / parse to deck"
-version: "0.6.1"
+description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件、--inline 粘贴微信公众号不重排，PPT 版式池 layout:kpi/compare/timeline。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck"
+version: "0.6.2"
 license: MIT
 metadata:
   requires:
@@ -12,7 +12,7 @@ metadata:
 tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 ---
 
-# omni2docx — 双层管线：Omni 解析（Agent 层）× 格式生成（人层）
+# omni2docx — 双层管线：Omni 解析（Agent 层）× 格式生成（用户层）
 
 ## 前置条件
 
@@ -28,7 +28,7 @@ tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 
 ## 定位：完整链路，两个环节有效组合
 
-**完整链路 = 多模态解析（给 agent）→ agent 整合分析 → 按需生成文档（给人）。  
+**完整链路 = 多模态解析（给 agent）→ agent 整合分析 → 按需生成文档（给用户）。  
 生成阶段把解析侧已算出的元数据（grounding / outline / 画面时间点 / 说话人转写）  
 再利用回文档——通用转换工具拿不到这些元数据，这是超越普通转换的核心。**
 
@@ -39,20 +39,20 @@ tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
    │  ① Agent 层：Omni parse（grounded）→ markdown + grounding + outline
    ▼     agent 据此推理：摘要 / 对比 / 抽取 / 整合 / 文书起草
 Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
-   │  ② 人层：同一渲染引擎，两种输入
+   │  ② 用户层：同一渲染引擎，两种输入
    ├─ 输入 A 原文重建：解析 markdown + grounding → 页级保真 docx（场景②③）
    └─ 输入 B 产物直出：--md file.md → 专业排版 docx（场景①，免中间 JSON）
    ▼
-人可读可编辑的 docx：封面 / 目录 / 真标题 / 表格 / 溯源标注 / 上标引用 + 注释 / 页码标注 / 证据溯源附录
+用户可读可编辑的 docx：封面 / 目录 / 真标题 / 表格 / 溯源标注 / 上标引用 + 注释 / 页码标注 / 证据溯源附录
 ```
 
-组合的粘合点（让人能追溯 agent 的话）：
+组合的粘合点（让用户能追溯 agent 的话）：
 
 - `[^n]` 脚注引用 → Word **上标编号**，文末自动生成「注释」节
 - `〔来源：视频帧 00:46〕` → **灰色小字**行内标注
 - 溯源标注段（【画面】/【说话人】/【图说】/【图片】）保留 Omni 的视觉/转写证据
 - **证据溯源附录**（合并模式自动）：各源的源页码范围 / 画面时间点 / 说话人转写段  
-  由解析元数据回灌成表格，人按页码/时间点直接对照原件
+  由解析元数据回灌成表格，用户按页码/时间点直接对照原件
 
 ## 三大使用场景（按用户痛点设计）
 
@@ -251,7 +251,8 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
   文首目录 → grounded 源页分页符 → 表格/列表/引用/行内样式 → 脚注上标 + 文末注释 +  
   〔来源〕灰标 → 溯源标注段。
 - `--no-pagebreak` 忽略分页；`--no-toc` 忽略章节重建（仅纯 markdown + 表格/列表）；  
-  `--page-marks` 分页处标注「源第 N 页」（核对原件）；`--profile` 套制式——预设名  
+  `--page-marks` 分页处标注「源第 N 页」（核对原件）；`--page-numbers` 页脚 PAGE 域页码；  
+  `--strip-emoji` 剥离 emoji/装饰符（验收器同口径剥离，防误报）；`--profile` 套制式——预设名  
   （gov/legal/finance/academic/default）或自定义 JSON（内联或 .json 文件，参数见上节表）。
 - 表格识别兼容两种形态：带 `| --- |` 分隔行的规范 GFM 表；无分隔行的连续 `|` 行  
   （xlsx/部分导出常见，首行作表头）。正文段落里内嵌的 `|` 分隔文本是源数据质量，  
@@ -265,9 +266,9 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 时输入保持一致）：
 
 ```
-python <skill_dir>/validate_docx.py --json <中间json> --docx <输出.docx>
-python <skill_dir>/validate_html.py --json <中间json> --html <输出.html>   # 或 --md <源md>
-python <skill_dir>/validate_pptx.py --json <中间json> --pptx <输出.pptx>   # 备注/正文/表格合并计入覆盖口径
+python <skill_dir>/scripts/validate_docx.py --json <中间json> --docx <输出.docx>
+python <skill_dir>/scripts/validate_html.py --json <中间json> --html <输出.html>   # 或 --md <源md>
+python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.pptx>   # 备注/正文/表格合并计入覆盖口径
 ```
 
 ### 步骤 5 — 交付
@@ -284,7 +285,7 @@ python <skill_dir>/validate_pptx.py --json <中间json> --pptx <输出.pptx>   #
 | `source` / `detail` | 否  | 仅写入 docx 属性 / 日志                                                                                                                               |
 | `title` + `sources` | 否  | **多源合并模式**：`sources: [{markdown, grounding?, outline?, source}, ...]`，每源一章（H1=source 名，章间分页），总目录前置（章内层级自动 +1），`title` 为文档封面标题                  |
 | `analysis`          | 否  | **agent 整合分析产物** `{markdown, source?}`：渲染为合并文档**首章**（[^n] 引用/〔来源〕标注照常），排在各证据源之前                                                                |
-| （合并模式自动）            | —  | 文末自动生&#x6210;**「证据溯源附录」**：把各源 grounding 页锚点（源第 N–M 页）、画面时间点（首/末时间戳）、说话人转写段（数量/说话人/起始时间）、outline 章节数回灌成表格，并自动推断源类型；`--no-appendix` 关闭，附录条目纳入总目录 |
+| （合并模式自动）            | —  | 文末自动生成**「证据溯源附录」**：把各源 grounding 页锚点（源第 N–M 页）、画面时间点（首/末时间戳）、说话人转写段（数量/说话人/起始时间）、outline 章节数回灌成表格，并自动推断源类型；`--no-appendix` 关闭，附录条目纳入总目录 |
 
 内部逻辑：
 
@@ -308,7 +309,7 @@ python <skill_dir>/validate_pptx.py --json <中间json> --pptx <输出.pptx>   #
   - `[说话人0 00:00-01:20] …` / `[00:48] …` → **【说话人N 时间段】**（标签加粗蓝 + 正文色，**可直接引用**——录音/视频证据场景）
   - `![alt](data:image;base64,…)` 剥离字节仅保留说明（【图片：alt】），纯装饰图丢弃
 - **优雅降级**：无 outline → 无 TOC/标题提升（仍分页）；无 grounding → 无分页；纯 markdown（场景①）全部能力自动降级为基础渲染 + 中文标题重建。
-- **引用渲染（agent→人粘合）**：`[^n]` 脚注引用 → 上标编号（深蓝），`[^n]: 定义` 行剥出，  
+- **引用渲染（agent→用户粘合）**：`[^n]` 脚注引用 → 上标编号（深蓝），`[^n]: 定义` 行剥出，  
   文末自动渲染「注释」节；`〔…〕` → 灰色小字（约定放"来源：…"）。注释节随所在  
   文档/章节收尾，合并模式下每章各自收尾。
 
@@ -321,11 +322,10 @@ python <skill_dir>/validate_pptx.py --json <中间json> --pptx <输出.pptx>   #
 | ETF 文章（etf_real.pdf） | **100%** | 7 段→**6** | 6×H1(国家)+8×H2(指数) + 13 条目录 + 封面标题 | 0（基金池在文末被截断）                         |
 | 券商研报（燕京啤酒 000729）    | **100%** | 4 段→**3** | 4×H3(###标题) + 目录                  | **5**（含"会计年度"5 列财务表，单元格数值与源一一对应，已抽检） |
 | 金融短视频（mp4，多模态）       | **100%** | —         | **48 个【画面】标注段**全部带底纹，与正文区分        | —                                    |
-
-| 网页（含 base64 图像引用） | **100%** | — | 2 处图像引用 → 【图片：alt】说明，base64 字节零残留（docx 136KB→40KB） | — |  
-| 会议录音（m4a，场景③） | **100%** | — | **7/7 说话人转写段**带【说话人N 时间段】标签（加粗蓝，正文色可引用） | — |  
-| 三源合并（视频+录音+研报，场景③） | **100%** | 章2 + 章3**5** | Title + 总目录 + 3 章 H1 + 章内 H4×4（层级与目录一致） | 5（研报章内完整保留） |  
-| Agent 产物直出（--md，场景①） | **99.4%**（"标题"2 字被提为封面所致） | — | 封面 Title + 2×H1 + 3×H2 + 目录；**上标引用 1/2/3（正文+表格）+ 文末注释 3 条 + 〔来源〕灰标 4 处** | 1 |  
+| 网页（含 base64 图像引用） | **100%** | — | 2 处图像引用 → 【图片：alt】说明，base64 字节零残留（docx 136KB→40KB） | — |
+| 会议录音（m4a，场景③） | **100%** | — | **7/7 说话人转写段**带【说话人N 时间段】标签（加粗蓝，正文色可引用） | — |
+| 三源合并（视频+录音+研报，场景③） | **100%** | 章2 + 章3**5** | Title + 总目录 + 3 章 H1 + 章内 H4×4（层级与目录一致） | 5（研报章内完整保留） |
+| Agent 产物直出（--md，场景①） | **99.4%**（"标题"2 字被提为封面所致） | — | 封面 Title + 2×H1 + 3×H2 + 目录；**上标引用 1/2/3（正文+表格）+ 文末注释 3 条 + 〔来源〕灰标 4 处** | 1 |
 | **完整链路**（分析+视频+录音+研报，四源合一） | **100%** | 章间分页 + 研报章 3 | Title + 总目录（5 条 H1 含附录）+ 首章=agent 分析（上标引用+注释） | 6（研报 5 + **溯源附录表**） |
 
 完整链路的**证据溯源附录**实测（元数据自动回灌，非手填）：

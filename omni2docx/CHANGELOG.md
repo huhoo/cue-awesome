@@ -1,6 +1,16 @@
 # CHANGELOG(omni2docx)
 
+### 0.6.2 — 2026-10-12（用户视角全面打磨）
+
+- **修复 SKILL.md 结构缺陷**：步骤 4 验收器路径误写 `<skill_dir>/validate_*.py`（实际在 `scripts/` 下，照抄会 FileNotFoundError）；「验收口径」第二组实测行缺表头（markdown 断表，渲染为纯文本），并入上方主表；残留 HTML 实体 `&#x6210;` 改回「成」；步骤 3 开关清单补 `--page-numbers` / `--strip-emoji`。
+- **删除死参数 `--brand`**（render_pptx.py）：0.5.0 移除顶部导航条后 `self.brand` 无任何渲染消费，`--brand` 成了静默无效的用户开关——连同 Deck/build 的 brand 参数管道一并清除；`--strip-emoji` 补 help 文案；validate_docx.py 的 ArgumentParser 补 description（唯一没有描述的 CLI）。
+- **README 补齐**：文件表补 `CHANGELOG.md` 与 `tests/`（clone 后可复现）；上手段补 `--inline` 公众号用法；渲染器描述补版式池/几何审计能力。
+- **frontmatter**：description 补 `--inline` 公众号粘贴与 PPT 版式池触发词（公众号排版 / 汇报 deck）。
+- 回归：`tests/run_all.py` 全 PASS；PPTX 渲染冒烟通过（brand 管道清除无回归）。
+
 ### 0.6.1 — 2026-10-12（不变性承诺收窄：只覆盖原文/证据位）
+
+- **术语口径修正**：公开面统一以「用户」指称交付物的读者，不再泛称「人」——人层→用户层、人可读可编辑→用户可读可编辑、给人→给用户、agent→人粘合→agent→用户粘合（SKILL.md / README.md / build_docx.py 文档注释），功能零改动。
 
 - **修正定位表述**：引擎不承诺「同输入恒同输出」的整体确定性。不变性只覆盖**原文/证据位**——引文、数字、日期、名称、〔来源〕标注、说话人/画面转写、页码锚点、脚注，一经写入不得被排版或重写改动；标题措辞组织、切页、版式、要点取舍属设计决策，同一输入两次生成允许合理差异。验收（覆盖率/分页/表格数）本就只对证据位与结构计数断言，与此口径一致。SKILL.md「不许编造」铁律旁补记该边界。
 

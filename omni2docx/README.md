@@ -1,6 +1,6 @@
 # omni2docx — Omni 解析结果转 Word / HTML / PPT
 
-把 Omni Reader 的解析结果重建为**人可读可交付的文档**：不是又一个 markdown→docx，
+把 Omni Reader 的解析结果重建为**用户可读可交付的文档**：不是又一个 markdown→docx，
 而是把 Omni 解析时已算出的结构化信息（源页锚点、章节层级、画面/转写元数据）映射回
 原生对象——通用转换只吃 markdown，拿不到这些。
 
@@ -40,6 +40,9 @@ python scripts/validate_docx.py --json 中间.json --docx 交付.docx
 
 # 展示：自包含 HTML（可加 --pdf 同时导出打印件；--toc-depth 控目录深度）
 python scripts/render_html.py --json 中间.json --out 展示.html --profile gov --page-marks --pdf
+
+# 微信公众号：--inline 把全部样式内联进 style 属性，粘贴公众号/富文本编辑器不重排
+python scripts/render_html.py --md 产出.md --out 推文.html --inline
 
 # 汇报：deck（要点上页、正文进备注）；长文档建议 agent 先提炼提纲
 python scripts/render_pptx.py --md slide提纲.md --out 汇报.pptx --profile finance --max-slides 30
@@ -87,9 +90,11 @@ JPG OCR / 千页 PDF / 截断 PDF / 边界用例，多制式组合）实测覆�
 | 文件 | 说明 |
 |---|---|
 | `SKILL.md` | agent 主指令（完整工作流、字段约定、解析侧能力现状） |
+| `CHANGELOG.md` | 版本历史（每一版改了什么、怎么验的） |
 | `scripts/build_docx.py` | Word 渲染引擎（单源/多源合并/markdown 直出） |
 | `scripts/validate_docx.py` | 保真+结构校验器（docx） |
-| `scripts/render_html.py` | HTML 展示渲染器（自包含单文件，可 `--pdf`） |
-| `scripts/render_pptx.py` | PPTX 汇报渲染器（deck，要点上页/细节进备注） |
+| `scripts/render_html.py` | HTML 展示渲染器（自包含单文件，可 `--pdf`/`--inline`） |
+| `scripts/render_pptx.py` | PPTX 汇报渲染器（deck，要点上页/细节进备注/版式池） |
 | `scripts/validate_html.py` | HTML 验收器（覆盖率 + 目录/锚点/自包含） |
-| `scripts/validate_pptx.py` | PPTX 验收器（覆盖率含备注 + 空页/截断） |
+| `scripts/validate_pptx.py` | PPTX 验收器（覆盖率含备注 + 几何审计 + 设计铁律） |
+| `tests/` | 回归套件（合成语料，clone 后 `python tests/run_all.py` 可复现） |

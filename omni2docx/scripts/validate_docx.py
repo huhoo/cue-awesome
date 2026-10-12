@@ -99,7 +99,7 @@ def anchor_phrases(md, min_cjk=12):
 
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description="omni2docx Word 保真 + 结构校验器")
     ap.add_argument("--json", required=True)
     ap.add_argument("--docx", required=True)
     args = ap.parse_args()
