@@ -842,13 +842,25 @@ def _empty_evidence(fs) -> bool:
     return bool(ev) and all(p == "evidence/.gitkeep" for p in ev)
 
 
+REJECTED_EXT = (".sha256",)     # K-23 实测拒收族（第四拒原文点名 `_shared/variants/evidence__LEDGER__….sha256`）
+
+
+def _shared_name(rel: str) -> str:
+    """公共位**落盘名**：末段后缀属实测拒收族时，在后面并一层允许后缀（`LEDGER.sha256` →
+       `LEDGER.sha256.txt`），内容与目的地名都不变——runner 按 `shared.txt` 的目的地铺回临时目录，
+       `check_dd` 看到的仍是 `evidence/LEDGER.sha256`，换的只是仓内那枚文件的后缀。"""
+    base = rel.rsplit("/", 1)[-1]
+    stem, dot, ext = base.rpartition(".")
+    return rel + ".txt" if dot and ("." + ext).lower() in REJECTED_EXT else rel
+
+
 def _variant_name(rel: str, h: str) -> str:
     """变体落成**扁平名且保留原扩展名**：`variants/report__<sha16>.md`。
        旧形制是 `variants/<rel>/<sha16>`——末段无扩展名，落在渠道扩展名白名单的问号区（K-22 刚咬过
        压缩包，不拿「大概没事」赌第四次 400）；顺带少五枚目录条目。"""
     base, ext = rel.rsplit(".", 1) if "." in rel.rsplit("/", 1)[-1] else (rel, "")
     stem = base.replace("/", "__")
-    return f"{stem}__{h[:16]}{('.' + ext) if ext else ''}"
+    return _shared_name(f"{stem}__{h[:16]}{('.' + ext) if ext else ''}")
 
 
 def harvest_shared():
@@ -885,7 +897,7 @@ def harvest_shared():
                 continue
             variants[(rel, h)] = owners[0]
     for rel, (h, owners) in sorted(modal.items()):
-        dst = ROOT / "_shared" / rel
+        dst = ROOT / "_shared" / _shared_name(rel)
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes((ROOT / owners[0] / rel).read_bytes())
     for (rel, h), owner in sorted(variants.items()):
@@ -903,7 +915,8 @@ def harvest_shared():
             h = sha(f.read_bytes())
             if rel in modal and h == modal[rel][0]:
                 f.unlink()
-                want.append(rel)
+                src = _shared_name(rel)
+                want.append(rel if src == rel else f"{rel}\t{src}")
                 hoisted += 1
             elif (rel, h) in variants:
                 f.unlink()
