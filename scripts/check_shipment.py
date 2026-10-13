@@ -56,6 +56,9 @@ from pathlib import Path
 # 否则「文件在仓内、指路也在面」的件会判成假绿（M220 的模型错处：assets/*.png 线上必悬空）。
 K12_PATTERNS = (".gitignore", "license", ".png", ".jpg", ".jpeg", ".gif")
 MAX_BYTES_DEFAULT = 1_048_576          # 渠道 ≈1 MiB 闸；对象＝发布物 zip 字节
+MAX_ENTRIES_DEFAULT = 200              # K-20 渠道第二道**独立**硬限：包内条目 ≤200，且**目录条目照计**
+                                       # （2026-10-13 实测：`zip -r -X dd-checklist` 得 1,000 条目＝535 文件＋465 目录，
+                                       #  渠道 400「文件数量超出限制(最多 200 个)」；旧版本闸只数文件＝这条盲区由渠道先撞到，记 K-20）
 SELFTEST_TIMEOUT = 180
 
 CODE_LEGEND = {
@@ -63,6 +66,8 @@ CODE_LEGEND = {
     "S-MISSING":  "成品面指路或能力句在发布物内无对应物→补随包样本，或按「裁样本集不删能力句」改指路",
     "S-SELFTEST": "发布物内自测入口真跑非 0 或不可跑→按详行附的出口原文修，别只看仓内",
     "S-SIZE":     "发布物 zip 字节超闸→裁样本集（在包体上限内取舍），不删能力句",
+    "S-COUNT":    "发布物 zip 条目数超渠道硬限（目录条目照计）→把语料并进**允许类型的文本容器**（每样一枚＋runner 铺回临时目录真跑）；"
+                  "注意渠道另有扩展名白名单：压缩包与 *.png 同族属拒收面（K-22），**不得缩题、不得把承诺挪到不随包的面**",
     "S-PARITY":   "本地字节与渠道回下载字节两跑结论不一致→查供体与回包，不假设同源",
 }
 
@@ -111,6 +116,48 @@ def norm_rel(p: str) -> str:
     p = p.strip().strip(".,:;、。（）").lstrip("./")
     p = re.sub(r"/{2,}", "/", p)
     return p.rstrip("/") or p
+
+
+PLACEHOLDER_TIP = re.compile(r"<[^>`|]+>\s*/?\s*$|^`?<[^>`|]+>")   # 示意图根行：`dd-<主体代码>-<asof>/` 这类占位目录
+
+
+def schematic_lines(text: str) -> set:
+    """「运行产物示意图」行号集（M225 尾巴，lead 把这枚形制判断报给我）：
+       围栏代码块内、且**该块根行含 `<占位>` 目录**——那种块画的是用户跑完一次后的交付目录，
+       不是包内布局，里面的 `references/x.md` 不是包内指路。
+       两条边界钉死：①包内布局图（根行无占位，如 `scripts/fixtures/`）照判，不借豁免扩面；
+       ②豁免只作用在**本行**，同一条指路若还出现在别处正文行，仍判（十档i 同形制）。"""
+    out, in_fence, block, root_ok = set(), False, [], False
+    for i, line in enumerate(text.split("\n"), 1):
+        if line.lstrip().startswith("```"):
+            if in_fence:
+                if root_ok:
+                    out.update(block)
+                in_fence, block, root_ok = False, [], False
+            else:
+                in_fence = True
+            continue
+        if in_fence:
+            block.append(i)
+            if PLACEHOLDER_TIP.search(line.strip()):
+                root_ok = True
+    return out
+
+
+def archive_members(path: Path):
+    """K-21 附注：随包档案（tar/tgz/tar/zip）里的**成员名**——语料成档后，面上指的文件可能在档内。
+       只读不解（python zipfile/tarfile，K-18 同口径），读不动就返回 None：调用处按「跟随不上」发红，不静默放过。"""
+    name = path.name.lower()
+    try:
+        if name.endswith((".zip",)):
+            with zipfile.ZipFile(path) as zf:
+                return {n.rstrip("/") for n in zf.namelist()}
+        import tarfile
+        mode = "r:*" if name.endswith((".tar.gz", ".tgz")) else "r:"
+        with tarfile.open(path, mode) as tf:
+            return {m.name.rstrip("/") for m in tf.getmembers()}
+    except Exception:
+        return None
 
 
 def surface_files(files):
@@ -174,13 +221,15 @@ def dir_pointers(text):
 
 
 def load_shipment(target: Path):
-    """→ (解包根目录, zip 字节数或 None, zip sha 或 None, 是否临时目录)"""
+    """→ (解包根目录, zip 字节数或 None, zip sha 或 None, 是否临时目录, 条目数或 None)
+       条目数**含目录条目**（渠道 `zip -r` 口径，K-20）；目录输入返回 None（对象口径同体积闸）。"""
     if target.is_dir():
-        return target, None, None, False
+        return target, None, None, False, None
     if target.is_file() and zipfile.is_zipfile(target):
         data = target.read_bytes()
         tmp = Path(tempfile.mkdtemp(prefix="check-shipment-"))
         with zipfile.ZipFile(target) as zf:
+            n_entries = len(zf.namelist())
             names = [n for n in zf.namelist() if not n.endswith("/")]
             for n in names:
                 dest = (tmp / n).resolve()
@@ -188,7 +237,7 @@ def load_shipment(target: Path):
                     raise ValueError(f"越界条目：{n}")
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(zf.read(n))
-        return tmp, len(data), hashlib.sha256(data).hexdigest(), True
+        return tmp, len(data), hashlib.sha256(data).hexdigest(), True, n_entries
     raise ValueError("输入既不是目录也不是可读 zip")
 
 
@@ -232,11 +281,12 @@ def run_selftest(root: Path, script_rel: str, extra_args, exe=None):
     return p.returncode, (last if last != first else first)[:200]
 
 
-def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quiet: bool, repo_dir: Path | None = None):
+def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quiet: bool, repo_dir: Path | None = None,
+          max_entries: int = MAX_ENTRIES_DEFAULT):
     hits = []
     notes = []
     try:
-        root_raw, nbytes, ndigest, is_tmp = load_shipment(target)
+        root_raw, nbytes, ndigest, is_tmp, n_entries = load_shipment(target)
     except Exception as e:
         early = [(str(target.resolve()), "<发布物>"), (str(Path(tempfile.gettempdir()).resolve()), "<临时根>")]
         return [Hit("S-INPUT", "-", mask_paths(str(target), early),
@@ -251,22 +301,35 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
     if not faces:
         hits.append(Hit("S-INPUT", "-", pkg, "发布物内没有可判的成品面（SKILL*.md／README*.md／CONTRACT*.md／assets｜references 下的 .md）"))
     fileset = set(files)
+    # K-21 报账可见性：随包档案列出来（成员数供人对账），但**指路一律不拿档案背书**——
+    #   档内那份是测试语料，不是「你装好的包里有这件」。实测把档案成员放进解析时，dd 的
+    #   `references/coverage-map.md` 两枚真断链当场变绿＝把缺陷藏进档案，正属 K-21 禁手，故只报不判。
+    arch_report = []
+    for f in files:
+        if f.lower().endswith((".tar.gz", ".tgz", ".tar", ".zip")):
+            mem = archive_members(root / f)
+            arch_report.append((f, (len(mem) if mem is not None else None)))
 
     # ①② 相对指路存在性 ＋ 能力句载体（外调面与出生句单列，供报账分诊）
     cap_lines = []
     births = []
     birth_by_face = []
     outer_total = []
+    schem_total = []
     cmds = []
     for rel in faces:
         text = read_text(root, rel)
-        pts, birth_hits, outer_hits = {}, 0, 0
-        for ln in text.splitlines():
-            exempt = (not INVOKE.search(ln)) and (
-                (BIRTH_VERB.search(ln) and BIRTH_HINT.search(ln)) or OUTPUT_DECL.search(ln))
+        schem = schematic_lines(text)
+        pts, birth_hits, outer_hits, schem_hits = {}, 0, 0, 0
+        for lno, ln in enumerate(text.splitlines(), 1):
+            exempt = (lno in schem) or ((not INVOKE.search(ln)) and (
+                (BIRTH_VERB.search(ln) and BIRTH_HINT.search(ln)) or OUTPUT_DECL.search(ln)))
             lp, lo = extract_pointers(ln)
             outer_hits += lo
             for tok, isf in lp:
+                if lno in schem:
+                    schem_hits += 1
+                    continue
                 if exempt:
                     birth_hits += 1
                     continue
@@ -282,6 +345,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
                     found = any(f.rsplit("/", 1)[-1] == tok for f in files)
                 else:
                     found = any(c in fileset for c in cands)
+                    # 路径级承诺**不得由随包档案背书**（档案里那份是测试语料，不是装好的包里有这件）
                 if not found:
                     why = ("成品面以调用形写了这枚脚本（带参数），发布物内没有该件——"
                            "**跨技能调用要在面上写明属别包**，不得让读者以为本件自带"
@@ -294,6 +358,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
                                     "成品面写了这枚前缀指路，发布物内**该前缀目录下无一件真件**"
                                     "（判据＝前缀目录下至少一枚真件；不是「存不存在同名目录」那种撞运气形制）"))
         birth_by_face.append((rel, birth_hits))
+        schem_total.append((rel, schem_hits))
         # 目录级承诺（原文以 / 收尾）已由上一条按目录判，这里不重复发红
         for lineno, line in enumerate(text.splitlines(), 1):
             if CAPWORD.search(line):
@@ -342,6 +407,17 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
     elif nbytes > max_bytes:
         hits.append(Hit("S-SIZE", "-", pkg, f"发布物 zip 现值 {nbytes:,} B ＞ 闸 {max_bytes:,} B；sha256 {ndigest[:16]}…"))
 
+    # ④b 条数闸（K-20，渠道 2026-10-13 撞出来的第二道**独立**硬限）：对象＝zip 条目数，目录条目照计
+    if n_entries is None:
+        hits.append(Hit("S-COUNT", "-", pkg,
+                        "输入是目录：条数闸不判（它量的是发布物 zip 条目数，**含目录条目**；"
+                        "仓内只数文件会少算——实测 dd 随样态 535 文件＋465 目录＝1,000 条目，渠道 400「最多 200 个」）",
+                        sev="WARN"))
+    elif n_entries > max_entries:
+        hits.append(Hit("S-COUNT", "-", pkg,
+                        f"发布物 zip 条目现值 {n_entries:,}（含目录条目）＞ 渠道硬限 {max_entries:,}；"
+                        f"字节在闸内也不放行——修法＝语料成档（一枚档案＋解包真跑），不缩题、不把承诺挪出随包面"))
+
     # ⑤ 渠道回下载那份字节也要能跑
     if channel_zip is not None:
         try:
@@ -356,7 +432,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
                                 f"两份字节 sha256 不同（本地 {ndigest[:16]}… vs 渠道 {cdigest[:16]}…，"
                                 f"{nbytes:,} B vs {len(cdata):,} B）——只报事实不判失败",
                                 sev="WARN"))
-            sub_hits, _, _ = check(channel_zip, pkg + "（渠道副本）", None, max_bytes, True, repo_dir)
+            sub_hits, _, _ = check(channel_zip, pkg + "（渠道副本）", None, max_bytes, True, repo_dir, max_entries)
             for h in sub_hits:      # 副本那层的临时根与本层不同，先换成同一占位再比结论
                 h.detail = mask_paths(h.detail, leaks)
                 h.ref = mask_paths(h.ref, leaks)
@@ -377,13 +453,20 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
             h.detail += "（仓内有→属打包排除面，补发随包即可）" if inrepo else "（仓内也无→属指路本身写错）"
     stats = {"faces": len(faces), "cap": len(cap_lines), "ran": ran, "bytes": nbytes, "digest": ndigest, "entries": []}
     birth_n = sum(b for _, b in birth_by_face)
+    schem_n = sum(s for _, s in schem_total)
     n_st = sum(1 for r in ran if r[1].startswith("selftest"))
     n_ru = sum(1 for r in ran if r[1] == "runner")
     for h in hits:                  # 报账面一律去绝对路径：随机临时名进报账＝双跑不可 diff
         h.detail = mask_paths(h.detail, leaks)
         h.ref = mask_paths(h.ref, leaks)
-    notes.append(f"豁免分诊：逐行豁免命中 {birth_n} 次；跨包与安装位指路不计本包缺失 "
+    notes.append(f"豁免分诊：逐行豁免命中 {birth_n} 次；运行产物示意图（占位根行的围栏块）内不计 {schem_n} 处"
+                 f"（只免本行，同 token 在正文行照判；包内布局图无占位根，不免）；跨包与安装位指路不计本包缺失 "
                  f"{sum(n for _, n in outer_total)} 处（逐面清单在详行区外，不静默放过）")
+    if arch_report:
+        unread = [f for f, n in arch_report if n is None]
+        notes.append("随包档案：" + "、".join(f"{f}（成员 {n}）" if n is not None else f"{f}（读不动）" for f, n in arch_report)
+                     + "；**档案成员不给指路背书**（只列不判，读不动也不静默放过）"
+                     + (f"；不可读清单 {unread}" if unread else ""))
     notes.append(f"成品面 {len(faces)} 面／能力句 {len(cap_lines)} 行／自测入口 {len(ran)} 枚真跑"
                  f"（入口形：selftest {n_st}｜runner {n_ru}）")
     if ran:
@@ -444,12 +527,15 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "shipment"
 
 
 def k12_dropped(rel: str) -> bool:
-    """K-12 渠道上传口拒收的形制，**含嵌套目录**（basename 命中即剔）。
-       模拟打包必须先按它剔净再判指路——否则「文件在仓内、指路也在面」的件会判成假绿。"""
+    """K-12／K-22 渠道上传口拒收的形制，**含嵌套目录**（basename 命中即剔）。
+       模拟打包必须先按它剔净再判指路——否则「文件在仓内、指路也在面」的件会判成假绿。
+       压缩包一族是 2026-10-13 实测加进来的：语料封成 tar.gz 后渠道 400
+       「不允许的文件类型: scripts/fixtures/corpus.tar.gz」——它与 *.png 同族，条数解了、类型没过。"""
     low = rel.lower()
     base = low.rsplit("/", 1)[-1]
     return (".gitignore" in low or base.startswith("license")
-            or any(base.endswith(e) for e in (".png", ".jpg", ".jpeg", ".gif")))
+            or any(base.endswith(e) for e in (".png", ".jpg", ".jpeg", ".gif"))
+            or any(base.endswith(e) for e in (".tar", ".tar.gz", ".tgz", ".zip", ".gz", ".bz2", ".xz", ".7z", ".rar")))
 
 
 def build_zip(dst: Path, root: Path, drop=(), include_fixtures=True, apply_k12=True, sink=None):
@@ -472,9 +558,21 @@ def build_zip(dst: Path, root: Path, drop=(), include_fixtures=True, apply_k12=T
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(rel, out)
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zf:
+        # 与渠道 `zip -r` 同形制：顶层目录与所有子目录**各占一枚条目**（K-20 条数按全部条目计）。
+        # 少写目录条目＝代理件比真发布物小＝条数假绿，这条与 M220 的 K-12 盲区同罪。
+        top = zipfile.ZipInfo(root.name + "/")
+        top.date_time = (1980, 1, 1, 0, 0, 0)
+        top.external_attr = 0o40755 << 16
+        zf.writestr(top, "")
         for p in sorted(staging.rglob("*")):
-            if p.is_file():
-                zf.write(p, p.relative_to(staging).as_posix())
+            rel = p.relative_to(staging).as_posix()
+            if p.is_dir():
+                info = zipfile.ZipInfo(rel + "/")
+                info.date_time = (1980, 1, 1, 0, 0, 0)
+                info.external_attr = 0o40755 << 16
+                zf.writestr(info, "")
+            else:
+                zf.write(p, rel)
     shutil.rmtree(staging, ignore_errors=True)
     if sink is not None:
         sink.extend(dropped)
@@ -644,6 +742,67 @@ def selftest(quiet=False) -> int:
     rb = check(bogus, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("七档-读不动不自掩", True, {h.code for h in rb[0]} == {"S-INPUT"}, f"实得 {sorted({h.code for h in rb[0]})}")
 
+    # 十一档（K-20：渠道 2026-10-13 撞出来的**第二道独立硬限**——条目 ≤200，目录条目照计）：
+    #   本闸此前只数文件，dd 随样态代理件报 535 条目、渠道报 1,000 并 400 拒收。
+    #   这是 M220「模型错了一处」的同罪形（少报方向），故三枚档一起钉：口径、超限必红、合规不误拦。
+    ze = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("entries-nested"))
+    with zipfile.ZipFile(ze) as zf:
+        got = len(zf.namelist())
+    pred = predict_entries(fixture_root("entries-nested"))
+    one("十一档-目录条目必计入（代理件不得比真件小）", True, got == pred == 8, f"zip={got} 预数={pred} 期望=8（4 文件＋4 目录含顶层）")
+    rcnt = check(ze, "demopkg", None, MAX_BYTES_DEFAULT, True, None, 3)
+    one("十一档b-条目超限必红", 1, emit(ze, "demopkg", rcnt[0], rcnt[1], True))
+    one("十一档c-发红码含 S-COUNT", True, "S-COUNT" in {h.code for h in rcnt[0] if h.sev == "ERROR"},
+        f"实得 {sorted({h.code for h in rcnt[0] if h.sev == 'ERROR'})}")
+    rcnt2 = check(ze, "demopkg", None, MAX_BYTES_DEFAULT, True)          # 同一枚字节，闸值取默认 200
+    one("十一档d-合规条数不误拦", 0, emit(ze, "demopkg", rcnt2[0], rcnt2[1], True))
+    rdir_cnt = check(fixture_root("entries-nested"), "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十一档e-目录输入只 WARN 不判条数", True,
+        any(h.code == "S-COUNT" and h.sev == "WARN" and "含目录条目" in h.detail for h in rdir_cnt[0]),
+        f"详行「{[h.detail[:34] for h in rdir_cnt[0] if h.code == 'S-COUNT']}」")
+    one("十一档f-闸值与码表写明 K-20 口径", True,
+        MAX_ENTRIES_DEFAULT == 200 and "目录条目照计" in CODE_LEGEND["S-COUNT"], f"现值 {MAX_ENTRIES_DEFAULT}")
+    # 十二档（K-21 反洗白）：路径级指路**只有档内那份**时必红——档案是测试语料，不给承诺背书。
+    za, ra = tier("arch-dangling")
+    one("十二档-指路只在档案内仍必红", 1, emit(za, "demopkg", ra[0], ra[1], True))
+    one("十二档b-发红码含 S-MISSING", True,
+        any(h.code == "S-MISSING" and h.ref == "references/deep/inside.md" for h in ra[0] if h.sev == "ERROR"),
+        f"实得 {[(h.code, h.ref) for h in ra[0]]}")
+    # 档案进报账要**不剔类型**才看得见（build_zip 默认按 K-22 把压缩包剔掉，正是渠道真形制）
+    zae = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip",
+                    fixture_root("arch-dangling"), apply_k12=False)
+    re_ = check(zae, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十二档c-档案本身进报账", True, any("corpus.tar.gz" in n and "成员 1" in n for n in re_[1]),
+        f"读数={[n[:56] for n in re_[1] if '档案' in n]}")
+    sink_arch = []
+    zna = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("arch-dangling"),
+                    sink=sink_arch)
+    one("十二档d-压缩包按 K-22 剔出模拟包", True, any(d.startswith("K-12:corpus.tar.gz") for d in sink_arch),
+        f"剔={sink_arch[:2]}")
+    with zipfile.ZipFile(zna) as zf:
+        one("十二档e-剔后包内不留档案", True, not any(n.endswith((".tar.gz", ".zip", ".tgz")) for n in zf.namelist()),
+            f"条目={[n for n in zf.namelist()][:3]}")
+
+    # 十三档（运行产物示意图 vs 包内布局图，lead 把这枚形制判断报给我裁）：
+    #   豁免只认「围栏块根行含 <占位> 目录」那种交付目录示意图；包内布局图不占这个便宜。
+    zg = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("tree-output-green"))
+    rg = check(zg, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十三档-交付目录示意图必绿", 0, emit(zg, "demopkg", rg[0], rg[1], True))
+    one("十三档b-豁免计入报账读数", True, any("示意图" in n and "不计 1 处" in n for n in rg[1]),
+        f"读数={[n[:44] for n in rg[1] if '示意图' in n]}")
+    zr3 = tier("tree-output-red")
+    one("十三档c-同 token 在正文行照判（豁免不外溢）", 1, emit(zr3[0], "demopkg", zr3[1][0], zr3[1][1], True))
+    one("十三档d-发红恰一条且是那枚路径", True,
+        len([h for h in zr3[1][0] if h.sev == "ERROR"]) == 1
+        and zr3[1][0][0].ref == "references/coverage-map.md",
+        f"实得 {[(h.code, h.ref) for h in zr3[1][0] if h.sev == 'ERROR']}")
+    zl = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("tree-layout-red"))
+    rl = check(zl, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十三档e-包内布局图不借豁免", 1, emit(zl, "demopkg", rl[0], rl[1], True))
+    one("十三档f-发红码含该缺失件", True,
+        any(h.ref == "references/missing.md" for h in rl[0] if h.sev == "ERROR"),
+        f"实得 {[(h.code, h.ref) for h in rl[0] if h.sev == 'ERROR']}")
+
     SILENT.clear()
     for line in res:
         print(line)
@@ -651,31 +810,58 @@ def selftest(quiet=False) -> int:
     return 0 if ok else 1
 
 
-def repo_scan(repo: Path, max_bytes: int, quiet: bool) -> int:
+def predict_entries(root: Path, include_fixtures=True, apply_k12=True) -> int:
+    """K-20 前置数：按渠道 `zip -r` 形制**不建 zip 数条目**——顶层目录 1 枚＋所有子目录各 1 枚＋文件各 1 枚。
+       用途＝往包里加夹具**之前**先数一次（渠道那条闸看的不是文件数）。与 build_zip 同剔形制口径。"""
+    n = 1                                     # 顶层目录条目（zip -r 会把包名本身写进去）
+    for p in sorted(root.rglob("*")):
+        rel = p.relative_to(root).as_posix()
+        if "__pycache__" in p.parts:
+            continue
+        if not include_fixtures and ("fixtures/" in rel or rel.startswith("tests/") or p.name in ("fixtures", "tests")):
+            continue
+        if p.is_dir():
+            n += 1
+        elif p.is_file():
+            if apply_k12 and k12_dropped(rel):
+                continue
+            n += 1
+    return n
+
+
+def repo_scan(repo: Path, max_bytes: int, quiet: bool, max_entries: int = MAX_ENTRIES_DEFAULT) -> int:
     """CI 用：仓内没有现成 zip，就按**渠道老配方**（剔 fixtures/｜tests/）从工作树各建一枚再判。
     对象是「树构建出的 A 态字节」，不是渠道供体——渠道真字节仍须用 `check_shipment.py <zip> --repo <包>` 现验。"""
-    bad, good = [], 0
+    bad, good, over = [], 0, []
     for pkg in sorted(d for d in repo.iterdir() if (d / "SKILL.md").is_file()):
         z = Path(tempfile.mkdtemp(prefix="cs-scan-")) / f"{pkg.name}.zip"
         dropped = []
         build_zip(z, pkg, include_fixtures=False, sink=dropped)
-        hits, notes, _ = check(z, pkg.name, None, max_bytes, True, pkg)
+        hits, notes, _ = check(z, pkg.name, None, max_bytes, True, pkg, max_entries)
         errs = [h for h in dedupe(hits) if h.sev == "ERROR"]
         rc = emit(z, pkg.name, hits, notes, quiet)
         n_size = sum(1 for h in errs if h.code == "S-SIZE")
         n_ptr = sum(1 for h in errs if h.code == "S-MISSING")
         n_run = sum(1 for h in errs if h.code == "S-SELFTEST")
+        n_cnt = sum(1 for h in errs if h.code == "S-COUNT")
+        eb, ea = predict_entries(pkg, True), predict_entries(pkg, False)
+        if eb > max_entries:
+            over.append((pkg.name, eb))
         k12 = sorted({d.split(":")[0] for d in dropped})
         if not quiet:
             print(f"    剔形制：{('、'.join(k12) or '无')}（本包剔 {len(dropped)} 件）"
-                  f"｜分列：指路 {n_ptr}／真跑 {n_run}／体积 {n_size}")
+                  f"｜分列：指路 {n_ptr}／真跑 {n_run}／体积 {n_size}／条目 {n_cnt}"
+                  f"｜条目现数（K-20 前置，zip -r 形制含目录条目）：随包态 {eb}／剔样态 {ea}／限 {max_entries}")
         if rc:
-            bad.append((pkg.name, len(errs), f"指路{n_ptr}·真跑{n_run}·体积{n_size}"))
+            bad.append((pkg.name, len(errs), f"指路{n_ptr}·真跑{n_run}·体积{n_size}·条目{n_cnt}"))
         else:
             good += 1
         z.unlink(missing_ok=True)
     print(f"repo-scan：{good} 枚已过，{len(bad)} 枚发红（体积闸与指路红分列，见各包「分列」行）"
           + ("".join(f"（{n}:{c} 条｜{br}）" for n, c, br in bad) if bad else ""))
+    if over:
+        print("    条数预警（K-20：渠道 ≤%d，**加夹具前先数**）：%s"
+              % (max_entries, "、".join(f"{n} 随包态 {e}" for n, e in sorted(over, key=lambda x: -x[1]))))
     return 1 if bad else 0
 
 
@@ -685,6 +871,8 @@ def main() -> int:
     ap.add_argument("--pkg", help="包名（缺省取目标名）")
     ap.add_argument("--zip", dest="channel", help="渠道回下载的那份 zip，对同一套判定再跑一遍")
     ap.add_argument("--max-bytes", type=int, default=MAX_BYTES_DEFAULT, help="体积闸（默认 1,048,576 B）")
+    ap.add_argument("--max-entries", type=int, default=MAX_ENTRIES_DEFAULT,
+                    help="条数闸（默认 200 条目；渠道按**全部条目计，目录条目照计**——K-20）")
     ap.add_argument("--quiet", action="store_true", help="只报汇总与码表")
     ap.add_argument("--selftest", action="store_true", help="跑四档守护样＋双跑确定性")
     ap.add_argument("--repo-scan", metavar="仓根", nargs="?", const=".", help="CI 用：按渠道老配方从工作树逐包建 zip 再判（报账态起步）")
@@ -696,19 +884,20 @@ def main() -> int:
         for c, spec in CODE_LEGEND.items():
             print(f"{c:11} {spec}")
         print(f"\n体积闸现值：{MAX_BYTES_DEFAULT:,} B（对象＝发布物 zip 字节）；自测真跑超时 {SELFTEST_TIMEOUT} s")
+        print(f"条数闸现值：{MAX_ENTRIES_DEFAULT:,} 条目（对象＝zip 全部条目，**目录条目照计**；渠道 400 实测口径）")
         print(f"守护样目录：{FIXTURES}")
         return 0
     if args.selftest:
         return selftest(args.quiet)
     if args.repo_scan:
-        return repo_scan(Path(args.repo_scan).resolve(), args.max_bytes, args.quiet)
+        return repo_scan(Path(args.repo_scan).resolve(), args.max_bytes, args.quiet, args.max_entries)
     if not args.target:
         print("check_shipment: 要给发布物路径（zip 或已解包目录），或用 --selftest / --list / --help", file=sys.stderr)
         return 1
     t = Path(args.target)
     pkg = args.pkg or t.name
     hits, notes, _ = check(t, pkg, Path(args.channel) if args.channel else None, args.max_bytes, args.quiet,
-                           Path(args.repo) if args.repo else None)
+                           Path(args.repo) if args.repo else None, args.max_entries)
     rc = emit(t, pkg, hits, notes, args.quiet)
     sys.stdout.flush()
     return rc
