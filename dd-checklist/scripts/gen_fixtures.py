@@ -812,6 +812,161 @@ if not _badspec.is_file():
 
 build("ctl-declaration-missing", report(no_decl=True), [src()], BASE_EVID, cov(), cmd(), 1, ("DD-INPUT",))
 
+# ─────────────────────────────────────────────────────────────────────────────
+# M217：共享语料上收（病灶是「同一套语料被抄了 N 份」，不是「哪几枚没人用」）
+# 形制：被 ≥2 枚样**逐字节同**共用的文件留一份进 _shared/；每样只留 cmd.txt／expect.txt、
+#   一份 shared.txt（该样要点名铺哪些公共件）、以及它**真正改动过**的那份（挪进 local/）。
+# 两道防缩面：
+#   ①证据目录必须为空的样（测「空证据即 fail-closed」那几道）**整体不参与上收**；
+#   ②**按样清单铺设**（不是把 _shared 整个并进去）——上一版把公共池当并集铺，
+#     给每样注入了它原本没有的原始件，check_dd 立刻报「未登记在 LEDGER」＝覆盖面被改变。
+# ctl- 32 枚一枚不删：负控自证就是「自测不恒真」的证据。cmd.txt 走 bash -c（见 run_fixtures.sh）。
+KEEP_LOCAL = ("cmd.txt", "expect.txt")
+
+
+def _sample_dirs():
+    return [d for d in sorted(ROOT.iterdir()) if d.is_dir()
+            and d.name.startswith(("good-", "bad-", "ctl-"))]
+
+
+def _files(d: pathlib.Path):
+    return {f.relative_to(d).as_posix(): f for f in sorted(d.rglob("*")) if f.is_file()}
+
+
+def _empty_evidence(fs) -> bool:
+    ev = [p for p in fs if p.startswith("evidence/")]
+    return bool(ev) and all(p == "evidence/.gitkeep" for p in ev)
+
+
+def harvest_shared():
+    import hashlib
+    def sha(b):
+        return hashlib.sha256(b).hexdigest()
+
+    samples = _sample_dirs()
+    users, size, staged, originals, ev_locked = {}, {}, [], {}, set()
+    for s in samples:
+        fs = _files(s)
+        originals[s.name] = {rel: sha(f.read_bytes()) for rel, f in fs.items()}
+        if _empty_evidence(fs):
+            ev_locked.add(s.name)          # 空证据样：证据目录整体不上收（否则公共件被注进去＝缩面）
+        staged.append(s)
+        for rel, f in fs.items():
+            if rel in KEEP_LOCAL or (s.name in ev_locked and rel.startswith("evidence/")):
+                continue
+            h = sha(f.read_bytes())
+            users.setdefault(rel, {}).setdefault(h, []).append(s.name)
+            size[h] = len(f.read_bytes())
+    modal, variants = {}, {}
+    for rel, byhash in users.items():
+        if sum(len(v) for v in byhash.values()) < 2:
+            continue
+        ordered = sorted(byhash.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        modal[rel] = ordered[0]
+        for h, owners in ordered[1:]:
+            if len(owners) < 2:
+                continue
+            variants[(rel, h)] = owners[0]
+    for rel, (h, owners) in sorted(modal.items()):
+        dst = ROOT / "_shared" / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((ROOT / owners[0] / rel).read_bytes())
+    for (rel, h), owner in sorted(variants.items()):
+        dst = ROOT / "_shared" / "variants" / rel / h[:16]
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((ROOT / owner / rel).read_bytes())
+    hoisted = diffs = 0
+    for s in staged:
+        want, keep = [], []
+        for rel, f in sorted(_files(s).items(), key=lambda kv: -len(kv[0])):
+            if rel in KEEP_LOCAL or rel == "shared.txt" or rel.startswith("local/"):
+                continue
+            if s.name in ev_locked and rel.startswith("evidence/"):
+                continue
+            h = sha(f.read_bytes())
+            if rel in modal and h == modal[rel][0]:
+                f.unlink()
+                want.append(rel)
+                hoisted += 1
+            elif (rel, h) in variants:
+                f.unlink()
+                want.append(f"{rel}\tvariants/{rel}/{h[:16]}")
+                hoisted += 1
+            elif rel in modal:
+                dst = s / "local" / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(f.read_bytes())
+                f.unlink()
+                keep.append(rel)
+                diffs += 1
+        (s / "shared.txt").write_text("".join(r + "\n" for r in sorted(want)), encoding="utf-8")
+    for s in staged:
+        cp = s / "cmd.txt"
+        if not cp.is_file():
+            continue
+        m = re.match(r"^(python3?)\s+(\S+)\s+(.*)$", cp.read_text(encoding="utf-8").strip())
+        if not m:
+            continue
+        interp, script, args = m.groups()
+        TAB = chr(9)
+        new = ('T="$(mktemp -d)"; while IFS="' + TAB + '" read -r d s; do src="${s:-$d}"; '
+               'mkdir -p "$T/$(dirname "$d")"; cp "../_shared/$src" "$T/$d"; done < shared.txt; '
+               'cp -R . "$T"/ 2>/dev/null; [ -d local ] && cp -R local/. "$T"/ 2>/dev/null; '
+f'cd "$T" && {interp} "$OLDPWD/{script}" {args}; rc=$?; exit $rc')
+        cp.write_text(new + "\n", encoding="utf-8")
+    print(f"上收：_shared 装模态 {len(modal)} 类＋变体 {len(variants)} 份"
+          f"（公共版 {sum(size[h] for h, _ in modal.values()) + sum(size[h] for (_, h) in variants):,} B）；"
+          f"样内删公共副本 {hoisted} 份、挪差异位 {diffs} 份；参与 {len(staged)} 样、"
+          f"证据目录整体不上收（空证据样）{len(ev_locked)} 样")
+    return originals
+
+
+ORIGINALS = harvest_shared()
+
+
+def verify_materialization(originals):
+    """等价自证（①的防缩面）：按 shared.txt＋样内原位件＋local/ 覆盖，在 python 里复算一遍
+       「bash 铺出来会给 check_dd 看到什么」，与**上收前逐枚同文件同 sha** 才算过。
+       不过就 sys.exit(2)——覆盖面被悄悄改动，比体积不过闸更严重。"""
+    import hashlib
+    def sha(b):
+        return hashlib.sha256(b).hexdigest()
+    bad = []
+    for s in _sample_dirs():
+        if not (s / "shared.txt").is_file():
+            eff = {rel: sha(f.read_bytes()) for rel, f in _files(s).items() if rel not in ("shared.txt",)}
+            base = dict(originals.get(s.name, {}))
+            if {k: v for k, v in base.items() if k not in KEEP_LOCAL} != {k: v for k, v in eff.items() if k not in KEEP_LOCAL}:
+                bad.append((s.name, "未参与上收但文件集变了"))
+            continue
+        want = [l.rstrip("\n") for l in (s / "shared.txt").read_text(encoding="utf-8").splitlines() if l.strip()]
+        eff = {}
+        for line in want:
+            parts = line.split("\t")
+            rel, src = parts[0], (parts[1] if len(parts) > 1 else parts[0])
+            eff[rel] = sha((ROOT / "_shared" / src).read_bytes())
+        for rel, f in _files(s).items():
+            if rel in KEEP_LOCAL or rel == "shared.txt" or rel.startswith("local/"):
+                continue   # 样内原位件（含证据目录里的本地件）由 cp -R . 铺回，必须计入等价面
+            eff[rel] = sha(f.read_bytes())
+        for rel, f in _files(s).items():
+            if rel.startswith("local/"):
+                eff[rel[len("local/"):]] = sha(f.read_bytes())
+        base = {k: v for k, v in originals.get(s.name, {}).items() if k not in KEEP_LOCAL}
+        if base != eff:
+            miss = sorted(set(base) - set(eff))
+            extra = sorted(set(eff) - set(base))
+            diff = sorted(k for k in set(base) & set(eff) if base[k] != eff[k])
+            bad.append((s.name, f"缺 {miss[:3]} 多 {extra[:3]} 变 {diff[:3]}"))
+    if bad:
+        for n, why in bad[:8]:
+            print(f"等价自证失败：{n} — {why}", file=sys.stderr)
+        sys.exit(2)
+    print(f"等价自证通过：{len(originals)} 样铺回后与上收前逐枚同文件同 sha（覆盖面零变化）。")
+
+
+verify_materialization(ORIGINALS)
+
 names = sorted(x.name for x in ROOT.iterdir() if x.is_dir())
 bad = [n for n in names if n.startswith("bad-")]
 good = [n for n in names if n.startswith("good-")]

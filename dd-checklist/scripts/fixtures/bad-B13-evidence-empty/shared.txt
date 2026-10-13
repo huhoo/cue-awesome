@@ -1,0 +1,3 @@
+references/coverage-map.md
+report.md
+sources.jsonl
