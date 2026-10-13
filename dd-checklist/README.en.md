@@ -65,7 +65,7 @@ scripts/check_dd.py                 the gate itself (diagnostic-code layering, s
                                      the word and category examples here and in CONTRACT.md are common examples, not an exhaustive claim — where a mirror and the code disagree, the code governs.
 scripts/gen_fixtures.py             idempotent re-generator for the whole bank (for re-spawning after new questions; never the other way round)
 scripts/fixtures/                   question bank: one sample per contract question, plus positive-path guard samples; the runner grades by exact diagnostic-code set
-                                    shipped as one archive container (the channel caps the number of package entries, and loose sample dirs would exhaust it); the runner unpacks to a temp dir before grading — question count and grading logic do not change with the container; per-sample counts and checksums live in corpus.manifest.txt
+                                    shipped as one text container per sample (samples/<name>.json) plus the shared corpus as loose .json/.md files under _shared/ — the channel caps both the number of package entries and the file types, so loose sample dirs exhaust the entry budget while archives are rejected; the runner unpacks containers to a temp dir before grading, so question count and grading logic do not change with the container; samples.manifest.txt lists per-sample file counts, sizes and cmd checksums for independent counting
 ```
 
 ## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)

@@ -67,7 +67,7 @@ scripts/check_dd.py               机检本体（诊断码分层，stdlib only�
 
 scripts/gen_fixtures.py           幂等重铺整套样（加题重铺/回归用；改样须先改题单，不得反向）
 scripts/fixtures/                 题库：坏样逐题一样 + 正路守护样，runner 按诊断码集合精确判卷
-                                 随包容器=一枚 `corpus.tar.gz`（渠道对包内条目数有硬限，样目录散放会占满；runner 自己解到临时目录再逐样跑，判卷逻辑与题数不因容器变），`corpus.manifest.txt` 逐样列文件枚数／字节／`cmd.txt` 校验和，供开档点数
+随包形制=每样一枚文本容器 `samples/<样名>.json` ＋ 共享语料散件 `_shared/`（渠道对包内条目数与扩展名各有硬限——散放占满条目额度，压缩包属拒收类型）；runner 经 `scripts/fixtures/unpack.py` 铺回临时目录再逐样判卷，题数与判卷逻辑不因形制变，`samples.manifest.txt` 逐样列文件枚数／字节／cmd 校验和，供开档点数
 ```
 
 ## 六、常见问题与反模式（你想这么用 → 本件不接，因为 → 替代去向）

@@ -168,7 +168,7 @@ dd-<主体代码>-<asof>/
 
 判卷口径（§v2-6）：每样 `expect.txt` 声明**允许码集合**，runner 提取实际 `DD-*` 集合后做**集合相等**比较——**多一个码即 FAIL**（只查「包含」不算 1:1 判卷——早轮判卷留下的教训）；另设 `ctl-*` 控制样（不占题号、不充当主样）：每补一条机器闸，都配一枚「只动这一处」的控制样，外加 runner 自身的负控（故意多缺陷样，必须被按码判否，否则证明 runner 只做包含式检查）与长度边界样（39/40 必过、41 必拦，CJK 与中英混排各测）。**控制样的族名与枚数不写进本文**——题单以行内代码点名它出过的控制，生成器据此核「点名即在盘」，实际枚数由 `run_fixtures.sh` 现跑报出（活计数只有一处权威来源：枚数不进本文，避免文档与夹具两处各说一套）。
 
-题库（`scripts/fixtures/`，独立 runner）：样树随包为**一枚档案容器**（渠道对包内条目数有硬限，样目录散放会占满）；runner 自己解到临时目录再逐样跑，**题数与判卷逻辑不因容器变**，逐样件数与校验和见 `scripts/fixtures/corpus.manifest.txt`：
+题库（`scripts/fixtures/`，独立 runner）：每枚样随包为**一枚文本容器**（`samples/<样名>.json`——渠道对包内条目数与扩展名各有硬限：样目录散放会占满条目额度，压缩包属拒收类型），共享语料以 `.json`／`.md` 散件留在 `_shared/`；runner 经 `scripts/fixtures/unpack.py` 把容器铺回临时目录再逐样跑，**题数与判卷逻辑不因随包形制变**，逐样文件枚数与校验和见 `scripts/fixtures/samples.manifest.txt`：
 
 ```bash
 bash scripts/fixtures/run_fixtures.sh          # 全量；退出码非 0=有不符

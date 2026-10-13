@@ -11,20 +11,21 @@
 set -uo pipefail
 
 FIXROOT_PKG="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CORPUS="$FIXROOT_PKG/corpus.tar.gz"
-if [ ! -f "$CORPUS" ]; then
-  echo "FAIL 缺 corpus.tar.gz——夹具随包档案不在盘上；重铺：python3 scripts/gen_fixtures.py --badspec <题单>"
+if [ ! -d "$FIXROOT_PKG/samples" ] || [ ! -f "$FIXROOT_PKG/unpack.py" ]; then
+  echo "FAIL 缺样容器（samples/ 或 unpack.py）——重铺：python3 scripts/gen_fixtures.py --badspec <题单>"
   exit 1
 fi
-# M225：渠道第二道硬限是**包内条目数**（≤200，目录条目照计；散样态实测 1,000 条被 400 拒）。
-# 语料成档后这里只解一档进临时目录，**下面的 cmd/expect 判卷逻辑一字未动**。
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/dd-corpus-XXXXXX")" || exit 1
+# M225：渠道两道硬限——条目 ≤200（目录条目照计，K-20）与扩展名白名单（压缩包属拒收面，K-22）。
+# 所以每枚样并成一枚文本容器、共享语料留 .json/.md 散件；这里把容器铺回临时目录，
+# **下面的 cmd/expect 判卷逻辑一字未动**（铺法与生成器自证同源＝同一个 unpack.materialize）。
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/dd-samples-XXXXXX")" || exit 1
 mkdir -p "$WORK/scripts/fixtures"
-if ! tar -xzf "$CORPUS" -C "$WORK/scripts/fixtures"; then
-  echo "FAIL corpus.tar.gz 解档失败（档案形制或 tar 可用性问题，不静默继续）"
+if ! python3 "$FIXROOT_PKG/unpack.py" --all "$FIXROOT_PKG" "$WORK/scripts/fixtures"; then
+  echo "FAIL 样容器铺回失败（容器形制或 python3 可用性问题，不静默继续）"
   rm -rf "$WORK"; exit 1
 fi
-cp "$FIXROOT_PKG/../check_dd.py" "$WORK/scripts/check_dd.py"     # 判卷面用包内真件，不用档案副本
+cp -R "$FIXROOT_PKG/_shared" "$WORK/scripts/fixtures/_shared"
+cp "$FIXROOT_PKG/../check_dd.py" "$WORK/scripts/check_dd.py"     # 判卷面用包内真件，不用容器副本
 FIXROOT="$WORK/scripts/fixtures"
 trap 'rm -rf "$WORK"' EXIT
 FILTER="${1:-}"

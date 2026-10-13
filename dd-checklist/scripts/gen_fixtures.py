@@ -21,6 +21,7 @@ import pathlib
 import re
 import shutil
 import sys
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent / "fixtures"
 MATRIX_ROW = re.compile(r"^\|\s*(DD-[BX]\d{1,2}[a-c]?)\s*\|")
@@ -841,12 +842,25 @@ def _empty_evidence(fs) -> bool:
     return bool(ev) and all(p == "evidence/.gitkeep" for p in ev)
 
 
+def _variant_name(rel: str, h: str) -> str:
+    """变体落成**扁平名且保留原扩展名**：`variants/report__<sha16>.md`。
+       旧形制是 `variants/<rel>/<sha16>`——末段无扩展名，落在渠道扩展名白名单的问号区（K-22 刚咬过
+       压缩包，不拿「大概没事」赌第四次 400）；顺带少五枚目录条目。"""
+    base, ext = rel.rsplit(".", 1) if "." in rel.rsplit("/", 1)[-1] else (rel, "")
+    stem = base.replace("/", "__")
+    return f"{stem}__{h[:16]}{('.' + ext) if ext else ''}"
+
+
 def harvest_shared():
     import hashlib
     def sha(b):
         return hashlib.sha256(b).hexdigest()
 
     samples = _sample_dirs()
+    # 公共位先清再写：形制换过一次（嵌套变体目录→扁平带扩展名），留着旧文件就成了「第二副面孔」，
+    # 而且渠道按条目数计——陈旧件不是难看，是占额度（本次实测多出 18 份无扩展名残件）。
+    if (ROOT / "_shared").is_dir():
+        shutil.rmtree(ROOT / "_shared")
     users, size, staged, originals, ev_locked = {}, {}, [], {}, set()
     for s in samples:
         fs = _files(s)
@@ -875,7 +889,7 @@ def harvest_shared():
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes((ROOT / owners[0] / rel).read_bytes())
     for (rel, h), owner in sorted(variants.items()):
-        dst = ROOT / "_shared" / "variants" / rel / h[:16]
+        dst = ROOT / "_shared" / "variants" / _variant_name(rel, h)
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes((ROOT / owner / rel).read_bytes())
     hoisted = diffs = 0
@@ -893,7 +907,7 @@ def harvest_shared():
                 hoisted += 1
             elif (rel, h) in variants:
                 f.unlink()
-                want.append(f"{rel}\tvariants/{rel}/{h[:16]}")
+                want.append(f"{rel}\tvariants/{_variant_name(rel, h)}")
                 hoisted += 1
             elif rel in modal:
                 dst = s / "local" / rel
@@ -991,90 +1005,97 @@ if cw - ch:
     sys.exit(2)
 print(f"控制样：题单点名 {len(cw)} 枚全数在盘；盘上控制共 {len(ch)} 枚"
       f"（其中 {len(ch - cw)} 枚为历史控制、题单未点名，只随 runner 复跑）。")
-print("提醒：判卷与复现以 run_fixtures.sh 为准；本脚本幂等，跑完应无差异（见文件头派生纪律）。")
+print("提醒：判卷与复现以 run_fixtures.sh 为准；本脚本幂等，跑完应无差异（见文件头派生纪律）。")# ─────────────────────────────────────────────────────────────────────────────
+# M225（收口形制）：并样内文件——渠道对**包内条目数（≤200，目录条目照计）**与**扩展名白名单**
+#   各有一道硬限：散件态 1,000 条目被 400 拒（K-20），改封 `corpus.tar.gz` 后又被 400
+#   「不允许的文件类型」拒（压缩包与 *.png 同族，K-22）。故语料**不封二进制档**：
+#   每枚样的 cmd/expect/差异件并进一枚 `samples/<名>.json`（ASCII-only 文本容器），
+#   共享语料留在 `_shared/` 以 .json/.md 散放（40 份）。题数、码集、负控一枚不减。
+#   铺法只有一处实现——runner 与本自证都调 `unpack.materialize()`，容器与散件两副面孔不许多分家。
+#   档案必须保「空目录」这条事实照旧成立：`dirs` 逐枚记，202 枚空目录是 fail-closed 题的形制。
 
-# ─────────────────────────────────────────────────────────────────────────────
-# M225：语料成档（渠道第二道硬限＝**包内条目数 ≤200，目录条目照计**；散样态实测 535 文件＋465 目录
-#   ＝1,000 条目被 400 拒，见 K-20）。样目录与 `_shared` 一并封进 `corpus.tar.gz`，runner 解到临时
-#   目录后**照原 cmd/expect 逻辑跑**——题数一枚不减、`ctl-` 一枚不删、判卷面与 runner 逻辑不改。
-#   档案里**必须带目录条目**：盘上有 202 枚空目录（各样的 `evidence/`、`references/`），
-#   「目录在场但为空」正是那几道 fail-closed 题的形制，只存文件会把它抹掉＝暗改覆盖面。
-#   确定性＝条目按名排序＋mtime 归零＋gzip mtime=0，故同树两跑逐字节同（幂等仍可 diff 验）。
 
+def emit_samples(sample_names):
+    sys.path.insert(0, str(ROOT))
+    import unpack                                    # 与 runner 同一枚铺法，不另写一遍
+    sdir = ROOT / "samples"
+    if sdir.is_dir():
+        shutil.rmtree(sdir)
+    sdir.mkdir(parents=True)
+    for stale in ("corpus.tar.gz", "corpus.manifest.txt"):
+        f = ROOT / stale
+        if f.is_file():
+            f.unlink()                              # 换形制：旧档案不留在包里当「第二副面孔」
 
-def pack_corpus(sample_names):
-    import gzip
-    import tarfile
-    top_keep = {"run_fixtures.sh", "corpus.tar.gz", "corpus.manifest.txt"}
-    files, dirs = [], []
-    for p in sorted(ROOT.rglob("*")):
-        rel = p.relative_to(ROOT).as_posix()
-        if rel.split("/")[0] in top_keep or "__pycache__" in p.parts:
-            continue
-        (dirs if p.is_dir() else files).append((rel, p))
-    dst = ROOT / "corpus.tar.gz"
-    raw = dst.open("wb")
-    with gzip.GzipFile(filename="", mtime=0, mode="wb", fileobj=raw) as gz:
-        with tarfile.open(fileobj=gz, mode="w", format=tarfile.GNU_FORMAT) as tf:
-            for rel, p in dirs:
-                ti = tarfile.TarInfo(rel + "/")
-                ti.type = tarfile.DIRTYPE
-                ti.mtime = 0
-                ti.mode = 0o755
-                ti.uid = ti.gid = 0
-                ti.uname = ti.gname = ""
-                tf.addfile(ti)
-            for rel, p in files:
-                data = p.read_bytes()
-                ti = tarfile.TarInfo(rel)
-                ti.mtime = 0
-                ti.mode = 0o755 if data[:1] == b"#!" else 0o644
-                ti.uid = ti.gid = 0
-                ti.uname = ti.gname = ""
-                ti.size = len(data)
-                tf.addfile(ti, io.BytesIO(data))
-    raw.close()
-
-    # 复算自证：逐枚开档比 sha（含目录条目存在性），不等就**不删散件**并拒交付
-    with tarfile.open(dst) as tf:
-        members = tf.getmembers()
-        got_f = {m.name: hashlib.sha256(tf.extractfile(m).read()).hexdigest() for m in members if m.isfile()}
-        got_d = {m.name.rstrip("/") for m in members if m.isdir()}
-    want_f = {rel: hashlib.sha256(p.read_bytes()).hexdigest() for rel, p in files}
-    want_d = {rel for rel, p in dirs}
-    if got_f != want_f or got_d != want_d:
-        miss = sorted(set(want_f) - set(got_f))[:3]
-        extra = sorted(set(got_f) - set(want_f))[:3]
-        print(f"档案复算失败：文件缺 {miss} 多 {extra}；目录缺 {sorted(want_d - got_d)[:3]}——散件未删，不交付", file=sys.stderr)
-        sys.exit(2)
-
-    man = [
-        "# corpus.tar.gz 清单（gen_fixtures.py 产出；档案＝散件的逐字节副本，含目录条目）",
-        f"# 档案条目 {len(files) + len(dirs)}（文件 {len(files)}＋目录 {len(dirs)}）；样目录 {len(sample_names)}"
-        f"＝bad {sum(1 for n in sample_names if n.startswith('bad-'))}"
-        f"＋good {sum(1 for n in sample_names if n.startswith('good-'))}"
-        f"＋ctl {sum(1 for n in sample_names if n.startswith('ctl-'))}",
-        "样目录名\t文件枚数\t字节\tcmd.txt sha8",
-    ]
+    snap = {}                                       # 铺回对平的参照＝删除前的散件原样
     for n in sample_names:
         s = ROOT / n
-        fs = [f for f in sorted(s.rglob("*")) if f.is_file()]
-        c8 = hashlib.sha256((s / "cmd.txt").read_bytes()).hexdigest()[:8] if (s / "cmd.txt").is_file() else "-"
-        man.append(f"{n}\t{len(fs)}\t{sum(f.stat().st_size for f in fs)}\t{c8}")
-    (ROOT / "corpus.manifest.txt").write_text("\n".join(man) + "\n", encoding="utf-8")
+        fs = {f.relative_to(s).as_posix(): f for f in sorted(s.rglob("*")) if f.is_file()}
+        empty_dirs = sorted(d.relative_to(s).as_posix() for d in sorted(s.rglob("*"))
+                            if d.is_dir() and not any(f.startswith(d.relative_to(s).as_posix() + "/") for f in fs))
+        obj = {"name": n}
+        for key, field in unpack.FIELDS:
+            src = s / key
+            if src.is_file():
+                obj[field] = src.read_text(encoding="utf-8")
+        files = {}
+        for rel, f in fs.items():
+            if rel in ("cmd.txt", "expect.txt", "shared.txt"):
+                continue
+            try:
+                files[rel] = f.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                print(f"容器是纯文本形制，装不下非 UTF-8 件：{n}/{rel}——改判卷面或改容器，不自加 base64", file=sys.stderr)
+                sys.exit(2)
+        obj["files"] = files
+        obj["dirs"] = empty_dirs
+        (sdir / f"{n}.json").write_text(json.dumps(obj, ensure_ascii=True, sort_keys=True,
+                                                  separators=(",", ":")) + "\n", encoding="utf-8")
+        snap[n] = ({rel: hashlib.sha256(f.read_bytes()).hexdigest() for rel, f in fs.items()},
+                   set(empty_dirs))
 
-    loose_b = sum(p.stat().st_size for _, p in files)
+    # 复算自证（fail-closed）：容器铺回 == 删除前散件，逐枚同文件同 sha、同空目录集
+    work = pathlib.Path(tempfile.mkdtemp(prefix="dd-emit-"))
+    bad = []
+    for sp in sorted(sdir.glob("*.json")):
+        d = unpack.materialize(sp, work)
+        got = {f.relative_to(d).as_posix(): hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(d.rglob("*")) if f.is_file()}
+        gdirs = sorted(x.relative_to(d).as_posix() for x in sorted(d.rglob("*"))
+                       if x.is_dir() and not any(f.startswith(x.relative_to(d).as_posix() + "/") for f in got))
+        want_files, want_dirs = snap[d.name]
+        if got != want_files or set(gdirs) != want_dirs:
+            bad.append((d.name, sorted(set(want_files) ^ set(got))[:3], sorted(want_dirs ^ set(gdirs))[:3]))
+    if bad:
+        shutil.rmtree(work, ignore_errors=True)
+        for n, df, dd in bad[:8]:
+            print(f"容器复算失败：{n} 文件差 {df} 空目录差 {dd}——散件未删，不交付", file=sys.stderr)
+        sys.exit(2)
+
+    total_files = sum(len(v[0]) for v in snap.values())
+    loose_bytes = sum(f.stat().st_size for n in sample_names for f in (ROOT / n).rglob("*") if f.is_file())
+    n_containers = len(list(sdir.glob("*.json")))
+    n_shared = len([f for f in (ROOT / "_shared").rglob("*") if f.is_file()])
+    man = ["# 样容器清单（gen_fixtures.py 产出；铺法唯一实现＝scripts/fixtures/unpack.py::materialize）",
+           f"# 样 {len(sample_names)} 枚＝容器 {n_containers} 份；铺回后文件 {total_files} 份／散件态 {loose_bytes:,} B；"
+           f"共享语料留散件于 _shared/（{n_shared} 份）",
+           "样目录名\t铺回件数\t铺回字节\tcmd.txt sha8"]
+    for n in sample_names:
+        d = work / n
+        fs = [f for f in sorted(d.rglob("*")) if f.is_file()]
+        c8 = hashlib.sha256((d / "cmd.txt").read_bytes()).hexdigest()[:8] if (d / "cmd.txt").is_file() else "-"
+        man.append(f"{n}\t{len(fs)}\t{sum(f.stat().st_size for f in fs)}\t{c8}")
+    (ROOT / "samples.manifest.txt").write_text("\n".join(man) + "\n", encoding="utf-8")
+    cb = sum(f.stat().st_size for f in sdir.glob("*.json"))
     for n in sample_names:
         shutil.rmtree(ROOT / n)
-    if (ROOT / "_shared").is_dir():
-        shutil.rmtree(ROOT / "_shared")
-    print(f"成档：corpus.tar.gz 条目 {len(files) + len(dirs)}（文件 {len(files)}＋目录 {len(dirs)}）"
-          f"／{dst.stat().st_size:,} B（散件态 {len(files)} 份／{loose_b:,} B，已删）；"
-          f"清单 {len(sample_names)} 样落 corpus.manifest.txt；档案复算逐枚同 sha 通过。")
+    print(f"并样：容器 {n_containers} 份／{cb:,} B（散件态 {len(sample_names)} 目录／{loose_bytes:,} B，样内件已并、散件已删）；"
+          f"共享留散件 {len([f for f in (ROOT / '_shared').rglob('*') if f.is_file()])} 份；"
+          f"铺回复算逐枚同文件同 sha、同空目录集通过（{total_files} 份）；清单落 samples.manifest.txt。")
+    shutil.rmtree(work, ignore_errors=True)
 
 
-sample_names = sorted(x.name for x in ROOT.iterdir() if x.is_dir() and not x.name.startswith("_"))
+sample_names = sorted(x.name for x in ROOT.iterdir() if x.is_dir() and not x.name.startswith(("_", "samples")))
 if _args.keep_loose:
-    print(f"--keep-loose：散件态保留（审计形，不交付）——样目录 {len(sample_names)} 枚在盘，未封档。")
+    print(f"--keep-loose：散件态保留（审计形，不交付）——样目录 {len(sample_names)} 枚在盘，未并容器。")
 else:
-    pack_corpus(sample_names)
+    emit_samples(sample_names)
