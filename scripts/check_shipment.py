@@ -91,7 +91,7 @@ INSTALLISH = re.compile(r"(?:~|\$HOME)/\S+|\S*/skills/\S+")   # 宿主安装位�
 # 出生句（运行时产物）豁免：动词与产物位**同句齐备**才免，且同行不得是调用形（M220③⑤）
 BIRTH_VERB = re.compile(r"写到|写成|输出到|生成到|落盘到|存到|产出到|落到")
 BIRTH_HINT = re.compile(r"输出目录|产物|本次运行|每次运行|填好的|交付物|交付面|交付的四件")
-OUTPUT_DECL = re.compile(r"\bOutputs?\s*[:：]|交付物|交付面|输出目录")
+OUTPUT_DECL = re.compile(r"(?:\bOutputs?|输出|交付物|交付面)\s*(?:\*\*|`|）|\))*\s*[:：]|输出目录|交付的四件")
 INVOKE = re.compile(r"python3?\s|bash\s|\s--|\b--\w")
 # 裸脚本调用形（M220⑤假阴：`research_run.py --query …` 没有目录前缀，旧版根本不进指针集）
 BARE_INV = re.compile(r"(?:^|[\s`|])([A-Za-z0-9_\-]+\.(?:py|sh))(?=\s+--|\s+-\w)")
@@ -255,19 +255,24 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
     # ①② 相对指路存在性 ＋ 能力句载体（外调面与出生句单列，供报账分诊）
     cap_lines = []
     births = []
+    birth_by_face = []
     outer_total = []
     cmds = []
     for rel in faces:
         text = read_text(root, rel)
-        birth_lines = [ln for ln in text.splitlines()
-                       if not INVOKE.search(ln)
-                       and ((BIRTH_VERB.search(ln) and BIRTH_HINT.search(ln)) or OUTPUT_DECL.search(ln))]
-        pts, n_outer = extract_pointers(text)
-        outer_total.append((rel, n_outer))
-        for tok, has_ext in pts:
-            if any(tok in ln for ln in birth_lines):
-                births.append((rel, tok))
-                continue
+        pts, birth_hits, outer_hits = {}, 0, 0
+        for ln in text.splitlines():
+            exempt = (not INVOKE.search(ln)) and (
+                (BIRTH_VERB.search(ln) and BIRTH_HINT.search(ln)) or OUTPUT_DECL.search(ln))
+            lp, lo = extract_pointers(ln)
+            outer_hits += lo
+            for tok, isf in lp:
+                if exempt:
+                    birth_hits += 1
+                    continue
+                pts.setdefault(tok, isf)          # 只在「非豁免行」上留下待判指针
+        outer_total.append((rel, outer_hits))
+        for tok, has_ext in sorted(pts.items()):
             if "/" in tok and tok.split("/")[0] not in ("fixtures", "tests", "assets", "references", "examples", "scripts"):
                 continue          # 带目录段的只认自家六个目录；裸文件名（调用形）在包内任意路径里找
             base = rel.rsplit("/", 1)[0] if "/" in rel else ""
@@ -288,6 +293,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
                     hits.append(Hit("S-MISSING", rel, tok,
                                     "成品面写了这枚前缀指路，发布物内**该前缀目录下无一件真件**"
                                     "（判据＝前缀目录下至少一枚真件；不是「存不存在同名目录」那种撞运气形制）"))
+        birth_by_face.append((rel, birth_hits))
         # 目录级承诺（原文以 / 收尾）已由上一条按目录判，这里不重复发红
         for lineno, line in enumerate(text.splitlines(), 1):
             if CAPWORD.search(line):
@@ -370,12 +376,13 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
             inrepo = tok in repo_files or any(f == tok or f.startswith(tok + "/") for f in repo_files)
             h.detail += "（仓内有→属打包排除面，补发随包即可）" if inrepo else "（仓内也无→属指路本身写错）"
     stats = {"faces": len(faces), "cap": len(cap_lines), "ran": ran, "bytes": nbytes, "digest": ndigest, "entries": []}
+    birth_n = sum(b for _, b in birth_by_face)
     n_st = sum(1 for r in ran if r[1].startswith("selftest"))
     n_ru = sum(1 for r in ran if r[1] == "runner")
     for h in hits:                  # 报账面一律去绝对路径：随机临时名进报账＝双跑不可 diff
         h.detail = mask_paths(h.detail, leaks)
         h.ref = mask_paths(h.ref, leaks)
-    notes.append(f"豁免分诊：出生句／输出声明行免判 {len(births)} 条；跨包与安装位指路不计本包缺失 "
+    notes.append(f"豁免分诊：逐行豁免命中 {birth_n} 次；跨包与安装位指路不计本包缺失 "
                  f"{sum(n for _, n in outer_total)} 处（逐面清单在详行区外，不静默放过）")
     notes.append(f"成品面 {len(faces)} 面／能力句 {len(cap_lines)} 行／自测入口 {len(ran)} 枚真跑"
                  f"（入口形：selftest {n_st}｜runner {n_ru}）")
@@ -499,6 +506,26 @@ def selftest(quiet=False) -> int:
     z = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("good"))
     r = check(z, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("一档-合规样必绿", 0, emit(z, "demopkg", r[0], r[1], quiet=True))
+    # 一档c（K-18：解包口一律 python zipfile）：中文条目名的包必须绿，且本闸源码不得起 unzip
+    import ast as _ast
+    _tree = _ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    _spawn = ("run", "Popen", "check_output", "check_call", "call", "system", "popen")
+    argv_unzip = [c.value for nd in _ast.walk(_tree) if isinstance(nd, _ast.Call)
+                  and getattr(nd.func, "attr", "") in _spawn
+                  for c in _ast.walk(nd)
+                  if isinstance(c, _ast.Constant) and isinstance(c.value, str) and "unzip" in c.value]
+    one("一档c-解包口不起 unzip 进程", True, not argv_unzip, f"命中={argv_unzip[:2] or '无'}")
+    zh = Path(tempfile.mkdtemp(prefix="cs-zh-")) / "demopkg"
+    zh.mkdir()
+    (zh / "SKILL.md").write_text("# 中文条目名样例\n\n模板见 `assets/交付物模板.md`；说明见 `references/中文说明.md`。\n", encoding="utf-8")
+    (zh / "assets").mkdir(); (zh / "references").mkdir()
+    (zh / "assets" / "交付物模板.md").write_text("# 模板\n", encoding="utf-8")
+    (zh / "references" / "中文说明.md").write_text("说明一句\n", encoding="utf-8")
+    zz = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "中文包名.zip", zh)
+    rzh = check(zz, "中文包名", None, MAX_BYTES_DEFAULT, True)
+    one("一档d-中文条目名必绿（不假红）", 0, 1 if any(h.sev == "ERROR" for h in rzh[0]) else 0,
+        "零发条" if not any(h.sev == "ERROR" for h in rzh[0]) else rzh[0][0].line()[:40])
+
     # 一档b：渠道同一枚字节也要能跑（S-PARITY 不误拦）
     z2 = Path(str(z) + ".copy")
     z2.write_bytes(z.read_bytes())
@@ -580,6 +607,11 @@ def selftest(quiet=False) -> int:
         _, rr = tier(kind)
         errs = [h for h in rr[0] if h.sev == "ERROR"]
         one(f"十档-{label}必绿", 0, 1 if errs else 0, (errs[0].line()[:60] if errs else "零发条"))
+    _, rmx = tier("birth-mixed")
+    mx = [h for h in rmx[0] if h.code == "S-MISSING" and "coverage-map" in h.ref]
+    one("十档i-豁免行不洗白同 token 的非豁免行", 1, 1 if mx else 0,
+        (mx[0].line()[:60] if mx else "未发红（＝整文件放行旧病复发）"))
+
     _, rp2 = tier("prefix-red")
     msgs = [h.detail for h in rp2[0] if h.code == "S-MISSING"]
     one("十档h-前缀下无真件必红", 1, 1 if any("前缀目录下无一件真件" in m for m in msgs) else 0, f"条数={len(msgs)}")
