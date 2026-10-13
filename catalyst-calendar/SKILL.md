@@ -2,7 +2,7 @@
 name: catalyst-calendar
 displayName: 持仓催化剂日历
 slug: cue-catalyst-calendar
-version: "0.1.12"
+version: "0.1.13"
 summary: "未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
 description: "给你持仓列表 + 时间窗，产出按日期排的盯盘日历：每条事件的日期要么已有披露在场且含明确 YYYY-MM-DD，要么 statute 原文推导且适用条件在锚内可判；未披露的推测事件、任何日期算术都进不了表。机检对评级词与褒贬零容忍（词族以机检现值为准，本文所举为常见例）；豁免只有两条口径：类型列整列不扫、官方披露词组按词形豁免。适合：财报季前置、组合盯盘节奏、投研会材料。不适合：涨跌与择时建议、事件影响判断（本件只陈述不判断，也没有留白判断位）。 Do NOT use for: trade timing, impact calls, rumour-sourced events."
 tags: [投研, 事件日历, A股, 催化剂]
@@ -46,14 +46,14 @@ metadata:
 ## 3. 管线（四段+门禁，可续跑；开工建 `progress.md` 台账）
 
 - `+scope`：主体集消歧+窗口落表；逐主体 `disclosure_cn` 拉窗口内公告清单存锚。
-- `+events`：按 `references/event-taxonomy.md` 逐类取数——入类先过第一闸（该文件 §1），再归类型封闭枚举：判定=`check_calendar.py` 里 `EVENT_TYPES` 现值，该文件 §2 表是给人读的镜像，两者不一致时以现值为准（一条命令自查见 `+check` 行）；`buyback`/`esop`/`disclosure_cn`/`regulatory_cn` 域直查（工具与入参 schema 一律当场发现，域清单与工具面以 catalog 现值为准，本文不抄）；解禁/减持原表按缺口决定是否发起 research ≤1（L3 标注+L1 前置见分类学 §4.3）；**满窗稀疏时的显式升级路径**：原表域内直查零命中→不静默留空，向用户报「升 research 一次的预计耗时与消耗」并默认征询，同意才升、拒绝则该维持「未检索到」——空日历合法，但「可升级」的路要摆到用户面前。股东大会（全部议案类，含临时）/业绩与投资者说明会/风险警示（ST/*ST）实施与撤销生效日/停复牌生效日四类为后收项，镜像表内同列。无事前日期的进度类披露（回购 1%/2% 节点等）入「已发生动态」附注区，不占日历行。omni 仅在公告原文必须解析时调用（域面 section 全文优先，三级路径同姊妹件）。**`margin` 域不入列**——能力面=两融折算率，与事件日历无关（Q1 对账定案）。
+- `+events`：按 `references/event-taxonomy.md` 逐类取数——入类先过第一闸（该文件 §1），再归类型封闭枚举：判定=`check_calendar.py` 里 `EVENT_TYPES` 现值，该文件 §2 表是给用户读的镜像，两者不一致时以现值为准（一条命令自查见 `+check` 行）；`buyback`/`esop`/`disclosure_cn`/`regulatory_cn` 域直查（工具与入参 schema 一律当场发现，域清单与工具面以 catalog 现值为准，本文不抄）；解禁/减持原表按缺口决定是否发起 research ≤1（L3 标注+L1 前置见分类学 §4.3）；**满窗稀疏时的显式升级路径**：原表域内直查零命中→不静默留空，向用户报「升 research 一次的预计耗时与消耗」并默认征询，同意才升、拒绝则该维持「未检索到」——空日历合法，但「可升级」的路要摆到用户面前。股东大会（全部议案类，含临时）/业绩与投资者说明会/风险警示（ST/*ST）实施与撤销生效日/停复牌生效日四类为后收项，镜像表内同列。无事前日期的进度类披露（回购 1%/2% 节点等）入「已发生动态」附注区，不占日历行。omni 仅在公告原文必须解析时调用（域面 section 全文优先，三级路径同姊妹件）。**`margin` 域不入列**——能力面=两融折算率，与事件日历无关（Q1 对账定案）。
 - `+derive`：法定期限类仅对**适用条件在法条锚内可判**者推导（如定期报告披露期限条款含报告期类型与主体类别），**每条挂 `statute` 当场取回的法条原文锚，锚值规格=`statute:<法名>第N条(<要点短引>)`**——名称+条号+短引三件齐，禁裸串；sources 对应行 `kind=statute` 且 ref 可复核（反编造法定锚）；规则文本不写死在日历里，条件不可判的期限（如未分主体的快报类）拒推不落行。
 - `+build`：按主体节组装 `calendar.md`——**形制契约**：表格六列顺序钉死 `日期|事件|类型|状态|窗外余档|来源锚`（锚列永远末列纯锚）；**节名规则**：主体节=一级 `##` 且标题**不属于保留词封闭集 `{未来30天要盯 | 已发生动态 | 附录}`**，摘要/附注区的识别只按保留词、禁拿字面「主体」当节前缀；「未来30天要盯」段只列不评；「已发生动态」区收无事前日期的进度类披露（带锚不占日历行）；附录=与 `sources.jsonl` 一一对应的来源索引。
 - `+check`（不过不交付）：
   ```bash
   python3 scripts/check_calendar.py <calendar.md> --sources <sources.jsonl> --window <YYYY-MM-DD~YYYY-MM-DD> --evidence <evidence目录>
   ```
-  **`--window`/`--sources` 必传、`--evidence` 正式管线必传全量**（checker 侧 --evidence 为选传以容旧产物，但**文档不写它就等于这道闸形同虚设**，故正式调用式一律把它摆上；window 字面值=输入契约定稿值；checker 禁读墙钟——「今起 90 天」只是输入缺省，进入机检前必须落为显式窗口，否则历史产物隔天重跑结论漂移）。机检要点：①声明行 ②**六列**表头状态机+数据行逐行锚校验（锚型形状=`AN_RE`/`SIX_RE`/`URL_RE`/`LETTER_SEG_RE`/`CONV_RE`/`STATUTE_SPEC_RE` 现值，按类型×锚型映射 `TYPE_ANCHORS` 判定，无 fallback 放行；**六位以上纯数字是合法锚形之一，所以"页上有数字"不等于"这行有锚"**，读者要核的是那一列指不指得回披露）③禁词+**评级词零容忍（豁免口径两条见铁律 1：类型列不扫 + 官方词组按词形）** ④日期全格式、按主体节非降序、窗外条目余档列空置 FAIL ⑤正文锚↔sources 双向可解析（「被引用」只认来源锚列解析键，附录文本出现不算）+类型×锚型映射（监管类必函件号，法定类必 statute）⑥主体数 ≤10（判定=码内上限） ⑦**锚∈evidence**：每条锚（公告索引号/函件号/法名条号三式）须在 `evidence/` 某快照内原文匹配到，statute 适用条文文本亦须在档——断链=FAIL；交付物复核面固定挂「evidence 抽 3 对原文」人审行（语义真值止于证据层，快照造假归人）。FAIL 回改复跑。词面域一条命令自查，任意目录整行粘贴即跑、命令自带安装后路径；装在别处把 `~/.workbuddy/skills/` 换成你的技能安装目录，Windows 路径形如 `C:\Users\<用户名>\.workbuddy\skills\catalyst-calendar\scripts\check_calendar.py`，两条命令都走 POSIX 工具，Windows 请在 Git Bash/WSL 内跑）：`grep -n -A3 "BANNED_RE = \|RATING_RE = \|HALLUCINATION_RE = \|OFFICIAL_USAGE_RE = \|EVENT_TYPES = \|TYPE_ANCHORS = \|SIX_RE = " ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py`；守护样清单同形现跑：`bash ~/.workbuddy/skills/catalyst-calendar/scripts/fixtures/run_fixtures.sh`——本文不抄域清单、不抄类型条数、也不抄守护样条数，跑什么是什么。**绿灯不证防线**：机检全过只证形状合规，不证语义为真。
+  **`--window`/`--sources` 必传、`--evidence` 正式管线必传全量**（checker 侧 --evidence 为选传以容旧产物，但**文档不写它就等于这道闸形同虚设**，故正式调用式一律把它摆上；window 字面值=输入契约定稿值；checker 禁读墙钟——「今起 90 天」只是输入缺省，进入机检前必须落为显式窗口，否则历史产物隔天重跑结论漂移）。机检要点：①声明行 ②**六列**表头状态机+数据行逐行锚校验（锚型形状=`AN_RE`/`SIX_RE`/`URL_RE`/`LETTER_SEG_RE`/`CONV_RE`/`STATUTE_SPEC_RE` 现值，按类型×锚型映射 `TYPE_ANCHORS` 判定，无 fallback 放行；**六位以上纯数字是合法锚形之一，所以"页上有数字"不等于"这行有锚"**，读者要核的是那一列指不指得回披露）③禁词+**评级词零容忍（豁免口径两条见铁律 1：类型列不扫 + 官方词组按词形）** ④日期全格式、按主体节非降序、窗外条目余档列空置 FAIL ⑤正文锚↔sources 双向可解析（「被引用」只认来源锚列解析键，附录文本出现不算）+类型×锚型映射（监管类必函件号，法定类必 statute）⑥主体数 ≤10（判定=码内上限） ⑦**锚∈evidence**：每条锚（公告索引号/函件号/法名条号三式）须在 `evidence/` 某快照内原文匹配到，statute 适用条文文本亦须在档——断链=FAIL；交付物复核面固定挂「evidence 抽 3 对原文」人工审行（语义真值止于证据层，快照造假归人）。FAIL 回改复跑。词面域一条命令自查，任意目录整行粘贴即跑、命令自带安装后路径；装在别处把 `~/.workbuddy/skills/` 换成你的技能安装目录，Windows 路径形如 `C:\Users\<用户名>\.workbuddy\skills\catalyst-calendar\scripts\check_calendar.py`，两条命令都走 POSIX 工具，Windows 请在 Git Bash/WSL 内跑）：`grep -n -A3 "BANNED_RE = \|RATING_RE = \|HALLUCINATION_RE = \|OFFICIAL_USAGE_RE = \|EVENT_TYPES = \|TYPE_ANCHORS = \|SIX_RE = " ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py`；守护样清单同形现跑：`bash ~/.workbuddy/skills/catalyst-calendar/scripts/fixtures/run_fixtures.sh`——本文不抄域清单、不抄类型条数、也不抄守护样条数，跑什么是什么。**绿灯不证防线**：机检全过只证形状合规，不证语义为真。
 
 ## 4. 输出契约
 

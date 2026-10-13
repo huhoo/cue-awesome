@@ -56,7 +56,7 @@
 ### 0.5.0 — 2026-10-12（视觉重新实现：原创「编辑式极简」体系，四格式统一，避免与任何同类产品雷同）
 
 - 需求：四格式统一原创、编辑式极简方向；**不再沿用 第三方同类产品 的色块语言**（顶部导航条 / kicker 角标 / PART 0X / 填充色块 / 表头填充 / 斑马纹 / 圆角卡片 / 左 accent 竖条）。改为**近单色 + 单一克制强调色（仅用于微小标记：序号、短细线）+ 大留白 + 强字号层级 + 细灰 hairline**：
-  - **PPTX（`render_pptx.py`）**：删顶部导航带（`_nav` 置空）、封面去左色块/kicker 改「白底大留白 + 墨色大标题 + 标题下短 accent 细线 + 灰副标」；目录去序号卡改「序号(淡灰)+标题」；章节页去顶带/PART kicker 改「右侧幽灵大序号(淡灰)+墨色标题」；内容页去 kicker 改「墨色结论式标题+细灰线」；**KPI 看板去填充/边框**改「无填充列 + 竖 hairline 分隔 + 墨色大数字」；**表格去填充/斑马/四边框**改「表头墨色加粗+底部墨色粗线、行间 hairline」；要点引导符 accent→灰；结束页去上下色带。
+  - **PPTX（`render_pptx.py`）**：删顶部导航带（`_nav` 置空）、封面去左色块/kicker 改「白底大留白 + 墨色大标题 + 标题下短 accent 细线 + 灰副标」；目录去序号卡改「序号（淡灰）+标题」；章节页去顶带/PART kicker 改「右侧幽灵大序号（淡灰）+墨色标题」；内容页去 kicker 改「墨色结论式标题+细灰线」；**KPI 看板去填充/边框**改「无填充列 + 竖 hairline 分隔 + 墨色大数字」；**表格去填充/斑马/四边框**改「表头墨色加粗+底部墨色粗线、行间 hairline」；要点引导符 accent→灰；结束页去上下色带。
   - **Word（`build_docx.py`）**：封面去 kicker/顶线改「Title 墨色大标题+底部细灰线+灰副标」；`目录` 标题改细灰下划、条目去彩色 `▪/·` 项目符号；`accent_heading` 仅 H1 底部细灰线、**H2 去左 accent 竖条**（纯字号层级）；`style_table` 去表头填充/斑马/四边框改「表头墨色加粗+底部粗线、行间 hairline、无竖线/外框」（新增幂等 `set_cell_shading`，删 `set_table_borders`）；引用/标注段去底纹改「细灰左线+灰字」；页脚 accent 线→hairline。
   - **HTML（`render_html.py`）**：`css_for` 重写——hero 去 primary 满底改「白底+墨色标题+accent 细线下划」；`h2` 去左 accent 竖条改底部 hairline、`h3` 降为灰字；表格去表头填充/外框/阴影/斑马改「表头底部墨色粗线+行间 hairline」；`blockquote`/`.visual` 去底色/圆角改「细灰左线+灰字」；`nav.toc` 去圆角卡片改「底部 hairline 分隔」；去掉所有 `border-radius`（直角）。
   - **PDF**：仍走 HTML→headless 打印，自动继承同套编辑式极简样式（`@media print` 保留 hero 与配色）。
@@ -69,10 +69,10 @@
 - 参照 第三方同类产品 共用设计哲学，对 `build_docx.py` 视觉层提质，使 **Word 与已完成的 PPTX(0.4.1)/HTML(0.4.0) 在同一套三色主题**（primary/accent/ink/panel/muted，default/academic/gov/legal/finance 各一套）下观感一致——PDF 走 HTML 打印，自动继承同套样式：
   - **封面 hero**：顶部 accent 细线 + accent kicker（如"Omni 解析重建"）+ 标题（保留 Word `Title` 样式，底部 primary 下划）+ 来源·日期副标题（灰）。
   - **目录美化**：`目录` 标题底部 accent 下划；条目按层级缩进，一级 `▪` accent 标记、次级 `·` 灰标记。
-  - **标题装饰**：H1(含 level1) 底部 primary 下划；H2 左侧 accent 竖条（与 HTML `h2` 左竖条、PPTX accent 短下划一致）；标题文字仍走样式深墨色（保留"黑色基线"，不整段染色）。
+  - **标题装饰**：H1（含 level1） 底部 primary 下划；H2 左侧 accent 竖条（与 HTML `h2` 左竖条、PPTX accent 短下划一致）；标题文字仍走样式深墨色（保留"黑色基线"，不整段染色）。
   - **表格美化**：表头 primary 填充 + 白字、偶数行 panel 斑马纹、整表细灰边框（XML 直设，不依赖模板内置表样式，跨 Word/WPS 一致）。
   - **引用/标注段**：accent 左条 + panel 浅灰底 + 灰字，明示"引用/视觉理解"区别于正文。
-  - **页脚**：顶部 accent 细线 + 来源(左,灰) + `PAGE` 域页码(右)，域随分页自动更新。
+  - **页脚**：顶部 accent 细线 + 来源（左，灰） + `PAGE` 域页码（右），域随分页自动更新。
   - **hr**：改为居中 accent 短下划（替代原灰色长虚线）。
 - 保真与校验口径**不变**：字符零丢失（`validate_docx` 覆盖率口径）；`目录` 仍为 `Heading 1`、`Title` 样式保留；分页/标题层级/表格数量未被改动。
 - 回归：`tests/run_matrix_test.py` 13/13 全 PASS（覆盖率 100%，`page_field`/`no_emoji`/`quote_kaiti`/`nested_inline`/`cjk_space_clean` 等专项断言全绿）。

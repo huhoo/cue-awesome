@@ -1,3 +1,8 @@
+### 0.4.10 — 2026-10-13（全仓文档卫生一轮：读者称谓统一「用户」＋中文标点全角化）
+
+- **读者称谓口径**：成品面指称交付物接收方一律「用户」——原「给人读的镜像／可交人核／人来确认／拍板在人／决议权在人／人负终审／人只抽读」等口语表述全部改「用户」；「人工复核／人工审定／人工审」等与「机器」对举的标准词保留不动。
+- **中文标点全角化**：半角逗号／分号／冒号／问号／感叹号／括号在邻接中文处统一为全角；代码围栏、行内代码、URL、时间戳、千分位数字、YAML `tags` 数组分隔符一律不碰；中文引述的直引号改「」。
+- 能力句、机检词族、判定阈值、退出码、脚本零改动；复验 `python scripts/check_skills.py` 0 error 0 warning，公开面卫生门 ERROR 清零（另修 journal-draft 一处既存过程日期入墙）。
 ### 0.4.9 — 2026-10-12（对比演示图改文字说明：分发件里没有那张图，就不留包内相对路径）
 
 - `README.md` 与 `README.en.md` 首段：原句把对比演示图写成本包 assets 目录下的一枚 png 路径，同时已声明渠道包不随发图片。渠道对图片是拒收面（两试两拒），分发件里那条路径必然空手，所以本轮**撤掉该路径字面**，改为「图在仓库内本包 assets 目录可看（GitHub 直接渲染），渠道包不随发图片，分发件内不含这张图」，并把图里数字的口径去处指向下文「交付与验证」段。图片本体未动，也不改打包排除面去让路径「通过」。
@@ -76,7 +81,7 @@ Verified
 
   | File | PDF pages | Omni pages | Charged | Storage |
   |---|---|---|---|---|
-  | announcement 2026-10-01 (临 2026-052) | 3 | 3 | 0.201 credits | inline |
+  | announcement 2026-10-01 （临 2026-052） | 3 | 3 | 0.201 credits | inline |
   | 2025 annual report | 391 | 391 | 26.197 credits | artifact (989,981 B content, 87,371 B grounding) |
 
   Every grounding anchor was `source_pdf_page_1_based`, `reliable`; `partial=false`, no incomplete or truncated pages. Against a local PyMuPDF parse of the same PDFs: the best-matching Omni page was the same page number for 3/3 and 391/391 pages; median share of local text found on the same Omni page 1.0 and 0.983 (the 7 annual-report pages below 0.8 are multi-column tables whose cell order differs, not missing text); 30/30 and 16,973/16,984 numeric tokens of the local parse appear on the same Omni page. Tables came back as GFM tables (14 rows on 2 pages; 5,896 rows on 277 pages) plus 3 inline HTML tables on one page; in the announcement's litigation tables two adjacent columns were merged into one cell (both numbers kept).

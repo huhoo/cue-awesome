@@ -29,7 +29,7 @@ The citation network and the review scaffold come **after** these three: the fir
 
 | Part | Content | What the gate enforces |
 |---|---|---|
-| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` in the anchor cell | Content without anchor -> `E-ANCHOR`; an anchor number beyond the page set on the card (e.g. `P99` when the set says 共 13 页) -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
+| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` in the anchor cell | Content without anchor -> `E-ANCHOR`; an anchor number beyond the page set on the card （e.g. `P99` when the set says 共 13 页） -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
 | 2 Reproducibility list | Dataset availability, whether a code link exists, parameter completeness - **gaps only, never a verdict on reproducibility** | Fewer than three accounted items -> `E-COVERAGE`; "`应该能复现`" style claims -> `E-BANWORD` |
 | 3 Citation network | Entries taken only from the paper's own reference list, each with a locator; citation counts declared when not retrieved | Entry without locator -> `E-ANCHOR`; neither entries nor a ticked declaration -> `E-COVERAGE` |
 | 4 Review scaffold | Thesis slots belong to the user: given by them, or inferred and then explicitly confirmed; material sentences must be anchored, otherwise leave `空槽（不硬填）` | Unanchored material -> `E-ANCHOR`; unconfirmed inferred slot or unticked origin -> `E-COVERAGE` |

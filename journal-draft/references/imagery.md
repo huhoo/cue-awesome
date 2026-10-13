@@ -74,7 +74,7 @@ palette limited to #A10F34、#1A1A1A、#F5F5F0, no text, no letters, no logos, n
 唯一有效的办法是**参考图级联**：同 `consistency_group` 内先出第一张，之后把第一张当
 参考图做图生图。这一步直接用 agent 的图生图能力，**不需要任何外部端点或账号**。
 
-实测里 `plan_images.py` 会把 (role, 尺寸档) 相同的槽位归为同一组，
+实测里 `plan_images.py` 会把 （role, 尺寸档） 相同的槽位归为同一组，
 实测样例跑出 6 个一致性分组，对应 7 个代表性槽位。分组数越少，整本刊越统一——**这本身就是个可优化的指标**：
 如果一期要配 12 张图却分了 10 个组，说明选题太散，应当建议用户收敛主题。
 
@@ -164,7 +164,7 @@ figure 块」重数来匹配，结果因为编号从 0 还是从 1 不一致而�
 
 `fig_0` 在 `content.pages[9].blocks[0]`，渲染后落在 **PDF 第 33 页**——中间隔着 24 页，
 因为图文高度不同会让自动分页整体重排。拿 `page_no` 去 PDF 里找图必然找错页。
-它只用于 `--patch-content` 回填（对 content 的 JSON 数组索引），**不是给人当页码看的**。
+它只用于 `--patch-content` 回填（对 content 的 JSON 数组索引），**不是给用户当页码看的**。
 
 ### 2. 样刊 spec 侧的槽位（`slot_*`）回填不了 content
 

@@ -1,5 +1,10 @@
 # Changelog
 
+### 0.3.6 — 2026-10-13（全仓文档卫生一轮：读者称谓统一「用户」＋中文标点全角化）
+
+- **读者称谓口径**：成品面指称交付物接收方一律「用户」——原「给人读的镜像／可交人核／人来确认／拍板在人／决议权在人／人负终审／人只抽读」等口语表述全部改「用户」；「人工复核／人工审定／人工审」等与「机器」对举的标准词保留不动。
+- **中文标点全角化**：半角逗号／分号／冒号／问号／感叹号／括号在邻接中文处统一为全角；代码围栏、行内代码、URL、时间戳、千分位数字、YAML `tags` 数组分隔符一律不碰；中文引述的直引号改「」。
+- 能力句、机检词族、判定阈值、退出码、脚本零改动；复验 `python scripts/check_skills.py` 0 error 0 warning，公开面卫生门 ERROR 清零（另修 journal-draft 一处既存过程日期入墙）。
 ### 0.3.5 — 2026-10-10（公开面卫生：证据文件的过程流水与仓外运行目录指路退出成品面）
 
 - 五处子串改净：`SKILL.md` 一处内部时点叙事（「某日实测的四点（Bridge 1.8.3–1.8.6）」）改为「实测稳定的四点（Bridge 版本以通道现值为准）」；`references/av-backtest.md` 四处——文件题头的内部流水号与定稿日、层级表头的仓外运行目录通配路径、正文一处流水号括注、末行的转录/输出/导出路径指路，统一改为「记在内部运行台账，可应要求提供」形制。
@@ -13,19 +18,19 @@
 - 落面：本件落了 ②反幻觉两句（时点句+未检索到句）。②的两句各归其位——**时点句进「怎么开口」节**（开口带时点、首行标「来源日期」、与所指日期不一致即禁「今日」「最新」改「截至 <日期>」），**未检索到句进「出错了怎么办」节**（参数／字段／枚举名未见于本次工具返回者不得凭印象填）；同一对句子在场景件 SKILL 输出契约节以指令面复写一次（agent 侧受约束，人侧知情，两处非重复）。README 与 README.en 双语对点。
 - 版本位：patch 位 0.3.4。除版本锁字面外 `scripts/` 零触碰；判定与阈值一律指回脚本现值，本文不作穷尽复述。
 
-本文件遵循 keep-a-changelog;版本权威=各 SKILL.md frontmatter 现值。
+本文件遵循 keep-a-changelog；版本权威=各 SKILL.md frontmatter 现值。
 
 ### 0.3.3 — 2026-10-08（文案面·M174 名述带界句：「含音视频」只在「本地小段/切片≤256 MiB」限定下说）
 
 - 缘起与口径源：M173 音视频端到端回测已在 `references/av-backtest.md` 定形（含 lead 跨会话复现段，其入链笔为 49dc951）。该档 What this decides 段的判词是本次唯一口径源——**「含音视频」supportable only with the qualification「本地小段/切片(≤256 MiB)工作流」**，实测强度为「两场合共三枚 90 秒切片走通全链、逐字回查 8/8，全长视频 URL 路五枪全拒、本地全长受 256 MiB 闸」，全长会议解析=未臻。述面据此**只加带界句**，不写把能力说成无界的词形；本条自身也不复写那两个被禁词形——复写了，「无界说法零出现」这条判据就被自家日志破掉（同型今日已犯两次，不再第三次）。
-- 落了哪四处：① `SKILL.md` 与 `SKILL.en.md` 的 `summary` 末追加「音视频限本地小段/切片」（**字节数容不下**：加 ≤256 MiB 即破 C-36 的 80 字闸，故数字界只出现在 ②③④ 三处）；② `description` 的「适合:」清单追加「业绩会音视频（本地小段/切片≤256 MiB）」；③ README 中文主面在「先看实际价值」表加一行、在「边界与许可」加一句（含「完整性≠语义为真」的限定）；④ README.en.md 同两处对点。displayName 未动（品类钩子已占位，音视频属能力细节进述面）。
+- 落了哪四处：① `SKILL.md` 与 `SKILL.en.md` 的 `summary` 末追加「音视频限本地小段/切片」（**字节数容不下**：加 ≤256 MiB 即破 C-36 的 80 字闸，故数字界只出现在 ②③④ 三处）；② `description` 的「适合：」清单追加「业绩会音视频（本地小段/切片≤256 MiB）」；③ README 中文主面在「先看实际价值」表加一行、在「边界与许可」加一句（含「完整性≠语义为真」的限定）；④ README.en.md 同两处对点。displayName 未动（品类钩子已占位，音视频属能力细节进述面）。
 - 版本锁与实测数字：`SKILL.md` / `SKILL.en.md` frontmatter 与 `scripts/ontology.py` 的 `VERSION` 三处同号 0.3.3（M158 双锁的第三处在脚本里，动它只为对账，判定逻辑零改动）；改后两套自测 **Ran 66 tests / OK** 与 **Ran 8 tests / OK**，全仓 lint 10 skills / 0 error / 0 warning。限额实测：summary 79/80、description 286/300。
 ### 0.3.2 — 2026-10-08（M173：音视频端到端实跑证据票，C-13 先证据后申报）
 
-- 新增 `references/av-backtest.md`：公开业绩会音视频端到端诚实段。**样本 N=2**(当升材料 2025H1 网上业绩说明会回放、建行 2025 年度业绩发布会视频——两枚均为本机 ffprobe 核过的真 h264+**aac 音轨**,非幻灯片视频,源可达 HTTP 200/206)。
-- 分层账(全文见 `references/av-backtest.md`):L1 全长 URL 腿 5 枪(lead text×3+我 grounded×2,两 CDN)全 **PARSE_FAILED**(retryable=false、operation_created=true、**billed=false**,泛词零归因);L2 本地全长(1.34GB 字节严合)**SOURCE_TOO_LARGE**=256MiB source 闸(operation_created=false、billed=false,界外清晰非玄学);L3 本地 90s 切片两枚(3.2MB/6.3MB,ffmpeg 归一化 faststart)**grounded completed**——返回形制=内联 `[画面/说话人 mm:ss]` 锚+`(幻灯片标题)` 标记+`grounding.data` sidecar(`omni.grounding.v1`);L4 全链走通:`omni-source --text-only`→prepare(逐字 quote→字节 span)→build v1(4 幻灯断言)→update v2(+1 口播断言第二源,同 scope title 增量)→validate→独立逐字回查 **5/5**→query found+证据→export-okf 5 概念文件;run.json.skill_version=**0.3.2**(M158 锁在 AV 产物上自证)。口播 ASR 谐音(「利用」=净息差)原样入包不校,basis 注明。
-- **实测强度(只准写这个)**:「2 场公开业绩会视频(建行 H1、当升 2025H1)共三枚 90s 切片走通全链(build→update×2→validate→query→export-okf;包=3 源 8 断言)、逐字回查 8/8(100%);全长视频 URL 路 5 枪全拒、本地全长撞 256MiB 闸=未臻」。「含音视频」如加入 displayName/summary **必须带界**(「本地小段/切片 ≤256MiB 工作流」),不得写「任意/整场音视频」;终判归 lead/Owner,名述面属 4.1。
-- 本条为 M173 机器面账;版本 bump 由 lead 合并发,三处同号=SKILL.md+SKILL.en.md frontmatter+ontology.py VERSION(M158 锁,非 manifest——本包无 manifest)。EN 面 displayName 本就与主面同刻中文(M157 渠道一致性设计),「任意文档」口径两文一致,无需另改。
+- 新增 `references/av-backtest.md`：公开业绩会音视频端到端诚实段。**样本 N=2**（当升材料 2025H1 网上业绩说明会回放、建行 2025 年度业绩发布会视频——两枚均为本机 ffprobe 核过的真 h264+**aac 音轨**，非幻灯片视频，源可达 HTTP 200/206）。
+- 分层账（全文见 `references/av-backtest.md`）:L1 全长 URL 腿 5 枪（lead text×3+我 grounded×2，两 CDN）全 **PARSE_FAILED**（retryable=false、operation_created=true、**billed=false**，泛词零归因）;L2 本地全长（1.34GB 字节严合）**SOURCE_TOO_LARGE**=256MiB source 闸（operation_created=false、billed=false，界外清晰非玄学）;L3 本地 90s 切片两枚（3.2MB/6.3MB,ffmpeg 归一化 faststart）**grounded completed**——返回形制=内联 `[画面/说话人 mm:ss]` 锚+`(幻灯片标题)` 标记+`grounding.data` sidecar(`omni.grounding.v1`);L4 全链走通：`omni-source --text-only`→prepare（逐字 quote→字节 span）→build v1（4 幻灯断言）→update v2（+1 口播断言第二源，同 scope title 增量）→validate→独立逐字回查 **5/5**→query found+证据→export-okf 5 概念文件；run.json.skill_version=**0.3.2**（M158 锁在 AV 产物上自证）。口播 ASR 谐音（「利用」=净息差）原样入包不校，basis 注明。
+- **实测强度（只准写这个）**:「2 场公开业绩会视频（建行 H1、当升 2025H1）共三枚 90s 切片走通全链（build→update×2→validate→query→export-okf；包=3 源 8 断言）、逐字回查 8/8(100%)；全长视频 URL 路 5 枪全拒、本地全长撞 256MiB 闸=未臻」。「含音视频」如加入 displayName/summary **必须带界**（「本地小段/切片 ≤256MiB 工作流」），不得写「任意/整场音视频」；终判归 lead/Owner，名述面属 4.1。
+- 本条为 M173 机器面账；版本 bump 由 lead 合并发，三处同号=SKILL.md+SKILL.en.md frontmatter+ontology.py VERSION（M158 锁，非 manifest——本包无 manifest）。EN 面 displayName 本就与主面同刻中文（M157 渠道一致性设计）,「任意文档」口径两文一致，无需另改。
 
 ### 0.3.1 — 2026-10-07
 
@@ -61,29 +66,29 @@ Changed
 - 公开验证记录里那条测试计数改指针形：记录只说"当日全过"，数与结果以现跑命令为准。
 - 根 README 两处（同批）：本件那一行的活版本号换成与其余八件同法的 frontmatter 指针；「本件不在旧 ZIP 里」那句按发布页现值改为现状句（发布页实有本件资产），不再与同段九件指路自相矛盾。**「版本权威=frontmatter」这条声明从本条起才是真的**：根行、文档、渠道字段三处都不再各存一份数。
 - summary / description 均在字数闸内（75／297）。**本条与同日那条机器面条目同占 0.2.3 一个版本位**（工具版本戳同号化属机器面，两事各写一条、不互抄），贴本条时机器面已在盘，文案面未再动 scripts。
-### 0.2.3（机器面·M158+追加）— 2026-09-28 版本戳同号化+双份 frontmatter 一致性锁（M156 第 6 项,M158 追加条闭 EN 面漂移盲区）
+### 0.2.3（机器面·M158+追加）— 2026-09-28 版本戳同号化+双份 frontmatter 一致性锁（M156 第 6 项，M158 追加条闭 EN 面漂移盲区）
 
-- 审方仓外 demo 实测:0.2.2 流程产出的 run.json.skill_version 仍刻脚本常量 0.2.0——凭据分裂,且违本文件顶章「版本权威=各 SKILL.md frontmatter 现值」自书规矩。**案①同号化**:VERSION 与两份 frontmatter 同号(裁单「0.2.3 版本位同批:VERSION+两份 frontmatter 一起走」,三处现值均 0.2.3)。SCHEMA_VERSION(0.1.0)保持独立轨不动——协议版本与 skill 版本分离本属设计意图(:148/:347 皆协议面),此单只修「冒充 skill 版本的字段」。案②(双轨并见+文案注明)不取:字段名就叫 skill_version,让它自证为真优于加解释,且「写可见」的前提工作在文案面、越「只常量+锁」预算。
-- **追加条(4.1 发现,lead 转)**:锁初版只读 SKILL.md——本包 SKILL.en.md 同带 version 字段,两文漂移测不到。**判形=双读不撤字段**:渠道加载器可能各读自面 frontmatter,撤 EN 版位=给未验证的读方制造风险;等式收为「脚本==SKILL.md==SKILL.en.md 三点同号」,任何一处独走即 FAIL,零破坏面。锁测试 `VersionConsistency.test_script_version_equals_both_skill_frontmatter`(subTest 两份逐面);反证两笔实测:**脚本漂 9.9.9→恰 2 failures(两面各逮一次,subTest 归属正确)**;**仅 EN 独漂 0.2.9→恰该面 1 failure、中面不告**(旧单读锁对此哑巴——追加条所要闭的正是这个盲区),EN 面测后原样恢复、复跑全绿。
-- 测试 47→**48 项实测 OK**(锁 +1);lint 9 skill 0 error 0 warning。改动面:ontology.py 常量一行、两份 SKILL frontmatter 各一行(裁单授权)、test_ontology.py 锁+import re、本机器条;文案面 M157 各写各面互不抄。
+- 审方仓外 demo 实测：0.2.2 流程产出的 run.json.skill_version 仍刻脚本常量 0.2.0——凭据分裂，且违本文件顶章「版本权威=各 SKILL.md frontmatter 现值」自书规矩。**案①同号化**:VERSION 与两份 frontmatter 同号（裁单「0.2.3 版本位同批：VERSION+两份 frontmatter 一起走」，三处现值均 0.2.3）。SCHEMA_VERSION(0.1.0)保持独立轨不动——协议版本与 skill 版本分离本属设计意图（:148/:347 皆协议面），此单只修「冒充 skill 版本的字段」。案②（双轨并见+文案注明）不取：字段名就叫 skill_version，让它自证为真优于加解释，且「写可见」的前提工作在文案面、越「只常量+锁」预算。
+- **追加条（4.1 发现，lead 转）**：锁初版只读 SKILL.md——本包 SKILL.en.md 同带 version 字段，两文漂移测不到。**判形=双读不撤字段**：渠道加载器可能各读自面 frontmatter，撤 EN 版位=给未验证的读方制造风险；等式收为「脚本==SKILL.md==SKILL.en.md 三点同号」，任何一处独走即 FAIL，零破坏面。锁测试 `VersionConsistency.test_script_version_equals_both_skill_frontmatter`（subTest 两份逐面）；反证两笔实测：**脚本漂 9.9.9→恰 2 failures（两面各逮一次，subTest 归属正确）**；**仅 EN 独漂 0.2.9→恰该面 1 failure、中面不告**（旧单读锁对此哑巴——追加条所要闭的正是这个盲区）,EN 面测后原样恢复、复跑全绿。
+- 测试 47→**48 项实测 OK**（锁 +1）;lint 9 skill 0 error 0 warning。改动面：ontology.py 常量一行、两份 SKILL frontmatter 各一行（裁单授权）、test_ontology.py 锁+import re、本机器条；文案面 M157 各写各面互不抄。
 
-### 0.2.2 — 2026-09-28（lead·主从倒正,Owner 二点）
+### 0.2.2 — 2026-09-28（lead·主从倒正，Owner 二点）
 
-- SKILL 主文件由英文改为**中文主**(原 SKILL.md→SKILL.en.md,原 SKILL.zh-CN.md→SKILL.md):skillhub 是中文社区,九件主面语言至此全部一致。
-- 四处「中文·English」切换行改为**纯文字指路**——渠道页不解析相对链接,可点切换在此环境是死 UI,不装能点。
-- 两文口径同步句改「以代码与夹具现值为准」,与 C-46 一致。
+- SKILL 主文件由英文改为**中文主**（原 SKILL.md→SKILL.en.md，原 SKILL.zh-CN.md→SKILL.md）:skillhub 是中文社区，九件主面语言至此全部一致。
+- 四处「中文·English」切换行改为**纯文字指路**——渠道页不解析相对链接，可点切换在此环境是死 UI，不装能点。
+- 两文口径同步句改「以代码与夹具现值为准」，与 C-46 一致。
 
-### 0.2.1 — 2026-09-28（lead·渠道一致性修正,Owner 点名）
+### 0.2.1 — 2026-09-28（lead·渠道一致性修正，Owner 点名）
 
-- 渠道 listing description 由英文主改为**中文主**(≤300、三段:拿到什么/机器挡什么/适合与不适合),英文触发词移至尾部保留,零丢失。
-- 两份 README 头部「v0.2.0 公开试验版」活版本+状态尾句删除(指针化纪律,对齐族规)。
-- 新建本 CHANGELOG(族规补齐:此前为九件中唯一缺 CHANGELOG 的包)。
-- 语言切换行经查与姊妹件同制(链接目标四件俱在),保留不动。
+- 渠道 listing description 由英文主改为**中文主**（≤300、三段：拿到什么/机器挡什么/适合与不适合），英文触发词移至尾部保留，零丢失。
+- 两份 README 头部「v0.2.0 公开试验版」活版本+状态尾句删除（指针化纪律，对齐族规）。
+- 新建本 CHANGELOG（族规补齐：此前为九件中唯一缺 CHANGELOG 的包）。
+- 语言切换行经查与姊妹件同制（链接目标四件俱在），保留不动。
 
 ### 0.2.0 — 2026-09-28（Owner:v0.2 evidence briefs 与零密钥 demo）
 
-- 上游历史(仓内 PR#1-4):v0.1.1 audited public knowledge workflow → v0.2 evidence briefs;Windows 首跑兼容三修(.gitattributes LF、symlink 测试平台跳过、claim_kind 默认 reported),47 项测试。
+- 上游历史（仓内 PR#1-4）:v0.1.1 audited public knowledge workflow → v0.2 evidence briefs;Windows 首跑兼容三修（.gitattributes LF、symlink 测试平台跳过、claim_kind 默认 reported）,47 项测试。
 
 ### 0.1.1 — 2026-09-27（Owner:audited public knowledge workflow 首发）
 
-- 初始上架前审计版,细节以 git log(PR#1)为准。
+- 初始上架前审计版，细节以 git log(PR#1)为准。

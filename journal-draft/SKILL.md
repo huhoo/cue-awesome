@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.12"
+version: "0.15.13"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -14,7 +14,7 @@ tags:
   - 版式提取
   - 自动排版
   - 底稿生成
-description: "给你栏目 + 本期素材（或先做公开检索），产出可编辑成稿：提纲、成稿、引证逐条回源，后接版面与编辑定位两道脚本门禁（查定位落地、字数、读者动作、句长、自填 taboo 词表与术语密度），终了 QA 清单人工逐项核（引证回源、极限词在清单内）。仿写参考样式只学语气、不编事实。适合：月刊/季刊内刊、客户通讯、投资者信、ESG 特刊。不适合：替代编辑签发（门禁给清单、拍板在人）、编造客户案例、承诺刊发效果。 Do NOT use for: editorial sign-off, invented client cases, promised outcomes."
+description: "给你栏目 + 本期素材（或先做公开检索），产出可编辑成稿：提纲、成稿、引证逐条回源，后接版面与编辑定位两道脚本门禁（查定位落地、字数、读者动作、句长、自填 taboo 词表与术语密度），终了 QA 清单人工逐项核（引证回源、极限词在清单内）。仿写参考样式只学语气、不编事实。适合：月刊/季刊内刊、客户通讯、投资者信、ESG 特刊。不适合：替代编辑签发（门禁给清单、拍板在用户）、编造客户案例、承诺刊发效果。 Do NOT use for: editorial sign-off, invented client cases, promised outcomes."
 license: MIT
 agent_created: true
 metadata:
@@ -97,7 +97,7 @@ journal-律所- regions   journal-制造业-客户通讯   journal-券商-月度
 | **标准** `mode=std`（默认） | 样例 + **3 批确认**（见上表） | 约 90%，只需替换图与润色 | 正常一期 |
 | **精修** `mode=fine` | 样例 + 逐单元确认 + 逐段确认（每批仍 ≤5） | 约 99%，可直接定稿 | 首次做某个新客户 |
 
-**硬规则**：每次向用户提问，**必须打包成一批 ≤5 个**，禁止零碎连环问；每个问题都要给出**默认建议**，用户回答「按你的来」即可推进。永远不要问能从上期素材里推断出来的问题（工具做推断，人来确认），也不要问已经能从样例的 StyleSpec 里读出来的东西。
+**硬规则**：每次向用户提问，**必须打包成一批 ≤5 个**，禁止零碎连环问；每个问题都要给出**默认建议**，用户回答「按你的来」即可推进。永远不要问能从上期素材里推断出来的问题（工具做推断，用户来确认），也不要问已经能从样例的 StyleSpec 里读出来的东西。
 
 **外推项不许写进正文。** `⟨待确认⟩` 只落在 `pending.md`——三个渲染器都不清理这个词，
 写进 `content.json` 的字段值会**直接印进 PDF/docx**，而 `crosscheck.py` 不报（硬规则 28）。
@@ -136,7 +136,7 @@ journal-律所- regions   journal-制造业-客户通讯   journal-券商-月度
 | 文件 | 阶段 | 作用 |
 |---|---|---|
 | `content.json` | +draft | **内容源**，三件套都由它渲染。字段规范见 [references/content-schema.md](references/content-schema.md)，可跑样例 `assets/templates/content.example.json` |
-| `stylespec.json` + `stylespec.md` | +learn | 样式指纹：版面网格、色板、字号表、页面模板、图片槽位、调性。机器可读 + 人读 |
+| `stylespec.json` + `stylespec.md` | +learn | 样式指纹：版面网格、色板、字号表、页面模板、图片槽位、调性。机器可读 + 用户读 |
 | `unit-patterns.md` | +learn | 单元模板：栏目里反复出现的最小内容原子的 slot 结构 + 字数区间 + 语料范例 |
 | `issue-brief.md` | +brief | 本期需求对齐书：可复用项 / 必换项 / 缺素材清单 / 待确认清单 |
 | `outline.md` | +plan | 本期大纲：章节、每篇的目标读者·角度·篇幅·素材需求·证据需求 |
@@ -886,7 +886,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 | `scripts/derive_skill.py` | 从样例目录派生出**独立可安装**的场景技能：瘦身 spec / 抽固定件与术语 / 生成 last-issue 基线 / 自带渲染脚本。见 [references/instantiation.md](references/instantiation.md) |
 | `scripts/audit_layout.py` | **版面质量门禁**：量成品 PDF 的正文字号 / 字号碎裂度 / 行距倍数 / 每行字数 / 字体是否兜底 / 中文空格残留 / 页面密度，与 spec 的实测值比对。专治「门禁全绿但难看」（硬规则 29）。本节所列是其镜像，判定与阈值以脚本现值为准（定位命令见硬规则 29 末）。`--sample <样刊PDF>` 可直接拿样刊当基准，`--strict` 让 WARN 也判失败 |
 | `scripts/audit_editorial.py` | **编辑定位门禁**：读 `positioning.json` + `content.json`，判定位卡完整度 / 单条字数是否落在调性派生的字带 / 兑现「读者要做什么」的条目覆盖率（<50% FAIL）/ 纯 L0 占比（>50% FAIL）/ 句长中位 / 术语密度与行业忌讳词。专治「写得没错但不对路」（硬规则 31）。缺定位卡时 FAIL，`--no-positioning-gate` 可跳过 |
-| `assets/templates/positioning.template.json` | **刊物定位卡模板**：目的(六选一) / 读者(岗位+处境+专业水平+时间预算) / 价值承诺+reader_action / 调性三刻度 / 行业术语与忌讳。与 `stylespec.json` 平级的第二份机器可读产物 |
+| `assets/templates/positioning.template.json` | **刊物定位卡模板**：目的（六选一） / 读者（岗位+处境+专业水平+时间预算） / 价值承诺+reader_action / 调性三刻度 / 行业术语与忌讳。与 `stylespec.json` 平级的第二份机器可读产物 |
 | `assets/examples/qiming-regional-sample/positioning.json` | 定位卡填好的样例（虚构机构） |
 | `assets/templates/buddy.region-policy-scan.json` | Cue 搭子模板草案「区域新规动态」（对应法规动态栏目），已过 `cue-buddy` 的 `+validate`：0 error / 0 warning。做法与变体见 [references/cue-buddy-map.md](references/cue-buddy-map.md) |
 
