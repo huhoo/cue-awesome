@@ -8,7 +8,7 @@
 
 ## 0A. §v2 修订条款（与下文冲突处以本节为准）
 
-1. **交付面命名**：一次运行的交付物 = `report.md` + `sources.jsonl` + `references/coverage-map.md` + `progress.md` 四件；**红线扫描覆盖这四件的全部文字**。包级 README/SKILL 不属交付面，且明令「不得把单次运行结论写进包级 README」。
+1. **交付面命名**：一次运行的交付物 = `report.md` + `sources.jsonl` + `dd-<代码>-<asof>/references/coverage-map.md` + `progress.md` 四件；**红线扫描覆盖这四件的全部文字**。包级 README/SKILL 不属交付面，且明令「不得把单次运行结论写进包级 README」。
 2. **零条目合法化的唯一形状**：九类 coverage 行齐全且**唯一**；每类 `结果=检到 N/零条` 必须同时具备 ①非空「本次实际调用」且取值在 live 域枚举内、②对应的原始结果快照在 evidence 且哈希可核、③互校方向＝正文声称查过的域 ⊆ 对账表「本次实际调用」集（多查少写合法，声称而未记账 FAIL）。两条硬断言：九类逐类齐全（缺类 ≠ 零条，`DD-COVERAGE`）；每类正文行数与账内「检到 N」**逐类相等**。`未发起` 只允许出现在 `progress.md`，不得填进结果列。不满足①②③的零条目 = FAIL（`DD-COVERAGE`）。**有证据的零行表是正路**（配守护样 `good-zero-entries-evidence-backed`）。
 3. **法定推导三元绑定**：推导行须同时满足 (a) 该行 statute ref 在 sources 有唯一记录且 `kind=statute`；(b) 法名/条号/短引逐字出现在该 source 对应的**同一** evidence 件内（禁跨件拼接后子串命中）；(c) 另有主体侧条件/触发事实锚及其 evidence。缺任一 = 拒推不落行 + `progress.md` 一行理由与探针清单。
 4. **subject 双形制**：`全称（6位代码.SH|.SZ|.BJ）` 与纯 `6位代码.(SH|SZ|BJ)` 均合法；后者须由正文/证据内「全称+代码」双标完成归属，归属不明 = FAIL。
@@ -58,7 +58,7 @@
 7. 不写单价/费率/换算；不承诺未开放数据域。
 
 ### 5. 覆盖率对账表（随 run 交，机器可核）
-`references/coverage-map.md`：9 类目 × 所需域/工具 × 本次实际调用 × 结果（检到 N / 零条 / 无工具）。每类目至少一行「域面外能力」明示；无工具项禁入正文断言，只进本表。本表是 README 诚实清单的母本。
+`dd-<代码>-<asof>/references/coverage-map.md`：9 类目 × 所需域/工具 × 本次实际调用 × 结果（检到 N / 零条 / 无工具）。每类目至少一行「域面外能力」明示；无工具项禁入正文断言，只进本表。本表是 README 诚实清单的母本。
 
 ### 6. 证据层（fail-closed）
 `evidence/<域>-<slug>.json` 原始回包快照 + `evidence/LEDGER.sha256`；表行锚必须在 evidence 有对应件（仅表行锚强制，sources-only 行 best-effort——该精度边界同时写入 SKILL 人工清单）；目录缺失/为空/哈希不符 = checker FAIL，不放行「先交付后补证」；`sources.jsonl` 形状校验（id/kind/asof/conv_id/path，confidence 封闭枚举），非法即 FAIL。
