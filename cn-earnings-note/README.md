@@ -59,7 +59,7 @@
 
 ```
 SKILL.md                       主指令：铁律/输入契约/五段管线/输出契约/边界（必读）
-README.md                      本文件（给人看，中文权威）
+README.md                      本文件（给用户看，中文权威）
 README.en.md                   本文件英文译文
 CHANGELOG.md                   版本记录
 references/data-channels.md    Cue 三通道调用契约 + 合规最小集词表 + onboarding 判定表

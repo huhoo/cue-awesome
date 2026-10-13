@@ -150,7 +150,7 @@ python3 <skill>/scripts/build_draft.py --spec stylespec.json --content content.j
 "FAIL": ["chars"]
 ```
 
-> **两个复核时的坑**（交付后复跑门禁必踩，2026-09-18 实测）：
+> **两个复核时的坑**（交付后复跑门禁必踩，实测所得）：
 > ① **必须带 `--spec`**。省掉它 → 控制台只留一行 `[WARN] spec 无 scale_baseline，量级门禁未生效`，
 > 然后照常打印 `OK pages=…` 与 `exit=0` —— **看着像通过，其实根本没算达成率**。复核时看到这条 WARN 就说明命令下错了。
 > ② `--out` 收的是**目录**（脚本自己拼 `draft.html`），传成 `./build/draft.html` 会 `FileExistsError: [WinError 183]`。

@@ -69,13 +69,13 @@
 
 | template | 字段 | 说明 |
 |---|---|---|
-| `cover` | `title`/`name`、`org`、`subtitle`/`en`、`issue_no`、`yearmonth`、`year`、`x_mm`(默认36.6)、`y_mm`(默认80) | 期号块位置用 mm 微调 |
+| `cover` | `title`/`name`、`org`、`subtitle`/`en`、`issue_no`、`yearmonth`、`year`、`x_mm`（默认36.6）、`y_mm`（默认80） | 期号块位置用 mm 微调 |
 | `quote` | `quote`、`source` | 第三方评价/引言页 |
-| `masthead` | `title`(默认"编辑部")、`names:[]`、`note`(支持 `<br>`) | 编委会 |
-| `toc` | `title`(默认 CONTENTS)、`groups:[{no,title,items:[{title,page\|ref}]}]` | 目录；页码要与正文对得上 |
+| `masthead` | `title`（默认"编辑部"）、`names:[]`、`note`（支持 `<br>`） | 编委会 |
+| `toc` | `title`（默认 CONTENTS）、`groups:[{no,title,items:[{title,page\|ref}]}]` | 目录；页码要与正文对得上 |
 | `divider` | `label`/`section`、`no`、`subtitle` | 分隔页；`label` 为空则整页留白 |
-| `unit_list` | `banner`(图)、`kicker`、`section`(栏目标题)、`dek`(导语) | 内容在 `units[]` |
-| `article` | `hero`(图)、`section`、`title`、`byline`、`abstract` | 内容在 `blocks[]` |
+| `unit_list` | `banner`（图）、`kicker`、`section`（栏目标题）、`dek`（导语） | 内容在 `units[]` |
+| `article` | `hero`（图）、`section`、`title`、`byline`、`abstract` | 内容在 `blocks[]` |
 | `backcover` | `title`、`contacts:[{name, lines:[]}]` | 封底联系方式 |
 
 目录项有两种等价写法：`page` 写死页码；`ref` 写**锚点**（对应某页的 `anchor` 字段），

@@ -19,7 +19,7 @@ This is not "analyze this stock for me" — it breaks a statutory filing into an
 | You want | Use |
 |---|---|
 | An 8–12-page deep earnings review draft (before internal circulation or publication) | **this skill** |
-| A one-page take you finish in thirty seconds | ask `cue-research` directly ("快评XX" — there is a ready-made buddy) |
+| A one-page take you finish in thirty seconds | ask `cue-research` directly （"快评XX" — there is a ready-made buddy） |
 | Excel three-statement model updates, DCF/LBO | the model-builder line of anthropics/financial-services; explicitly out of scope here |
 | Intraday quotes, live valuation percentiles | No — the market-data channel is not open; valuation anchors use disclosure and buyback/incentive text only |
 | Charts / visualizations | No — the matplotlib chart step of the original earnings-analysis was **deliberately removed**: this package ships a text-and-table first draft; charts are made downstream |

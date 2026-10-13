@@ -83,7 +83,7 @@ Directory name = the `name` in frontmatter (lowercase, hyphenated, e.g. `competi
 | File | Purpose |
 |---|---|
 | `SKILL.md` | main instructions, must carry YAML frontmatter |
-| `README.md` | for humans: purpose, limits, onboarding, dependencies |
+| `README.md` | for users: purpose, limits, onboarding, dependencies |
 
 Optional: `scripts/`, `references/`, `assets/`, `examples/`, `CHANGELOG.md`, `manifest.yaml`, `README.en.md`.
 
