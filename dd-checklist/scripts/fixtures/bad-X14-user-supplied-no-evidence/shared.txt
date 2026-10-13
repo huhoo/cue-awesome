@@ -1,2 +1,0 @@
-references/coverage-map.md
-report.md

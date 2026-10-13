@@ -15,6 +15,7 @@
 """
 import argparse
 import hashlib
+import io
 import json
 import pathlib
 import re
@@ -804,6 +805,8 @@ build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,
 
 ap = argparse.ArgumentParser(description="重铺 fixtures（需题单路径，无默认值）")
 ap.add_argument("--badspec", required=True, help="评审方题单（本包验收合同）的 Markdown 路径")
+ap.add_argument("--keep-loose", action="store_true",
+                help="审计形：铺完散件就停（不封档、不删散件）。交付形不带这个——渠道条数闸要的是档案")
 _args = ap.parse_args()
 _badspec = pathlib.Path(_args.badspec)
 if not _badspec.is_file():
@@ -989,3 +992,89 @@ if cw - ch:
 print(f"控制样：题单点名 {len(cw)} 枚全数在盘；盘上控制共 {len(ch)} 枚"
       f"（其中 {len(ch - cw)} 枚为历史控制、题单未点名，只随 runner 复跑）。")
 print("提醒：判卷与复现以 run_fixtures.sh 为准；本脚本幂等，跑完应无差异（见文件头派生纪律）。")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# M225：语料成档（渠道第二道硬限＝**包内条目数 ≤200，目录条目照计**；散样态实测 535 文件＋465 目录
+#   ＝1,000 条目被 400 拒，见 K-20）。样目录与 `_shared` 一并封进 `corpus.tar.gz`，runner 解到临时
+#   目录后**照原 cmd/expect 逻辑跑**——题数一枚不减、`ctl-` 一枚不删、判卷面与 runner 逻辑不改。
+#   档案里**必须带目录条目**：盘上有 202 枚空目录（各样的 `evidence/`、`references/`），
+#   「目录在场但为空」正是那几道 fail-closed 题的形制，只存文件会把它抹掉＝暗改覆盖面。
+#   确定性＝条目按名排序＋mtime 归零＋gzip mtime=0，故同树两跑逐字节同（幂等仍可 diff 验）。
+
+
+def pack_corpus(sample_names):
+    import gzip
+    import tarfile
+    top_keep = {"run_fixtures.sh", "corpus.tar.gz", "corpus.manifest.txt"}
+    files, dirs = [], []
+    for p in sorted(ROOT.rglob("*")):
+        rel = p.relative_to(ROOT).as_posix()
+        if rel.split("/")[0] in top_keep or "__pycache__" in p.parts:
+            continue
+        (dirs if p.is_dir() else files).append((rel, p))
+    dst = ROOT / "corpus.tar.gz"
+    raw = dst.open("wb")
+    with gzip.GzipFile(filename="", mtime=0, mode="wb", fileobj=raw) as gz:
+        with tarfile.open(fileobj=gz, mode="w", format=tarfile.GNU_FORMAT) as tf:
+            for rel, p in dirs:
+                ti = tarfile.TarInfo(rel + "/")
+                ti.type = tarfile.DIRTYPE
+                ti.mtime = 0
+                ti.mode = 0o755
+                ti.uid = ti.gid = 0
+                ti.uname = ti.gname = ""
+                tf.addfile(ti)
+            for rel, p in files:
+                data = p.read_bytes()
+                ti = tarfile.TarInfo(rel)
+                ti.mtime = 0
+                ti.mode = 0o755 if data[:1] == b"#!" else 0o644
+                ti.uid = ti.gid = 0
+                ti.uname = ti.gname = ""
+                ti.size = len(data)
+                tf.addfile(ti, io.BytesIO(data))
+    raw.close()
+
+    # 复算自证：逐枚开档比 sha（含目录条目存在性），不等就**不删散件**并拒交付
+    with tarfile.open(dst) as tf:
+        members = tf.getmembers()
+        got_f = {m.name: hashlib.sha256(tf.extractfile(m).read()).hexdigest() for m in members if m.isfile()}
+        got_d = {m.name.rstrip("/") for m in members if m.isdir()}
+    want_f = {rel: hashlib.sha256(p.read_bytes()).hexdigest() for rel, p in files}
+    want_d = {rel for rel, p in dirs}
+    if got_f != want_f or got_d != want_d:
+        miss = sorted(set(want_f) - set(got_f))[:3]
+        extra = sorted(set(got_f) - set(want_f))[:3]
+        print(f"档案复算失败：文件缺 {miss} 多 {extra}；目录缺 {sorted(want_d - got_d)[:3]}——散件未删，不交付", file=sys.stderr)
+        sys.exit(2)
+
+    man = [
+        "# corpus.tar.gz 清单（gen_fixtures.py 产出；档案＝散件的逐字节副本，含目录条目）",
+        f"# 档案条目 {len(files) + len(dirs)}（文件 {len(files)}＋目录 {len(dirs)}）；样目录 {len(sample_names)}"
+        f"＝bad {sum(1 for n in sample_names if n.startswith('bad-'))}"
+        f"＋good {sum(1 for n in sample_names if n.startswith('good-'))}"
+        f"＋ctl {sum(1 for n in sample_names if n.startswith('ctl-'))}",
+        "样目录名\t文件枚数\t字节\tcmd.txt sha8",
+    ]
+    for n in sample_names:
+        s = ROOT / n
+        fs = [f for f in sorted(s.rglob("*")) if f.is_file()]
+        c8 = hashlib.sha256((s / "cmd.txt").read_bytes()).hexdigest()[:8] if (s / "cmd.txt").is_file() else "-"
+        man.append(f"{n}\t{len(fs)}\t{sum(f.stat().st_size for f in fs)}\t{c8}")
+    (ROOT / "corpus.manifest.txt").write_text("\n".join(man) + "\n", encoding="utf-8")
+
+    loose_b = sum(p.stat().st_size for _, p in files)
+    for n in sample_names:
+        shutil.rmtree(ROOT / n)
+    if (ROOT / "_shared").is_dir():
+        shutil.rmtree(ROOT / "_shared")
+    print(f"成档：corpus.tar.gz 条目 {len(files) + len(dirs)}（文件 {len(files)}＋目录 {len(dirs)}）"
+          f"／{dst.stat().st_size:,} B（散件态 {len(files)} 份／{loose_b:,} B，已删）；"
+          f"清单 {len(sample_names)} 样落 corpus.manifest.txt；档案复算逐枚同 sha 通过。")
+
+
+sample_names = sorted(x.name for x in ROOT.iterdir() if x.is_dir() and not x.name.startswith("_"))
+if _args.keep_loose:
+    print(f"--keep-loose：散件态保留（审计形，不交付）——样目录 {len(sample_names)} 枚在盘，未封档。")
+else:
+    pack_corpus(sample_names)

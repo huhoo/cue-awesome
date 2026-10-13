@@ -10,7 +10,23 @@
 # ctl-* 是 runner 自证样（负控与边界），单列计数、不占合同主集之数（样数只存在于题单矩阵与本 runner 现报，C-19）；崩溃一律不算命中（题单 §0.1）。
 set -uo pipefail
 
-FIXROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FIXROOT_PKG="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CORPUS="$FIXROOT_PKG/corpus.tar.gz"
+if [ ! -f "$CORPUS" ]; then
+  echo "FAIL 缺 corpus.tar.gz——夹具随包档案不在盘上；重铺：python3 scripts/gen_fixtures.py --badspec <题单>"
+  exit 1
+fi
+# M225：渠道第二道硬限是**包内条目数**（≤200，目录条目照计；散样态实测 1,000 条被 400 拒）。
+# 语料成档后这里只解一档进临时目录，**下面的 cmd/expect 判卷逻辑一字未动**。
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/dd-corpus-XXXXXX")" || exit 1
+mkdir -p "$WORK/scripts/fixtures"
+if ! tar -xzf "$CORPUS" -C "$WORK/scripts/fixtures"; then
+  echo "FAIL corpus.tar.gz 解档失败（档案形制或 tar 可用性问题，不静默继续）"
+  rm -rf "$WORK"; exit 1
+fi
+cp "$FIXROOT_PKG/../check_dd.py" "$WORK/scripts/check_dd.py"     # 判卷面用包内真件，不用档案副本
+FIXROOT="$WORK/scripts/fixtures"
+trap 'rm -rf "$WORK"' EXIT
 FILTER="${1:-}"
 gb_ok=0
 gb_fail=0

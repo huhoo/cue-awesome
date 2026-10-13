@@ -7,7 +7,7 @@
 Give it a single subject, an `asof` date, a lookback window and a purpose tier, and you get a fixed seven-column risk table plus a nine-category coverage ledger and a full evidence snapshot directory. The enemy here is not a missed query — it is **an invented risk item that looks plausible**, so the first gate is hard-coded: a live anchor, a live date inside the window, and unambiguous attribution. Miss any one and the row does not enter the table; it enters the ledger.
 
 **Inputs**: `--subject` (exactly one) · `--asof` · `--lookback` (e.g. `36m`, mandatory) · `--purpose` (investment/credit/mna) · `--sources` · `--evidence` — all six are mandatory
-**Outputs**: `dd-<code>-<asof>/` — `report.md` · `sources.jsonl` · `evidence/` (with `LEDGER.sha256`) · `references/coverage-map.md` · `progress.md`
+**Outputs** (all paths below are inside the run directory `dd-<code>-<asof>/`, not in this package): `report.md` · `sources.jsonl` · `dd-<code>-<asof>/evidence/` (with `LEDGER.sha256`) · `dd-<code>-<asof>/references/coverage-map.md` · `dd-<code>-<asof>/progress.md`
 **Cost**: five pipeline stages plus one eight-layer gate; deep research is launched only where a gap demands it, with time and consumption reported before it starts — billing is whatever the server returns
 
 ---
@@ -65,6 +65,7 @@ scripts/check_dd.py                 the gate itself (diagnostic-code layering, s
                                      the word and category examples here and in CONTRACT.md are common examples, not an exhaustive claim — where a mirror and the code disagree, the code governs.
 scripts/gen_fixtures.py             idempotent re-generator for the whole bank (for re-spawning after new questions; never the other way round)
 scripts/fixtures/                   question bank: one sample per contract question, plus positive-path guard samples; the runner grades by exact diagnostic-code set
+                                    shipped as one archive container (the channel caps the number of package entries, and loose sample dirs would exhaust it); the runner unpacks to a temp dir before grading — question count and grading logic do not change with the container; per-sample counts and checksums live in corpus.manifest.txt
 ```
 
 ## 6. FAQ and anti-patterns (what you try to do -> this skill refuses, because -> where to go instead)
