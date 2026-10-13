@@ -54,11 +54,17 @@ from pathlib import Path
 
 # K-12：渠道上传口拒收的形制。模拟打包**必须先按这些剔净**再判指路——
 # 否则「文件在仓内、指路也在面」的件会判成假绿（M220 的模型错处：assets/*.png 线上必悬空）。
-K12_PATTERNS = (".gitignore", "license", ".png", ".jpg", ".jpeg", ".gif")
+K12_PATTERNS = (".gitignore", "license", ".png", ".jpg", ".jpeg", ".gif", ".sha256")   # K-12＋K-23 实测拒收族
 MAX_BYTES_DEFAULT = 1_048_576          # 渠道 ≈1 MiB 闸；对象＝发布物 zip 字节
 MAX_ENTRIES_DEFAULT = 200              # K-20 渠道第二道**独立**硬限：包内条目 ≤200，且**目录条目照计**
                                        # （2026-10-13 实测：`zip -r -X dd-checklist` 得 1,000 条目＝535 文件＋465 目录，
                                        #  渠道 400「文件数量超出限制(最多 200 个)」；旧版本闸只数文件＝这条盲区由渠道先撞到，记 K-20）
+K23_ALLOWED_EXT = ("md", "py", "json", "jsonl", "sh", "txt", "html", "pptx", "docx")
+# K-23 扩展名面（lead 10-13 从**已受理**渠道件逐枚反推的实证边界，不再靠试错）：
+#   实测可过＝上面这族；实测拒收＝K12_PATTERNS＋压缩包一族＋`.sha256`（第四拒原文点名
+#   `scripts/fixtures/_shared/variants/evidence__LEDGER__….sha256`）＋`pyc/pyo/pyd`。
+#   对象口径同体积闸与条数闸：**判发布物 zip 内的条目名**，不判仓内 du。
+K23_REJECTED_SUFFIXES = (".pyc", ".pyo", ".pyd")
 SELFTEST_TIMEOUT = 180
 
 CODE_LEGEND = {
@@ -69,6 +75,8 @@ CODE_LEGEND = {
     "S-COUNT":    "发布物 zip 条目数超渠道硬限（目录条目照计）→把语料并进**允许类型的文本容器**（每样一枚＋runner 铺回临时目录真跑）；"
                   "注意渠道另有扩展名白名单：压缩包与 *.png 同族属拒收面（K-22），**不得缩题、不得把承诺挪到不随包的面**",
     "S-PARITY":   "本地字节与渠道回下载字节两跑结论不一致→查供体与回包，不假设同源",
+    "S-TYPE":     "发布物内含渠道实测拒收的扩展名（压缩包／校验值族／字节码）→换允许类型落名，内容不动；"
+                  "未实证过的扩展名只出 WARN 不冒充结论（实证可过集见 --list 行）",
 }
 
 # 成品面：公开给用户读的那几面（与卫生闸同口径）
@@ -221,15 +229,16 @@ def dir_pointers(text):
 
 
 def load_shipment(target: Path):
-    """→ (解包根目录, zip 字节数或 None, zip sha 或 None, 是否临时目录, 条目数或 None)
+    """→ (解包根目录, zip 字节数或 None, zip sha 或 None, 是否临时目录, 条目数或 None, 条目名列表或 None)
        条目数**含目录条目**（渠道 `zip -r` 口径，K-20）；目录输入返回 None（对象口径同体积闸）。"""
     if target.is_dir():
-        return target, None, None, False, None
+        return target, None, None, False, None, None
     if target.is_file() and zipfile.is_zipfile(target):
         data = target.read_bytes()
         tmp = Path(tempfile.mkdtemp(prefix="check-shipment-"))
         with zipfile.ZipFile(target) as zf:
-            n_entries = len(zf.namelist())
+            names_all = zf.namelist()
+            n_entries = len(names_all)
             names = [n for n in zf.namelist() if not n.endswith("/")]
             for n in names:
                 dest = (tmp / n).resolve()
@@ -237,7 +246,7 @@ def load_shipment(target: Path):
                     raise ValueError(f"越界条目：{n}")
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(zf.read(n))
-        return tmp, len(data), hashlib.sha256(data).hexdigest(), True, n_entries
+        return tmp, len(data), hashlib.sha256(data).hexdigest(), True, n_entries, names_all
     raise ValueError("输入既不是目录也不是可读 zip")
 
 
@@ -286,7 +295,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
     hits = []
     notes = []
     try:
-        root_raw, nbytes, ndigest, is_tmp, n_entries = load_shipment(target)
+        root_raw, nbytes, ndigest, is_tmp, n_entries, names_all = load_shipment(target)
     except Exception as e:
         early = [(str(target.resolve()), "<发布物>"), (str(Path(tempfile.gettempdir()).resolve()), "<临时根>")]
         return [Hit("S-INPUT", "-", mask_paths(str(target), early),
@@ -417,6 +426,28 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
         hits.append(Hit("S-COUNT", "-", pkg,
                         f"发布物 zip 条目现值 {n_entries:,}（含目录条目）＞ 渠道硬限 {max_entries:,}；"
                         f"字节在闸内也不放行——修法＝语料成档（一枚档案＋解包真跑），不缩题、不把承诺挪出随包面"))
+
+    # ④c 类型闸（K-23，第四拒换来的实证边界）：对象＝zip 内**文件条目名**的后缀，目录条目不参与
+    if names_all is not None:
+        only_files = [n for n in names_all if not n.endswith("/")]
+        rej = [n for n in only_files
+               if n.lower().endswith(K23_REJECTED_SUFFIXES)
+               or any(n.lower().endswith(e) for e in (".tar", ".tar.gz", ".tgz", ".zip", ".gz", ".bz2", ".xz", ".7z", ".rar"))
+               or n.lower().rsplit(".", 1)[-1] in ("png", "jpg", "jpeg", "gif", "gitignore", "license")
+               or n.lower().endswith(".sha256")]
+        unk = [n for n in only_files if n not in rej
+               and (("." + n.rsplit(".", 1)[-1].lower()) if "." in n.rsplit("/", 1)[-1] else None) not in
+               [("." + e) for e in K23_ALLOWED_EXT]]
+        for n in rej[:5]:
+            hits.append(Hit("S-TYPE", "-", n,
+                            f"渠道实测拒收类型（K-23），发布物内该条目名过不去；共 {len(rej)} 枚，详列在报账行"))
+        if len(rej) > 5:
+            notes.append(f"拒收类型其余 {len(rej) - 5} 枚：{'、'.join(rej[5:8])}…")
+        if unk:
+            hits.append(Hit("S-TYPE", "-", "（未实证集）",
+                            f"{len(unk)} 枚后缀不在 lead 反推的实证可过集 {list(K23_ALLOWED_EXT)} 内，也未实测被拒"
+                            f"（如 {'、'.join(sorted({u.rsplit('.', 1)[-1] for u in unk})[:4])}）——只报不判红",
+                            sev="WARN"))
 
     # ⑤ 渠道回下载那份字节也要能跑
     if channel_zip is not None:
@@ -802,6 +833,26 @@ def selftest(quiet=False) -> int:
     one("十三档f-发红码含该缺失件", True,
         any(h.ref == "references/missing.md" for h in rl[0] if h.sev == "ERROR"),
         f"实得 {[(h.code, h.ref) for h in rl[0] if h.sev == 'ERROR']}")
+
+    # 十四档（K-23 扩展名面，lead 用四次 400 换来的实证边界）：
+    #   对象＝发布物 zip 内条目名的后缀。实测拒收族发红；未实证过的后缀**只 WARN 不冒充结论**。
+    zt = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("type-k23"))
+    rt = check(zt, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十四档-实测拒收后缀必红", 1, emit(zt, "demopkg", rt[0], rt[1], True))
+    one("十四档b-发红码含 S-TYPE 且点到那枚件", True,
+        any(h.code == "S-TYPE" and h.ref.endswith("LEDGER.sha256") for h in rt[0] if h.sev == "ERROR"),
+        f"实得 {[(h.code, h.ref.rsplit('/', 1)[-1]) for h in rt[0] if h.sev == 'ERROR']}")
+    # 防恒真：剔掉那枚拒收件（留下同包其余件）必须转绿——红来自那一枚，不是逢样必红
+    zt2 = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("type-k23"),
+                    drop=("LEDGER.sha256",))
+    rt2 = check(zt2, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十四档c-剔掉拒收件即转绿（防恒真）", 0, emit(zt2, "demopkg", rt2[0], rt2[1], True))
+    one("十四档d-未实证后缀只 WARN 不判红", True,
+        any(h.code == "S-TYPE" and h.sev == "WARN" and "yaml" in h.detail for h in rt2[0])
+        and not any(h.sev == "ERROR" for h in rt2[0]),
+        f"实得 {[(h.code, h.sev, h.detail[:24]) for h in rt2[0]]}")
+    one("十四档e-实证可过集与拒收件数进报账", True, len(K23_ALLOWED_EXT) == 9,
+        f"可过族={list(K23_ALLOWED_EXT)}")
 
     SILENT.clear()
     for line in res:
