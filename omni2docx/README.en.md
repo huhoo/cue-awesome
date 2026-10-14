@@ -100,6 +100,28 @@ matrix (xlsx / PDF reports / HTML / audio transcripts / docx / PPTX / JPG OCR /
 1000-page PDF / truncated PDF / edge cases, across profiles) measured 100%
 coverage on every case.
 
+### Rule ids: what they check, why they fire, how to make them pass
+
+Boundary first: **the ids are addresses for regression reporting, not capability promises.** Everything below quotes the values currently in the code;
+the authoritative thresholds live in `scripts/validate_pptx.py` and `scripts/validate_docx.py` — where the two disagree, the code wins.
+PPTX carries eight ids (PX-01, PX-02, PX-03, PX-04, PX-05, PX-06, PX-07, PX-08); DOCX carries two (DX-01, DX-02):
+
+| Id | What it checks (current code) | Why it fires | How to make it pass |
+|---|---|---|---|
+| PX-01 | Character-level CJK coverage of the deck against the source markdown < 0.99 (slide text + table cells + speaker notes pooled) | Content never reached the deck: `--max-slides` (default 80) cut it, `--prose skip` dropped the body, or the source holds a block the renderer does not carry | Read the "missing CJK characters" list the validator prints, locate that text in the source; raise or drop `--max-slides`, and set `--prose` back to `notes`/`body` |
+| PX-02 | Slide count = 0 | The source headings sit below `--section-level`/`--split-level`, so nothing splits | Lower the levels to the document's real heading depth, or have the agent distil an outline layer first |
+| PX-03 | Empty slides > max(1, slides // 10) (empty = no text, table, picture or notes on the slide) | Consecutive headings with no content under them — usually splitting too finely, or the body was consumed by the previous page's limits | Merge the empty sections, lower `--split-level`, or relax `--max-chars`/`--max-bullets` so text actually lands on the page |
+| PX-04 | Any shape whose XML contains `roundRect` (iron law: 0) | This renderer produces no rounded rectangles; a hit means an external template or a hand-added shape got in | Go back to renderer output; do not add shapes to the finished deck — rounded layouts are outside this skill's format |
+| PX-05 | Any shape XML containing `a:outerShdw` or `a:innerShdw` (iron law: 0) | Same origin as PX-04: shadow effects come from external templates or manual edits | Same fix: re-render through this skill, then re-validate |
+| PX-06 | Distinct chromatic colours > `MAX_CHROMATIC` (currently 3; a colour counts only above saturation 24, near-grey is ignored) | Mixing palettes, or extra colours pushed into the content or spec | Pin one `--profile` (all five palettes are in the code) and stop colouring body text and tables separately |
+| PX-07 | Largest font size ÷ smallest < `MIN_CONTRAST` (currently 2.0; not judged when no font size is measurable) | The whole deck ended up in one size — headings flattened to body level | Restore the theme's heading sizes (switch profile or drop the manual size override); avoid one font size covering the whole page |
+| PX-08 | Text frames whose estimated line height > 1.3 × box height (width model: CJK ≈ 1em/char, ASCII ≈ 0.56em, space ≈ 0.3em) | Too much text on one page, or a long unbroken string (URL, long code) blowing up the line count | Tighten `--max-bullets` (default 6) / `--max-chars` (default 760) to split the page; break long strings manually or move them to notes |
+| DX-01 | Character-level CJK coverage of the DOCX vs its source < 99.0% (anchor-phrase hit rate is printed for reference only and never decides the verdict) | Real character loss during conversion (rare; usually a phrase split across table cells was skipped) | Check the missing-character samples against the source, then re-run validation with the same `--json`/`--md` input used for rendering |
+| DX-02 | Tables without applied borders > 0 (current `table_borders_audit`) | A table bypassed the `style_table` path — typically a hand-inserted table | Let the renderer emit the table instead of patching tables into the finished document |
+
+The geometry items **out-of-bounds / overlap / tiny font are informational**: they are printed for
+locating problems but never decide the verdict. PASS is granted only when all ten rules above are clear.
+
 ## Files
 
 | File | Purpose |
