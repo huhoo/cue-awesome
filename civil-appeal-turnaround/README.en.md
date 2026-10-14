@@ -135,7 +135,12 @@ On first entry, read `assets/败诉三面表.md` (the take-stock sheet) and the 
 python scripts/init_case.py --help          # usage; no network
 python scripts/init_case.py /tmp/case-demo  # writes 10 files, never overwrites existing ones
 ls /tmp/case-demo                           # expect 5 tables + 4 skeletons + today-three-things + 归档/
+python3 scripts/check_tables.py --selftest  # offline re-run of the eight guard samples (4 good + 4 bad); expected last line "selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4）", exit 0
+python3 scripts/check_tables.py scripts/fixtures/good-ledger.md   # expected PASS (scanned 13 lines, 0 findings)
+python3 scripts/check_tables.py scripts/fixtures/bad-banword.md   # expected FAIL (emits E-BANWORD: prejudgment wording, C used as A)
 ```
+
+All thresholds live in the current `scripts/check_tables.py`; the four lanes are format / anchor & grade / no-prejudgment / counts & declaration, and this page does not restate the word list. The blank templates under `assets/` are meant to fail the gate — by design, not a defect.
 
 ---
 

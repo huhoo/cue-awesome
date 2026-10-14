@@ -133,7 +133,12 @@ python3 ~/.workbuddy/skills/civil-appeal-turnaround/scripts/init_case.py ./my-ca
 python scripts/init_case.py --help          # 参数说明，零网络
 python scripts/init_case.py /tmp/case-demo  # 生成 10 个文件，已存在的不覆盖
 ls /tmp/case-demo                           # 应见 5 张表 + 4 份骨架 + 今日三件事.txt + 归档/
+python3 scripts/check_tables.py --selftest  # 离线复跑本包八件守护样（好样 4＋坏样 4），末行期望「selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4）」，退码 0
+python3 scripts/check_tables.py scripts/fixtures/good-ledger.md   # 期望 PASS（扫过 13 行，发条 0 条）
+python3 scripts/check_tables.py scripts/fixtures/bad-banword.md   # 期望 FAIL（发 E-BANWORD：预断词与 C 当 A 用）
 ```
+
+判定全集在 `scripts/check_tables.py` 现值——四道分别是形制／锚与等级／禁预断／计数与申报，本文不复述词表与阈值；空模板（`assets/` 里那五张）过不了闸是设计，不是缺陷。
 
 ---
 
