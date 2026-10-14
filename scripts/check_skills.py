@@ -5,6 +5,13 @@ Also enforces one shape rule over markdown table rows: where a row carries both 
 status clause and a provenance clause, status must come first (readers scan row
 ends). The rule self-tests on every run, so it cannot pass by matching nothing.
 
+Also enforces the face length caps from CONTRIBUTING 门面四问② (summary <=80,
+description <=300). The measured object is the **parsed frontmatter value**, not the
+raw quoted YAML line; the difference is exactly two quote characters and judging the
+raw line false-reds four real faces. Both caps boundary-check themselves on every run
+(exact value must stay green, value+1 must go red), so a `>` written as `>=` cannot
+hide behind a green repo.
+
 Stdlib only (PyYAML is used when available, otherwise a minimal fallback
 parser handles the flat frontmatter keys we care about).
 
@@ -42,6 +49,33 @@ ARTIFACT_PATTERNS = ("*.zip", "*.pyc")
 ARTIFACT_DIRS = {"__pycache__", "dist", "build", "node_modules", ".venv"}
 
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+
+# ------------------------------------------------------- 门面长度帽（M235）
+# CONTRIBUTING.md「门面四问」② 立着帽：`summary` ≤80、`description` ≤300，且明写
+# 「长度必须脚本实测（wc -m 式，禁手数）」——纸上有条、脚本不判，就是 C-54 那一族。
+# **量的对象（lead 要我自己定形并测一次）＝frontmatter 解析后的值**（去引号、转义还原），
+# 不是含引号的 YAML 原始行。实测根据：按原始行判会假红 4 处——cue-lead-pieces 的
+# description 解析 300／原始 302（SKILL.md 与 SKILL.en.md 各一处）、cue-omni-ontology 的
+# summary 解析 79／原始 81（两处）。帽管的是读者看到的文案长度；引号属 YAML 语法。
+CAP_SUMMARY = 80
+CAP_DESCRIPTION = 300
+CAP_OBJECT = "解析后的值（非含引号原始行）"
+CAP_OBS: list[tuple[int, str]] = []      # 脚本自报用：[(长度, 包/面/键)]，不另立文档计数
+
+
+def length_cap_violations(fm: dict | None) -> list[tuple[str, int, int]]:
+    """返回 [(键, 现值长度, 帽)]。键缺失不判（必需性另有判据），帽只判「超长」。"""
+    out: list[tuple[str, int, int]] = []
+    if not isinstance(fm, dict):
+        return out
+    for key, cap in (("summary", CAP_SUMMARY), ("description", CAP_DESCRIPTION)):
+        val = fm.get(key)
+        if val is None:
+            continue
+        n = len(str(val))
+        if n > cap:
+            out.append((key, n, cap))
+    return out
 
 # --------------------------------------------------------- table row order rule
 # Readers scan a table row from the end, so a status clause must come BEFORE the
@@ -282,6 +316,19 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
                           f"随下趟车收口壳禁入文件(首条即版本条)")
                 break
 
+    # --- 门面长度帽（M235；CONTRIBUTING 门面四问②）：逐面判 SKILL*.md 的 summary/description ---
+    for face in sorted(skill_dir.glob("SKILL*.md")):
+        fmx = parse_frontmatter(face)
+        if not isinstance(fmx, dict):
+            continue
+        for key in ("summary", "description"):
+            v = fmx.get(key)
+            if v is not None:
+                CAP_OBS.append((len(str(v)), f"{name}/{face.name}/{key}"))
+        for key, n, cap in length_cap_violations(fmx):
+            rep.error(f"{name}: {face.name} 的 `{key}` 长 {n} ＞ 帽 {cap}"
+                      f"（CONTRIBUTING 门面四问②；量＝{CAP_OBJECT}）")
+
     # --- forbidden files ---
     if (skill_dir / ".git").exists():
         rep.error(f"{name}: nested .git directory — skills must not carry their own repo")
@@ -300,6 +347,47 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
             rep.error(f"{name}: possible secret file {rel}")
         if any(path.name.lower().endswith(p.strip("*").lstrip(".")) for p in ARTIFACT_PATTERNS if p.startswith("*")):
             rep.error(f"{name}: committed artifact {rel}")
+
+
+def selftest_length_caps(rep: Report) -> bool:
+    """边界双判：恰值必绿、超一枚必红（防 `>` 与 `>=` 写反，防判据空跑）。
+       正反两形都走**生产函数** check_skill()，所以「发红且点到包名」这条也是测出来的。
+       临时件建在系统 tmp、不落仓：仓里放一枚假 skill 会被别的扫描当真（卫生闸、上架条数字段）。"""
+    import shutil
+    import tempfile
+
+    ok, forms = True, 0                                      # 自报判过的形数（档数以脚本自报为准，文档不另数）
+    saved = list(CAP_OBS)                    # 自报计数不含自测件，避免把 demo 算进全仓现值
+    try:
+        for key in ("description", "summary"):
+            cap = CAP_DESCRIPTION if key == "description" else CAP_SUMMARY
+            for delta, want_err in ((0, False), (1, True)):
+                tmp = Path(tempfile.mkdtemp(prefix="cs-caps-"))
+                try:
+                    skill = tmp / "demo"
+                    skill.mkdir()
+                    fm = {"name": "demo", "version": "1.2.3",
+                          "summary": "s" * (cap + delta if key == "summary" else 10),
+                          "description": "d" * (cap + delta if key == "description" else 10)}
+                    body = "---\n" + "\n".join(f'{k}: "{v}"' for k, v in fm.items()) + "\n---\n\n# demo\n"
+                    (skill / "SKILL.md").write_text(body, encoding="utf-8")
+                    (skill / "README.md").write_text("# demo\n", encoding="utf-8")
+                    sub = Report()
+                    check_skill(skill, sub)
+                    got = [m for m in sub.errors if "＞ 帽" in m]
+                    if want_err and (len(got) != 1 or not got[0].startswith("demo:")):
+                        ok = False
+                        rep.error(f"repo: 长度帽自测失败——{key}={cap + delta}（帽 {cap}＋1）应发红并点到包名，"
+                                  f"实得 {len(got)} 条 {got[:1]}")
+                    if not want_err and got:
+                        ok = False
+                        rep.error(f"repo: 长度帽自测失败——{key}={cap}（恰值）不该红，实发红 {got[:1]}")
+                    forms += 1
+                finally:
+                    shutil.rmtree(tmp, ignore_errors=True)
+    finally:
+        CAP_OBS[:] = saved
+    return ok, forms
 
 
 def discover_skills() -> list[Path]:
@@ -324,6 +412,7 @@ def main() -> int:
 
     repo_rep = Report()
     selftest_ok = selftest_row_order_rule(repo_rep)
+    caps_ok, caps_forms = selftest_length_caps(repo_rep)
     rows_checked, row_violations = check_table_row_order(repo_rep)
     rep.errors.extend(repo_rep.errors)
     rep.warnings.extend(repo_rep.warnings)
@@ -353,6 +442,15 @@ def main() -> int:
         status = "FAIL" if repo_rep.errors else ("WARN" if repo_rep.warnings else "OK")
         print(f"  {status:<4} {'table row order':<24} self-test={'ok' if selftest_ok else 'FAILED'}")
         print(f"        rows with status+provenance: {rows_checked} checked, {row_violations} mis-ordered")
+        caps_status = "ok" if caps_ok else "FAILED"
+        n_forms = caps_forms
+        hi_s = max([n for n, w in CAP_OBS if w.endswith("/summary")] or [0])
+        hi_d = max([n for n, w in CAP_OBS if w.endswith("/description")] or [0])
+        print(f"  {('FAIL' if not caps_ok else 'OK'):<4} {'face length caps':<24} self-test={caps_status}"
+              f"  帽 summary<={CAP_SUMMARY}／description<={CAP_DESCRIPTION}｜量＝{CAP_OBJECT}"
+              f"｜自测 {n_forms} 形（两帽各双判：恰值绿／＋1 红）")
+        print(f"        自报现值最高：summary={hi_s}／description={hi_d}"
+              f"（判过 {len(CAP_OBS)} 个 面×键；计数只在此行，文档不另数）")
         for msg in repo_rep.errors + repo_rep.warnings:
             print(f"        {msg}")
 
