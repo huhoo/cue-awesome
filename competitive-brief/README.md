@@ -26,6 +26,19 @@
 
 数据来源经 omni-reader 解析 cursor.com/pricing、claude.com/pricing、GitHub README 验证。
 
+### 离线复跑（零网络，不取任何外部数据）
+
+本包自带机检与八件守护样（好样 4＋坏样 4），装上后即可就地复跑一遍判定：
+
+```bash
+python3 scripts/check_brief.py --help                       # 四道说明，零网络
+python3 scripts/check_brief.py --selftest                   # 末行期望：selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4），退码 0
+python3 scripts/check_brief.py scripts/fixtures/good-full.md            # 期望 PASS（扫过 22 行，发条 0 条）
+python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望 FAIL（申报计数与表内实测不符，发 E-COVERAGE）
+```
+
+判定全集在 `scripts/check_brief.py` 现值——四道分别是形制／锚／禁词与混标／计数与申报，本文不复述词表与阈值。
+
 ## 依赖（推荐安装）
 
 - `cue-omni-reader`：解析网页/PDF/录音/视频，提取原文填入证据表

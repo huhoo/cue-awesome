@@ -28,6 +28,19 @@ The core is not the process — it's the **evidence table**. Every substantive c
 
 Sources verified via omni-reader parsing cursor.com/pricing, claude.com/pricing, and GitHub READMEs.
 
+### Offline re-run (no network, no external data)
+
+This package ships its own linter and eight guard samples (4 good + 4 bad), so the checks can be re-run right after install:
+
+```bash
+python3 scripts/check_brief.py --help                       # four-lane description, no network
+python3 scripts/check_brief.py --selftest                   # expected last line: selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4）, exit 0
+python3 scripts/check_brief.py scripts/fixtures/good-full.md            # expected PASS (scanned 22 lines, 0 findings)
+python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # expected FAIL (declared counts vs measured, emits E-COVERAGE)
+```
+
+All thresholds live in the current `scripts/check_brief.py`; the four lanes are format / anchor / banned-word & mislabel / counts & declaration. This page does not restate the word list.
+
 ## Dependencies (recommended)
 
 - `cue-omni-reader`: parse web pages / PDFs / audio / video → extract text into evidence table
