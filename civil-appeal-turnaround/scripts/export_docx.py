@@ -533,6 +533,10 @@ def main():
         return
 
     src = Path(args.input)
+    if not src.exists():
+        sys.exit(f"输入文件不存在：{src}（给一个 .md 文件路径；批量请用 --dir <目录>）")
+    if src.is_dir():
+        sys.exit(f"输入是目录、不是文件：{src}（批量请用 --dir {src} --pattern \"*.md\"）")
     out = Path(args.out) if args.out else src.with_suffix(".docx")
     build(src, out, args.style, args.strip_emoji, not args.no_page_number)
     print(f"✅ {src.name} → {out}　[样式 {args.style}]")

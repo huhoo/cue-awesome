@@ -477,6 +477,8 @@ def main() -> int:
     from datetime import date
 
     case_dir = Path(args.case_dir).resolve()
+    if case_dir.exists() and not case_dir.is_dir():
+        sys.exit(f"目标已存在且不是目录：{case_dir}（换一个目录名，或先把那个同名文件移走）")
     case_dir.mkdir(parents=True, exist_ok=True)
     (case_dir / "归档").mkdir(exist_ok=True)
 
