@@ -23,6 +23,10 @@ EMOJI = re.compile(
 # 直角（禁圆角矩形）、禁阴影、有彩（chromatic）色数 ≤3、字号极端反差（最大 ≥2× 最小）
 MAX_CHROMATIC = 3
 MIN_CONTRAST = 2.0
+EMU_PER_PT = 12700          # 1pt = 12700 EMU
+INCH = 914400               # 1in = 914400 EMU
+MARGIN_X_IN = 0.1           # 文本框左右默认内边距（in）
+MARGIN_Y_IN = 0.05          # 文本框上下默认内边距（in）
 
 
 def _chroma(hex6):
@@ -58,6 +62,48 @@ def design_audit(path):
             "chroma": sorted(chroma), "contrast": contrast}
 
 
+def _est_text_lines(text, font_pt, inner_w):
+    """估算一段文本在给定盒宽内折行数：CJK≈1em/字，ASCII≈0.56em，空格≈0.3em。"""
+    if not text:
+        return 0
+    total = 0
+    for ch in text:
+        if CJK.match(ch) or ord(ch) >= 0x2E80:   # CJK + 全角标点/符号
+            total += font_pt * 1.0
+        elif ch == " ":
+            total += font_pt * 0.30
+        else:                                    # 拉丁字母/数字/半角符号近似
+            total += font_pt * 0.56
+    total *= EMU_PER_PT
+    return max(1, int((total + inner_w - 1) // inner_w))
+
+
+def box_overflow(shape):
+    """估算文本框所需高度是否超过盒子高度（python-pptx 不自动裁剪，溢出会被 PowerPoint 截断/挤压）。
+
+    返回溢出量（EMU）；未溢出或无法判定返回 None。粗略模型：逐段按字号估折行 × 行高(1.2×字号) +
+    段后距，加文本框上下内边距，再与盒子高度比较。仅作诊断/门禁参考，不追求像素精确。
+    """
+    try:
+        w, h = shape.width, shape.height
+    except Exception:
+        return None
+    if None in (w, h) or w <= 0 or h <= 0 or not shape.has_text_frame:
+        return None
+    inner_w = max(1, w - 2 * MARGIN_X_IN * INCH)
+    req = 2 * MARGIN_Y_IN * INCH
+    for p in shape.text_frame.paragraphs:
+        sizes = [r.font.size.pt for r in p.runs if r.font.size]
+        fpt = max(sizes) if sizes else 19
+        txt = p.text
+        if not txt.strip():
+            continue
+        req += _est_text_lines(txt, fpt, inner_w) * fpt * 1.2 * EMU_PER_PT
+        sa = (p.space_after.pt if p.space_after is not None else 0) * EMU_PER_PT
+        req += sa
+    return (req - h) if req > h else None
+
+
 def norm_chars(s):
     s = EMOJI.sub("", s or "")
     return [c for c in s if CJK.match(c)]
@@ -83,7 +129,7 @@ def deck_text(path):
     tol = Emu(9525)  # 1px 容差
     texts, empty = [], 0
     n_tables = n_pics = 0
-    geo = {"越界": 0, "重叠": 0, "过小字号": 0}
+    geo = {"越界": 0, "重叠": 0, "过小字号": 0, "溢出": 0, "溢出严重": 0}
     for slide in prs.slides:
         has_content = False
         boxes = []
@@ -105,6 +151,11 @@ def deck_text(path):
                                 for p in shape.text_frame.paragraphs for r in p.runs)
                     if small:
                         geo["过小字号"] += 1
+                    ov = box_overflow(shape)
+                    if ov is not None:
+                        geo["溢出"] += 1
+                        if ov > h * 1.3:
+                            geo["溢出严重"] += 1
             if getattr(shape, "has_table", False) and shape.has_table:
                 n_tables += 1
                 has_content = True
@@ -174,8 +225,8 @@ def main():
     print("  空页数 :", empty)
     print("  表格数 :", n_tables)
     print("  图像数 :", n_pics)
-    print("  几何审计（信息项）: 越界 %d / 重叠 %d / 过小字号 %d"
-          % (geo["越界"], geo["重叠"], geo["过小字号"]))
+    print("  几何审计（信息项）: 越界 %d / 重叠 %d / 过小字号 %d / 文本框溢出 %d（严重 %d）"
+          % (geo["越界"], geo["重叠"], geo["过小字号"], geo["溢出"], geo["溢出严重"]))
     print("[设计铁律]")
     print("  圆角矩形 :", design["rounded"], "（铁律：0）")
     print("  阴影效果 :", design["shadows"], "（铁律：0）")
@@ -186,19 +237,24 @@ def main():
 
     problems = []
     if coverage < 0.99:
-        problems.append("CJK 覆盖率 <99%")
+        problems.append("PX-01 CJK 覆盖率 <99%（实测 %.2f%%）" % (coverage * 100))
     if n_slides == 0:
-        problems.append("零页 deck")
+        problems.append("PX-02 零页 deck")
     if empty > max(1, n_slides // 10):
-        problems.append("空页过多（%d/%d）" % (empty, n_slides))
+        problems.append("PX-03 空页过多（%d/%d）" % (empty, n_slides))
     if design["rounded"]:
-        problems.append("出现圆角矩形 %d 处" % design["rounded"])
+        problems.append("PX-04 出现圆角矩形 %d 处（铁律：0）" % design["rounded"])
     if design["shadows"]:
-        problems.append("出现阴影 %d 处" % design["shadows"])
+        problems.append("PX-05 出现阴影 %d 处（铁律：0）" % design["shadows"])
     if len(design["chroma"]) > MAX_CHROMATIC:
-        problems.append("有彩色 %d 种 >%d" % (len(design["chroma"]), MAX_CHROMATIC))
+        problems.append("PX-06 有彩色 %d 种 >%d（铁律：≤%d）"
+                       % (len(design["chroma"]), MAX_CHROMATIC, MAX_CHROMATIC))
     if design["contrast"] and design["contrast"] < MIN_CONTRAST:
-        problems.append("字号反差 %.2f <%.1f" % (design["contrast"], MIN_CONTRAST))
+        problems.append("PX-07 字号反差 %.2f <%.1f（铁律：≥%.1f）"
+                       % (design["contrast"], MIN_CONTRAST, MIN_CONTRAST))
+    if geo["溢出严重"]:
+        problems.append("PX-08 文本框严重溢出 %d 处（估计行高 > 盒高 1.3×，会被截断）"
+                       % geo["溢出严重"])
     print("判定 :", "PASS" if not problems else "FAIL（%s）" % "；".join(problems))
     sys.exit(0 if not problems else 1)
 

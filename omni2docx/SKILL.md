@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "将 Omni 解析结果重建为保真 Word / 展示 HTML / 汇报 PPT：grounded 页锚点→源页分页、outline→真标题+目录、表格/脚注/溯源标注还原，多源合并带证据溯源附录；--profile 按公文/诉讼/研报制式排版，HTML 可 --pdf 导出打印件、--inline 粘贴微信公众号不重排，PPT 版式池 layout:kpi/compare/timeline。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层能力（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck"
-version: "0.6.4"
+version: "0.6.5"
 license: MIT
 metadata:
   requires:
@@ -324,7 +324,8 @@ python <skill_dir>/scripts/validate_pptx.py --json <中间json> --pptx <输出.p
 
 ## 验收口径（要点；逐版实测数据见 CHANGELOG）
 
-- 三个验收器同口径：**字符级 CJK 覆盖率 ≥99% 判 PASS**。附加项：docx 查锚句命中（参考项）+ 分页/标题/表格计数；pptx 备注/正文/表格合计计入覆盖 + 越界/重叠/字号几何审计 + 设计铁律；html 查目录/锚点/源页标注/自包含。渲染未开目录的 html/pptx 加 `--no-toc`。
+- 三个验收器同口径：**字符级 CJK 覆盖率 ≥99% 判 PASS**。附加项：docx 查锚句命中（参考项）+ 分页/标题/表格计数 + **DX-02 表格边框护栏（tblPr/tblBorders 必须存在）**；pptx 备注/正文/表格合计计入覆盖 + 越界/重叠/字号几何审计 + **文本框溢出估算（PX-08 严重溢出即判 FAIL）** + 设计铁律；html 查目录/锚点/源页标注/自包含。渲染未开目录的 html/pptx 加 `--no-toc`。
+- **验收违规带稳定规则编号**（质量门禁可定位到行，便于回归）：pptx 用 `PX-01…PX-08`（覆盖率/零页/空页/圆角/阴影/彩数/字号反差/文本框严重溢出）；docx 用 `DX-01`（覆盖率）/ `DX-02`（表格边框）。
 - 源输入与渲染时实际输入一致：`--json`（场景②③）/ `--md`（场景①）。
 - 实测结论：真实语料矩阵（xlsx / 研报 PDF / 网页 / 录音 / docx / PPTX / JPG OCR / 千页 PDF / 截断 PDF / 边界用例 / 多源合并 / `--md` 直出 / `--inline` 公众号导出，多制式组合）覆盖率全部 100%；唯一非 100% 为 99.4%——「标题」二字被提为封面标题所致（符合预期，非丢失）。三格式闭环回归含 inline 用例共 35 例全 PASS（`tests/run_all.py` 可复现）。
 

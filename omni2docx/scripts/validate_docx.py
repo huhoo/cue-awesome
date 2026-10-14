@@ -89,6 +89,23 @@ def headings_summary(doc):
     return h
 
 
+def table_borders_audit(doc):
+    """单元格级审计：表格必须在 tblPr 上带 tblBorders（引擎 style_table 必写）。
+
+    渲染器所有 add_table 路径均经 style_table（写整表底线+行间 hairline），
+    若某表 tblPr 无 tblBorders，说明绕过 style_table（回归/第三方改造风险）。
+    注意：仅在 tblPr 层判定——命名样式（Table Grid 等）的边框不在此层，但
+    style_table 会覆盖式写入 tblPr/tblBorders，故正常产物必带。
+    """
+    bad = 0
+    for t in doc.tables:
+        tbl = t._tbl
+        tblPr = tbl.tblPr
+        if tblPr is None or tblPr.find(qn("w:tblBorders")) is None:
+            bad += 1
+    return bad
+
+
 def anchor_phrases(md, min_cjk=12):
     """从源文抽取若干长中文短语作为保真锚点。"""
     phrases = []
@@ -160,9 +177,15 @@ def main():
     print("  表格数 :", n_tables)
     print("  docx 段落数 :", len(doc.paragraphs))
     # 判定：以字符级覆盖率（零丢失的权威证据）为准；锚句命中率仅作参考
-    ok = coverage >= 99.0
+    n_unstyled = table_borders_audit(doc)
+    problems = []
+    if coverage < 99.0:
+        problems.append("DX-01 CJK 覆盖率 %.2f%% <99%%（字符丢失）" % coverage)
+    if n_unstyled:
+        problems.append("DX-02 未应用表格边框 %d 张（疑似绕过 style_table）" % n_unstyled)
+    ok = not problems
     print("-" * 64)
-    print("判定 :", "PASS ✅ (字符零丢失)" if ok else "CHECK ⚠️ (字符丢失)")
+    print("判定 :", "PASS（DX-01 通过）" if ok else "CHECK ⚠️（%s）" % "；".join(problems))
     print("  [参考] 锚句命中率 %.2f%%（跨表格单元格的拆分短语可能误判，不计入判定）" % phrase_rate)
     return 0 if ok else 1
 
