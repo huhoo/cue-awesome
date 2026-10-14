@@ -27,6 +27,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+PKG = HERE.parent
 
 # 与姊妹件逐字同源的四枚码（第五枚 E-LEDGER 属账本状态机面，本件无账本，故不启用）
 E_LEGEND = {
@@ -190,6 +191,42 @@ def report(path: Path, quiet=False) -> int:
 
 GOOD = ['good-full.md', 'good-minimal.md', 'good-prior-knowledge.md', 'good-opinion-uncovered.md']
 BAD = ['bad-format.md', 'bad-anchor.md', 'bad-banword.md', 'bad-coverage.md']
+EXAMPLE_TABLE = PKG / 'examples' / 'competitive-test' / 'evidence-table.md'
+EXAMPLE_BRIEF = PKG / 'examples' / 'competitive-test' / 'brief.md'
+
+
+def example_tier() -> tuple[bool, int]:
+    """真样例档：包内那份随包样例必须过道四，且同批 brief 的申报数与表内实测对平。
+       这档的存在意义：样例自己再漂号时 selftest 直接发红，而不是留一句文档说明。"""
+    if not EXAMPLE_TABLE.is_file():
+        print(f"SELFTEST FAIL: 真样例缺失 {EXAMPLE_TABLE}")
+        return False, 0
+    finds, nlines = check(EXAMPLE_TABLE)[:2]
+    hdr_at, rows, cols = table_rows(EXAMPLE_TABLE.read_text(encoding='utf-8', errors='replace').split('\n'))
+    real = counts([c for _, c in rows], cols.index('证据级别'), cols.index('置信度')) if cols else {}
+    ok = True
+    print(f"selftest 真样例：{EXAMPLE_TABLE.relative_to(PKG)} 扫过 {nlines} 行，发条 {len(finds)} 条（规格 0；实测数据行 {real.get('total')}）")
+    for x in finds:
+        print('   样例自身未过道四 → ' + x)
+        ok = False
+    if EXAMPLE_BRIEF.is_file():
+        bt = EXAMPLE_BRIEF.read_text(encoding='utf-8', errors='replace')
+        m1 = re.search(r'证据表总行数[：:\s]*(\d+)', bt)
+        m2 = COV_CONF.search(bt)
+        exp = (real.get('高'), real.get('中'), real.get('低'))
+        got = (int(m2.group(1)), int(m2.group(2)), int(m2.group(3))) if m2 else None
+        if not m1 or int(m1.group(1)) != real.get('total'):
+            print(f"selftest 真样例：brief 申报总行数「{m1.group(1) if m1 else '缺'}」与表内实测 {real.get('total')} 不符")
+            ok = False
+        elif got != exp:
+            print(f"selftest 真样例：brief 申报置信度 {got} 与表内实测 {exp} 不符")
+            ok = False
+        else:
+            print(f"selftest 真样例：同批 brief.md 申报（{real['total']} 行·高{exp[0]} 中{exp[1]} 低{exp[2]}）与表内实测对平")
+    else:
+        print(f"selftest 真样例：同批 brief 缺失 {EXAMPLE_BRIEF}——该档按未过处理")
+        ok = False
+    return ok, real.get('total', 0)
 
 
 def selftest() -> int:
@@ -232,7 +269,9 @@ def selftest() -> int:
     if missing:
         print('   四道未全发 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 {n_good_pass}/{len(GOOD)} · 坏样四道 {len(got_codes)}/{len(want)}）")
+    ex_ok, ex_rows = example_tier()
+    ok = ok and ex_ok
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 {n_good_pass}/{len(GOOD)} · 坏样四道 {len(got_codes)}/{len(want)} · 真样例档 {'过' if ex_ok else '未过'}／实测 {ex_rows} 行）")
     return 0 if ok else 1
 
 

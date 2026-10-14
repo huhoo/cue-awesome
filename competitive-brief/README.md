@@ -21,7 +21,7 @@
 ## 实跑示例
 
 [`examples/competitive-test/`](examples/competitive-test/) — 5人团队从 Cursor 迁移到替代方案的竞品简报：
-- [证据表](examples/competitive-test/evidence-table.md)（23 行，87% fact）
+- [证据表](examples/competitive-test/evidence-table.md)（24 行，其中 21 行为 fact ≈ 88%）
 - [简报](examples/competitive-test/brief.md)
 
 数据来源经 omni-reader 解析 cursor.com/pricing、claude.com/pricing、GitHub README 验证。

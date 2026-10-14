@@ -23,7 +23,7 @@ The core is not the process — it's the **evidence table**. Every substantive c
 ## Live example
 
 [`examples/competitive-test/`](examples/competitive-test/) — a 5-person team evaluating alternatives to Cursor:
-- [Evidence table](examples/competitive-test/evidence-table.md) (23 rows, 87% fact)
+- [Evidence table](examples/competitive-test/evidence-table.md) (24 rows, of which 21 are fact ≈ 88%)
 - [Brief](examples/competitive-test/brief.md)
 
 Sources verified via omni-reader parsing cursor.com/pricing, claude.com/pricing, and GitHub READMEs.
