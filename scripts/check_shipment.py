@@ -109,6 +109,8 @@ INVOKE = re.compile(r"python3?\s|bash\s|\s--|\b--\w")
 # 裸脚本调用形（M220⑤假阴：`research_run.py --query …` 没有目录前缀，旧版根本不进指针集）
 BARE_INV = re.compile(r"(?:^|[\s`|])([A-Za-z0-9_\-]+\.(?:py|sh))(?=\s+--|\s+-\w)")
 RUNNER = re.compile(r"(^|/)run_[a-z0-9_]*\.(sh|py)$", re.I)   # runner 形：run_fixtures.sh／run_all.py／run_tests.sh 一类，无参直跑
+TESTFILE = re.compile(r"(^|/)test_[A-Za-z0-9_]+\.py$", re.I)   # M220 追加：unittest 形（包内有 test_*.py 即机检面）
+MAX_RUNS = 12                                                   # 真跑上限；超出必发「存在未跑」，不得静默截断
 CMD = re.compile(r"python3?\s+([^\s`|;]+\.py)([^\n`|;]{0,120}?--selftest[^\n`|;]{0,40})")
 
 
@@ -269,13 +271,14 @@ def rel_files(root: Path):
     return sorted(out)
 
 
-def run_selftest(root: Path, script_rel: str, extra_args, exe=None):
-    """在**解包件里**真跑一次；返回 (退码或 None, 出口首行)。禁网：不给代理，cwd 锁在件内。"""
+def run_selftest(root: Path, script_rel: str, extra_args, exe=None, argv=None):
+    """在**解包件里**真跑一次；返回 (退码或 None, 出口首行)。禁网：不给代理，cwd 锁在件内。
+       `argv` 给非直跑形（unittest 用 `-m unittest discover`），不认「文件在=跑过」。"""
     env = dict(os.environ)
     for k in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"):
         env.pop(k, None)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    cmd = [exe or sys.executable, script_rel] + list(extra_args)
+    cmd = list(argv) if argv else [exe or sys.executable, script_rel] + list(extra_args)
     try:
         p = subprocess.run(cmd, cwd=str(root), capture_output=True, text=True, timeout=SELFTEST_TIMEOUT, env=env)
     except subprocess.TimeoutExpired:
@@ -291,7 +294,7 @@ def run_selftest(root: Path, script_rel: str, extra_args, exe=None):
 
 
 def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quiet: bool, repo_dir: Path | None = None,
-          max_entries: int = MAX_ENTRIES_DEFAULT):
+          max_entries: int = MAX_ENTRIES_DEFAULT, max_runs: int = MAX_RUNS):
     hits = []
     notes = []
     try:
@@ -375,7 +378,7 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
             for m in CMD.finditer(line):
                 cmds.append((rel, lineno, norm_rel(m.group(1))))
 
-    # ③ 自测入口真跑：成品面写明的命令 ∪ 发布物内 .py 自带 --selftest 的脚本
+    # ③ 自测入口真跑：成品面写明的命令 ∪ 发布物内 .py 自带 --selftest 的脚本 ∪ runner 形 ∪ **unittest 形**
     form = {}
     for _, _, scr in cmds:
         form[norm_rel(scr)] = "selftest（成品面写明）"
@@ -387,9 +390,12 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
                 form.setdefault(rel, "selftest（脚本自带）")
         if RUNNER.search(rel):
             form.setdefault(rel, "runner")
+        if TESTFILE.search(rel):        # M220 追加：包内有 test_*.py 就是机检面，别只认前两种形
+            form.setdefault(rel, "unittest")
     entries = sorted(form)
     ran = []
-    uniq_cmds = entries[:12]
+    uniq_cmds = entries[:max_runs]
+    skipped = [e for e in entries if e not in set(uniq_cmds)]
     for scr in uniq_cmds:
         face = next((f for f, _, s in cmds if norm_rel(s) == scr), "（发布物内脚本自报）")
         if scr not in fileset:
@@ -397,12 +403,27 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
         kind = form.get(scr, "selftest")
         args = ["--selftest"] if kind.startswith("selftest") else []
         runner = "bash" if scr.endswith(".sh") else sys.executable
-        rc, first = run_selftest(root, scr, args, runner)
+        if kind == "unittest":
+            d, _, b = scr.rpartition("/")
+            argv = [sys.executable, "-m", "unittest", "discover", "-s", d or ".", "-p", b]
+            rc, first = run_selftest(root, scr, [], argv=argv)
+        else:
+            rc, first = run_selftest(root, scr, args, runner)
         ran.append((scr, kind, rc, first))
         if rc is None:
             hits.append(Hit("S-SELFTEST", face, scr, f"入口形={kind}｜解包件内真跑不可完成：{first}"))
         elif rc != 0:
             hits.append(Hit("S-SELFTEST", face, scr, f"入口形={kind}｜解包件内真跑退码 {rc}；出口末读「{first}」"))
+    # **存在入口而未跑＝ERROR**（lead 2026-10-14 追加②）：PASS＋0 枚会被下一轮全量回扫读成「跑过且绿」，
+    # 比错报更危险。 candidates（盘面实有的机检文件）与 attempted（真跑过的）逐枚对，缺一枚报一枚。
+    cand = {e for e in entries if e in fileset}
+    missed = sorted(cand - {r[0] for r in ran})
+    for m in missed[:8]:
+        hits.append(Hit("S-SELFTEST", "（入口清点）", m,
+                        f"发布物内存在机检入口（入口形={form.get(m, '？')}）而闸未跑＝**判据空跑**；"
+                        f"本轮真跑上限 {max_runs} 枚、候选 {len(cand)} 枚，逐枚清点不得默认「没跑＝跑过」"))
+    if len(missed) > 8:
+        notes.append(f"入口清点：另有 {len(missed) - 8} 枚存在未跑（详行已截 8 枚）")
     if cap_lines and not ran:
         face, lineno, snippet = cap_lines[0]
         hits.append(Hit("S-MISSING", face, f"{face}:{lineno}",
@@ -498,8 +519,20 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
         notes.append("随包档案：" + "、".join(f"{f}（成员 {n}）" if n is not None else f"{f}（读不动）" for f, n in arch_report)
                      + "；**档案成员不给指路背书**（只列不判，读不动也不静默放过）"
                      + (f"；不可读清单 {unread}" if unread else ""))
-    notes.append(f"成品面 {len(faces)} 面／能力句 {len(cap_lines)} 行／自测入口 {len(ran)} 枚真跑"
-                 f"（入口形：selftest {n_st}｜runner {n_ru}）")
+    n_ut = sum(1 for r in ran if r[1] == "unittest")
+    _forms = f"（入口形：selftest {n_st}｜runner {n_ru}｜unittest {n_ut}）"
+    if not ran:
+        # lead 票面第 520 行②：「0 枚真跑」不得并类。**仓内有没有入口**决定这句该怎么写——
+        #  判据只量发布物字节，但报账不能把「这形态没带样」写成「这包没有机检面」（后者会把该修的假象洗白）。
+        if repo_dir is not None and any(
+                TESTFILE.search(p.relative_to(repo_dir).as_posix()) or RUNNER.search(p.relative_to(repo_dir).as_posix())
+                for p in repo_dir.rglob("*") if p.is_file()):
+            _forms = ("（本交付形内无入口载体＝**剔样／配方态**：仓内有 test_*.py／run_*，是没随这枚字节走，"
+                      "不是这包没有机检面；缺件面另由 S-MISSING／能力句判）")
+        else:
+            _forms = ("（**真无机检面**：包内与仓内都无 test_*.py／run_*／`--selftest` 载体；"
+                      "「入口存在未识别」不写在这里——那种形制当场发 ERROR）")
+    notes.append(f"成品面 {len(faces)} 面／能力句 {len(cap_lines)} 行／自测入口 {len(ran)} 枚真跑{_forms}")
     if ran:
         stats["entries"] = [(r[0], r[1], r[2], r[3]) for r in ran]
     return hits, notes, stats
@@ -853,6 +886,30 @@ def selftest(quiet=False) -> int:
         f"实得 {[(h.code, h.sev, h.detail[:24]) for h in rt2[0]]}")
     one("十四档e-实证可过集与拒收件数进报账", True, len(K23_ALLOWED_EXT) == 9,
         f"可过族={list(K23_ALLOWED_EXT)}")
+
+    # 十五档（M220 追加，lead 2026-10-14 渠道回字节逐枚跑出来的**判据空跑**）：
+    #   unittest 形入口（包内有 test_*.py）旧版根本不认——cue-lead-pieces／cue-omni-ontology
+    #   各自解包件里 discover 退 0 且末行 OK，闸却报「0 枚真跑＋PASS」＝把「没跑」读成「跑过且绿」。
+    zug = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("unittest-green"))
+    rug = check(zug, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十五档-unittest 形入口必被真跑且退 0", 0, emit(zug, "demopkg", rug[0], rug[1], True))
+    one("十五档b-入口形标注为 unittest", True, any(r[1] == "unittest" for r in rug[2]["ran"]),
+        f"读数={[n[:70] for n in rug[1] if '入口形' in n]}")
+    zur3 = tier("unittest-red")
+    one("十五档c-unittest 真跑非零必红", 1, emit(zur3[0], "demopkg", zur3[1][0], zur3[1][1], True))
+    one("十五档d-发红码含 S-SELFTEST 且点到那枚 test", True,
+        any(h.code == "S-SELFTEST" and h.ref.endswith("test_fail.py") for h in zur3[1][0] if h.sev == "ERROR"),
+        f"实得 {[(h.code, h.ref) for h in zur3[1][0] if h.sev == 'ERROR']}")
+    # **存在入口而未跑＝ERROR**（lead 追加②：PASS＋0 枚＝漏跑不报，比错报更危险）
+    rug0 = check(zug, "demopkg", None, MAX_BYTES_DEFAULT, True, None, MAX_ENTRIES_DEFAULT, max_runs=1)
+    one("十五档e-入口存在而未跑必发 ERROR", 1, emit(zug, "demopkg", rug0[0], rug0[1], True))
+    one("十五档f-未跑发码写明判据空跑", True,
+        any(h.code == "S-SELFTEST" and "判据空跑" in h.detail for h in rug0[0] if h.sev == "ERROR"),
+        f"实得 {[(h.code, h.ref) for h in rug0[0] if h.sev == 'ERROR']}")
+    # 十五档g（lead 票面第 520 行②：「0 枚真跑」不得并类）——报账要当场分写出两件事
+    one("十五档g-零入口报账写明「真无机检面」", True,
+        any("真无机检面" in n and "入口存在未识别" in n for n in rg[1]) and not any("真无机检面" in n for n in rug[1]),
+        f"绿样读数={[n[:60] for n in rug[1] if '自测入口' in n]}｜未跑读数={[n[:40] for n in rg[1] if '自测入口' in n]}")
 
     SILENT.clear()
     for line in res:
