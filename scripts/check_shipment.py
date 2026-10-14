@@ -59,9 +59,13 @@ MAX_BYTES_DEFAULT = 1_048_576          # 渠道 ≈1 MiB 闸；对象＝发布�
 MAX_ENTRIES_DEFAULT = 200              # K-20 渠道第二道**独立**硬限：包内条目 ≤200，且**目录条目照计**
                                        # （2026-10-13 实测：`zip -r -X dd-checklist` 得 1,000 条目＝535 文件＋465 目录，
                                        #  渠道 400「文件数量超出限制(最多 200 个)」；旧版本闸只数文件＝这条盲区由渠道先撞到，记 K-20）
-K23_ALLOWED_EXT = ("md", "py", "json", "jsonl", "sh", "txt", "html", "pptx", "docx")
+K23_ALLOWED_EXT = ("md", "py", "json", "jsonl", "sh", "txt", "html", "pptx", "docx", "yaml")
+                                       # M228：K-23 现值第 20 行早写了「实测补充：`.yaml` 亦可通过
+                                       # （cue-lead-pieces 一次受理为证，skillId 270806）→ 已受理集扩为…yaml…」，
+                                       # 集是十枚；脚本常量停在九枚＝文档跟上、脚本没跟上（C-54 那族），
+                                       # 代价是两枚包各背一条假 WARN（同点 agents/openai.yaml）。
 # K-23 扩展名面（lead 10-13 从**已受理**渠道件逐枚反推的实证边界，不再靠试错）：
-#   实测可过＝上面这族；实测拒收＝K12_PATTERNS＋压缩包一族＋`.sha256`（第四拒原文点名
+#   实测可过＝上面这族（十枚，与 K-23 现值同集）；实测拒收＝K12_PATTERNS＋压缩包一族＋`.sha256`（第四拒原文点名
 #   `scripts/fixtures/_shared/variants/evidence__LEDGER__….sha256`）＋`pyc/pyo/pyd`。
 #   对象口径同体积闸与条数闸：**判发布物 zip 内的条目名**，不判仓内 du。
 K23_REJECTED_SUFFIXES = (".pyc", ".pyo", ".pyd")
@@ -881,10 +885,10 @@ def selftest(quiet=False) -> int:
     rt2 = check(zt2, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十四档c-剔掉拒收件即转绿（防恒真）", 0, emit(zt2, "demopkg", rt2[0], rt2[1], True))
     one("十四档d-未实证后缀只 WARN 不判红", True,
-        any(h.code == "S-TYPE" and h.sev == "WARN" and "yaml" in h.detail for h in rt2[0])
+        any(h.code == "S-TYPE" and h.sev == "WARN" and "ini" in h.detail for h in rt2[0])
         and not any(h.sev == "ERROR" for h in rt2[0]),
         f"实得 {[(h.code, h.sev, h.detail[:24]) for h in rt2[0]]}")
-    one("十四档e-实证可过集与拒收件数进报账", True, len(K23_ALLOWED_EXT) == 9,
+    one("十四档e-实证可过集枚数与 K-23 现值同集", True, len(K23_ALLOWED_EXT) == 10 and "yaml" in K23_ALLOWED_EXT,
         f"可过族={list(K23_ALLOWED_EXT)}")
 
     # 十五档（M220 追加，lead 2026-10-14 渠道回字节逐枚跑出来的**判据空跑**）：
@@ -907,6 +911,38 @@ def selftest(quiet=False) -> int:
         any(h.code == "S-SELFTEST" and "判据空跑" in h.detail for h in rug0[0] if h.sev == "ERROR"),
         f"实得 {[(h.code, h.ref) for h in rug0[0] if h.sev == 'ERROR']}")
     # 十五档g（lead 票面第 520 行②：「0 枚真跑」不得并类）——报账要当场分写出两件事
+    # 十六档（M228：`.yaml` 入集后不得顺手把真被拒的放过——集要扩，判据不能软）
+    zyy = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("yaml-allowed"))
+    ryy = check(zyy, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十六档-已受理族不再背 WARN", True,
+        not any(h.code == "S-TYPE" and h.sev == "WARN" and "yaml" in h.detail for h in ryy[0]),
+        f"读数={[h.detail[:52] for h in ryy[0] if h.code == 'S-TYPE']}")
+    one("十六档b-同包内真被拒后缀仍必红（入集不放软判据）", True,
+        any(h.code == "S-TYPE" and h.sev == "ERROR" and h.ref.endswith("LEDGER.sha256") for h in ryy[0]),
+        f"实得={[(h.sev, h.ref.rsplit('/', 1)[-1]) for h in ryy[0] if h.code == 'S-TYPE']}")
+
+    # 十七档（K-25：渠道实供＝平铺无顶层目录；本地建包＝带单一顶层目录。判据不能挑布局）
+    d17 = Path(tempfile.mkdtemp(prefix="cs-17-"))
+    ztop = d17 / "top.zip"
+    build_zip(ztop, fixture_root("good"))
+    zflat = d17 / "flat.zip"
+    with zipfile.ZipFile(ztop) as zin, zipfile.ZipFile(zflat, "w", zipfile.ZIP_DEFLATED) as zout:
+        pre = zin.namelist()[0].split("/", 1)[0] + "/"
+        for it in zin.infolist():
+            n = it.filename
+            if n.startswith(pre):
+                n = n[len(pre):]
+            if not n:
+                continue
+            it.filename = n
+            zout.writestr(it, zin.read(it.filename if False else pre + n if (pre + n) in zin.namelist() else n))
+    r17a = check(ztop, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    r17b = check(zflat, "demopkg", None, MAX_BYTES_DEFAULT, True)
+    one("十七档-两种条目布局结论同值（解包口对布局免疫）", True,
+        len([h for h in dedupe(r17a[0]) if h.sev == "ERROR"]) == len([h for h in dedupe(r17b[0]) if h.sev == "ERROR"])
+        and bool(r17b[2].get("ran")) == bool(r17a[2].get("ran")),
+        f"带顶层={len(r17a[2].get('ran') or [])} 枚真跑／平铺={len(r17b[2].get('ran') or [])} 枚真跑")
+
     one("十五档g-零入口报账写明「真无机检面」", True,
         any("真无机检面" in n and "入口存在未识别" in n for n in rg[1]) and not any("真无机检面" in n for n in rug[1]),
         f"绿样读数={[n[:60] for n in rug[1] if '自测入口' in n]}｜未跑读数={[n[:40] for n in rg[1] if '自测入口' in n]}")
