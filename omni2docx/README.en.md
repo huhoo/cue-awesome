@@ -73,6 +73,7 @@ italics (CJK emphasis → bold), `--page-numbers` adds a footer PAGE field,
 
 ## Capability boundaries (honest list)
 
+- **Conversion and layout run on this machine; the scripts themselves issue no network requests.** Two conditions to state plainly: if the source markdown carries `http(s)://` image links, `--pdf` export lets the *browser* fetch them (that step needs network; if a fetch fails the slot stays empty — this skill does not download on your behalf, and local or non-`data:` image paths are rendered as a text note in HTML); and **for input obtained through omni parsing, that parsing's cost is whatever the server returns** — parsing is not this skill's capability, and it neither estimates nor pays for it.
 - Fidelity is **page-level** (grounded); element-level bbox data is available via
   `detail=layout`, engine consumption is a later stage.
 - `read_result` / `read_outline` are bound to a **same-session constraint**
