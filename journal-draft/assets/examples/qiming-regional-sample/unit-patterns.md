@@ -7,7 +7,7 @@
 > 每页中位 646 字。落成内容前先按下面的「篇幅基线」定目标页数与条数，
 > 写完用 `build_draft.py --stats` 验达成率，低于 60% 直接判不合格、回去补。
 
-## 篇幅基线（第 21 期实测，已写进 assets/stylespec.json 的 scale_baseline）
+## 篇幅基线（第 21 期实测，已写进同目录 `assets/examples/qiming-regional-sample/stylespec.json` 的 scale_baseline）
 
 | 指标 | 目标 | 第 22 期实测 |
 |---|---|---|

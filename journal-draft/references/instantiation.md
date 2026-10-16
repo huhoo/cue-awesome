@@ -17,7 +17,7 @@
 |---|---|---|
 | 直接安装 | 整个目录拷进 `~/.workbuddy/skills/` | 就想试试这套流水线 |
 | 照着改造 | 按样例里的 `README.md` 逐项替换 | 有自己的刊物，想省去摸索 |
-| 只作参考 | 只读 `assets/unit-patterns.md` | 想搞清楚「单元模板」到底要写多细 |
+| 只作参考 | 只读 `assets/examples/qiming-regional-sample/unit-patterns.md` | 想搞清楚「单元模板」到底要写多细 |
 
 **samples 和 examples 别混**：
 

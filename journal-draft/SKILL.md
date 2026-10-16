@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.13"
+version: "0.15.14"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -944,7 +944,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 ```
 
 样例在这一步里**只用来对照**：先看一眼 `examples/journal-qiming-regional/` 的
-`assets/unit-patterns.md` 长什么样，就知道自己那份该写到什么颗粒度。
+`assets/examples/qiming-regional-sample/unit-patterns.md` 长什么样，就知道自己那份该写到什么颗粒度。
 第 ③ 步产出的子技能**自带 `slug` / `displayName` / `version`**，
 可以直接发布；`references/` 有意不拷，留在父包（会随框架演进，拷一份会立刻过期）——
 所以子技能遇到底层问题时回父包查，日常干活不需要父包在场。
