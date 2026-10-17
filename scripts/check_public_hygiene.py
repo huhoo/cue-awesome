@@ -70,6 +70,7 @@ RULES = (
 )
 
 SKIP_OUTPUT_POINTERS: list[tuple[str, int, str]] = []
+EXEMPT_DISCARDED: list[tuple[str, str]] = []   # 因窄化被弃用的测试面同名件命中（报账用，不静默吞）
 
 CHANGELOG_CODES = {"H-TICKET", "H-STATE", "H-DATE", "H-ATTRIB"}  # ② 不在 CHANGELOG 面判（charter 只列 ①③④⑤）
 LEGEND = {c: spec for c, _, _, spec in RULES}
@@ -144,14 +145,29 @@ def _resolves(pkg: Path, own: Path, rel: str) -> bool:
     return False
 
 
-def _basename_elsewhere(pkg: Path, rel: str, own: Path, text_path: Path) -> bool:
-    """同名件在包内别处存在 → 多半是运行时产出路径或范例副本，不当断链。"""
+TESTISH_SEGMENTS = {"fixtures", "tests", "samples", "examples"}   # M242：测试与样例面的同名件是**语料**，不给指路背书
+
+
+def _basename_elsewhere(pkg: Path, rel: str, own: Path, text_path: Path):
+    """同名件在包内**非测试面**别处存在 → 多半是运行时产出路径或范例副本，不当断链。
+       M242 窄化：命中路径（相对包根）任一段属 fixtures／tests／samples／examples 时**不算豁免**——
+       否则任何包把同名件丢进测试语料就能盖住真断链（dd 散件时代 29 枚 `coverage-map.md` 正是这形，
+       当时把面上两枚真断链洗白成 0 条；lead 10-17 重测确认现值上这条已不再被求值，故窄化零代价）。
+       返回 True／False，并把「因测试面而被弃用的命中数」记进 EXEMPT_DISCARDED（报账可查，不静默）。"""
     name = Path(rel).name
     if not name or name.count(".") < 1:
         return False
     for cand in pkg.rglob(name):
-        if cand != text_path:
-            return True
+        if cand == text_path:
+            continue
+        try:
+            parts = {x.lower() for x in cand.relative_to(pkg).parts[:-1]}
+        except ValueError:
+            parts = {x.lower() for x in cand.parts}
+        if parts & TESTISH_SEGMENTS:
+            EXEMPT_DISCARDED.append((rel, cand.relative_to(pkg).as_posix()))
+            continue
+        return True
     return False
 
 
@@ -171,8 +187,9 @@ def _pointers(text: str, pkg: Path, own: Path, as_file: Path | None = None) -> l
                 continue  # 模板占位与通配不算指路（assets/××.md 类）
             if _resolves(pkg, own, t):
                 continue
-            if OUTPUT_VERB.search(line) or _basename_elsewhere(pkg, t, own, as_file or own / t.name):
-                SKIP_OUTPUT_POINTERS.append((lineno, t, ""))
+            born = bool(OUTPUT_VERB.search(line))
+            if born or _basename_elsewhere(pkg, t, own, as_file or own / t.name):
+                SKIP_OUTPUT_POINTERS.append((lineno, t, "出生动词" if born else "非测试面同名件"))
                 continue
             out.append((lineno, t, "本包根与本文件目录两侧都找不到目标"))
     return out
@@ -207,6 +224,7 @@ def check_file(path: Path) -> list[tuple[str, int, str, str]]:
 # ---------------------------------------------------------------- 全仓跑
 def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
     SKIP_OUTPUT_POINTERS.clear()
+    EXEMPT_DISCARDED.clear()
     faces = iter_faces()
     errors = warnings = 0
     used_codes: set[str] = set()
@@ -235,7 +253,10 @@ def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
         print()
         print("  码表: " + "; ".join(f"{c}→{LEGEND[c]}" for c in sorted(used_codes)))
 
-    print(f"指路附账：判为运行时产出路径而跳过 {len(SKIP_OUTPUT_POINTERS)} 条（信号=行内有出生动词，或同名件在包内别处存在）")
+    _born = sum(1 for x in SKIP_OUTPUT_POINTERS if x[2] == "出生动词")
+    _twin = sum(1 for x in SKIP_OUTPUT_POINTERS if x[2] == "非测试面同名件")
+    print(f"指路附账：判为运行时产出路径而跳过 {len(SKIP_OUTPUT_POINTERS)} 条（出生动词 {_born}／非测试面同名件 {_twin}）"
+          f"；因窄化被弃用的测试面同名件命中 {len(EXEMPT_DISCARDED)} 次（这类不再算豁免）")
     print(f"\nsummary: 面 {len(faces)}，ERROR {errors}，WARN {warnings}"
           + ("（--strict：WARN 计入失败）" if strict and warnings else ""))
     if errors:
@@ -300,6 +321,7 @@ def selftest() -> int:
         return 1
 
     SKIP_OUTPUT_POINTERS.clear()
+    EXEMPT_DISCARDED.clear()
     bad_f = _fixture_findings(bad)
     bad_codes = {c for c, _, _, _ in bad_f}
     want = {c for c, _, _, _ in RULES} | {"H-POINTER"}
@@ -332,6 +354,27 @@ def selftest() -> int:
               f"YAML 键名样发条 {len(y_hit)} 条＝{'对' if not y_hit else '错（workflow_dispatch 又被误拦）'}")
         if not d_hit or y_hit:
             ok = False
+
+    # 档④／档⑤（M242：把「同名件在包内别处存在」这半条豁免窄化到不认测试与样例面）
+    dt = bad / "assets" / "dangling-twin.md"
+    dtf = [x for x in bad_f if x[2].endswith("dangling-twin.md") and x[0] == "H-POINTER"]
+    old_would_exempt = any(c.name == "unit-twin.md" and c != dt for c in bad.rglob("unit-twin.md"))
+    discarded = [d for d in EXEMPT_DISCARDED if d[1].startswith(("scripts/fixtures/", "fixtures/", "tests/", "samples/", "examples/"))]
+    ok4 = len(dtf) == 1 and old_would_exempt and bool(discarded)
+    print(f"档④ 反例必红（洗白路径已拆）：改前口径会豁免＝{'是' if old_would_exempt else '否'}"
+          f"｜改后该面发红 {len(dtf)} 条（期望 1）｜被弃用的测试面命中 {len(discarded)} 次"
+          f"＝{'对' if ok4 else '错（要么没拆死，要么拆过了头）'}")
+    if not ok4:
+        ok = False
+
+    tw = good / "references" / "twin-exempt.md"
+    twf = [x for x in _fixture_findings(good) if x[2].endswith("twin-exempt.md")]
+    still_exempt = _basename_elsewhere(good, "references/台账甲.md", good / "references", tw)
+    ok5 = not twf and still_exempt
+    print(f"档⑤ 正例仍绿（不许过窄）：同名件在非测试面（assets/）时豁免＝{'仍成立' if still_exempt else '被误删'}"
+          f"｜该面发条 {len(twf)} 条（期望 0）＝{'对' if ok5 else '错（正当豁免被动了，会造成假红）'}")
+    if not ok5:
+        ok = False
 
     good_f = _fixture_findings(good)
     print(f"档② 合规样：应零发条，实发 {len(good_f)} 条")
