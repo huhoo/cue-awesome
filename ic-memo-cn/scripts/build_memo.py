@@ -36,7 +36,8 @@ NEED3 = ('item', 'source', 'locator')
 
 
 def read_rows(path: Path, log, tag):
-    """逐行 JSON；坏行＝取数错误（报错不成文），不静默跳过。"""
+    """逐行 JSON；坏行＝取数错误（报错不成文），不静默跳过。
+       合法 JSON 但不是对象（数组／字符串／数字／布尔／null）同样按取数错误出一句人话，不抛 Traceback。"""
     rows = []
     if path is None:
         return rows
@@ -48,6 +49,10 @@ def read_rows(path: Path, log, tag):
             obj = json.loads(ln)
         except json.JSONDecodeError:
             log(f'build_memo: --{tag} 第 {i} 行不是 JSON（取数或形制错误，不静默跳行）')
+            return None
+        if not isinstance(obj, dict):
+            log(f'build_memo: --{tag} 第 {i} 行是 JSON {type(obj).__name__}，本件每行只收对象（一条记录＝一个对象，'
+                f'取数或形制错误，不静默跳行）')
             return None
         rows.append(obj)
     return rows

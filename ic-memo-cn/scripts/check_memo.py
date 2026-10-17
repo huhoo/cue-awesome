@@ -4,7 +4,7 @@
 
 用法：
     python3 check_memo.py <memo.md> [--run <run.json>]     校验一份草稿（--run 缺省取同目录 run.json）
-    python3 check_memo.py --selftest                       档位自证：一档／一档b／二档／三档／四档（下详）
+    python3 check_memo.py --selftest                       档位自证：一档／一档b／二档／三档／四档／五档／六档（下详）
     python3 check_memo.py --help                           本说明
 
 档位自证（反证矩阵长在脚本里，不另出包外探针件）：
@@ -15,16 +15,21 @@
     三档 空模板必须 FAIL（留占位＝违例，不是合规）
     四档 反证矩阵：对合规稿做单点破坏，每枚必须发出预期的码与道名；另附正向不误拦。
          锚点是「合规稿里唯一命中的那行」——锚失配即判该枚不符，所以守护样漂移或某道被拆弱都会先叫。
+    五档 记账件坏态：run.json 为 null／非对象／缺必需键时必须判红（CLI 真跑），同草稿配正常件仍须 PASS——
+         这一档治的是「坏记账件照样末行 PASS」的假绿：旧态下道四被 if run 整段静默跳过。    六档 生成器坏输入：build_memo 的 --facts／--gaps／--materials 某行是合法 JSON 但不是对象时，退码 1、
+         首行点名参数名与行号与实收类型、不抛 Traceback；好形 live 夹具同场真跑，产物须与存夹具逐字节同。
 
 出口形制（与姊妹件同族）：失败＝一行 "FAIL: <文件>（N 条）" ＋逐条先打 `E-*` 码的详行 ＋末行「码表:」；
 全过＝一行 "PASS: <文件>（…）" 并印「扫过行数」「发条数」。行数口径：`扫过 N 行` 按 `split('\n')` 计
 ＝`wc -l` 现值 +1。
 
-四道（判定全集在本脚本；SKILL §5 那张表是验收合同）：
+五道（判定全集在本脚本；SKILL §5 那张表是验收合同）：
     道一 E-FORMAT   七节齐且有序＋四件自标与三句边界在位＋快照时点与日期落成 YYYY-MM-DD＋来源索引点名 sources.jsonl
     道二 E-ANCHOR   数值行缺出处锚或缺定位；锚为空或占位；业务行缺可指到的出处；来源行缺出处
     道三 E-COVERAGE 反方缺一侧；缺数清单为空却正文有「未取到」；七类计数与 run.json 对不上；表内合计与分项不 tie
     道四 E-BANWORD  评级／目标价／买卖建议／估值测算／走势与行情承诺／「无风险」类断言落在第六节之外且未挂 `[待人工]`
+    道五 E-RUN      记账件（run.json）自身不合式：能解析但不是对象（null／数组／字符串／数字／布尔），
+                    或是对象却缺本闸实读的必需键——两种都判红并点名件名、实收类型或缺的键名（旧态：整段计数比对静默跳过、末行照报 PASS）
 
 **它是形制闸，不是事实闸**：`exit 0` 只证明形制合式且与本次 run.json 自证一致，不证明数字为真——
 事实层由逐条回官方原文核对承担，交付面必须这样写。
@@ -50,7 +55,13 @@ E_LEGEND = {
     "E-ANCHOR":   "锚/证据链缺失或断链→补合式锚或删除该条,禁虚构",
     "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
     "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
+    # 本包自有第五枚：记账件（run.json）自身不合式。缺件与非 JSON 仍归 E-FORMAT〔实况〕，
+    # 这一枚专门卡「能解析、门却因此静默跳过计数比对」的两种形状（非对象／缺必需键）。
+    "E-RUN":      "记账件不合式(非对象或缺必需键)→重跑 build_memo.py 取回本次实况,禁手补 run.json",
 }
+
+# 计数比对实际读取的六枚键＝本闸的必需键（不另立一张清单，取自下方道四现读）
+RUN_REQUIRED = ('fact_rows', 'business_rows', 'bull_rows', 'bear_rows', 'gap_rows', 'source_rows')
 
 SECTIONS = ['摘要', '事实与数字', '业务与行业要点', '风险与反方', '缺数与未决', '人工复核清单', '来源索引']
 CN = ['一', '二', '三', '四', '五', '六', '七']
@@ -158,6 +169,22 @@ def check(path: Path, run_path: Path | None):
             run = json.loads(run_path.read_text(encoding='utf-8'))
         except json.JSONDecodeError:
             add('E-FORMAT', '实况', 1, f"{run_path.name} 不是合法 JSON（规格：计数比对以 run.json 实况为唯一凭据，坏了就重跑 build_memo.py）")
+            run = None
+        else:
+            # 记账件本身不合式的两种形状：能解析但不是对象（null／数组／字符串／数字／布尔），
+            # 或虽是对象却缺本闸要读的必需键（含空对象）——旧态下这两种都会让道四整段静默跳过、照样 PASS。
+            if not isinstance(run, dict):
+                add('E-RUN', '记账件', 1,
+                    f"与草稿成对的记账件 {run_path.name}（本次交付第 2 枚）实收到 JSON {type(run).__name__}，不是对象"
+                    f"（规格：run.json 必须是本次运行实况的对象记录；坏态一律判红，计数比对无从进行，重跑 build_memo.py）")
+                run = None
+            else:
+                missing = [k for k in RUN_REQUIRED if k not in run]
+                if missing:
+                    add('E-RUN', '记账件', 1,
+                        f"记账件 {run_path.name}（本次交付第 2 枚）是对象但缺必需键 {missing}"
+                        f"（规格：这六枚是本闸计数比对实读的键，缺任一即无法对账；重跑 build_memo.py 取回本次实况，禁手补）")
+                    run = None
     elif run_path:
         add('E-FORMAT', '实况', 1, f"缺 {run_path.name}（规格：草稿必须与本次 run.json 同目录成对交付，计数比对无从进行）")
 
@@ -390,7 +417,7 @@ def report(path, finds, n):
         print('  码表: ' + '; '.join(f'{c}→{E_LEGEND[c]}' for c in codes))
         return 1
     print("PASS: " + path.name + "（七节齐、自标与边界在位、每行有锚、判断词零命中、七类计数与 run.json 对上、合计 tie）")
-    print(f"       扫过 {n} 行，发条 0 条；判定与阈值全集以本脚本现值为准（--help 看四道说明）")
+    print(f"       扫过 {n} 行，发条 0 条；判定与阈值全集以本脚本现值为准（--help 看五道说明）")
     return 0
 
 
@@ -580,6 +607,123 @@ def probe_matrix(md, run, tmp: Path):
     return out
 
 
+def run_guard(tmp: Path):
+    """五档 记账件坏态：run.json 为 null／非对象／缺必需键时必须判红——这档治的是本包的一枚真实假绿。
+
+    旧态下这三种件都能解析（或解析成 None／list），道四整段被 `if run:` 静默跳过，末行照样 PASS，
+    于是计数对不上与缺腿没点名会跟着进用户决策。断言三件：①CLI 真跑退码 1、首行 FAIL、不抛 Traceback；
+    ②首条就是 E-RUN〔记账件〕，详行按形制点名「实收到 JSON 某类型」或「缺必需键」；
+    ③同一片草稿配正常 good-run.json 仍退码 0 且末行 PASS——好形不许被带红。"""
+    fx = HERE / 'fixtures'
+    md, good = fx / 'good-memo.md', fx / 'good-run.json'
+    cases = [('null 件（非对象）', fx / 'bad-run-null.json', '实收到 JSON'),
+             ('缺必需键件（是对象）', fx / 'bad-run-partial.json', '缺必需键')]
+    need = [c for _n, c, _s in cases] + [md, good]
+    missing = sorted({q.name for q in need if not q.is_file()})
+    if missing:
+        print('selftest 五档记账件坏态：缺件 %s（规格：坏态夹具与好形对照样必须随包）' % '、'.join(set(missing)))
+        return False
+    bad, n_assert = [], 0
+    for name, path, want_sub in cases:
+        r = subprocess.run([sys.executable, '-B', str(Path(__file__)), str(md), '--run', str(path)],
+                           capture_output=True, text=True)
+        out = r.stdout + r.stderr
+        first = next((ln.strip()[2:].strip() for ln in out.split('\n') if ln.strip().startswith('- [E-')), '')
+        head = out.strip().split('\n')[0] if out.strip() else ''
+        for k, got, want in [('退码', r.returncode, 1),
+                             ('不抛 Traceback', 'Traceback' in out, False),
+                             ('首行是 FAIL', head.startswith('FAIL:'), True),
+                             ('首条是 E-RUN〔记账件〕', first.startswith('[E-RUN] [记账件]'), True),
+                             ('详行点名病灶（%s）' % want_sub, want_sub in first, True)]:
+            n_assert += 1
+            if got != want:
+                bad.append('%s｜%s：实得 %r（规格 %r）' % (name, k, got, want))
+        print('   %-22s 退码=%s Traceback=%s 首条=%s' % (
+            name, r.returncode, '有' if 'Traceback' in out else '无', first[:84]))
+    g = subprocess.run([sys.executable, '-B', str(Path(__file__)), str(md), '--run', str(good)],
+                       capture_output=True, text=True)
+    gout = g.stdout + g.stderr
+    n_assert += 1
+    if g.returncode != 0 or 'E-RUN' in gout or not gout.strip().startswith('PASS:'):
+        bad.append('好形对照：good-run.json 实得退码 %s、首行 %r（规格 0／PASS 且不发 E-RUN）' % (
+            g.returncode, gout.strip().split('\n')[0][:40]))
+    print('   %-22s 退码=%s 首行=%s' % ('好形对照（不退化）', g.returncode, gout.strip().split('\n')[0][:56]))
+    print('selftest 五档记账件坏态：CLI 真跑三形（两坏一对好）｜断言 %d 条，不符 %d 条——这一档治的是「记账件坏态照样 PASS」的假绿' % (
+        n_assert, len(bad)))
+    for b in bad:
+        print('   不符 → ' + b)
+    return not bad
+
+
+
+def gen_bad_input(tmp: Path):
+    """六档 生成器坏输入：--facts／--gaps／--materials 某行是合法 JSON 但不是对象时，须出一句人话、退码 1。
+
+    这一档治的是 build_memo 侧的 Traceback：旧态下数组／字符串／数字／布尔／null 五种行体都会
+    在取字段时抛 AttributeError，退码巧合也是 1，但用户看到的不是那句「第 i 行是 JSON 某类型」。
+    断言三件：①CLI 真跑退码 1、不抛 Traceback；②stderr 首行点名参数名、行号与实收类型；
+    ③正常夹具真跑仍退码 0 且产出与存夹具逐字节同——坏态修完不许把好路径带坏。"""
+    fx = HERE / 'fixtures'
+    md_case = fx / 'bad-facts-array.jsonl'
+    if not md_case.is_file() or not (fx / 'live-facts.jsonl').is_file():
+        print('selftest 六档生成器坏输入：缺件 fixtures/bad-facts-array.jsonl 或 live-facts.jsonl（规格：坏形夹具与好形输入必须随包）')
+        return False
+    d = tmp / 'genbad'
+    d.mkdir(parents=True, exist_ok=True)
+
+    def run(*args):
+        r = subprocess.run([sys.executable, '-B', str(HERE / 'build_memo.py')] + [str(a) for a in args],
+                           capture_output=True, text=True)
+        return r.returncode, r.stdout, r.stderr
+
+    shapes = {'数组行': '[{"section":"一","item":"x"}]', '字符串行': '"一条字符串"',
+              '数字行': '42', '布尔行': 'true', 'null 行': 'null'}
+    bad, n_assert = [], 0
+    for tag, name, body in (('facts', '数组行（包内夹具）', None), ('gaps', '数组行', '[{"item":"x"}]'),
+                            ('materials', '数组行', '[{"path":"a"}]')):
+        path = md_case if body is None else d / ('bad-%s-%s.jsonl' % (tag, name))
+        if body is not None:
+            path.write_text(body + '\n', encoding='utf-8')
+        rc, out, err = run('--run-dir', d / ('x' + tag + name), '--subject', '000001',
+                           '--asof', '2026-10-12 15:00', '--' + tag, path)
+        n_assert += 2
+        if rc != 1:
+            bad.append('--%s %s：退码实得 %s（规格 1）' % (tag, name, rc))
+        if 'Traceback' in out + err:
+            bad.append('--%s %s：抛了 Traceback（规格 0 次）' % (tag, name))
+        first = (out + err).strip().split('\n')[0] if (out + err).strip() else ''
+        n_assert += 2
+        if not first.startswith('build_memo: --%s 第 1 行是 JSON ' % tag):
+            bad.append('--%s %s：首行未点名参数与行号与实收类型，实得 %r' % (tag, name, first[:70]))
+        if 'list' not in first:
+            bad.append('--%s %s：句里未点实收类型 list，实得 %r' % (tag, name, first[:70]))
+        print('   --%-10s %-16s 退码=%s 首行=%s' % (tag, name, rc, first[:74]))
+    for body, want in (('数组行', 'list'), ('字符串行', 'str'), ('数字行', 'int'), ('布尔行', 'bool'), ('null 行', 'NoneType')):
+        path = d / ('facts-%s.jsonl' % body)
+        path.write_text(shapes[body] + '\n', encoding='utf-8')
+        rc, out, err = run('--run-dir', d / ('f' + body), '--subject', '000001', '--asof', '2026-10-12 15:00',
+                           '--facts', path)
+        n_assert += 2
+        got = (out + err).strip()
+        if rc != 1 or 'Traceback' in got:
+            bad.append('--facts %s：退码 %s／Traceback %s（规格 1／无）' % (body, rc, '有' if 'Traceback' in got else '无'))
+        if ('第 1 行是 JSON %s' % want) not in got:
+            bad.append('--facts %s：句里未点实收类型 %s，实得 %r' % (body, want, got.split('\n')[0][:70]))
+        print('   --%-10s %-16s 退码=%s 首行=%s' % ('facts', body, rc, (got.split('\n')[0] if got else '(空)')[:74]))
+    rc0, out0, err0 = run('--run-dir', d / 'good', '--subject', '000001', '--subject-name', '冒烟主体',
+                          '--facts', fx / 'live-facts.jsonl', '--gaps', fx / 'live-gaps.jsonl',
+                          '--asof', '2026-10-12 15:00', '--quiet')
+    n_assert += 1
+    same_m = (d / 'good' / 'memo-000001-2026-10-12.md').is_file() and \
+        (d / 'good' / 'memo-000001-2026-10-12.md').read_bytes() == (fx / 'live-memo.md').read_bytes()
+    if rc0 != 0 or not same_m:
+        bad.append('好形对照：live 夹具真跑退码 %s／产物逐字节同 %s（规格 0／是）' % (rc0, '是' if same_m else '否'))
+    print('   --%-10s %-16s 退码=%s 产物与存夹具逐字节同=%s' % ('facts', '好形对照（不退化）', rc0, '是' if same_m else '否'))
+    print('selftest 六档生成器坏输入：三参数数组行＋facts 五形＋好形对照 现场跑 build_memo｜断言 %d 条，不符 %d 条' % (n_assert, len(bad)))
+    for b in bad:
+        print('   不符 → ' + b)
+    return not bad
+
 def selftest():
     tmp = Path(tempfile.mkdtemp(prefix='check-memo-selftest-'))
     try:
@@ -641,7 +785,11 @@ def selftest_body(tmp):
                 print('      实发详行 → ' + x[:120])
     if bad:
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 一档b 同源链 {'通' if chain_ok else '不通'} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)}）")
+    guard_ok = run_guard(tmp)
+    gen_ok = gen_bad_input(tmp)
+    if not guard_ok or not gen_ok:
+        ok = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 一档b 同源链 {'通' if chain_ok else '不通'} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)} · 五档记账件坏态 {'通' if guard_ok else '不通'} · 六档生成器坏输入 {'通' if gen_ok else '不通'}）")
     return 0 if ok else 1
 
 
