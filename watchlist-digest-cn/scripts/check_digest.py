@@ -114,7 +114,10 @@ def ticks(cell: str):
 
 
 def read_sources(sp: Path):
-    """件是 jsonl：一行一事件。返回 (逐行 (行号, url), 坏行行号)；空行跳过，坏行不静默吞。"""
+    """件是 jsonl：一行一事件。返回 (逐行 (行号, url), 坏行 (行号, 病灶语))；空行跳过，坏行不静默吞。
+
+    坏行两种：不是合法 JSON；或是合法 JSON 但不是对象（数组／字符串／数字／布尔／null）——
+    后者按实收类型点名，不在这里抛 AttributeError（闸自己被坏件崩掉，就等于把门交给坏件）。"""
     pairs, bad = [], []
     for i, ln in enumerate(sp.read_text(encoding='utf-8').split('\n'), 1):
         if not ln.strip():
@@ -122,7 +125,10 @@ def read_sources(sp: Path):
         try:
             obj = json.loads(ln)
         except json.JSONDecodeError:
-            bad.append(i)
+            bad.append((i, '不是合法 JSON'))
+            continue
+        if not isinstance(obj, dict):
+            bad.append((i, '是 JSON %s，本件每行只收对象（实收类型 %s）' % (type(obj).__name__, type(obj).__name__)))
             continue
         pairs.append((i, str(obj.get('url', '')).strip()))
     return pairs, bad
@@ -289,8 +295,8 @@ def check(path: Path, run_path: Path | None, sources_path: Path | None = None):
             f"来源索引列了 {len(idx_rows)} 条出处，同目录却没有 {sp.name}（规格：两处由 digest.py 同批写出，缺件即索引全部无从回查）")
     elif sp.is_file():
         pairs, bad = read_sources(sp)
-        for i in bad:
-            add('E-SOURCE', '来源对账', i, f"{sp.name} 第 {i} 行不是合法 JSON（规格：逐行一事件，坏行等同断链）")
+        for i, why in bad:
+            add('E-SOURCE', '来源对账', i, f"{sp.name} 第 {i} 行{why}（规格：逐行一事件的对象，坏行等同断链——重跑 digest.py 整件重出，不手补这一行）")
         src_urls = {u for _n, u in pairs if u}
         idx_urls = {u for _n, u in idx_rows if u}
         for n, u in idx_rows:
@@ -550,6 +556,11 @@ def source_pair(tmp: Path):
     e_src = [x for x in f_bad if x.startswith('[E-SOURCE]')]
     names_url = any(url in x for x in e_src)
     has_lineno = any(re.match(r'^\[E-SOURCE\] \[来源对账\] 第 \d+ 行：', x) for x in e_src)
+    # 同批的第三种坏形：件里某行是合法 JSON 但不是对象——闸必须发红，且自己不被坏件崩掉
+    arr_src = HERE / 'fixtures' / 'bad-sources-array.jsonl'
+    f_arr, _na = check(md_f, d / 'run.json', arr_src) if arr_src.is_file() and md_f.is_file() else (['缺件 bad-sources-array.jsonl'], 0)
+    arr_esrc = [x for x in f_arr if x.startswith('[E-SOURCE]')]
+    arr_tb = 'Traceback' in ' '.join(f_arr)
     checks = [
         ('init 退码', rc_init, 0),
         ('只变更无新增 生成退码', rc_dig, 0),
@@ -562,11 +573,14 @@ def source_pair(tmp: Path):
         ('坏形必发 E-SOURCE', len(e_src) >= 1, True),
         ('坏形详行点名缺的那条 URL', names_url, True),
         ('坏形详行带行号', has_lineno, True),
+        ('件内非对象行也必发 E-SOURCE', len(arr_esrc) >= 1, True),
+        ('闸自己不被非对象行崩（无 Traceback）', arr_tb, False),
+        ('详行点出实收类型 list', any('list' in x for x in arr_esrc), True),
     ]
     bad_items = [(n, got, want) for n, got, want in checks if got != want]
-    print('selftest 六档来源对账：现场跑生成器（只变更无新增）＋单变量反证 现场跑｜断言 %d 条，不符 %d 条｜索引行/件行=%s/%s，坏形发条=%s 条（%s）' % (
+    print('selftest 六档来源对账：现场跑生成器（只变更无新增）＋单变量反证＋件内非对象行 现场跑｜断言 %d 条，不符 %d 条｜索引行/件行=%s/%s，坏形发条=%s 条（%s），非对象行发条=%s 条' % (
         len(checks), len(bad_items), len(idx_rows), len(good_lines), len(e_src),
-        ('点名 URL' if names_url else '未点名 URL')))
+        ('点名 URL' if names_url else '未点名 URL'), len(arr_esrc)))
     for n, got, want in bad_items:
         print('   不符 → %s：实得 %s（规格 %s）' % (n, got, want))
     for x in e_src[:2]:
@@ -612,9 +626,27 @@ def bad_input_exit(tmp: Path):
                                                           if (d / n).is_file()]
         if left:
             leaks.append(f'{name}:{left}')
+    # 同族第二枚：init_watchlist 的 --from-return 返货件，旧态下数字／布尔／null 三形抛 Traceback、
+    # 数组与字符串形虽有人话但不点实收类型——两处一并跟正，五形各跑一次
+    iw_codes, iw_tb, iw_typed = {}, 0, 0
+    for body, want in (('数组行', 'list'), ('字符串行', 'str'), ('数字行', 'int'), ('布尔行', 'bool'), ('null 行', 'NoneType')):
+        if body == '数组行':
+            ev = HERE / 'fixtures' / 'bad-return-array.jsonl'
+        else:
+            ev = d / ('iw-%s.jsonl' % body)
+            ev.write_text({'字符串行': '"样本股份"', '数字行': '42', '布尔行': 'true', 'null 行': 'null'}[body] + '\n',
+                          encoding='utf-8')
+        rc_iw, oi, oe = run(HERE / 'init_watchlist.py', '--run-dir', d / ('iw' + body), '--subject', '600001',
+                            '--from-return', ev, '--quiet')
+        iw_codes[body] = rc_iw
+        iw_tb += ('Traceback' in oi + oe)
+        iw_typed += ('第 1 行是 JSON %s' % want) in (oi + oe)
     checks = [
         ('init 退码', rc_init, 0),
         ('五形退码全为 1', sorted({v for v in codes.values()}), [1]),
+        ('清单器五形退码全为 1', sorted({v for v in iw_codes.values()}), [1]),
+        ('清单器五形 Traceback 命中 0', iw_tb, 0),
+        ('清单器每形句里点实收类型', iw_typed, 5),
         ('Traceback 计数＝0（本档主断言）', tb_total, 0),
         ('每形都有一句可读出口', sum(1 for m in msgs if m.startswith('digest: --events 第 1 行是 JSON')), 5),
         ('句里点名行号与实际收到的类型', sum(1 for m in msgs if '第 1 行是 JSON' in m and '本件只收对象' in m), 5),
@@ -622,9 +654,10 @@ def bad_input_exit(tmp: Path):
         ('未留半件（digest／sources／run 一件都不产）', leaks, []),
     ]
     bad = [(n, got, want) for n, got, want in checks if got != want]
-    print('selftest 七档生成器坏输入：夹具数组行＋四形现造 现场跑 digest.py｜断言 %d 条，不符 %d 条｜Traceback 命中=%s，退码集=%s，可读句=%s/5' % (
-        len(checks), len(bad), tb_total, sorted({v for v in codes.values()}),
-        sum(1 for m in msgs if m.startswith('digest: --events 第 1 行是 JSON'))))
+    print('selftest 七档生成器坏输入：digest.py 五形＋init_watchlist 五形 现场跑｜断言 %d 条，不符 %d 条｜Traceback 命中=%s（日报器 %s／清单器 %s），退码集 日报器=%s 清单器=%s，可读句=%s/5、点名类型=%s/5' % (
+        len(checks), len(bad), tb_total + iw_tb, tb_total, iw_tb,
+        sorted({v for v in codes.values()}), sorted({v for v in iw_codes.values()}),
+        sum(1 for m in msgs if m.startswith('digest: --events 第 1 行是 JSON')), iw_typed))
     for n, got, want in bad:
         print('   不符 → %s：实得 %s（规格 %s）' % (n, got, want))
     print('   可读出口首句 → ' + msgs[0][:150])

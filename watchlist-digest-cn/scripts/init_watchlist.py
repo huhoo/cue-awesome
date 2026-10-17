@@ -26,16 +26,19 @@ def load_return(path: Path | None):
     if not path:
         return []
     rows = []
-    for ln in path.read_text(encoding='utf-8').split('\n'):
+    for i, ln in enumerate(path.read_text(encoding='utf-8').split('\n'), 1):
         ln = ln.strip()
         if not ln:
             continue
         try:
             obj = json.loads(ln)
         except json.JSONDecodeError:
-            raise SystemExit(f'init_watchlist: --from-return 第一线不是 JSON：{ln[:40]}…')
+            raise SystemExit(f'init_watchlist: --from-return 第 {i} 行不是 JSON：{ln[:40]}…')
+        if not isinstance(obj, dict):
+            raise SystemExit(f'init_watchlist: --from-return 第 {i} 行是 JSON {type(obj).__name__}，'
+                             f'本件每行只收对象（一条主体＝一个对象，缺字段即报错，不猜）')
         if 'name' not in obj and 'code' not in obj:
-            raise SystemExit('init_watchlist: --from-return 每行需含 name/code 至少一键（缺字段即报错，不猜）')
+            raise SystemExit(f'init_watchlist: --from-return 第 {i} 行需含 name/code 至少一键（缺字段即报错，不猜）')
         rows.append(obj)
     return rows
 
