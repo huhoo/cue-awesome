@@ -41,9 +41,9 @@
 
 ## 五、来源索引
 
-与同目录 sources.jsonl 一一对应；下表逐条给出处与快照时点。
+与同目录 sources.jsonl 一一对应；下表逐条给出处与该条事件日期。
 
-| # | 出处 | asof |
+| # | 出处 | 事件日 |
 |---|---|---|
 | 1 | http://www.cninfo.example/disc/2026-10-10-1 | 2026-10-10 |
 | 2 | http://www.example.cn/szse/measure-1 | 2026-10-10 |

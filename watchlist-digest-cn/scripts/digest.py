@@ -12,6 +12,8 @@
 幂等：同一 --events 内容与同一 asof 日期重跑，产出逐字节一致且不重复计新增（run.json 存事件集摘要做凭据）。
 指纹（新增判定唯一依据）：代码＋类型＋日期＋出处摘要，与墙钟无关。
 零网络：本脚本不取任何数；events 是 agent 用工具取回后的转写件，逐行 JSON。
+同源：第五段来源索引与 sources.jsonl 由同一批行写出（新增腿与存量变更腿都在内），进索引的必进件。
+坏输入：某行不是合法 JSON、或是合法 JSON 但不是对象（数组／字符串／数字／布尔），都只出一句点名行号的可读出口并退 1——不抛 Traceback，也不留半件。
 """
 from __future__ import annotations
 
@@ -30,7 +32,8 @@ NEED = ('code', 'type', 'date', 'title', 'url')
 
 def load_events(path: Path, log):
     """零条是常规路径：空转写件、或只给一行 {"_kind":"header"} 声明件都算数。
-       其余任何一行缺 NEED 字段仍即报错不猜——「没检索到」要有形制，「写坏了」不算。"""
+       其余任何一行缺 NEED 字段仍即报错不猜——「没检索到」要有形制，「写坏了」不算。
+       合法 JSON 但不是对象（数组、字符串、数字）同样按取数错误出一句人话，不抛 Traceback。"""
     rows, header, i = [], False, 0
     for i, ln in enumerate(path.read_text(encoding='utf-8').split('\n'), 1):
         ln = ln.strip()
@@ -40,6 +43,10 @@ def load_events(path: Path, log):
             obj = json.loads(ln)
         except json.JSONDecodeError:
             log(f'digest: --events 第 {i} 行不是 JSON（取数或形制错误）')
+            return None
+        if not isinstance(obj, dict):
+            log(f'digest: --events 第 {i} 行是 JSON {type(obj).__name__}，本件只收对象（每行一条事件）；'
+                f'要声明零条请给 {{"_kind":"header"}} 行（取数或形制错误）')
             return None
         if obj.get('_kind') == 'header':
             header = True
@@ -59,7 +66,23 @@ def fp(ev):
     return '|'.join([str(ev['code']), str(ev['type']), str(ev['date']), src])
 
 
-def render(subjects, asof, window, legs_called, legs_returned, new_rows, changed_rows, prev_date, missing_legs, offlist=0):
+def source_batch(new_rows, changed_rows, asof):
+    """第五段来源索引与 sources.jsonl 的同一批行：一次组装、两处消费——进索引的那批就是写进件的那批。
+
+    键取本次事件现值（code／name／type／date／url／asof），变更腿另带 before／now；
+    索引按 URL 首现去重呈现，件按逐事件全量留痕，两处的 URL 集由本函数保证相同。"""
+    batch = []
+    for e in new_rows:
+        batch.append({'code': e['code'], 'name': e.get('name') or str(e['code']), 'type': e['type'],
+                      'date': e['date'], 'url': e['url'], 'asof': asof})
+    for c in changed_rows:
+        batch.append({'code': c['code'], 'name': c['name'], 'type': c['type'], 'date': c['date'],
+                      'url': c['url'], 'asof': asof, 'before': c['before'], 'now': c['now']})
+    return batch
+
+
+def render(subjects, asof, window, legs_called, legs_returned, new_rows, changed_rows, prev_date, missing_legs,
+           offlist=0, sources=None):
     d = []
     d.append('# 自选清单增量日报')
     d.append('')
@@ -118,16 +141,14 @@ def render(subjects, asof, window, legs_called, legs_returned, new_rows, changed
     d.append('')
     d.append('## 五、来源索引')
     d.append('')
-    d.append('与同目录 sources.jsonl 一一对应；下表逐条给出处与快照时点。')
+    d.append('与同目录 sources.jsonl 一一对应；下表逐条给出处与该条事件日期。')
     d.append('')
-    d.append('| # | 出处 | asof |')
+    d.append('| # | 出处 | 事件日 |')
     d.append('|---|---|---|')
     seen = []
-    for ev in new_rows + [dict(code=c['code'], name=c['name'], url=c['url'], date=asof.split()[0]) for c in changed_rows]:
-        if ev['url'] in seen:
-            continue
-        seen.append(ev['url'])
-        d.append(f"| {len(seen)} | {ev['url']} | {ev['date']} |")
+    for i, rec in enumerate(sources or [], 1):
+        seen.append(rec['url'])
+        d.append(f"| {i} | {rec['url']} | {rec['date']} |")
     if not seen:
         d.append('| 1 | 本次无新增来源（窗口内未检索到） | 不适用 |')
     return '\n'.join(d) + '\n'
@@ -225,14 +246,14 @@ def main() -> int:
         legs_returned = stored.get('legs_returned', legs_returned)
         missing_legs = stored.get('missing_legs', missing_legs)
 
+    sources = source_batch(new_rows, changed_rows, args.asof)
     md = render(subjects, args.asof, args.window, args.legs_called, legs_returned, new_rows, changed_rows,
-                prev_date, missing_legs, len(off))
+                prev_date, missing_legs, len(off), sources=sources)
     out = run_dir / f'digest-{day}.md'
     out.write_text(md, encoding='utf-8')
     src = run_dir / 'sources.jsonl'
-    src.write_text(''.join(json.dumps({'code': e['code'], 'name': e['name'], 'type': e['type'], 'date': e['date'],
-                                       'url': e['url'], 'asof': args.asof}, ensure_ascii=False, sort_keys=True) + '\n'
-                           for e in new_rows), encoding='utf-8')
+    src.write_text(''.join(json.dumps(rec, ensure_ascii=False, sort_keys=True) + '\n' for rec in sources),
+                   encoding='utf-8')
     run = {'asof': args.asof, 'asof_date': day, 'window': args.window, 'subjects': len(subjects),
            'legs_called': args.legs_called, 'legs_returned': legs_returned, 'new_count': len(new_rows),
            'changed_count': len(changed_rows), 'offlist_skipped': len(off), 'events_digest': digest_all,

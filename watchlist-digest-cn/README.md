@@ -7,7 +7,7 @@
 **输入**：一组公司名或 6 位代码（＋你自己的调度）
 **输出**：`assets/自选清单日报.md` 形制的五段日报，配 run.json／sources.jsonl／snapshot.prev.json 三件自证
 **代价**：五腿逐一跑，一腿挂不挡全篇；缺的腿在第四段点名
-**机检**：`scripts/check_digest.py` 四道（形制／锚／红线／计数与申报），零网络
+**机检**：`scripts/check_digest.py` 五道（形制／锚／红线／计数与申报／来源对账），零网络
 
 ---
 
@@ -18,12 +18,12 @@
 | 步 | 动作 | 怎么做 | 不做会怎样 |
 |---|---|---|---|
 | ① | **落清单，不代选** | `python3 scripts/init_watchlist.py --run-dir <目录> --subject 600519 --subject 某某股份 --from-return <主体解析返货件>`；6 位码直取，名称必须在返货里唯一命中才绑码，多候选就列出来让你点 | 主键一错整篇挂错人；跨域不存在统一主体 ID，本件的主键就是 6 位代码 |
-| ② | **跑增量，只给新增** | 把本次各腿返货转写成 events 文件，再 `python3 scripts/digest.py --run-dir <目录> --events <转写件> --asof "YYYY-MM-DD HH:MM" --window 起~止 --legs-called N`；新增判定只看上次快照的指纹（代码＋类型＋日期＋出处摘要），与墙钟无关。**幂等只在同一自然日内成立**：同日首次运行按快照差集给增量；同日再次运行复用当日 `run.json` 记的那一增量子集（`new_fps`），不重新判定，也不把窗口存量当新增重播。**零条是常规入口**：events 给空文件、或只给一行 `{"_kind":"header"}` 声明件都收，出「窗口内未检索到新增」那份形、退码 0（写坏的行仍按取数错误报错）。**文件名只取 asof 的日期位**：`digest-<YYYY-MM-DD>.md`，同一日的 `06:00` 与 `T06:20` 两种写法落同一枚文件，时刻只进正文那行 asof | 不看快照就是每天重播同一批公告；把「没检索到」写成「没有发生」就是这么来的；空返货若无入口就会被当成错误，一天的「没动静」也就留不下件 |
+| ② | **跑增量，只给新增** | 把本次各腿返货转写成 events 文件，再 `python3 scripts/digest.py --run-dir <目录> --events <转写件> --asof "YYYY-MM-DD HH:MM" --window 起~止 --legs-called N`；新增判定只看上次快照的指纹（代码＋类型＋日期＋出处摘要），与墙钟无关。**幂等只在同一自然日内成立**：同日首次运行按快照差集给增量；同日再次运行复用当日 `run.json` 记的那一增量子集（`new_fps`），不重新判定，也不把窗口存量当新增重播。**零条是常规入口**：events 给空文件、或只给一行 `{"_kind":"header"}` 声明件都收，出「窗口内未检索到新增」那份形、退码 0（写坏的行仍按取数错误报错——包括合法 JSON 但不是对象的那一类：数组／字符串／数字／布尔各出一句点名行号与人话、退码 1，不抛 Traceback）。**文件名只取 asof 的日期位**：`digest-<YYYY-MM-DD>.md`，同一日的 `06:00` 与 `T06:20` 两种写法落同一枚文件，时刻只进正文那行 asof | 不看快照就是每天重播同一批公告；把「没检索到」写成「没有发生」就是这么来的；空返货若无入口就会被当成错误，一天的「没动静」也就留不下件 |
 | ③ | **过机检再交人** | `python3 scripts/check_digest.py digest-<日期>.md --run run.json`，按详行的 `E-*` 码逐条改；要把这活挂到你自己的调度器上，用 `--check` 的退出码判断：**0＝窗口内无新增，10＝有新增，1＝取数或形制错误** | 计数对不上、缺腿没点名、评级漏进正文，都会跟着日报进到你的决策里 |
 
 一次性历史复盘**不在这三步里**——那是另一件事（催化日历／事件速读那类件），本件只做「与上次快照的差集」。
 
-## 二、五段日报与四道机检
+## 二、五段日报与五道机检
 
 | 段 | 内容 | 机检卡不卡 |
 |---|---|---|
@@ -31,7 +31,7 @@
 | 二 今日新增 | 按主体分组，每条＝类型单选＋判定句照原文标题＋日期＋出处锚；零条就出「未检索到新增」那份形 | 卡：缺日期或缺出处锚发 `E-ANCHOR`；列出条数与 run.json 的 `new_count` 不符、零新增没勾「窗口内未检索到」发 `E-COVERAGE` |
 | 三 近端变更 | 存量事件的推进，只写「前值 → 现值」 | 卡：两值不成对且没明写取不到、缺依据锚发 `E-ANCHOR` |
 | 四 需人工 | 评级、目标价、走势与资金面解读全挂这里；缺腿也在这里点名 | 卡：这类词落在别段且没挂 `[待人工]` 发 `E-BANWORD`；缺汇总或有腿未取到却没点名发 `E-COVERAGE` |
-| 五 来源索引 | 与 sources.jsonl 一一对应 | 卡：没点名来源件发 `E-FORMAT`；来源行缺出处发 `E-ANCHOR` |
+| 五 来源索引 | 与 sources.jsonl 一一对应（两处由 digest.py 同批写出，一行一事件，存量变更腿也在内） | 卡：没点名来源件发 `E-FORMAT`；来源行缺出处发 `E-ANCHOR`；索引与件双向对不上（缺件、坏行、单向多写）发 `E-SOURCE` |
 
 头部另有一组硬要求：**「AI 整理初稿」「请回官方原文核对」「不构成投资建议」三件套**，且日报必须与同次运行的 run.json **成对交付**——缺 run.json 时计数比对无从进行，直接发 `E-FORMAT`。
 
@@ -55,16 +55,22 @@ python3 ~/.workbuddy/skills/watchlist-digest-cn/scripts/check_digest.py ./mywatc
 
 ```bash
 python3 scripts/check_digest.py --help                      # 参数说明，零网络
-python3 scripts/check_digest.py --selftest                   # 五档：好样与零新增样须过、坏样四道全发、反证矩阵逐枚自报、跨日重放链须逐字节同
-python3 scripts/check_digest.py scripts/fixtures/good-digest.md --run scripts/fixtures/good-run.json   # 应 PASS
-python3 scripts/check_digest.py scripts/fixtures/zero-digest.md --run scripts/fixtures/zero-run.json   # 应 PASS（零新增形）
+python3 scripts/check_digest.py --selftest                   # 七档：好样与零新增样须过、坏样四道全发、反证矩阵逐枚自报、跨日重放链须逐字节同、来源对账好形须过且坏形必红、生成器坏输入须出一句人话
+python3 scripts/check_digest.py scripts/fixtures/good-digest.md --run scripts/fixtures/good-run.json --sources scripts/fixtures/good-sources.jsonl   # 应 PASS
+python3 scripts/check_digest.py scripts/fixtures/zero-digest.md --run scripts/fixtures/zero-run.json   # 应 PASS（零新增形：索引无出处行，故无对账项）
 python3 scripts/check_digest.py scripts/fixtures/bad-digest.md --run scripts/fixtures/bad-run.json      # 应 FAIL，四码齐发
 python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtures/good-run.json              # 应 FAIL——空模板过不了闸是设计
 ```
 
-**生成→闸同源于一次现场跑**：`--selftest` 第五档拿包内三件输入（`replay-return.jsonl`／`replay-day1.jsonl`／`replay-day2.jsonl`）现场走 init → day1 → day2 → **day2 重放**，断言重放产物与当日首跑逐字节同、`new_count` 不变、`run.json` 至多差 `idempotent_replay` 一键，并断言窗口存量大于当日增量——把重放退回窗口存量那种写法会被这一档当场判红。
+好样那行必须带 `--sources`：第五段有出处行而件不在，按 §二 就是断链，发 `E-SOURCE`——这是设计，不是命令写漏了。跑真件时两处都在同一目录，`--run`／`--sources` 都可省。
 
-**反证矩阵长在包里**：`--selftest` 第四档对好样做 10 枚单点破坏（缺段／时点占位／出处删空／评级入正文／规模虚报／缺腿未点名／清单外数虚报／清单外行删掉／零新增未勾／无 run 成对），每枚必须发出预期的码与道名；另附一枚正向不误拦（两数相等且无缺腿点名的合法形须零发条）。锚点是「好样里唯一命中的那行」——**锚失配即判该枚不符**，所以守护样一旦漂移、或某道判定被拆弱，矩阵会先叫，不会静默恒真。
+**生成→闸同源于一次现场跑**：`--selftest` 第五档拿包内三件输入（`replay-return.jsonl`／`replay-day1.jsonl`／`replay-day2.jsonl`）现场走 init → day1 → day2 → **day2 重放**，断言重放产物与当日首跑逐字节同、`new_count` 不变、`run.json` 至多差 `idempotent_replay` 一键、窗口存量大于当日增量，并断言**来源索引行数＝sources.jsonl 行数**——把重放退回窗口存量那种写法会被这一档当场判红。
+
+**来源对账长在包里**：`--selftest` 第六档现场造「只变更、无新增」的输入跑 `digest.py`，断言件里那一行带 `before`／`now`、索引与件行数相等、好形过闸零发条；随后做单变量反证——同一份日报，只把 `sources.jsonl` 里那一行删掉，必发 `E-SOURCE` 且详行点名缺的那条 URL 与所在行号。这一档钉的是曾真实存在过的形状：生成器把变更腿写进索引却不写进件，而机检不读那个文件，于是一份「索引可点、回查无的」的件照样 PASS。
+
+**坏输入的出口也长在包里**：`--selftest` 第七档拿五形各跑一次 `digest.py`——包内夹具 `bad-array-events.jsonl` 的一行数组，加临时目录现造的字符串／数字／布尔行——断言退码全为 1、**Traceback 计数＝0**、每形都有一句点名行号与实际收到的 JSON 类型的可读出口、句里给出「要声明零条请给 header 行」的正确写法，并断言半途崩不得留下半件（`digest-*.md`／`sources.jsonl`／`run.json` 一件都不产）。这一档钉的是另一枚真实撞过的形状：一行数组能让 `load_events` 直接 `AttributeError` 崩掉，退码巧合也是 1，而用户在操作列读到的是「写坏的行仍按取数错误报错」——退码对，脸不对。
+
+**反证矩阵长在包里**：`--selftest` 第四档对好样做 12 枚单点破坏（缺段／时点占位／出处删空／评级入正文／规模虚报／缺腿未点名／清单外数虚报／清单外行删掉／索引有件里缺／件里有索引缺／零新增未勾／无 run 成对），每枚必须发出预期的码与道名；另附一枚正向不误拦（两数相等且无缺腿点名的合法形须零发条）。锚点是「好样里唯一命中的那行」——**锚失配即判该枚不符**，所以守护样一旦漂移、或某道判定被拆弱，矩阵会先叫，不会静默恒真。
 
 **枚数与行数一律取脚本自报行**（`FAIL: <文件>（N 条）`／`PASS: <文件>（…）` 后那行「扫过 N 行，发条 0 条」），本文不复写计数——一复写就成了第二个真值源。`扫过 N 行` 按脚本 `split('\n')` 计，等于 `wc -l` 现值 **+1**；报数请连口径一起报。
 
@@ -86,9 +92,9 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 
 **Error 级＝blocker**：机检报出的 Error 级条目不得称「无害」「可忽略」「先交出去再说」；修完，或在交付面显式申报，才算出口。
 
-出口形制按 `check_digest.py` **当前出口**现跑取得：失败是一行 `FAIL: <文件>（N 条）`，其下每条详行**先打错误码前缀（四枚 `E-*` 之一）**（如 `[E-FORMAT] [时点]`、`[E-ANCHOR] [新增出处]`、`[E-BANWORD] [评级行情]`、`[E-COVERAGE] [缺腿点名]`），道名后是行号与该道规格；末行 `码表:` 只列本次真正用到的码与含义。全过印 `PASS: <文件>（…）` 并附两类计数，**N 取脚本自报行**（行数＝`wc -l` +1）。
+出口形制按 `check_digest.py` **当前出口**现跑取得：失败是一行 `FAIL: <文件>（N 条）`，其下每条详行**先打错误码前缀（五枚 `E-*` 之一）**（如 `[E-FORMAT] [时点]`、`[E-ANCHOR] [新增出处]`、`[E-BANWORD] [评级行情]`、`[E-COVERAGE] [缺腿点名]`、`[E-SOURCE] [来源对账]`），道名后是行号与该道规格；末行 `码表:` 只列本次真正用到的码与含义。全过印 `PASS: <文件>（…）` 并附两类计数，**N 取脚本自报行**（行数＝`wc -l` +1）。
 
-本件用**四枚**码，与姊妹件的码表逐字同源；第五枚 `E-LEDGER` 属账本状态机面，本件无账本状态机（run.json 是一次性实况记录，不是续跑账），故明写不启用（不是漏配）。全集以脚本现值为准，任意目录整行粘贴即可定位：
+本件用**五枚**码：前四枚（`E-FORMAT`／`E-ANCHOR`／`E-BANWORD`／`E-COVERAGE`）与姊妹件的码表逐字同源，第五枚 `E-SOURCE` 是本包自有——它卡的是本件独有的两件产出（日报第五段与 `sources.jsonl`）之间的对应，没有来源件的包无从卡起。第六枚 `E-LEDGER` 属账本状态机面，本件无账本状态机（run.json 是一次性实况记录，不是续跑账），故明写不启用（不是漏配）。全集以脚本现值为准，任意目录整行粘贴即可定位：
 
     grep -n "^E_LEGEND" ~/.workbuddy/skills/watchlist-digest-cn/scripts/check_digest.py
 
@@ -99,6 +105,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 | `[E-ANCHOR] [新增日期] / [新增出处] / [变更两值] / [变更出处] / [来源锚]` | 有事件没日期或出处；前值现值不成对；来源行缺出处 | 把返货里的日期与官方链接逐字抄进对应格；**抄不出来就删该行**，取不到前值就明写取不到 |
 | `[E-BANWORD] [评级行情]` | 评级、目标价、走势、资金流或行情承诺写进了正文，或把「没检索到」写成「无风险」 | 这类内容只许进第四段挂 `[待人工]`；断言式违规句删除，改中性陈述（「不评、不算」这类否定句合法） |
 | `[E-COVERAGE] [计数比对] / [新增数] / [零新增申报] / [缺腿点名] / [汇总]` | 声明的规模／域数／腿数／新增数／清单外返货数与 run.json 对不上；零新增没勾声明或没带窗口；有腿未取到却没点名；需人工段缺汇总 | 逐类补账：计数取本次返货回显；零新增勾声明并写窗口；缺腿在第四段点名；补 `[待人工]` 汇总 |
+| `[E-SOURCE] [来源对账]` | 第五段列了出处而 `sources.jsonl` 不在；件里某行 URL 未见于索引；索引某行在件里查无；件某行不是合法 JSON | 重跑 `digest.py` 让两处同批写出（索引与件都取同一批行，变更腿一并写入）——**不手写补行、不删索引行凑绿**；件坏了就整件重出 |
 
 ## 六、怎么开口（触发示例：三条正例 + 一条反例）
 
@@ -114,7 +121,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 ## 七、运行状态与实测进度（诚实清单）
 
 - **已上架；件级实测两日连跑已毕**：差集在真跨日数据上成立（第二日新增 1 条，首跑与重放同数）；**同日幂等只在同一自然日内成立**，跨日各按当日差集给当日增量；五腿带锚 4/5 两日同形——两融腿返货无出处字段，由 `--legs-called` 与 `legs_returned` 之差自动点名，不写作有锚。本件仍不作命中率、通过率或耗时宣称（样本只有两日，不据此外推）。
-- 文档面与机检面就位：五段契约、四道闸、三枚日报守护样（好样／零新增样／坏样）＋三件重放输入样，`--selftest` 共五档（第四档反证矩阵 11 枚、第五档跨日重放链）——枚数与行数一律取脚本自报行。
+- 文档面与机检面就位：五段契约、五道闸、三枚日报守护样（好样／零新增样／坏样）＋好样的配套来源件＋三件重放输入样＋一枚生成器坏输入样，`--selftest` 共七档（第四档反证矩阵 13 枚、第五档跨日重放链、第六档来源对账、第七档生成器坏输入）——枚数与行数一律取脚本自报行。
 - 五腿取什么、形制约束写在哪，见 `SKILL.md` §2；**脚本自身零网络**：只读你把返货转写成的事件文件，不在脚本里取数、不写凭据、不硬编码工具名与域清单。
 - 已知未证面不建闸：本件的机检不校验「某腿今天到底有没有开」，也不校验公告内容真假——前者以 catalog 现值为准，后者由回官方原文承担。
 - 快照与当日记账是**幂等和新增判定的唯一凭据**：删掉 snapshot.prev.json 等于把历史清零重跑，日报会重新把旧事件算作新增；删掉当日 run.json 则重放态找不到增量记账集（`new_fps`），`digest.py` 会拒写并给一行可读出口——这两条行为本件明写，不装作不会发生。
@@ -132,9 +139,9 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 | `SKILL.md` | 主指令与五段契约（设计权威，中文主） |
 | `assets/自选清单日报.md` | 五段日报模板（或由 digest.py 直接产出） |
 | `scripts/init_watchlist.py` | 清单落盘：名或码 → watchlist.json（不代选主体） |
-| `scripts/digest.py` | 增量日报与三件自证产物（同日首跑判定、再跑复用当日记账）；零条转写件（空文件或 `_kind=header` 声明件）按「未检索到新增」出件；`--check` 只用退出码说话（0/10/1） |
-| `scripts/check_digest.py` | 四道机检（形制／锚／红线／计数与申报） |
-| `scripts/fixtures/` | 三枚日报样（好样／零新增样／坏样，各带配套 run.json）＋三件跨日重放输入样（`replay-return`／`replay-day1`／`replay-day2`）；反证矩阵与重放链都在 `check_digest.py --selftest` 内，不落外部脚本 |
+| `scripts/digest.py` | 增量日报与三件自证产物（同日首跑判定、再跑复用当日记账）；第五段来源索引与 `sources.jsonl` 取同一批行写出（新增腿与存量变更腿都在内）；零条转写件（空文件或 `_kind=header` 声明件）按「未检索到新增」出件；`--check` 只用退出码说话（0/10/1） |
+| `scripts/check_digest.py` | 五道机检（形制／锚／红线／计数与申报／来源对账）；`--run`／`--sources` 缺省都取日报同目录同名件 |
+| `scripts/fixtures/` | 三枚日报样（好样／零新增样／坏样，各带配套 run.json）＋好样的配套来源件 `good-sources.jsonl`＋三件跨日重放输入样（`replay-return`／`replay-day1`／`replay-day2`）＋一枚生成器坏输入样 `bad-array-events.jsonl`（一行 JSON 数组）；反证矩阵、重放链、来源对账正反两形与坏输入出口都在 `check_digest.py --selftest` 内，不落外部脚本 |
 | `README.en.md` | 本文件的英文译文 |
 
 版本见 `CHANGELOG.md`。
