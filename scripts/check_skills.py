@@ -19,6 +19,14 @@ Usage:
     python scripts/check_skills.py            # errors + warnings
     python scripts/check_skills.py --strict   # warnings become errors
     python scripts/check_skills.py --quiet    # only the summary
+    python scripts/check_skills.py --selftest # 构建产物跟踪态四档（一次性仓，主仓只读）
+
+Build-artifact findings are split by tracked state (M243) after the old wording turned
+an existence claim into a measurement: a locally generated, git-ignored __pycache__ was
+reported as a *committed* artifact (ERROR). Now: truly tracked -> ERROR carrying the
+`git ls-files` hit count; on-disk but untracked -> WARN naming the cleanup command and
+noting it never reaches the package; no git available -> WARN "跟踪态不可判", never a
+Traceback. One cache directory yields one finding (dir + its files were double counted).
 """
 
 from __future__ import annotations
@@ -85,6 +93,66 @@ def length_cap_violations(fm: dict | None) -> list[tuple[str, int, int]]:
 STATUS_CLAUSE = ("status section", "状态段")
 PROVENANCE_CLAUSE = ("Base provenance:", "基座出处见")
 SKIP_DIRS = ARTIFACT_DIRS | {"fixtures"}
+
+
+# ------------------------------------------------- 构建产物的「跟踪态」取证（M243）
+# 判据原文写的是 committed build artifact，可脚本从没查过跟踪态：在盘未跟踪的本地缓存
+# （`.gitignore` 第 2 行 `__pycache__/` 就排除它）被报成 ERROR＝把存在性断言当实测。
+# 现由判据自己取权威源（`git ls-files` 只读），三态分开报。
+ARTIFACT_CLEAN_CMD = "find . -name __pycache__ -type d -prune -exec rm -rf {} +"
+_REPO_ROOT_MISS = "（无 git 环境或 git 不可读）"
+_TRACKED: dict[Path, set[str] | None] = {}
+
+
+def repo_root_of(path: Path) -> Path | None:
+    for cand in [path, *path.parents]:
+        if (cand / ".git").exists():
+            return cand
+    return None
+
+
+def tracked_paths(repo: Path | None) -> set[str] | None:
+    """权威跟踪集（相对仓根、'/' 分隔）；取不到就返回 None——**不抛 Traceback**（解包件里也要能跑）。"""
+    if repo is None:
+        return None
+    if repo in _TRACKED:
+        return _TRACKED[repo]
+    out: set[str] | None
+    try:
+        import subprocess
+        done = subprocess.run(["git", "-C", str(repo), "ls-files", "-z"],
+                              capture_output=True, timeout=60)
+        out = {x.decode("utf-8", "replace") for x in done.stdout.split(b"\0") if x} if done.returncode == 0 else None
+    except Exception:
+        out = None
+    _TRACKED[repo] = out
+    return out
+
+
+def artifact_state(path: Path, repo: Path | None, tracked: set[str] | None) -> tuple[str, int]:
+    """('tracked'|'untracked'|'unknown', 命中数)。目录按其下被跟踪文件数计。"""
+    if tracked is None:
+        return ("unknown", 0)
+    rel = path.relative_to(repo).as_posix() if repo else path.as_posix()
+    if path.is_dir():
+        n = sum(1 for x in tracked if x.startswith(rel + "/"))
+    else:
+        n = 1 if rel in tracked else 0
+    return ("tracked", n) if n else ("untracked", 0)
+
+
+def report_artifact(rep: Report, name: str, rel: str, kind: str, state: str, hits: int) -> None:
+    """三态各自一句话，措辞里的存在性断言只写它真的成立那一侧。"""
+    if state == "tracked":
+        rep.error(f"{name}: tracked build artifact {kind} {rel}"
+                  f"（git ls-files 命中 {hits} 枚为凭——真已入库，发布口 K-12 会剔但仓面禁留）")
+    elif state == "untracked":
+        rep.warn(f"{name}: 在盘未跟踪的{kind}缓存 {rel}（未跟踪态；不进发布物，`pack_skill.sh` 会剔；"
+                 f"本地跑脚本留下的，清理：{ARTIFACT_CLEAN_CMD}）",
+                 strengthen=False)
+    else:
+        rep.warn(f"{name}: {kind}缓存 {rel} 的跟踪态不可判{_REPO_ROOT_MISS}——按 WARN 报现值，不发存在性断言",
+                 strengthen=False)
 
 
 def row_clause_positions(line: str) -> tuple[int, int] | None:
@@ -190,12 +258,27 @@ class Report:
     def __init__(self) -> None:
         self.errors: list[str] = []
         self.warnings: list[str] = []
+        # M243 追加条（lead 裁）：**在盘未跟踪缓存**这一类 WARN 不参与 `--strict` 升败。
+        # 依据是三条现值不是偏好：CI 那行 `python scripts/check_skills.py` 不带 strict（strict 变红不保护任何出门面）；
+        # 队友随手跑一次包内脚本就会让下一个带 strict 跑 ritual 的人读到红＝本票要拆的同一类假红挪到 strict 位；
+        # 缓存不进发布物（pack_skill.sh 剔，K-12）。**真已跟踪仍 ERROR；既有 WARN 的升败行为一字不动。**
+        self.no_strengthen: set[str] = set()
 
     def error(self, msg: str) -> None:
         self.errors.append(msg)
 
-    def warn(self, msg: str) -> None:
+    def warn(self, msg: str, strengthen: bool = True) -> None:
         self.warnings.append(msg)
+        if not strengthen:
+            self.no_strengthen.add(msg)
+
+
+def decide_exit(rep: Report, strict: bool) -> int:
+    """退码判定单点（CLI 与自测档共用一枚，避免自测另立一套判据「测了个副本」）。"""
+    if rep.errors:
+        return 1
+    promotable = [w for w in rep.warnings if w not in rep.no_strengthen]
+    return 1 if (strict and promotable) else 0
 
 
 def check_skill(skill_dir: Path, rep: Report) -> None:
@@ -333,11 +416,21 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
     if (skill_dir / ".git").exists():
         rep.error(f"{name}: nested .git directory — skills must not carry their own repo")
 
+    repo = repo_root_of(skill_dir)
+    tracked = tracked_paths(repo)
+    seen_artifact_dirs: set[str] = set()
     for path in skill_dir.rglob("*"):
         rel = path.relative_to(skill_dir)
         parts = set(rel.parts)
+        # 一枚缓存目录只发一条（带其下命中数）：rglob 还会交出目录内的文件，逐条报＝双计，
+        # 也让「一处缓存」在 summary 里冒充成两处问题。
+        if any(rel.as_posix().startswith(d + "/") for d in seen_artifact_dirs):
+            continue
         if parts & ARTIFACT_DIRS:
-            rep.error(f"{name}: committed build artifact dir {rel}")
+            state, hits = artifact_state(path, repo, tracked)
+            report_artifact(rep, name, rel.as_posix(), "目录" if path.is_dir() else "文件", state, hits)
+            if path.is_dir():
+                seen_artifact_dirs.add(rel.as_posix())
             continue
         low = path.name.lower()
         if any(
@@ -346,7 +439,8 @@ def check_skill(skill_dir: Path, rep: Report) -> None:
         ):
             rep.error(f"{name}: possible secret file {rel}")
         if any(path.name.lower().endswith(p.strip("*").lstrip(".")) for p in ARTIFACT_PATTERNS if p.startswith("*")):
-            rep.error(f"{name}: committed artifact {rel}")
+            state, hits = artifact_state(path, repo, tracked)
+            report_artifact(rep, name, rel.as_posix(), "文件", state, hits)
 
 
 def selftest_length_caps(rep: Report) -> bool:
@@ -400,9 +494,17 @@ def discover_skills() -> list[Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Lint all skills in cue-awesome")
+    ap.add_argument("--selftest", action="store_true",
+                    help="跑构建产物跟踪态四档（转调 scripts/fixtures/skills/run_fixtures.py；一次性仓，主仓只读）")
     ap.add_argument("--strict", action="store_true", help="treat warnings as errors")
     ap.add_argument("--quiet", action="store_true", help="print only the summary")
+    ap.add_argument("-v", "--verbose", action="store_true", help="--selftest 时附每档原文")
     args = ap.parse_args()
+
+    if args.selftest:                      # 入口先接住：不扫主仓、不写主仓
+        sys.path.insert(0, str(Path(__file__).resolve().parent / "fixtures" / "skills"))
+        import run_fixtures
+        return run_fixtures.run(verbose=args.verbose)
 
     rep = Report()
     # repo-level files
@@ -416,6 +518,7 @@ def main() -> int:
     rows_checked, row_violations = check_table_row_order(repo_rep)
     rep.errors.extend(repo_rep.errors)
     rep.warnings.extend(repo_rep.warnings)
+    rep.no_strengthen.update(repo_rep.no_strengthen)
 
     skills = discover_skills()
     if not skills:
@@ -428,6 +531,7 @@ def main() -> int:
         per_skill[d.name] = sub
         rep.errors.extend(sub.errors)
         rep.warnings.extend(sub.warnings)
+        rep.no_strengthen.update(sub.no_strengthen)
 
     if not args.quiet:
         print(f"cue-awesome skill lint — {len(skills)} skill(s)\n")
@@ -460,8 +564,9 @@ def main() -> int:
 
     if total_err:
         return 1
-    if args.strict and total_warn:
-        print("--strict: warnings promoted to errors")
+    if args.strict and decide_exit(rep, True) == 1:
+        print(f"--strict: {len([w for w in rep.warnings if w not in rep.no_strengthen])} 条可升败 WARN 计为错误"
+              f"（合计 WARN {total_warn}，其中「在盘未跟踪缓存」类 {len(rep.no_strengthen)} 条按裁不升败）")
         return 1
     return 0
 
