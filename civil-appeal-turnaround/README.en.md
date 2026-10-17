@@ -32,7 +32,7 @@ Three steps today, each with what skipping it costs:
 
 | Today | How | What happens if you skip it |
 |---|---|---|
-| 1. Fix the service date, compute the deadline | 15 days for a judgment, counting from the day after service; take both dates from **the tail of the judgment and the proof of service**, never from memory | The window closes unrecoverably, the first-instance judgment stands, and you start from behind |
+| 1. Fix the service date, compute the deadline | 15 days for a judgment, counting from the day after service; take both dates from **the tail of the judgment and the proof of service**, never from memory | Miss the window and the first-instance judgment stands and you start from behind; the only statutory relief is narrow — if a deadline was missed due to force majeure or another legitimate reason, an extension may be applied for within ten days after the obstacle is removed (Article 86), and the court decides whether to grant it |
 | 2. Check the preservation status | Already preserved - the continued-preservation application is the top priority (appealing does not extend preservation); not preserved - first estimate how far the other side can move assets after the claim was dismissed | Preservation is released or lapses; even a reversal collects nothing |
 | 3. Check the representation status | Counsel withdrawn - delete counsel's line from the appeal and change the service address **in writing** | Papers go to the former agent or the old address, and deadlines burn while you never see the notice |
 
