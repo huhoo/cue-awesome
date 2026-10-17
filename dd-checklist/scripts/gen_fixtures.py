@@ -327,6 +327,20 @@ LAW = "《合成示例披露规则（守护样专用）》"
 STAT_AN = f"statute:{LAW}第三条（报告期后30日）"
 
 # ---------------------------------------------------------------- 正路守护样 ×5
+# 【M250】参数解析必须在**任何写盘之前**——本文件下方的 build() 全是模块级语句，
+# 原先 argparse 块排在第一枚 build() 之后，于是 `--help` 也会先铺 103 枚散件再打印帮助。
+# 现在把解析（含题单可读性检查）挪到第一枚 build() 之前：`--help`／无参调用**一个字节都不写盘**。
+# 生成路径与产物 sha 未变（产生与复算同源那套形制照旧，见文件头派生纪律）。
+ap = argparse.ArgumentParser(description="重铺 fixtures（需题单路径，无默认值）")
+ap.add_argument("--badspec", required=True, help="评审方题单（本包验收合同）的 Markdown 路径")
+ap.add_argument("--keep-loose", action="store_true",
+                help="审计形：铺完散件就停（不封档、不删散件）。交付形不带这个——渠道条数闸要的是档案")
+_args = ap.parse_args()
+_badspec = pathlib.Path(_args.badspec)
+if not _badspec.is_file():
+    print(f"题单不可读：{_badspec}——本脚本不做默认路径，也不产出题单", file=sys.stderr)
+    sys.exit(2)
+
 build("good-baseline", report(), [src()], BASE_EVID, cov(), cmd(), 0, ())
 
 GAW = [
@@ -804,15 +818,7 @@ build("ctl-overclaim-row-missing", report(rows=()), [src()], BASE_EVID,
       cov([r if r[0] != "合规与处罚" else ("合规与处罚", "regulatory_cn", "regulatory_cn", "检到 1", ANCHOR) for r in COV_ROWS]),
       cmd(), 1, ("DD-COVERAGE",), flow={"合规与处罚": 1})
 
-ap = argparse.ArgumentParser(description="重铺 fixtures（需题单路径，无默认值）")
-ap.add_argument("--badspec", required=True, help="评审方题单（本包验收合同）的 Markdown 路径")
-ap.add_argument("--keep-loose", action="store_true",
-                help="审计形：铺完散件就停（不封档、不删散件）。交付形不带这个——渠道条数闸要的是档案")
-_args = ap.parse_args()
-_badspec = pathlib.Path(_args.badspec)
-if not _badspec.is_file():
-    print(f"题单不可读：{_badspec}——本脚本不做默认路径，也不产出题单", file=sys.stderr)
-    sys.exit(2)
+# 参数解析已挪到第一枚 build() 之前（M250 零副作用），此处只留一句指路：见 `# 【M250】` 那段。
 
 build("ctl-declaration-missing", report(no_decl=True), [src()], BASE_EVID, cov(), cmd(), 1, ("DD-INPUT",))
 

@@ -21,8 +21,15 @@ FIELDS = (("cmd.txt", "cmd_raw"), ("expect.txt", "expect_raw"), ("shared.txt", "
 
 
 def materialize(sample: pathlib.Path, dest_root: pathlib.Path) -> pathlib.Path:
-    """铺一枚样。返回该样目录。键缺一个即报错——容器写坏了不算「样本来就这样」。"""
+    """铺一枚样。返回该样目录。键缺一个即报错——容器写坏了不算「样本来就这样」。
+
+    【M250】容器顶层不是对象（数组／字符串／数字／布尔／null 五形）时走可读句、不抛 Traceback：
+    点名是哪枚容器、实收到什么类型；措辞与本件既有出口同族（`容器铺回失败：…`）。
+    正常路径（对象容器）行为一字未改。
+    """
     s = json.loads(sample.read_text(encoding="utf-8"))
+    if not isinstance(s, dict):
+        raise ValueError(f"顶层是 JSON {type(s).__name__}，本件只收对象（一枚样一个容器对象）")
     name = s["name"]
     d = dest_root / name
     d.mkdir(parents=True, exist_ok=True)
@@ -59,7 +66,11 @@ def main(argv) -> int:
     if len(argv) != 2:
         print(__doc__, file=sys.stderr)
         return 2
-    out = materialize(pathlib.Path(argv[0]), pathlib.Path(argv[1]))
+    try:
+        out = materialize(pathlib.Path(argv[0]), pathlib.Path(argv[1]))
+    except ValueError as e:                     # 非对象容器／坏 JSON：一句人话＋退码 1，不抛 Traceback
+        print(f"容器铺回失败：{argv[0]}（{type(e).__name__}: {str(e)[:160]}）", file=sys.stderr)
+        return 1
     print(out.name)
     return 0
 
