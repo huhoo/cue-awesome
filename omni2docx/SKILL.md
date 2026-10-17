@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "把 Omni 解析结果重建为 Word / HTML / PPT：页锚点分页、真标题+目录、表格脚注溯源、多源证据附录；--profile 公文/诉讼/研报制式，--pdf 打印件、--inline 公众号不重排、版式池 kpi/compare/timeline。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck"
-version: "0.6.8"
+version: "0.6.9"
 license: MIT
 metadata:
   requires:
@@ -91,7 +91,7 @@ Agent 工作产物（markdown，可带 [^n] 引用与〔来源：…〕标注）
 | 阅读顺序    | 单栏 OK，多栏乱                                             | grounded 序列保证顺序                                                                          |
 | 表格      | 折叠多栏弱点                                                | GFM 表 → Word 表（列一致性护栏防破碎）；有序/无序列表；行内样式                                                   |
 | 多模态视觉理解 | 图像引用/base64 原样塞进文档，画面描述混入正文                           | 视频帧 `[画面 HH:MM]` 与场景描述 → **带底纹的【画面】/【图说】标注段**；`![alt](data:base64…)` 剥离字节、保留说明（【图片：alt】） |
-| 保真      | 软换行引入多余空格                                             | `clean_cjk_spaces` 消除中文间多余空格，字符零丢失（实测 100%）                                              |
+| 保真      | 软换行引入多余空格                                             | `clean_cjk_spaces` 只删紧贴 CJK 的空白，中文间多余空格消除、非空白字符按构造不动                                              |
 
 > 一句话差异化：**通用转换丢结构、排版糙；本 skill 用 Omni 的 grounded 分页 + 章节重建 + 专业中文排版把结构与原貌重建回来。**
 
@@ -265,7 +265,7 @@ python <skill_dir>/scripts/render_pptx.py --json <中间json> --out <输出.pptx
 
 ### 步骤 4 — 验收（产品级，必做）
 
-对产出做保真 + 结构校验，确认**字符零丢失（覆盖率≥99%）**且分页/标题/表格数量  
+对产出做保真 + 结构校验，确认**字符级 CJK 覆盖率 ≥99% 判 PASS**且分页/标题/表格数量  
 符合预期，再 `present_files` 交付。三种格式各有对应验收器（`--json`/`--md` 与渲染  
 时输入保持一致）：
 

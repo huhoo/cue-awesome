@@ -40,7 +40,7 @@ python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov
 # ②③ Omni parse rebuild: parse(grounded) → markdown+grounding (+ same-session read_outline) → intermediate JSON
 python scripts/build_docx.py --json intermediate.json --out deliverable.docx --profile legal --page-marks
 
-# Acceptance (mandatory): zero character loss + structure checks
+# Acceptance (mandatory): character-level CJK coverage at least 99% (the PASS threshold) + structure checks
 python scripts/validate_docx.py --json intermediate.json --docx deliverable.docx
 
 # Showcase: self-contained HTML (add --pdf to also export a print-ready PDF; --toc-depth caps TOC depth)

@@ -35,7 +35,7 @@ python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --pa
 # ②③ Omni 解析重建：parse(grounded) 取 markdown+grounding(+同会话 read_outline) 落盘中间 JSON
 python scripts/build_docx.py --json 中间.json --out 交付.docx --profile legal --page-marks
 
-# 验收（必做）：字符零丢失 + 结构核对（--json 与 --md 两种源，与渲染时输入一致）
+# 验收（必做）：字符级 CJK 覆盖率 ≥99% 判 PASS + 结构核对（--json 与 --md 两种源，与渲染时输入一致）
 python scripts/validate_docx.py --md 产出.md --docx 交付.docx
 python scripts/validate_docx.py --json 中间.json --docx 交付.docx
 

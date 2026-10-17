@@ -176,7 +176,7 @@ def main():
     print("  分页符 :", pb)
     print("  表格数 :", n_tables)
     print("  docx 段落数 :", len(doc.paragraphs))
-    # 判定：以字符级覆盖率（零丢失的权威证据）为准；锚句命中率仅作参考
+    # 判定：以字符级 CJK 覆盖率为准（阈 99%，低于阈即 DX-01）；锚句命中率仅作参考，不决定判定
     n_unstyled = table_borders_audit(doc)
     problems = []
     if coverage < 99.0:
