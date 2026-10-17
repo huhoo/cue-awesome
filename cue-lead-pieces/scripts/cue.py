@@ -25,7 +25,7 @@ import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, url
 UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
 # ---------------------------------------------------------------- text utils
 import unicodedata
-__version__ = '0.4.11'
+__version__ = '0.4.12'
 class CueError(Exception):
     """a user-facing error: printed as one line on stderr, exit code 2 (no traceback)"""
 def nrm_map(s):
@@ -732,7 +732,7 @@ def fix_answer(path, d, sig, res, S):
     print(json.dumps({'before': dict(collections.Counter(r['status'] for r in res), total=len(res)), 'fixes': dict(log),
                       'after': {'verbatim': after.count('verbatim'), 'total': len(after)}, 'saved_original': os.path.basename(bak)}, ensure_ascii=False))
     for l in lines: print(l)
-    print('answer.json 已写回；引文现在都是所注页的原文。直接用中文复述答案即可，不需要再逐句复核。' if all(x.get('evidence') for x in sig) else '有信号缺证据，见上面的警告。')
+    print('answer.json 已写回；引文现在都能在所注页 ±1 内逐字命中。直接用中文复述答案即可，不需要再逐句复核。' if all(x.get('evidence') for x in sig) else '有信号缺证据，见上面的警告。')
 def cmd_brief(a):
     meta, S = load(a.dir); cn = meta.get('market') == 'CN'
     if not os.path.exists(f'{a.dir}/leads.json'):

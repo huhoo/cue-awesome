@@ -1,3 +1,13 @@
+### 0.4.12 — 2026-10-17（首页两句与 --fix 成功句同 ±1 口径；英文孪生面 description 译英）
+
+- 口径对齐（只动文案，判定与 --fix 行为一字未改）：实码的判定一直是 abs(页 − 所注页) ≤ 1（scripts/cue.py 第 624 行，本轮未触碰），SKILL.md 第 75 行的定义句「所注页 ±1 逐字找到」也本就写对——打脸的是另外三句更强的说法。逐枚改：第 3 行 description 由「逐句核对答案引文是否逐字出自所注页」改「……出自所注页±1」；第 8 行 summary 同调（并把「核对引文是否出自」补成「逐字出自」，与实码一致）；scripts/cue.py 第 735 行 --fix 成功句由「引文现在都是所注页的原文」改「引文现在都能在所注页 ±1 内逐字命中」。相邻页命中会被判最高等级而不必 --fix，强句会让用户以为已校到精确页。README 双语第 17 行现值本就写「（±1 页）／(±1)」（先 grep 现值再决定，未跟改）；references/verification.md 第 13 行亦是 ±1 形。
+- 英文孪生面：SKILL.en.md 的 description 与 summary 此前与中文面逐字同——英文入口挂着中文门面，冷启动读者拿不到触发面。本轮译英，Triggers 里的中文串（年报、引文核对）原样保留，那是中文用户的命中面；新句把 ±1 口径一并写进去，两面同调。两面 name／slug／version 一致。
+- 长度帽（命门，取 check_skills.py 解析后的值）：中文面 description 改前 300／改后 299，summary 改前 60／改后 64；英文面 description 改前 300（中文串）／改后 290，summary 改前 60（中文串）／改后 77。帽为 description ≤300／summary ≤80，四枚全在帽内；中文面为塞进 ±1 而收掉三处冗字（「未开通 Cue 时」的「时」、「用本件流程」的「用」、触发串里「年报， 引文核对」的空格改顿号），触发词族与「不适合：投资与信贷建议」边界句逐枚仍在，现跑断言核过。
+- 版本字面同步（沿用既有形制，不同步回归样即判红）：SKILL.md 与 SKILL.en.md 的 version、scripts/cue.py 的 __version__、scripts/test_skill_regression.py 内两枚断言字面，五枚一并 0.4.11→0.4.12。
+- 未做（属功能改动，另票另裁）：6.1 提的「单列『邻页找到、页码待修』状态并令 --fix 真修」本轮一字未动——那要改判定与 --fix 行为，不在这张文案票里。
+- 复验（取脚本自报行）：scripts/test_skill_regression.py 仓内与解包件两态均退码 0；仓级两门 rc=0；check_shipment 对本包发布物 rc=0。
+- 版本位：0.4.11 → 0.4.12（口径与门面纠正＝patch，判定能力不变）。本包无 manifest，版本锁为 SKILL.md／SKILL.en.md 两枚面字面加码内一枚常量与回归样两枚断言；旧值在非 CHANGELOG 面残留 0。历史条目不回改。
+
 ### 0.4.11 — 2026-10-14（码内版本常量与回归样硬编码同步到面版本位）
 
 - 同步四处五枚字面：`SKILL.md` 与 `SKILL.en.md` 的 version 0.4.10→0.4.11；`scripts/cue.py` 的 `__version__` 0.4.9→0.4.11；`scripts/test_skill_regression.py` 内两枚断言字面随之同步（回归样把 frontmatter 串与码内值双向对拍，不同步它便判红）。旧值在非 CHANGELOG 面残留 0 枚。
