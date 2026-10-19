@@ -17,9 +17,22 @@ def call(name, a):
         return {'status': 'completed', 'result': {'part': part, 'offset': i * CHUNK, 'text': cs[i],
                 'next_cursor': f'cursor_fake:{part}:{i + 1}' if i + 1 < len(cs) else None}}
     return {'status': 'failed', 'error': {'code': 'UNKNOWN_TOOL'}}
-for line in sys.stdin:
-    m = json.loads(line)
-    if 'id' not in m: continue
+for n, line in enumerate(sys.stdin, 1):
+    if not line.strip():
+        continue
+    try:
+        m = json.loads(line)
+    except json.JSONDecodeError as e:
+        sys.stderr.write('fake-omni: stdin 第 %d 行不是合法 JSON（%s）——回归替身不收坏帧，不静默吞\n' % (n, e.msg))
+        sys.exit(1)
+    if not isinstance(m, dict):
+        sys.stderr.write('fake-omni: stdin 第 %d 行是 JSON %s，JSON-RPC 帧只收对象（要带 method，请求还要带 id）——不静默吞\n'
+                         % (n, type(m).__name__))
+        sys.exit(1)
+    if 'id' not in m: continue          # notification（无 id）是合法帧，仍不应答，不算吞
+    if 'method' not in m:
+        sys.stderr.write('fake-omni: stdin 第 %d 行是对象但没有 method 字段——不静默吞\n' % n)
+        sys.exit(1)
     if m['method'] == 'initialize': r = {'protocolVersion': '2025-06-18', 'capabilities': {'tools': {}}, 'serverInfo': {'name': 'fake-omni', 'version': '0'}}
     else:
         sc = call(m['params']['name'], m['params'].get('arguments') or {}); r = {'content': [{'type': 'text', 'text': json.dumps(sc)}], 'structuredContent': sc}
