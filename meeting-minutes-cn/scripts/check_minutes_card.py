@@ -4,7 +4,7 @@
 
 用法：
     python3 check_minutes_card.py <卡.md>       校验一张卡（默认零网络，不发任何请求）
-    python3 check_minutes_card.py --selftest    跑包内两件夹具：好样必须过，坏样四道必须全发
+    python3 check_minutes_card.py --selftest    跑包内守护样：好样、坏样与单点反例各档，档名与枚数由末行自报红并点名
     python3 check_minutes_card.py --help        本说明
 
 出口形制（与套件姊妹件同族）：
@@ -87,6 +87,40 @@ def row_items(lines, i0, i1):
     return out
 
 
+def checked_items(cell: str):
+    """勾选项文字清单：兼容「☑ 甲　☐ 乙」与「甲 ☑」两形（与姊妹件的 ticks／chosen 同族）。"""
+    return [w.strip() for mk, w in re.findall(r'([☑☐])\s*([^☐☑]+)', cell) if mk == '☑']
+
+
+CONT_PAT = re.compile(r'^[ \t　]+')
+
+
+def field_span(lines, i1, start):
+    """字段行的判定域＝该行＋其后续物理行（行首缩进或直接以 ☑／☐ 起头的续写）。
+
+    勾被写到下一物理行仍是同一字段的申报，只取第一行会把「三选一勾成两项」看成合规；
+    返回 (合并文本, 含勾的行号表)。"""
+    parts = [lines[start]]
+    rows = [start]
+    k = start + 1
+    while k < i1:
+        ln = lines[k]
+        if not ln.strip():
+            break
+        if CONT_PAT.match(ln) or ln.lstrip().startswith(('☑', '☐')):
+            parts.append(ln)
+            rows.append(k)
+            k += 1
+        else:
+            break
+    return '\n'.join(parts), rows
+
+
+def tick_rows(rows, lines):
+    """判定域里真正带着 ☑ 的物理行号（1 基）。"""
+    return [r + 1 for r in rows if '☑' in lines[r]]
+
+
 def section_ranges(lines):
     heads = {}
     for i, ln in enumerate(lines):
@@ -125,13 +159,27 @@ def check(path: Path):
         form = [j for j in range(i0, i1) if '素材形制' in lines[j]]
         if not form:
             add('E-FORMAT', '边界申报', i0 + 1, "头部缺「素材形制」行（规格：单段／切片／整场直投·已停用 三选一并勾选）")
-        elif '☑' not in lines[form[0]]:
-            add('E-FORMAT', '边界申报', form[0] + 1, "素材形制未勾选（规格：三选一；未证面直投即停用，停用也要留说明）")
+        else:
+            ftxt, frows = field_span(lines, i1, form[0])
+            fchk = checked_items(ftxt)
+            if not fchk:
+                add('E-FORMAT', '边界申报', form[0] + 1, "素材形制未勾选（规格：三选一；未证面直投即停用，停用也要留说明）")
+            elif len(fchk) > 1:
+                add('E-FORMAT', '边界申报', form[0] + 1,
+                    "素材形制勾了 %d 项（%s），勾落在第 %s 行（规格：三选一——单段／切片／整场直投只能中一项，双勾等于本卡同时声称两种取数路径；把第二个勾挪到下一物理行仍是同一字段，照样计）" % (
+                        len(fchk), '、'.join(fchk), '、'.join(str(x) for x in tick_rows(frows, lines))))
         axis = [j for j in range(i0, i1) if '时间轴基准' in lines[j]]
         if not axis:
             add('E-FORMAT', '时间轴', i0 + 1, "头部缺「时间轴基准」行（规格：单切片内 mm:ss／多切片拼接·跨片连续性未建立实证，二选一）")
-        elif '☑' not in lines[axis[0]]:
-            add('E-FORMAT', '时间轴', axis[0] + 1, "时间轴基准未勾选（规格：同上；这是「锚能不能横着比」的唯一依据）")
+        else:
+            atxt, arows = field_span(lines, i1, axis[0])
+            achk = checked_items(atxt)
+            if not achk:
+                add('E-FORMAT', '时间轴', axis[0] + 1, "时间轴基准未勾选（规格：同上；这是「锚能不能横着比」的唯一依据）")
+            elif len(achk) > 1:
+                add('E-FORMAT', '时间轴', axis[0] + 1,
+                    "时间轴基准勾了 %d 项（%s），勾落在第 %s 行（规格：二选一——单切片与多切片拼接只能中一项，双勾会让 mm:ss 锚的可比性无定义；跨物理行续写同样算数）" % (
+                        len(achk), '、'.join(achk), '、'.join(str(x) for x in tick_rows(arows, lines))))
 
     secs = section_ranges(lines)
     for n, name in zip(CN_NUM, SECTIONS):
@@ -206,6 +254,17 @@ def check(path: Path):
         i0, i1 = secs['待核清单']
         if '[待人工]' not in '\n'.join(lines[i0:i1]):
             add('E-COVERAGE', '申报', i0 + 1, "待核清单缺 [待人工] 汇总位（规格：谐音疑点、指代不明、跨片锚全挂此节）")
+        # 状态格逐行数勾：模板给的是「☐ 待核 ☐ 已核」两枚互斥框。这是表格行，不靠字段续行合并域——
+        # 域合并只治「同一字段写到下一物理行」，表格行的第二勾若写到别的列，这里照样要被抓到。
+        for j, cs in row_items(lines, i0, i1):
+            for c_i, cell in enumerate(cs):
+                if '待核' not in cell or '已核' not in cell:
+                    continue
+                st = checked_items(cell)
+                if len(st) > 1:
+                    add('E-FORMAT', '状态互斥', j + 1,
+                        "第 %d 列状态格同时勾了 %d 项（%s）（规格：待核／已核互斥二选一，同勾等于本行既未复核又已复核；两枚都空算未复核，不报）" % (
+                            c_i + 1, len(st), '、'.join(x.strip() for x in st)))
     return finds, len(lines)
 
 
@@ -223,6 +282,7 @@ def report(path: Path):
     return 0
 
 
+# 反例档：素材形制双勾（单段与切片同时勾）——三选一勾成两项，其余与好样全同
 def selftest():
     good, bad = HERE / 'fixtures' / 'good-minutes-card.md', HERE / 'fixtures' / 'bad-minutes-card.md'
     for f in (good, bad):
@@ -243,7 +303,38 @@ def selftest():
     if missing:
         print('   未发出的码 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)}）")
+    probes = [('mut-form-double-tick.md', ('E-FORMAT', '边界申报'), '勾了 2 项'),
+              ('mut-form-crossline.md', ('E-FORMAT', '边界申报'), '勾落在第'),
+              ('mut-axis-crossline.md', ('E-FORMAT', '时间轴'), '勾落在第'),
+              ('mut-status-double-tick.md', ('E-FORMAT', '状态互斥'), '状态格同时勾了 2 项')]
+    allred = True
+    for fname, expect, needle in probes:
+        mu = HERE / 'fixtures' / fname
+        if not mu.is_file():
+            print(f"SELFTEST FAIL: 反例夹具缺失 {mu}")
+            return 1
+        mf, mnl = check(mu)
+        mcode = [(m.group(1), m.group(2)) for m in (re.match(r'\[(E-[A-Z]+)\] \[([^\]]+)\]', x) for x in mf) if m]
+        mhit = expect in mcode
+        mnamed = any(needle in x for x in mf)
+        print("selftest 反例档：%s 扫过 %d 行，发条 %d 条（规格 ≥1、须发 %s／%s、详行含「%s」）" % (
+            mu.name, mnl, len(mf), expect[0], expect[1], needle))
+        for x in mf[:2]:
+            print('   实发详行 → ' + x[:150])
+        if not mf:
+            print('   意外：单点反例过了闸（缺陷——本档治的正是「判据只查其一」把门过宽）')
+            ok = False
+            allred = False
+        elif not mhit:
+            print('   未命中预期码与道名 → 期望 %s／%s，实发 %s' % (
+                expect[0], expect[1], '、'.join(a + '／' + b for a, b in mcode) or '无'))
+            ok = False
+            allred = False
+        elif not mnamed:
+            print('   发条未点名病灶 → 详行里找不到「%s」' % needle)
+            ok = False
+            allred = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)} · 反例档 {len(probes)} 枚{'全发红' if allred else '有未红!'}）")
     return 0 if ok else 1
 
 
@@ -252,7 +343,7 @@ def main() -> int:
         description="校验一张会议纪要卡是否合五段契约、实证边界与红线（零网络）。",
         epilog="出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋两类计数。判定全集在本脚本现值。")
     ap.add_argument('card', nargs='?', help='待校验的卡（markdown）')
-    ap.add_argument('--selftest', action='store_true', help='跑包内两件夹具（好样须过、坏样四道全发）')
+    ap.add_argument('--selftest', action='store_true', help='跑包内守护样（好样、坏样与单点反例各档，档名与枚数由末行自报红）')
     args = ap.parse_args()
     if args.selftest:
         return selftest()
