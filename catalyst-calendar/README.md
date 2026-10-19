@@ -46,7 +46,7 @@
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（别贴进聊天）→ 装 `cue-data-mcp` / `cue-research` / `cue-omni-reader`。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（别贴进聊天）→ 装 `cue-data-mcp` / `cue-research` / `cue-omni-reader`。
 **不装不报错**：降级为用户贴公告清单（标直供）；research 不发起则解禁/减持类整类「未检索到」，绝不以常识补日。所有消耗花之前先问。
 
 ## 五、包里有什么
@@ -55,7 +55,7 @@
 SKILL.md                        主指令：铁律/输入契约/四段管线/输出契约/降级/边界（必读）
 README.md / README.en.md        本文件（中文权威/英文译文）
 CHANGELOG.md                    版本记录
-references/event-taxonomy.md    事件分类学（类型封闭枚举以机检现值为准，表为用户读镜像）+ 拆行/余档/L3 判例
+references/event-taxonomy.md    事件分类学（类型封闭枚举以机检现值为准，表为用户读镜像）+ 拆行/余档/可信级 L3 判例
 scripts/check_calendar.py       机检全道（纯 stdlib，--help 可跑；词面域与守护样清单=脚本与夹具现值，两条命令现跑见下）
                                  注：哪些词算评级词 / 禁词 / 自白词，类型封闭枚举有哪几类，本文一律不列全量——判定=checker 现值，任意目录整行粘贴即可自查（命令自带安装后路径）：
                                      grep -n -A3 "BANNED_RE = \|RATING_RE = \|HALLUCINATION_RE = \|OFFICIAL_USAGE_RE = \|EVENT_TYPES = \|TYPE_ANCHORS = \|SIX_RE = " ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py

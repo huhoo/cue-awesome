@@ -42,7 +42,7 @@ Progress-style disclosures with no pre-known date (1%/2% buyback milestones) go 
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily — the server-side policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` / `cue-research` / `cue-omni-reader`. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
+Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — the server-side policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` / `cue-research` / `cue-omni-reader`. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
 
 ## 5. What's in the package
 
@@ -50,7 +50,7 @@ Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily —
 SKILL.md                        master instruction file: iron rules / input contract / pipeline / output / degradation / boundaries (must read)
 README.md / README.en.md        this pair (Chinese source of truth / English translation)
 CHANGELOG.md                    version history
-references/event-taxonomy.md    event taxonomy (the closed type set is the checker as it now stands; the table is a human-readable mirror) + case law on row-splitting, carry-over notes, L3 marking
+references/event-taxonomy.md    event taxonomy (the closed type set is the checker as it now stands; the table is a human-readable mirror) + case law on row-splitting, carry-over notes, confidence-tier L3 marking
 scripts/check_calendar.py       the full gate set (pure stdlib, --help works; word sets and guard inventory = the script and fixtures as they now stand, run the two lines below)
                                  note: which words count as rating words, banned words or self-confession words, and which event types are in the closed set, is never listed in full here — the judgement is the checker as it now stands, self-checkable from any directory (the command carries the installed path):
                                      grep -n -A3 "BANNED_RE = \|RATING_RE = \|HALLUCINATION_RE = \|OFFICIAL_USAGE_RE = \|EVENT_TYPES = \|TYPE_ANCHORS = \|SIX_RE = " ~/.workbuddy/skills/catalyst-calendar/scripts/check_calendar.py
