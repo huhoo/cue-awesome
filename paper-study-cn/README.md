@@ -70,7 +70,7 @@ python3 scripts/check_study_card.py assets/论文研读卡.md                   
 本件的取证腿是一条：论文与长文的解析（omni），产出带大纲、可定位、带页锚的文本。
 **不装不报错**——没有它，研读卡照样手填并过机检；未开通道时页锚与节定位失效，只能整段引你手上的原文，本件不猜测通道形制。增强腿（学术数据库检索）本件不提供，也不写「论文检索可达」那一类句子。
 
-1. 注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）；
+1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
 3. 安装本件取证用到的一枚 skill：`cue-omni-reader`——研读卡的页锚与节定位来自它的返回。这些都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；

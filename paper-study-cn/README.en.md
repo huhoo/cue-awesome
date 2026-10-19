@@ -72,7 +72,7 @@ python3 scripts/check_study_card.py assets/论文研读卡.md                   
 This package has one evidence leg: parsing of papers and long documents (omni), which yields text with an outline, locatable sections and page anchors.
 **Not installing raises no error** - without it the study card is still hand-fillable and still passes the gate; with the channel off, page anchors and section locations stop working and only whole-paragraph quotation from the text in hand remains - this package does not guess the channel's format. The enhancement leg (academic database search) is not offered here and no sentence claiming paper-retrieval reach is written.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
 3. Install the one skill(s) this package's evidence legs use: `cue-omni-reader` - the study card's page anchors and section locations come from its response. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
