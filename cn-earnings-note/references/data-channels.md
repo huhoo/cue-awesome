@@ -53,6 +53,8 @@
 
 ### 实测补丁（P1 美的 000333/2026H1 + R1-B 雨虹 002271/2026H1 两单钉入；台账 `../../p1-run/earnings-000333-2026H1/progress.md`、`../../p1-run/earnings-002271-2026H1/progress.md`）
 
+这两份台账在仓内上一层目录（`../../p1-run/…`），属仓内路径，不随发布物交付；本文件只留路径作出处记录。
+
 以下工具名是**已核实事实的记录引用**（带出处带日期），不是可硬编码清单——运行时一律以 `tools/list` 现发现为准（§1 第 3 条不变）。
 
 1. **附注四项的「原文三级」路径（0.1.1 正式入约）**：受限货币资金 / 应收账款账龄 / 合同负债构成 / 商誉减值测试参数——`fr_footnote` 域面无对应工具（实测两单复验），但**降级不等于人工**，按三级走：
@@ -169,8 +171,8 @@
 
 1. 注册 <https://cuecue.cn>；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY`，存入本地凭据（agent 不经手、不进聊天）；
-3. 安装技能：`cue-research` / `cue-omni-reader` / `cue-data-mcp`（装法见各自 SKILL.md）。
+3. 安装技能：`cue-research` / `cue-omni-reader` / `cue-data-mcp`——这三枚由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（列出该集合各枚、按提示挑要装的），单装 `npx skills add sensedeal/cue-skills --skill cue-research`（把末尾那枚名字换成 `cue-omni-reader` 或 `cue-data-mcp` 就只装那一枚）。装完把三件事分开看，它们互不等价：装好 skill（再列一次已安装 skill，看那几枚名字在不在）≠ 已配凭据（第 2 步那把 `CUE_API_KEY` 存在本地凭据设施即可，值不进聊天、不在终端回显）≠ 通道已连（以匿名 `GET https://cuecue.cn/api/mcp-catalog` 的当场返回为准）。
 
 赠送与计费话术（仅此口径，不多写一个数字）：
 
-> 「新账号注册送 500、每日 10，以服务端为准；本 skill 不承诺任何单价，所有消耗花之前都会先问你要不要跑。」
+> 「新账号注册送 500 积分、每日 10 积分，以服务端为准；本 skill 不承诺任何单价，所有消耗花之前都会先问你要不要跑。」

@@ -38,9 +38,16 @@ Resume = start from the ledger (read `progress.md` and upstream artifacts first)
 
 The evidence backbone is Cue's three channels: structured disclosures (data-mcp) + original-document parsing (omni) + cross-checking deep research (cue-research). **Not installing raises no error** — every step has a degraded path (you supply the material + the agent searches freely); you only lose evidence density and traceability.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily — the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility — **never paste it into chat**; the agent never handles the key;
-3. Install the skills: `cue-research` / `cue-omni-reader` / `cue-data-mcp` (install steps in each of their SKILL.md files).
+3. Install the three skills this package's evidence legs use: `cue-research` / `cue-omni-reader` / `cue-data-mcp` - listed by name in this package's frontmatter optional dependencies, so a host that installs from declarations surfaces them; which ones you need follows which leg you want to run: parsing alone needs `cue-omni-reader`, structured disclosures add `cue-data-mcp`, cross-checking research adds `cue-research`. They ship in Cue's official skill collection (sensedeal); one command, two forms:
+   - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
+   - one at a time: `npx skills add sensedeal/cue-skills --skill cue-research`, swapping the last name for `cue-omni-reader` or `cue-data-mcp` to install just that one.
+
+   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
+   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
+   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
 
 Everything that spends is **asked before it burns**: a deep-research run takes 3–15 minutes and consumes credits; you confirm each launch. This documentation promises no unit prices.
 
@@ -133,7 +140,7 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 
 | Boundary | Status |
 |---|---|
-| End-to-end field test | **five runs across three issuers verified**: Midea 000333 (2026H1 + 2025AR) + Oriental Yuhong 002271 (2026H1) + Gudi Technology 002694 (*ST high-risk first case), machine gates + manual acceptance passed; record in `CHANGELOG.md` Verified. **Still untested**: HK-listed issuers, multi-issuer batches — treat a first run of these two as unverified |
+| End-to-end field test | **four runs across three issuers verified**: Midea 000333 (2026H1 + 2025AR) + Oriental Yuhong 002271 (2026H1) + Gudi Technology 002694 (*ST high-risk first case), machine gates + manual acceptance passed; record in `CHANGELOG.md` Verified. **Still untested**: HK-listed issuers, multi-issuer batches — treat a first run of these two as unverified |
 | High-risk issuers (ST/*ST) | **first case run (2026-09-21)**: Gudi — research 2/2 full slots + omni 1 (shell-page billed 0.268 per server receipt, product discarded) + 11 direct lookups; pre-announcement range, going-concern uncertainty and fund-occupancy items all handled strictly by "no anchor, no judgement" |
 | Forecast scaffold (0.3.3) | **first flight = gate layer proven**: three `[待人工]` year rows + border note + anchor row passed; two rounds of gate rejects (12+2) were the line working — not an endorsement of judgement quality |
 | Market / valuation data flow | No — the `equity_market` domain is not open and nothing depends on it; intraday price, market cap and valuation percentiles are never fetched |
@@ -148,4 +155,4 @@ Known **won't-do** or **unverified** — check this before expecting a secret ca
 ## 10. Sources & credit
 
 - Base: anthropics/financial-services `earnings-analysis` (Apache-2.0) — the methodology and the four-period / beat-miss framing.
-- This package is a **re-implementation, not a port**: the data layer is fully replaced by Cue channels; no code from the base. See the repo-root `NOTICE.md`.
+- This package is a **re-implementation, not a port**: the data layer is fully replaced by Cue channels; no code from the base. See the repo-root `NOTICE.md` (a repository-root path; it does not ship inside the published artifact).
