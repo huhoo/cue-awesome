@@ -74,7 +74,7 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 本件的取证腿有两条：结构化披露的取数（data-mcp）＋手上材料的解析（omni）。
 **不装不报错**——手上已有 PDF 或网页时，七节草稿照写；通道与材料都没到位的字段进待核清单写明「未检索到」，不编、不代填缺失。
 
-1. 注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）；
+1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
 3. 安装本件取证用到的两枚 skill：`cue-data-mcp` 走披露域取数，`cue-omni-reader` 走 PDF／网页／内部文件的材料解析腿——两条路可同跑，材料优先、通道补漏。这些都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；

@@ -74,7 +74,7 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 This package has two evidence legs: structured-disclosure retrieval (data-mcp) + parsing of the material you already hold (omni).
 **Not installing raises no error** - with a PDF or web page already in hand the seven-section draft still gets written; fields that neither material nor channel supplies go into the to-verify list marked not found - never invented, never filled on your behalf.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
 3. Install the two skill(s) this package's evidence legs use: `cue-data-mcp` covers disclosure domains and `cue-omni-reader` covers PDF / web / internal-file parsing - the two can run together, with your material first and the channel filling gaps. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
