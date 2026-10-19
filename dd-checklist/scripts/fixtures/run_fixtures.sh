@@ -20,6 +20,19 @@ fi
 # **下面的 cmd/expect 判卷逻辑一字未动**（铺法与生成器自证同源＝同一个 unpack.materialize）。
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/dd-samples-XXXXXX")" || exit 1
 mkdir -p "$WORK/scripts/fixtures"
+# M294：题单里 103 枚样的 cmd 各自 `mktemp -d` 建工作区，旧写法把它们全留在**调用方的**临时根上
+# （现测：跑一次漏 107 枚／9.3 MB）。现在把子进程的 TMPDIR 指进本 runner 私有的 $WORK/tmp，
+# 退出时由下面那枚 trap 连 $WORK 一起带走——外场一枚不落。调用方的临时根只被**观测**（零新增判据），
+# 本 runner 绝不删那里任何不是我建的东西（`DD_OUTER_TMP` 只为那条判据与注入反证可见）。
+DD_OUTER_TMP="${TMPDIR:-/tmp}"; export DD_OUTER_TMP
+RUNTMP="$WORK/tmp"
+mkdir -p "$RUNTMP" || { echo "FAIL 建不起 runner 私有临时根 $RUNTMP（环境故障，不续跑不假绿）"; rm -rf "$WORK"; exit 1; }
+export TMPDIR="$RUNTMP"
+if ls -A "$DD_OUTER_TMP" >/dev/null 2>&1; then
+  tmp_before="$(cd "$DD_OUTER_TMP" && ls -A | sort)"; tmp_snap_ok=1
+else
+  tmp_before=""; tmp_snap_ok=0        # 快照取不到＝本档红，空值绝不充当「零新增」
+fi
 if ! python3 "$FIXROOT_PKG/unpack.py" --all "$FIXROOT_PKG" "$WORK/scripts/fixtures"; then
   echo "FAIL 样容器铺回失败（容器形制或 python3 可用性问题，不静默继续）"
   rm -rf "$WORK"; exit 1
@@ -123,6 +136,23 @@ for spec in "bad-B01-anchor-missing|[E-FORMAT]" "bad-B22-statute-fake|[E-ANCHOR]
     echo "FAIL ecode-${d} (缺前缀 ${mark})"; ctl_fail=$((ctl_fail + 1)); failed_cases+=("ecode-${d}")
   fi
 done
+
+# ---- M294 临时根零新增自证：跑完一趟，调用方的临时根不得多出一枚（样里漏下的话这一档必红并点名） ----
+#    这一档是**包内判据**，不是回执里的一句话：以后谁把样内 cmd 改回不落清理的写法，这里当场红。
+ctl_total=$((ctl_total + 1))
+if [ "$tmp_snap_ok" -ne 1 ]; then
+  echo "FAIL ctl-tmp-root-clean (调用方临时根快照取不到＝不可读，不判绿)"; ctl_fail=$((ctl_fail + 1)); failed_cases+=("ctl-tmp-root-clean")
+else
+  tmp_after="$(cd "$DD_OUTER_TMP" && ls -A | sort)"
+  tmp_new="$(comm -13 <(printf '%s\n' "$tmp_before") <(printf '%s\n' "$tmp_after"))"
+  if [ -z "$tmp_new" ]; then
+    echo "ok   ctl-tmp-root-clean (调用方临时根零新增；样内临时区全落 runner 私有根，随退出清理)"; ctl_ok=$((ctl_ok + 1))
+  else
+    printf 'FAIL ctl-tmp-root-clean (跑完仍新增 %d 枚，逐枚点名：\n' "$(printf '%s\n' "$tmp_new" | grep -c . )"
+    printf '%s\n' "$tmp_new" | sed 's/^/        泄漏 /'
+    ctl_fail=$((ctl_fail + 1)); failed_cases+=("ctl-tmp-root-clean")
+  fi
+fi
 
 echo "----"
 printf 'fixtures: %d ok / %d fail / %d total\n' "$gb_ok" "$gb_fail" "$((gb_ok + gb_fail))"
