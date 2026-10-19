@@ -29,8 +29,8 @@ The citation network and the review scaffold come **after** these three: the fir
 
 | Part | Content | What the gate enforces |
 |---|---|---|
-| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` in the anchor cell | Content without anchor -> `E-ANCHOR`; an anchor number beyond the page set on the card （e.g. `P99` when the set says 共 13 页） -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
-| 2 Reproducibility list | Dataset availability, whether a code link exists, parameter completeness - **gaps only, never a verdict on reproducibility** | Fewer than three accounted items -> `E-COVERAGE`; "`应该能复现`" style claims -> `E-BANWORD` |
+| 1 Paper card | Title, authors, year, core claim, method, data, conclusion - one anchor per row; absent fields written as `缺` with `不适用` - and a pasted text with no page or section to point at follows the gate wording verbatim: content `缺`, anchor `不适用`, an empty slot `空槽（不硬填）`; never invent line or paragraph anchors (the gate accepts only P×／×页／第×节／参考文献区) in the anchor cell | Content without anchor -> `E-ANCHOR`; an anchor number beyond the page set on the card （e.g. `P99` when the set says 共 13 页） -> `E-ANCHOR`; hedged numbers -> `E-BANWORD` |
+| 2 Reproducibility list | Dataset availability, whether a code link exists, parameter completeness - **gaps only, never a verdict on reproducibility** | Fewer than three accounted items -> `E-COVERAGE`; "`应该能复现`" style claims -> `E-BANWORD` |  **The reverse also holds**: renaming an item in the template changes this gate ruler in the same move (the ruler has a single source, no second copy). A rename is a contract change, so old cards and fixtures must be renamed in the same batch; if they are not, `--selftest` fails loudly (the good sample turns red) rather than passing silently - that red means template and cards have drifted apart, so reconcile them instead of loosening the gate.
 | 3 Citation network | Entries taken only from the paper's own reference list, each with a locator; citation counts declared when not retrieved | Entry without locator -> `E-ANCHOR`; neither entries nor a ticked declaration -> `E-COVERAGE` |
 | 4 Review scaffold | Thesis slots belong to the user: given by them, or inferred and then explicitly confirmed; material sentences must be anchored, otherwise leave `空槽（不硬填）` | Unanchored material -> `E-ANCHOR`; unconfirmed inferred slot or unticked origin -> `E-COVERAGE` |
 | 5 Pending list | Everything that needs the original text, with academic judgement under `[待人工]` | Missing the `[待人工]` roll-up -> `E-COVERAGE` |
@@ -57,13 +57,33 @@ Read `assets/论文研读卡.md` first (that is the five-part shape), then `SKIL
 
 ```bash
 python3 scripts/check_study_card.py --help                            # usage; no network
-python3 scripts/check_study_card.py --selftest                        # good sample must pass, bad sample must fire all four lanes
+python3 scripts/check_study_card.py --selftest                        # good sample must pass, bad sample must fire all four lanes, both single-point counter-examples must fire and name the missing class, and the isolation tier must fail loudly (unreadable ruler source)
 python3 scripts/check_study_card.py scripts/fixtures/good-study-card.md   # should PASS
 python3 scripts/check_study_card.py scripts/fixtures/bad-study-card.md    # should FAIL, all four codes
+python3 scripts/check_study_card.py scripts/fixtures/mut-repro-one-class.md                               # should FAIL: three reproduction rows are present but two class names were collapsed into one; the finding names the missing classes
+python3 scripts/check_study_card.py scripts/fixtures/mut-class-in-evidence.md                             # should FAIL: the class name appears only in the evidence cell; the item cell lacks it
 python3 scripts/check_study_card.py assets/论文研读卡.md                   # should FAIL - a blank card failing the gate is the design, not a defect
 ```
 
 **Take every count from the script's own report line** (`FAIL: … (N items)` and the `扫过 N 行，发条 0 条` line under `PASS:`); this file does not restate them - a restated count becomes a second source of truth and drifts on every script change. **Two line-count conventions**: `扫过 N 行` counts `split('\n')` elements, which is `wc -l` **+1** (the trailing newline occupies one); when reporting a line count, report the convention with it so nobody reads the gap as a counting error.
+
+### First-time Cue setup (three steps, skippable)
+
+This package has one evidence leg: parsing of papers and long documents (omni), which yields text with an outline, locatable sections and page anchors.
+**Not installing raises no error** - without it the study card is still hand-fillable and still passes the gate; with the channel off, page anchors and section locations stop working and only whole-paragraph quotation from the text in hand remains - this package does not guess the channel's format. The enhancement leg (academic database search) is not offered here and no sentence claiming paper-retrieval reach is written.
+
+1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
+3. Install the one skill(s) this package's evidence legs use: `cue-omni-reader` - the study card's page anchors and section locations come from its response. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
+   - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
+   - one at a time: `npx skills add sensedeal/cue-skills --skill cue-omni-reader`.
+
+   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
+   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
+   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
+
+Parsing spend is **asked before it burns**: before launching, the agent says how many files and which kinds and waits for your consent; billing and availability follow the server response, and this package restates no domain list, writes no tool count; What gets reported first is the time scale and whether a spend occurs, not a price - no price is given and promises no citation counts.
 
 ## 4. Boundaries and non-promises
 
@@ -84,7 +104,7 @@ python3 scripts/check_study_card.py assets/论文研读卡.md                   
 
 The output shape is taken from a live run of `check_study_card.py` as it now stands: a failure prints one line `FAIL: <file> (N items)`, then each detail line **starts with an error code (one of four `E-*`)** such as `[E-FORMAT]`, `[E-ANCHOR]` (its `页集` lane marks an anchor beyond the page set), `[E-BANWORD]`, followed by the lane name, the line number and that lane's spec; the last line `码表:` lists only the codes actually used and what they mean. A pass prints `PASS: <file> (...)` plus two counts - lines scanned, findings raised - **read off that line, with the `split('\n')` convention (one more than `wc -l`) named alongside**.
 
-This package uses **four** codes, byte-identical to the sibling packages' table. The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
+This package uses **four** codes, byte-identical to the sibling packages' table (those packages are repo-side and do not ship with this published artifact; compare inside the repository). The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
 
     grep -n "^E_LEGEND" ~/.workbuddy/skills/paper-study-cn/scripts/check_study_card.py
 
@@ -110,8 +130,8 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 
 ## 7. Current state (honest list)
 
-- The documentation face and the machine face are in place (five-part contract, four lanes, two fixtures, self-test green).
-- **Real-paper measurement is in (3 public preprints)**: all three cards exit 0 under `check_study_card.py`; the verbatim pass reports **56/56 quoted fragments found** (16 + 23 + 17, zero misses, zero anchor mismatches); six single-point break probes (five firing their expected lane, one reverse probe that exposed the older gate letting an out-of-range anchor through - the page-set comparison was added in response). Details as measured: CLIP arXiv:2103.00020v1 (48 pages), Attention Is All You Need arXiv:1706.03762v7 (15 pages), GLUE arXiv:1804.07461 (20 pages) - all English open preprints, one parse each; **the Chinese-paper corpus is untested**, and 3/3 is not extrapolated to any other layout or language. Extraction shapes bound how far a re-check can go (two-column text is not adjacent across lines, a URL split over two lines, reference numbering can drop out, tables arrive as pipe tables), so whole-sentence and whole-table judgements stay `[待人工]`. **56/56 is a verbatim re-check pass rate - not an accuracy figure and not a timing figure**; this package gives neither. The full-chain account lives in the internal ledger and can be provided on request.
+- The documentation face and the machine face are in place (five-part contract, four lanes, four fixtures, self-test green: two single-point counter-examples - enough rows with collapsed class names, and the class name pushed into the evidence cell - plus an isolation tier where an unreadable template makes the gate error out instead of degrading into a pass).
+- **Real-paper measurement is in (3 public preprints)**: all three cards exit 0 under `check_study_card.py`; the verbatim pass reports **56/56 quoted fragments found** (16 + 23 + 17, zero misses, zero anchor mismatches); six single-point break probes (five firing their expected lane, one reverse probe that exposed the older gate letting an out-of-range anchor through - the page-set comparison was added in response). Details as measured: CLIP arXiv:2103.00020v1 (48 pages), Attention Is All You Need arXiv:1706.03762v7 (15 pages), GLUE arXiv:1804.07461 (20 pages) - all English open preprints, one parse each; **the Chinese-paper corpus is untested**, and 3/3 is not extrapolated to any other layout or language. Extraction shapes bound how far a re-check can go (two-column text is not adjacent across lines, a URL split over two lines, reference numbering can drop out, tables arrive as pipe tables), so whole-sentence and whole-table judgements stay `[待人工]`. **56/56 is a verbatim re-check pass rate - not an accuracy figure and not a timing figure**; this package gives neither. The full-chain account lives in the repository-side internal ledger and can be provided on request (a repo-side artifact, not shipped with the published package).
 - **The literature leg does not stand**: the `SKILL.md` §2 line, this README, the card template and the checker all say the same thing - no "papers are searchable" sentence anywhere - and the gate still **checks no academic search results**: a copy rewrite does not loosen that.
 - When no search runs, the legal answer in the citation network is to tick "not found" / "surface not covered, pending"; the gate accepts that declaration.
 - Channel shapes (page anchors, section locators, accepted formats and sizes) follow the actual response; this package neither restates that list nor counts tools.
@@ -130,6 +150,8 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | `scripts/check_study_card.py` | Four-lane gate (format / anchors / red lines / counts and declarations) |
 | `scripts/fixtures/good-study-card.md` | Green sample (fictional content, not a real-literature citation) |
 | `scripts/fixtures/bad-study-card.md` | Red sample (one counter-example per lane) |
+| `scripts/fixtures/mut-repro-one-class.md` | Single-point counter-example fixture (exactly one thing broken; runs in the counter-example tier of `--selftest`) |
+| `scripts/fixtures/mut-class-in-evidence.md` | Single-point counter-example fixture (exactly one thing broken): the class name is moved into the evidence cell to fake coverage - the gate reads the item cell only, so this sample must fire |
 | `README.md` | Chinese primary of this file |
 
 Version history lives in `CHANGELOG.md`.

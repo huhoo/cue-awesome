@@ -4,7 +4,7 @@
 
 用法：
     python3 check_study_card.py <卡.md>        校验一张卡（默认零网络，不发任何请求）
-    python3 check_study_card.py --selftest     跑包内两件夹具：好样必须过，坏样四道必须全发
+    python3 check_study_card.py --selftest     跑包内四件夹具：好样必须过、坏样四道必须全发、两枚单点反例各自发红，另有一档隔离副本必须响亮失败
     python3 check_study_card.py --help         本说明
 
 出口形制（与套件姊妹件同族）：
@@ -45,6 +45,35 @@ E_LEGEND = {
     "E-BANWORD":  "禁词/评级/幻觉/待人工域命中→改中性陈述或删除,零豁免区",
     "E-COVERAGE": "计数/覆盖/申报对不上→逐类补账或如实标未检索到",
 }
+
+REPRO_SOURCE = Path(__file__).resolve().parent.parent / 'assets' / '论文研读卡.md'
+REPRO_ERROR = None
+
+
+def _repro_classes():
+    """复现清单三类名：从本包模板现值取（模板改了它跟着变），文档与码内不留第二份。
+
+    模板读不到时**不留空元组**——空元组会让「逐类名点名」退化成恒真放行（无类可缺＝永远通过），
+    那是最坏的一种假绿：闸还在、退出码还在、话术还是原话，只是不再判任何东西。
+    此处把故障记进 REPRO_ERROR，由 check() 当场发一条 E-FORMAT 并以非 0 退出。"""
+    global REPRO_ERROR
+    try:
+        lines = REPRO_SOURCE.read_text(encoding='utf-8').split('\n')
+    except OSError as e:
+        REPRO_ERROR = f'复现清单尺子的来源不可读：期望 {REPRO_SOURCE.name}（{e.strerror or e}）'
+        return ()
+    names = []
+    for ln in lines:
+        cs = [c.strip() for c in ln.strip().strip('|').split('|')]
+        if len(cs) >= 2 and re.match(r'^\d+$', cs[0] or 'x') and cs[1] and '☐' not in cs[1]:
+            names.append(cs[1])
+    if len(names) < 3:
+        REPRO_ERROR = f'复现清单尺子的来源里凑不齐三类名：{REPRO_SOURCE.name} 现取 {len(names)} 类（规格 ≥3）'
+        return ()
+    return tuple(names[:3])
+
+
+REPRO_CLASSES = _repro_classes()
 
 SECTIONS = ['论文卡', '复现清单', '引用网络', '综述脚手架', '待核清单']
 CN_NUM = ['一', '二', '三', '四', '五']
@@ -223,9 +252,20 @@ def check(path: Path):
     # ---- 道四 计数与申报 ----
     if '复现清单' in secs:
         i0, i1 = secs['复现清单']
+        if REPRO_ERROR:
+            add('E-FORMAT', '尺子来源', i0 + 1,
+                REPRO_ERROR + '（规格：三类名从本包模板现取；尺子取不到就无从判「三类齐不齐」——本件宁可报错退出，不静默放行）')
         rows = row_items(lines, i0, i1)
         if len(rows) < 3:
             add('E-COVERAGE', '缺口申报', i0 + 1, f"复现清单只 {len(rows)} 行（规格：数据集／代码／参数三项逐个交代，缺也要点名）")
+        # 行数够不等于三类齐：把两行项目名都写成同一个也能凑满三行。逐类名点名，名目取自本包模板现值。
+        # 【只取项目列 cs[1]】——依据格／备注里出现同名串不算交代，那正是把两类挤成一类的伪装路径。
+        if not REPRO_ERROR:
+            named = [cs[1] for _j, cs in rows if len(cs) > 1]
+            absent = [c for c in REPRO_CLASSES if not any(c in cell for cell in named)]
+            if absent:
+                add('E-COVERAGE', '缺口申报', i0 + 1,
+                    "复现清单缺类名 %s（规格：数据集／代码／参数三类逐类交代，行数为 3 但类名重复仍算缺——项名照模板逐字写在**项目格**，不自立类别，也不许把类名挪进依据或备注格充数）" % '、'.join(absent))
         for j, cs in rows:
             if len(cs) < 4 or blank(cs[2]) or blank(cs[3]):
                 add('E-COVERAGE', '缺口申报', j + 1, "该项状态或依据留空（规格：状态填在场／未见／缺／部分，依据带锚或写「不适用」）")
@@ -272,6 +312,34 @@ def report(path: Path):
     return 0
 
 
+# 反例档：复现清单两类项目名挤成同一种——行数仍三行、类名缺两类，其余与好样全同
+def probe_isolated():
+    """把本脚本单独拷进空目录（无 assets/ 模板）跑一张缺类卡：尺子来源不可读必须响亮失败。
+
+    旧形制是 _repro_classes() 读不到模板就 return ()，absent 恒空＝这道闸静默退化成放行；
+    本档就是那条退化的反证：改回静默形制，这一枚立刻红。"""
+    import shutil
+    import subprocess
+    import tempfile
+    card = HERE / 'fixtures' / 'mut-repro-one-class.md'
+    if not card.is_file():
+        return False, '缺反例夹具 mut-repro-one-class.md，无从跑隔离档'
+    d = tempfile.mkdtemp(prefix='study-isolated-')
+    try:
+        scripts_dir = Path(d) / 'scripts'
+        scripts_dir.mkdir(parents=True)
+        dst = scripts_dir / Path(__file__).name
+        shutil.copy2(str(Path(__file__).resolve()), str(dst))
+        r = subprocess.run([sys.executable, '-B', str(dst), str(card)], capture_output=True, text=True)
+        out = r.stdout + r.stderr
+        named = '尺子的来源不可读' in out
+        detail = '隔离副本（无 assets/ 模板）退码 %s，详行含「尺子的来源不可读」＝%s' % (
+            r.returncode, '是' if named else '否')
+        return (r.returncode != 0 and named), detail
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 def selftest():
     good, bad = HERE / 'fixtures' / 'good-study-card.md', HERE / 'fixtures' / 'bad-study-card.md'
     for f in (good, bad):
@@ -292,7 +360,43 @@ def selftest():
     if missing:
         print('   未发出的码 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)}）")
+    probes = [('mut-repro-one-class.md', ('E-COVERAGE', '缺口申报'), '缺类名'),
+              ('mut-class-in-evidence.md', ('E-COVERAGE', '缺口申报'), '项目格')]
+    allred = True
+    for fname, expect, needle in probes:
+        mu = HERE / 'fixtures' / fname
+        if not mu.is_file():
+            print(f"SELFTEST FAIL: 反例夹具缺失 {mu}")
+            return 1
+        mf, mnl = check(mu)
+        mcode = [(m.group(1), m.group(2)) for m in (re.match(r'\[(E-[A-Z]+)\] \[([^\]]+)\]', x) for x in mf) if m]
+        mhit = expect in mcode
+        mnamed = any(needle in x for x in mf)
+        print("selftest 反例档：%s 扫过 %d 行，发条 %d 条（规格 ≥1、须发 %s／%s、详行含「%s」）" % (
+            mu.name, mnl, len(mf), expect[0], expect[1], needle))
+        for x in mf[:2]:
+            print('   实发详行 → ' + x[:150])
+        if not mf:
+            print('   意外：单点反例过了闸（缺陷——本档治的正是「判据只查其一」把门过宽）')
+            ok = False
+            allred = False
+        elif not mhit:
+            print('   未命中预期码与道名 → 期望 %s／%s，实发 %s' % (
+                expect[0], expect[1], '、'.join(a + '／' + b for a, b in mcode) or '无'))
+            ok = False
+            allred = False
+        elif not mnamed:
+            print('   发条未点名病灶 → 详行里找不到「%s」' % needle)
+            ok = False
+            allred = False
+
+    # 隔离档：把本脚本单独拷进空目录（无 assets/论文研读卡.md）跑同一张缺类卡——
+    # 尺子来源不可读必须响亮失败（退码非 0 且详行点名来源），不许退化成「永远不缺类」。
+    iso_ok, iso_detail = probe_isolated()
+    print("selftest 隔离档：%s（规格 退码非 0 且详行含「尺子的来源不可读」）" % iso_detail)
+    if not iso_ok:
+        ok = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)} · 反例档 {len(probes)} 枚{'全发红' if allred else '有未红!'} · 隔离档 {'发红' if iso_ok else '未发红!'}）")
     return 0 if ok else 1
 
 
@@ -301,7 +405,7 @@ def main() -> int:
         description="校验一张论文研读卡是否合五段契约与红线（零网络）。",
         epilog="出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋两类计数。判定全集在本脚本现值。")
     ap.add_argument('card', nargs='?', help='待校验的卡（markdown）')
-    ap.add_argument('--selftest', action='store_true', help='跑包内两件夹具（好样须过、坏样四道全发）')
+    ap.add_argument('--selftest', action='store_true', help='跑包内四件夹具（好样须过、坏样四道全发、两枚反例发红、隔离档响亮失败）')
     args = ap.parse_args()
     if args.selftest:
         return selftest()
