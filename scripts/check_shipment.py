@@ -1037,6 +1037,41 @@ def selftest(quiet=False) -> int:
         bool(inj_reported and real_reported and head_ok and real.is_dir()),
         f"注入枚＝{fake.name}（exists={fake.exists()}）｜首行＝{kl[0][:76]}｜注入命中＝{int(inj_reported)} 枚")
 
+    # 廿一档（M276：成对注入守护样——同一枚合规样，三态只动被检件，证「包内自测的变色会传到仓级闸」这条链）
+    #   ①原样：包内入口退 0、闸不发 S-SELFTEST；②只把被检件 `scripts/fixtures/witness.md` 的必查标记抹掉：
+    #   包内入口必须退非 0、闸必须转 `S-SELFTEST`；③还原：两侧复绿。
+    #   **考官（`gate_paired.py`）与本闸在三态里一字不动**——变异点落在被检件侧，改考官不算（票面探针②）。
+    #   全程在 `mk_tmp` 副本内，仓内守护样文件一枚不改。
+    #   边界（措辞不得软化）：本档只证明「包内自测的变色会传到仓级闸」，**不证明任何真实包的判据有语义覆盖面**；
+    #   未知反形仍须按包注入审查，**不得以仓级一枚绿替代第三关（PR-review）**。
+    import shutil as _shc
+    PRK = "必查项：已核"
+    pair = {}
+    for tag in ("s1", "s2", "s3"):
+        d = mk_tmp("cs-z-") / f"paired-{tag}"
+        _shc.copytree(fixture_root("paired"), d)
+        wit = d / "scripts" / "fixtures" / "witness.md"
+        injected = 0
+        if tag == "s2":
+            before = wit.read_text(encoding="utf-8")
+            after = before.replace(PRK, "必查项：略")
+            injected = 1 if after != before else 0                     # 注入命中数（0＝没改成，本档必须红）
+            wit.write_text(after, encoding="utf-8")
+        zz = build_zip(mk_tmp("cs-z-") / f"paired-{tag}.zip", d)
+        hh, _nn, rr = check(zz, "demopkg", None, MAX_BYTES_DEFAULT, True)
+        runs = (rr or {}).get("ran") or []
+        pair[tag] = dict(rcs=[x[2] for x in runs],
+                         err=sorted({h.code for h in dedupe(hh) if h.sev == "ERROR"}),
+                         detail=next((h.detail for h in hh if h.code == "S-SELFTEST"), ""),
+                         inj=injected)
+    cond21 = (pair["s1"]["rcs"] and all(c == 0 for c in pair["s1"]["rcs"]) and "S-SELFTEST" not in pair["s1"]["err"]
+              and pair["s2"]["inj"] == 1 and all(c != 0 for c in pair["s2"]["rcs"]) and "S-SELFTEST" in pair["s2"]["err"]
+              and pair["s3"]["rcs"] and all(c == 0 for c in pair["s3"]["rcs"]) and "S-SELFTEST" not in pair["s3"]["err"])
+    one("廿一档-成对注入三态（被检件变色传到闸）", True, bool(cond21),
+        f"s1 入口退码={pair['s1']['rcs']}｜闸 ERROR={pair['s1']['err']}｜"
+        f"s2 注入命中={pair['s2']['inj']} 入口退码={pair['s2']['rcs']}｜闸 ERROR={pair['s2']['err']}｜详行「{pair['s2']['detail'][:64]}」｜"
+        f"s3 入口退码={pair['s3']['rcs']}｜闸 ERROR={pair['s3']['err']}")
+
     SILENT.clear()
     for line in res:
         print(line)
