@@ -27,7 +27,7 @@
 | 上市与在审状态 | `ipo` | 在审/注册/终止状态、上市委会议与批文的在场披露 | AN 号 / URL |
 | 其他已披露重大事项 | `disclosure_cn` / cue-research | 担保总额、业绩承诺补偿、重大合同违约等不落入前八类的披露项 | AN 号 / `conv_id` |
 
-- 解禁、减持原表与横向验证类问题按缺口决定是否发起 cue-research（≤1 次，发起前报告耗时与消耗；研究件锚 `conv_id`，`sources` 记 `kind=research`+`conv_id`，置信标 L3）。
+- 解禁、减持原表与横向验证类问题按缺口决定是否发起 cue-research（≤1 次，发起前报告耗时与消耗；研究件锚 `conv_id`，`sources` 记 `kind=research`+`conv_id`，置信标可信级 L3（深研二手））。
 - omni 只用于**用户明确提供的材料路径或公开 URL**；域面 section 全文优先，三级取原文路径同姊妹件（`data-channels.md` §「原文三级」）。
 
 ## 2A. 类目映射的机器面（`CONTRACT.md` 0A 第 5 条；映射表=`CATEGORY_BY_KIND` 现值，本表为镜像）
@@ -48,7 +48,7 @@
 
 | 情况 | 处置 |
 |---|---|
-| data-mcp 不可得 | 用户贴披露清单→ `kind=user_supplied` + `path`，置信 L2；覆盖率账如实记「本次未经域直查」 |
+| data-mcp 不可得 | 用户贴披露清单→ `kind=user_supplied` + `path`，置信取可信级 L2（用户直供）；覆盖率账如实记「本次未经域直查」 |
 | research 未发起 | 相关类目整类标「未检索到」并进账，**不补条目** |
 | 六参数缺任一 | 拒跑（`DD-INPUT`），不用默认窗口、不猜用途档位 |
 | 多主体请求 | 拒产并指路 `tear-sheet`/`catalyst-calendar` |

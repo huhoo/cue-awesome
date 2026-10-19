@@ -45,8 +45,8 @@ Give it a single subject, an `asof` date, a lookback window and a purpose tier, 
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 on signup and 10 daily, per server policy) → take `CUE_API_KEY` from <https://cuecue.cn/hub/api-key> into local credential storage (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
-It also runs without the channels: paste the disclosures yourself and the agent organizes them, tagged user-supplied (L2) — but the coverage ledger will say plainly that no domain query happened, and the value of this deliverable lives precisely in that ledger.
+Register at <https://cuecue.cn> (new accounts get 500 credits on signup and 10 credits daily, per server policy) → take `CUE_API_KEY` from <https://cuecue.cn/hub/api-key> into local credential storage (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
+It also runs without the channels: paste the disclosures yourself and the agent organizes them, tagged confidence tier L2 (user-supplied) — the tier scale is defined once in this repository by the earnings-note skill; this package only references it — but the coverage ledger will say plainly that no domain query happened, and the value of this deliverable lives precisely in that ledger.
 
 ## 5. What is in the package
 
@@ -103,7 +103,7 @@ The five `E-*` codes are a closed suite-wide identical set (byte-identical with 
 | `[E-COVERAGE] DD-COVERAGE: ...` | Nine categories incomplete, a category's count disagrees with the call log, or a long window used the disclosure domain without the required age-declaration line | Complete the ledger category by category; for long windows write the contract's declaration line (collect-then-validate), window start equal to the recomputed window |
 | `[E-COVERAGE] DD-OMISSION: ...` | The body claims more domains than the ledger booked | Back-filling requires all three artifacts (all domains in the cell, that domain in the call log, one category-tagged raw file per domain). Deleting the claim without booking the ledger is the failure shape this gate exists for |
 | `[E-BANWORD] DD-REDLINE: ...` | An investment verdict, legal qualification or completeness assertion entered the delivery face | Follow the printed legend: rewrite neutrally or delete; the judgement slot returns to `[待人工]` |
-| Channel missing / that category has no public tool | No tool for it on the public face | Degradation: the user pastes the disclosure list (marked L2 user-supplied, `sources` uses `user_supplied` + `path`); without the research run the whole category reads "not found" and is booked - never filled by common sense. The price is coverage, not accuracy |
+| Channel missing / that category has no public tool | No tool for it on the public face | Degradation: the user pastes the disclosure list (marked confidence tier L2 (user-supplied), `sources` uses `user_supplied` + `path`); without the research run the whole category reads "not found" and is booked - never filled by common sense. The price is coverage, not accuracy |
 | A traceback instead of `RESULT: FAIL ...` | An incident: parse points are wrapped | Stop and report with the exact command in `progress.md`; run section 5's live commands first to tell a bad report from a broken script |
 
 ## 8. How to ask (three positive examples, one counter-example, plus how to pick the purpose tier)
