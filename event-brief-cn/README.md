@@ -66,7 +66,7 @@ python3 scripts/check_card.py assets/公告速读卡.md             # FAIL（8 �
 本件的取证腿有三条：公告与监管域的取数（data-mcp）＋附件与长文的解析（omni）＋同类对照与背景检索（cue-research）。
 **不装不报错**——卡片前两段（类型判定＋关键数）不依赖任何通道，拿到原文就能出；后三段的检索与解析都有降级路（你手动供料＋agent 自由检索），代价是证据密度与可回查性下降。
 
-1. 注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）；
+1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
 3. 安装本件取证用到的三枚 skill：`cue-omni-reader` 走解析腿，`cue-data-mcp` 走公告与监管域取数腿，`cue-research` 走同类对照与背景检索腿——后三段要不要跑由你定，前两段不依赖任何通道。这些都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；

@@ -68,7 +68,7 @@ python3 scripts/check_card.py assets/公告速读卡.md             # FAIL (8 fi
 This package has three evidence legs: disclosure and regulator domains (data-mcp) + parsing of attachments and long filings (omni) + peer and background cross-checking (cue-research).
 **Not installing raises no error** - the card's first two sections (classification + key numbers) depend on no channel and can be produced from the source text alone; retrieval and parsing for the rest have degraded paths (you supply the material + the agent searches freely), and what you lose is evidence density and traceability.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
 3. Install the three skill(s) this package's evidence legs use: `cue-omni-reader` covers the parsing leg, `cue-data-mcp` the disclosure and regulator domains, `cue-research` the peer and background cross-checking - whether the last three sections run is your call; the first two need no channel at all. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
