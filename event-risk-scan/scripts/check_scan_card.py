@@ -4,7 +4,7 @@
 
 用法：
     python3 check_scan_card.py <卡.md>       校验一张卡（默认零网络，不发任何请求）
-    python3 check_scan_card.py --selftest    跑包内两件夹具：好样必须过，坏样四道必须全发
+    python3 check_scan_card.py --selftest    跑包内守护样：好样、坏样与单点反例各档，档名与枚数由末行自报
     python3 check_scan_card.py --help        本说明
 
 出口形制（与套件姊妹件同族）：
@@ -50,6 +50,7 @@ TIME_KEYS = (('数据日', '数据日须是日期形（YYYY-MM-DD 或返货原�
              ('窗口', '窗口须给出起止两个日期'),
              ('运行时刻', '运行时刻须是日期形（本卡跑成的时刻）'))
 DATE_PAT = re.compile(r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}|^\d{4}-\d{2}-\d{2}$')
+DATE_TOKEN = re.compile(r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?')   # 窗口单端点用：整段就得是一个日期
 SRC_PAT = re.compile(r'https?://|doi\.org|\.gov\.cn|csrc|szse|sse\.org|gov\.cn')
 DOCNO_PAT = re.compile(r'document_number|文书号|决定书|编号|〔\d{4}〕\d+|第\d+号')
 RATING = re.compile(r'整体风险|风险等级|风险评级|信用等级|违约概率|评分模型|风险评分|风险打分|打个?分')
@@ -160,6 +161,18 @@ def check(path: Path):
             value = field_value(lines[j], key, [k for k, _ in TIME_KEYS])
             if '__' in value:
                 add('E-FORMAT', '时点', j + 1, f"「{key}」仍是占位（规格：{spec}）")
+            elif key == '窗口':
+                # 窗口是一段区间：整串里搜到任一日期不算合式——起止两端要各自核，
+                # 否则「2024-10-09~待定」这类终点没落的形状会被起点带过去。
+                parts = [x.strip() for x in re.split(r'[~～]', value) if x.strip()]
+                if len(parts) != 2:
+                    add('E-FORMAT', '时点', j + 1,
+                        f"「窗口」没给出起止两端（现值「{value}」实得 {len(parts)} 段；规格：{spec}，形如 起~止）")
+                else:
+                    for which, token in zip(('起点', '终点'), parts):
+                        if not DATE_TOKEN.fullmatch(token):
+                            add('E-FORMAT', '时点', j + 1,
+                                f"「窗口」{which}没落成日期形（现值「{token}」；规格：{spec}——两端各自都须是日期形，一端待定则整段无效）")
             elif not DATE_PAT.search(value):
                 add('E-FORMAT', '时点', j + 1, f"「{key}」没落成日期形（规格：{spec}）")
     secs = section_ranges(lines)
@@ -309,6 +322,7 @@ def report(path: Path):
     return 0
 
 
+# 反例档：窗口终点写成「待定」——时点三件里只坏一个端点，好样其余不动
 def selftest():
     good, bad = HERE / 'fixtures' / 'good-scan-card.md', HERE / 'fixtures' / 'bad-scan-card.md'
     for f in (good, bad):
@@ -329,7 +343,27 @@ def selftest():
     if missing:
         print('   未发出的码 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)}）")
+    mu = HERE / 'fixtures' / 'mut-window-tbd-card.md'
+    if not mu.is_file():
+        print(f"SELFTEST FAIL: 反例夹具缺失 {mu}")
+        return 1
+    mf, mnl = check(mu)
+    mcode = [(m.group(1), m.group(2)) for m in (re.match(r'\[(E-[A-Z]+)\] \[([^\]]+)\]', x) for x in mf) if m]
+    mhit = ('E-FORMAT', '时点') in mcode
+    mnamed = any('终点没落成日期形' in x for x in mf)
+    print(f"selftest 反例档：{mu.name} 扫过 {mnl} 行，发条 {len(mf)} 条（规格 ≥1、须发 E-FORMAT／时点、详行点名病灶）")
+    for x in mf[:3]:
+        print('   实发详行 → ' + x[:130])
+    if not mf:
+        print('   意外：单点反例过了闸（缺陷——本档治的正是「判据只查其一」把门过宽）')
+        ok = False
+    elif not mhit:
+        print('   未命中预期码与道名 → 期望 E-FORMAT／时点，实发 %s' % ('、'.join(a + '／' + b for a, b in mcode) or '无'))
+        ok = False
+    elif not mnamed:
+        print("   发条未点名病灶 → 详行里找不到「终点没落成日期形」")
+        ok = False
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)} · 反例档 {'发红' if (mf and mhit and mnamed) else '未发红!'}）")
     return 0 if ok else 1
 
 
@@ -338,7 +372,7 @@ def main() -> int:
         description="校验一张风险扫描卡是否合五段契约与红线（零网络）。",
         epilog="出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋两类计数。判定全集在本脚本现值。")
     ap.add_argument('card', nargs='?', help='待校验的卡（markdown）')
-    ap.add_argument('--selftest', action='store_true', help='跑包内两件夹具（好样须过、坏样四道全发）')
+    ap.add_argument('--selftest', action='store_true', help='跑包内守护样（好样、坏样与单点反例各档，档名与枚数由末行自报）')
     args = ap.parse_args()
     if args.selftest:
         return selftest()

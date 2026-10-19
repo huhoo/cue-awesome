@@ -33,7 +33,7 @@ The three unreached surfaces (litigation / equity chain / supply-chain contagion
 | 4 Sanctions surface | Runs only for cross-border entities; hits carry `document_number` or URL; a miss states the window | Missing date or anchor -> `E-ANCHOR`; surface status ticked other than exactly one, a miss without a window, or a run without the name-shape declaration -> `E-COVERAGE` |
 | 5 Unreached and pending | All three surfaces named one by one; human items under `[待人工]` | A missing face or unticked status -> `E-COVERAGE`; an unreached face claiming a leg without this run's provenance -> `E-BANWORD` (a fabricated leg) |
 
-The header has its own hard set: **the three self-labels** (`AI 整理初稿`, `请回官方原文核对`, `不构成投资建议`) **plus the three time marks** - data date, window, run time; missing any one voids the card, and each must land in date form. Anything absent or still a placeholder is an `E-FORMAT`.
+The header has its own hard set: **the three self-labels** (`AI 整理初稿`, `请回官方原文核对`, `不构成投资建议`) **plus the three time marks** - data date, window, run time; missing any one voids the card, and each must land in date form. Anything absent or still a placeholder is an `E-FORMAT`. The gate checks the **shape** of a date (year-month-day forms), not the calendar: `2026-02-30` and `2026-13-01` pass the shape check, and both `~` and `～` work as window separators - even a doubled `~~` raises no error. Whether the calendar is valid and whether that window really is those days rests on the returned source: take it back to the official text. A gate PASS is not a calendar check.
 
 ## 3. Getting started
 
@@ -55,13 +55,32 @@ Read `assets/风险扫描卡.md` first (that is the five-part shape), then `SKIL
 
 ```bash
 python3 scripts/check_scan_card.py --help                        # usage; no network
-python3 scripts/check_scan_card.py --selftest                     # good sample must pass, bad sample must fire all four lanes
+python3 scripts/check_scan_card.py --selftest                     # good sample must pass, bad sample must fire all four lanes, the single-point counter-example must fire and name which endpoint is broken
 python3 scripts/check_scan_card.py scripts/fixtures/good-scan-card.md    # should PASS
 python3 scripts/check_scan_card.py scripts/fixtures/bad-scan-card.md     # should FAIL, all four codes
+python3 scripts/check_scan_card.py scripts/fixtures/mut-window-tbd-card.md                               # should FAIL: the window end date replaced by a placeholder; the finding names the broken endpoint
 python3 scripts/check_scan_card.py assets/风险扫描卡.md                    # should FAIL - a blank card failing the gate is the design, not a defect
 ```
 
 **Take every count from the script's own report line** (`FAIL: … (N items)` and the `扫过 N 行，发条 0 条` line under `PASS:`); this file does not restate them - a restated count becomes a second source of truth and drifts on every script change. **Two line-count conventions**: `扫过 N 行` counts `split('\n')` elements, which is `wc -l` **+1** (the trailing newline occupies one); report the convention together with the number.
+
+### First-time Cue setup (three steps, skippable)
+
+This package has one evidence leg: retrieval across penalty, regulator-measure, guarantee and sanctions domains (data-mcp).
+**Not installing raises no error** - without the channel the scan card can still be filled by hand and pass the same format gate - what the checker actually enforces is: an empty penalty table must tick the windowed "not found" declaration and an empty guarantee face must tick the "0 rows" declaration; **separating "not run" from "not reached" is a human check - the gate does not judge that state**. What you lose is coverage and traceability.
+
+1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
+3. Install the one skill(s) this package's evidence legs use: `cue-data-mcp` - the scan card's domain routing and lookups depend on it. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
+   - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
+   - one at a time: `npx skills add sensedeal/cue-skills --skill cue-data-mcp`.
+
+   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
+   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
+   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
+
+This package always **reports expected time and spend before launching** any retrieval and never runs a channel on its own; billing and availability follow the server response; What gets reported first is the time scale and whether a spend occurs, not a price - no pricing wording of any kind is written here. The three unreached faces (litigation / equity chain / supply-chain contagion) are only declared unreached on the card - never launched, inferred, or substituted with outside search; no domain list and no tool count are restated.
 
 ## 4. Boundaries and non-promises
 
@@ -82,7 +101,7 @@ python3 scripts/check_scan_card.py assets/风险扫描卡.md                    
 
 The output shape comes from a live run of `check_scan_card.py` as it now stands: a failure prints one line `FAIL: <file> (N items)`, then each detail line **starts with an error code (one of four `E-*`)** such as `[E-FORMAT]`, `[E-ANCHOR]` (its `处罚出处` lane marks a source cell without link or document number), `[E-BANWORD]`, followed by the lane name, the line number and that lane's spec; the last line `码表:` lists only the codes actually used and what they mean. A pass prints `PASS: <file> (...)` plus two counts - lines scanned, findings raised - **read off that line, with the `split('\n')` convention (one more than `wc -l`) named alongside**.
 
-This package uses **four** codes, byte-identical to the sibling packages' table. The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
+This package uses **four** codes, byte-identical to the sibling packages' table (those packages are repo-side and do not ship with this published artifact; compare inside the repository). The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
 
     grep -n "^E_LEGEND" ~/.workbuddy/skills/event-risk-scan/scripts/check_scan_card.py
 
@@ -108,7 +127,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 
 ## 7. Capability boundaries (honest list)
 
-- The five-part contract, the four lanes and the two fixtures are all in place; the good sample's finding count and the bad sample's four-lane firing are **read off the script's own line**, not restated here.
+- The five-part contract, the four lanes and three fixtures are all in place (good, one counter-example per lane, and a single-point counter-example where only the window endpoint is broken); the good sample's finding count and the bad sample's four-lane firing are **read off the script's own line**, not restated here.
 - **Three surfaces are scanned and no more**: penalties and regulatory measures, external guarantees (proxy surface), global sanctions enforcement. Litigation, equity chain and supply-chain contagion are outside this package and get named face by face on the card.
 - **No hit-rate, pass-rate or timing figure**, and never "scanned, therefore clear". How many items appear is whatever this run returned; a wrong primary key voids the whole card (primary-key rule in section 1, step 1).
 - **Guarantees are a proxy surface, not the guarantee record itself**: the envelope carries its own `as_of` snapshot note, and zero rows still self-report the time point - but "truly none" versus "extraction gap" cannot be self-proven upstream, so the card must carry it as pending.
@@ -117,7 +136,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 ## 8. Dependencies
 
 - `python3` (only `scripts/check_scan_card.py`; standard library, zero network, sends no request)
-- The data legs are platform retrieval channels (domains follow the live catalog). Without a channel the template can still be filled by hand and pass the same shape gate - but then "unreached" and "not run" must be ticked separately, never merged into one claim.
+- The data legs are platform retrieval channels (domains follow the live catalog). Without a channel the template can still be filled by hand and pass the same shape gate - but the gate only enforces the windowed "not found" tick on an empty penalty table and the "0 rows" tick on an empty guarantee face; ticking "not run" apart from "not reached" is a human check the gate does not judge, never merged into one claim.
 
 ## 9. Resources
 
@@ -128,6 +147,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 | `scripts/check_scan_card.py` | Four-lane gate (shape / anchor / red line / count and declaration) |
 | `scripts/fixtures/good-scan-card.md` | Good-sample fixture (fictional content, never a real-company reference) |
 | `scripts/fixtures/bad-scan-card.md` | Bad-sample fixture (one counter-example per lane) |
+| `scripts/fixtures/mut-window-tbd-card.md` | Single-point counter-example fixture (exactly one thing broken; runs in the counter-example tier of `--selftest`) |
 | `README.en.md` | English translation of this file |
 
 See `CHANGELOG.md` for versions.
