@@ -49,6 +49,58 @@ import re
 import subprocess
 import sys
 import tempfile
+
+# ── M263：本闸自建的临时目录必须自带清理，且创建失败要响亮（不得带病判定）──────────
+# 病灶实测（lead 01:55 票面＋我本拍复算）：`/fast/tmp` 里 `check-shipment-*` 存量 **4,929 枚／669 MB**，
+# 近 90 分钟又长出 53 枚——每跑一次完整判据建 1 枚、每跑一次 `--selftest` 建 24 枚，**全文无一对称清理**。
+# 连带伤害比满盘更要命：满盘时 `mkdtemp` 抛异常或被调方变量塌成空串，runner 拿空 TMP 继续跑，
+# 把「环境故障」伪装成「包缺陷」（M240 验收当场撞过）。故本闸：①凡自建临时目录一律登记、退出时删；
+# ②`--keep-tmp` 显式保留（要留就明说是我在留，并打印路径）；③创建失败当场非 0 退码说一句人话，绝不续跑。
+_TMP_MADE: list = []
+_KEEP_TMP = False
+
+
+def mk_tmp(prefix: str) -> Path:
+    """建一枚本闸自用的临时目录：登记待清、失败即响亮退出（不返回空串，不留半成品）。"""
+    global _TMP_MADE
+    try:
+        d = Path(tempfile.mkdtemp(prefix=prefix))
+    except Exception as exc:                                      # noqa: BLE001
+        d = None
+    if d is None or str(str(d)).strip() == '' or not d.is_dir():
+        print(f'check_shipment: 无法创建临时目录（prefix={prefix}，TMPDIR={tempfile.gettempdir()}）——'
+              f'多为磁盘满；本闸**不带病判定**，请腾出空间或设 TMPDIR 后复跑', file=sys.stderr)
+        sys.exit(3)
+    _TMP_MADE.append(d)
+    return d
+
+
+def _tmp_cleanup() -> None:
+    """退出时清掉本闸自建的目录；`--keep-tmp` 时改为逐枚打印保留路径（承「删证据前先固化 provenance」）。"""
+    if not _TMP_MADE:
+        return
+    if _KEEP_TMP:
+        print(f'--keep-tmp：本闸自建临时目录 **保留 {len(_TMP_MADE)} 枚**（未删，可复查）：')
+        for d in _TMP_MADE:
+            print(f'  保留 {d}')
+        return
+    import shutil as _sh
+    leftovers = []
+    for d in _TMP_MADE:
+        if not d.exists():
+            continue                      # 站点自己已删（如 build_zip 的 staging），不算漏
+        _sh.rmtree(d, ignore_errors=True)
+        if d.exists():
+            leftovers.append(str(d))
+    if leftovers:
+        print(f'check_shipment: 自建临时目录 **未删净 {len(leftovers)} 枚**（被占用或非空），逐枚列路径：', file=sys.stderr)
+        for x in leftovers:
+            print(f'  未删净 {x}', file=sys.stderr)
+    _TMP_MADE.clear()
+
+
+import atexit as _atexit
+_atexit.register(_tmp_cleanup)
 import zipfile
 from pathlib import Path
 
@@ -241,7 +293,7 @@ def load_shipment(target: Path):
         return target, None, None, False, None, None
     if target.is_file() and zipfile.is_zipfile(target):
         data = target.read_bytes()
-        tmp = Path(tempfile.mkdtemp(prefix="check-shipment-"))
+        tmp = mk_tmp("check-shipment-")
         with zipfile.ZipFile(target) as zf:
             names_all = zf.namelist()
             n_entries = len(names_all)
@@ -609,7 +661,7 @@ def k12_dropped(rel: str) -> bool:
 def build_zip(dst: Path, root: Path, drop=(), include_fixtures=True, apply_k12=True, sink=None):
     """返回 dst（调用点形制不变）；剔件清单写进 sink（list），供报账写明「本次模拟剔了哪些形制」。"""
     import shutil
-    staging = Path(tempfile.mkdtemp(prefix="cs-build-"))
+    staging = mk_tmp("cs-build-")
     dropped = []
     for rel in sorted(p for p in root.rglob("*") if p.is_file() and "__pycache__" not in p.parts):
         r = rel.relative_to(root).as_posix()
@@ -669,7 +721,7 @@ def selftest(quiet=False) -> int:
         res.append(f"   {name:26} 期望 {str(want):>10} 实得 {str(got):>10} {detail}")
 
     # 一档：合规样必绿
-    z = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("good"))
+    z = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("good"))
     r = check(z, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("一档-合规样必绿", 0, emit(z, "demopkg", r[0], r[1], quiet=True))
     # 一档c（K-18：解包口一律 python zipfile）：中文条目名的包必须绿，且本闸源码不得起 unzip
@@ -681,13 +733,13 @@ def selftest(quiet=False) -> int:
                   for c in _ast.walk(nd)
                   if isinstance(c, _ast.Constant) and isinstance(c.value, str) and "unzip" in c.value]
     one("一档c-解包口不起 unzip 进程", True, not argv_unzip, f"命中={argv_unzip[:2] or '无'}")
-    zh = Path(tempfile.mkdtemp(prefix="cs-zh-")) / "demopkg"
+    zh = mk_tmp("cs-zh-") / "demopkg"
     zh.mkdir()
     (zh / "SKILL.md").write_text("# 中文条目名样例\n\n模板见 `assets/交付物模板.md`；说明见 `references/中文说明.md`。\n", encoding="utf-8")
     (zh / "assets").mkdir(); (zh / "references").mkdir()
     (zh / "assets" / "交付物模板.md").write_text("# 模板\n", encoding="utf-8")
     (zh / "references" / "中文说明.md").write_text("说明一句\n", encoding="utf-8")
-    zz = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "中文包名.zip", zh)
+    zz = build_zip(mk_tmp("cs-z-") / "中文包名.zip", zh)
     rzh = check(zz, "中文包名", None, MAX_BYTES_DEFAULT, True)
     one("一档d-中文条目名必绿（不假红）", 0, 1 if any(h.sev == "ERROR" for h in rzh[0]) else 0,
         "零发条" if not any(h.sev == "ERROR" for h in rzh[0]) else rzh[0][0].line()[:40])
@@ -699,7 +751,7 @@ def selftest(quiet=False) -> int:
     one("一档b-渠道同字节不误拦", 0, emit(z, "demopkg", r[0], r[1], quiet=True))
 
     # 二档：缺件样必红（把 fixtures 从包里剔掉，能力句与指路都还在）
-    zm = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("missing"),
+    zm = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("missing"),
                    include_fixtures=False)
     rm = check(zm, "demopkg", None, MAX_BYTES_DEFAULT, True)
     codes = {h.code for h in rm[0] if h.sev == "ERROR"}
@@ -708,15 +760,15 @@ def selftest(quiet=False) -> int:
 
     # 二档c（反向自证，防恒真）：把同一枚缺件样 SKILL 里那两句指路／能力句删掉，必须转绿——
     #         证明二档的红来自那两行判据，而不是「逢这份样必红」。
-    inv = Path(tempfile.mkdtemp(prefix="cs-inv-")) / "demopkg"
+    inv = mk_tmp("cs-inv-") / "demopkg"
     shutil.copytree(fixture_root("missing"), inv)
     sk = inv / "SKILL.md"
     sk.write_text("# 示例包 SKILL\n\n只讲能力，不指样本、不承诺自测。\n", encoding="utf-8")
-    zi = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", inv)
+    zi = build_zip(mk_tmp("cs-z-") / "demopkg.zip", inv)
     one("二档c-删掉承诺即转绿（防恒真）", 0, emit(zi, "demopkg", *check(zi, "demopkg", None, MAX_BYTES_DEFAULT, True)[0:2], quiet=True))
 
     # 三档：自测真跑必红（包里带着会退 1 的入口）
-    zr = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("red"))
+    zr = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("red"))
     rr = check(zr, "demopkg", None, MAX_BYTES_DEFAULT, True)
     rcodes = {h.code for h in rr[0] if h.sev == "ERROR"}
     one("三档-真跑非零必红", 1, emit(zr, "demopkg", rr[0], rr[1], quiet=True))
@@ -729,7 +781,7 @@ def selftest(quiet=False) -> int:
     one("四档b-目录输入只 WARN 不判体积", 0, emit(droot, "demopkg", rd[0], rd[1], quiet=True))
 
     # 五档（双跑确定性）：**两形各一枚**字节两跑报告逐字节同
-    zr_ok = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("runner-good"))
+    zr_ok = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("runner-good"))
     for tag, zz in (("selftest 形", z), ("runner 形", zr_ok)):
         a = subprocess.run([sys.executable, "-B", __file__, str(zz)], capture_output=True, text=True)
         b = subprocess.run([sys.executable, "-B", __file__, str(zz)], capture_output=True, text=True)
@@ -740,18 +792,18 @@ def selftest(quiet=False) -> int:
     rh = check(zr_ok, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("八档-合规 runner 样必绿", 0, emit(zr_ok, "demopkg", rh[0], rh[1], quiet=True))
     one("八档b-入口形标注为 runner", True, any("runner" in n for n in rh[1]), f"读数={rh[1][-1][:56]}")
-    zrm = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("runner-missing"))
+    zrm = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("runner-missing"))
     rrm = check(zrm, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("八档c-缺件 runner 样必红", 1, emit(zrm, "demopkg", rrm[0], rrm[1], quiet=True))
     one("八档d-发红码含 S-MISSING", True, "S-MISSING" in {h.code for h in rrm[0] if h.sev == "ERROR"})
-    zrr = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("runner-red"))
+    zrr = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("runner-red"))
     rrr = check(zrr, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("八档e-runner 真跑非零必红", 1, emit(zrr, "demopkg", rrr[0], rrr[1], quiet=True))
     one("八档f-发红码含 S-SELFTEST", True, "S-SELFTEST" in {h.code for h in rrr[0] if h.sev == "ERROR"},
         f"详行={next((h.line() for h in rrr[0] if h.code=='S-SELFTEST'), '无')[:64]}")
 
     # 九档（lead 新逮的形制缺陷：随机临时目录名进报账＝双跑不可 diff）：
-    zpl = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("runner-pathleak"))
+    zpl = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("runner-pathleak"))
     rpl = check(zpl, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("九档-路径泄漏样真跑必红", 1, emit(zpl, "demopkg", rpl[0], rpl[1], quiet=True))
     one("九档b-发红码含 S-SELFTEST", True, "S-SELFTEST" in {h.code for h in rpl[0] if h.sev == "ERROR"})
@@ -765,7 +817,7 @@ def selftest(quiet=False) -> int:
 
     # 十档（M220：四类假红必绿、两类必红、K-12 剔形制必写进报账）
     def tier(kind):
-        zz = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root(kind))
+        zz = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root(kind))
         return zz, check(zz, "demopkg", None, MAX_BYTES_DEFAULT, True)
 
     for kind, label in (("url-green", "外链不进指针集"), ("crosspkg-green", "跨包与安装位不判本包缺件"),
@@ -788,24 +840,24 @@ def selftest(quiet=False) -> int:
     one("十档f-png 被 K-12 剔后指路必红", 1,
         1 if any(h.sev == "ERROR" and h.code == "S-MISSING" and "demo-verifiable.png" in h.ref for h in rr2[0]) else 0)
     sink_probe = []
-    zp = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("png-red"), sink=sink_probe)
+    zp = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("png-red"), sink=sink_probe)
     one("十档g-报账写出剔了哪些形制", True, any(d.startswith("K-12") for d in sink_probe), f"剔={sink_probe[:2]}")
 
     # 六档b（lead 的两枚实测事实钉成机器判据）：
     #   ①体积闸只认 zip 字节——目录哪怕塞满 2 MiB 也不得发 ERROR（防「拿仓内 du 对渠道闸」那类假前提）
-    big = Path(tempfile.mkdtemp(prefix="cs-big-")) / "demopkg"
+    big = mk_tmp("cs-big-") / "demopkg"
     shutil.copytree(fixture_root("good"), big)
     (big / "assets" / "big.bin").write_bytes(b"\0" * 2_000_000)
     rbig = check(big, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("六档b-目录2MiB不判体积", 0, emit(big, "demopkg", rbig[0], rbig[1], quiet=True))
     #   ②渠道回下载那份也要能跑，两跑结论不一致必红
-    zb = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("missing"), include_fixtures=False)
+    zb = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("missing"), include_fixtures=False)
     rp = check(z, "demopkg", zb, MAX_BYTES_DEFAULT, True)
     one("六档c-两枚字节结论不一必红", 1, emit(z, "demopkg", rp[0], rp[1], quiet=True))
     one("六档d-发红码含 S-PARITY", True, "S-PARITY" in {h.code for h in rp[0] if h.sev == "ERROR"})
 
     # 七档：输入读不动必发 S-INPUT（不自掩）
-    bogus = Path(tempfile.mkdtemp(prefix="cs-z-")) / "not-a-zip.zip"
+    bogus = mk_tmp("cs-z-") / "not-a-zip.zip"
     bogus.write_text("这不是 zip", encoding="utf-8")
     rb = check(bogus, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("七档-读不动不自掩", True, {h.code for h in rb[0]} == {"S-INPUT"}, f"实得 {sorted({h.code for h in rb[0]})}")
@@ -813,7 +865,7 @@ def selftest(quiet=False) -> int:
     # 十一档（K-20：渠道 2026-10-13 撞出来的**第二道独立硬限**——条目 ≤200，目录条目照计）：
     #   本闸此前只数文件，dd 随样态代理件报 535 条目、渠道报 1,000 并 400 拒收。
     #   这是 M220「模型错了一处」的同罪形（少报方向），故三枚档一起钉：口径、超限必红、合规不误拦。
-    ze = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("entries-nested"))
+    ze = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("entries-nested"))
     with zipfile.ZipFile(ze) as zf:
         got = len(zf.namelist())
     pred = predict_entries(fixture_root("entries-nested"))
@@ -837,13 +889,13 @@ def selftest(quiet=False) -> int:
         any(h.code == "S-MISSING" and h.ref == "references/deep/inside.md" for h in ra[0] if h.sev == "ERROR"),
         f"实得 {[(h.code, h.ref) for h in ra[0]]}")
     # 档案进报账要**不剔类型**才看得见（build_zip 默认按 K-22 把压缩包剔掉，正是渠道真形制）
-    zae = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip",
+    zae = build_zip(mk_tmp("cs-z-") / "demopkg.zip",
                     fixture_root("arch-dangling"), apply_k12=False)
     re_ = check(zae, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十二档c-档案本身进报账", True, any("corpus.tar.gz" in n and "成员 1" in n for n in re_[1]),
         f"读数={[n[:56] for n in re_[1] if '档案' in n]}")
     sink_arch = []
-    zna = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("arch-dangling"),
+    zna = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("arch-dangling"),
                     sink=sink_arch)
     one("十二档d-压缩包按 K-22 剔出模拟包", True, any(d.startswith("K-12:corpus.tar.gz") for d in sink_arch),
         f"剔={sink_arch[:2]}")
@@ -853,7 +905,7 @@ def selftest(quiet=False) -> int:
 
     # 十三档（运行产物示意图 vs 包内布局图，lead 把这枚形制判断报给我裁）：
     #   豁免只认「围栏块根行含 <占位> 目录」那种交付目录示意图；包内布局图不占这个便宜。
-    zg = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("tree-output-green"))
+    zg = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("tree-output-green"))
     rg = check(zg, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十三档-交付目录示意图必绿", 0, emit(zg, "demopkg", rg[0], rg[1], True))
     one("十三档b-豁免计入报账读数", True, any("示意图" in n and "不计 1 处" in n for n in rg[1]),
@@ -864,7 +916,7 @@ def selftest(quiet=False) -> int:
         len([h for h in zr3[1][0] if h.sev == "ERROR"]) == 1
         and zr3[1][0][0].ref == "references/coverage-map.md",
         f"实得 {[(h.code, h.ref) for h in zr3[1][0] if h.sev == 'ERROR']}")
-    zl = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("tree-layout-red"))
+    zl = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("tree-layout-red"))
     rl = check(zl, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十三档e-包内布局图不借豁免", 1, emit(zl, "demopkg", rl[0], rl[1], True))
     one("十三档f-发红码含该缺失件", True,
@@ -873,14 +925,14 @@ def selftest(quiet=False) -> int:
 
     # 十四档（K-23 扩展名面，lead 用四次 400 换来的实证边界）：
     #   对象＝发布物 zip 内条目名的后缀。实测拒收族发红；未实证过的后缀**只 WARN 不冒充结论**。
-    zt = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("type-k23"))
+    zt = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("type-k23"))
     rt = check(zt, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十四档-实测拒收后缀必红", 1, emit(zt, "demopkg", rt[0], rt[1], True))
     one("十四档b-发红码含 S-TYPE 且点到那枚件", True,
         any(h.code == "S-TYPE" and h.ref.endswith("LEDGER.sha256") for h in rt[0] if h.sev == "ERROR"),
         f"实得 {[(h.code, h.ref.rsplit('/', 1)[-1]) for h in rt[0] if h.sev == 'ERROR']}")
     # 防恒真：剔掉那枚拒收件（留下同包其余件）必须转绿——红来自那一枚，不是逢样必红
-    zt2 = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("type-k23"),
+    zt2 = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("type-k23"),
                     drop=("LEDGER.sha256",))
     rt2 = check(zt2, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十四档c-剔掉拒收件即转绿（防恒真）", 0, emit(zt2, "demopkg", rt2[0], rt2[1], True))
@@ -894,7 +946,7 @@ def selftest(quiet=False) -> int:
     # 十五档（M220 追加，lead 2026-10-14 渠道回字节逐枚跑出来的**判据空跑**）：
     #   unittest 形入口（包内有 test_*.py）旧版根本不认——cue-lead-pieces／cue-omni-ontology
     #   各自解包件里 discover 退 0 且末行 OK，闸却报「0 枚真跑＋PASS」＝把「没跑」读成「跑过且绿」。
-    zug = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("unittest-green"))
+    zug = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("unittest-green"))
     rug = check(zug, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十五档-unittest 形入口必被真跑且退 0", 0, emit(zug, "demopkg", rug[0], rug[1], True))
     one("十五档b-入口形标注为 unittest", True, any(r[1] == "unittest" for r in rug[2]["ran"]),
@@ -912,7 +964,7 @@ def selftest(quiet=False) -> int:
         f"实得 {[(h.code, h.ref) for h in rug0[0] if h.sev == 'ERROR']}")
     # 十五档g（lead 票面第 520 行②：「0 枚真跑」不得并类）——报账要当场分写出两件事
     # 十六档（M228：`.yaml` 入集后不得顺手把真被拒的放过——集要扩，判据不能软）
-    zyy = build_zip(Path(tempfile.mkdtemp(prefix="cs-z-")) / "demopkg.zip", fixture_root("yaml-allowed"))
+    zyy = build_zip(mk_tmp("cs-z-") / "demopkg.zip", fixture_root("yaml-allowed"))
     ryy = check(zyy, "demopkg", None, MAX_BYTES_DEFAULT, True)
     one("十六档-已受理族不再背 WARN", True,
         not any(h.code == "S-TYPE" and h.sev == "WARN" and "yaml" in h.detail for h in ryy[0]),
@@ -922,7 +974,7 @@ def selftest(quiet=False) -> int:
         f"实得={[(h.sev, h.ref.rsplit('/', 1)[-1]) for h in ryy[0] if h.code == 'S-TYPE']}")
 
     # 十七档（K-25：渠道实供＝平铺无顶层目录；本地建包＝带单一顶层目录。判据不能挑布局）
-    d17 = Path(tempfile.mkdtemp(prefix="cs-17-"))
+    d17 = mk_tmp("cs-17-")
     ztop = d17 / "top.zip"
     build_zip(ztop, fixture_root("good"))
     zflat = d17 / "flat.zip"
@@ -978,7 +1030,7 @@ def repo_scan(repo: Path, max_bytes: int, quiet: bool, max_entries: int = MAX_EN
     对象是「树构建出的 A 态字节」，不是渠道供体——渠道真字节仍须用 `check_shipment.py <zip> --repo <包>` 现验。"""
     bad, good, over = [], 0, []
     for pkg in sorted(d for d in repo.iterdir() if (d / "SKILL.md").is_file()):
-        z = Path(tempfile.mkdtemp(prefix="cs-scan-")) / f"{pkg.name}.zip"
+        z = mk_tmp("cs-scan-") / f"{pkg.name}.zip"
         dropped = []
         build_zip(z, pkg, include_fixtures=False, sink=dropped)
         hits, notes, _ = check(z, pkg.name, None, max_bytes, True, pkg, max_entries)
@@ -1021,8 +1073,13 @@ def main() -> int:
     ap.add_argument("--selftest", action="store_true", help="跑四档守护样＋双跑确定性")
     ap.add_argument("--repo-scan", metavar="仓根", nargs="?", const=".", help="CI 用：按渠道老配方从工作树逐包建 zip 再判（报账态起步）")
     ap.add_argument("--repo", help="仓内该包目录（可选）：给每条 S-MISSING 补一句分诊——属打包排除还是指路写错")
+    ap.add_argument("--keep-tmp", action="store_true",
+                    help="保留本闸自建的临时目录并打印其路径（默认退出时清理；要留就明说）")
     ap.add_argument("--list", action="store_true", help="列判定码")
     args = ap.parse_args()
+
+    global _KEEP_TMP
+    _KEEP_TMP = bool(getattr(args, "keep_tmp", False))
 
     if args.list:
         for c, spec in CODE_LEGEND.items():
