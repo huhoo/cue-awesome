@@ -21,12 +21,19 @@
     H-PATH     ② 工作区悬空路径（verify/ logs/ dispatch/ BOARD 等仓外或他目录指路）
     H-POINTER  ②b 包内相对指路目标不存在（assets/… references/… 等——机检可验的那一半）
     H-STATE    ③ 施工状态语（在途/证据票/候账/候 X 裁/随我铃/收卷/交卷/派单…）
+    H-STALE    ③b 施工进度标签（P0 骨架／细化候×开单／仍待完善…）——**只判成品面**（历史条目不回改，见 CONTRIBUTING 留痕原则）
     H-DATE     ④ 内部时点戳（「截至 20xx」类过程日期；边界该直接写边界）
     H-ATTRIB   ⑤ 过程归因与账目叙事（需求凭据=/实测由 M1xx/账回/跑回/判词/VERIFIED…）
+    H-GIFT-UNIT ⑥ §5-1 对外额度句缺单位（送 500／500…每日 10／500…signup·daily·per day 而行内无「积分／credits」）
+               ——**WARN 族**（不是五禁本体，报文里打「口径⑥」不打「五禁⑥」）：判据串显式列出，宽式子串重复禁用；
+               射程限 README／SKILL 门面句与包内 references，assets／examples 模板与样例面不判；CHANGELOG 不判（逐码不入门）
 
 面与分级（判据口径：能力句直述、指路可跟随、归因留内部）：
-    成品面  SKILL*.md / README*.md（含仓根集合仓说明）/ assets/** / references/**  → 五禁全适用，命中=ERROR
-    CHANGELOG  CHANGELOG*.md                                                       → 守①③④⑤（②不在此面），命中=WARN
+    成品面  SKILL*.md / README*.md（含仓根集合仓说明）/ assets/** / references/**  → 五禁全适用（含 ③b 子项），命中=ERROR
+    CHANGELOG  CHANGELOG*.md                                                       → 守①③④⑤（②③b⑥不在此面），命中=WARN
+    逐码降级  WARN_CODES＝{H-GIFT-UNIT}：这支即便命中成品面也记 **WARN** 不记 ERROR——它判的是「等他票补齐」的
+              过渡态（M288 落字前应红、落字后归零），拿 ERROR 去卡会把整仓门钉死在别人名下的在途字上。
+              计数因此**逐条走**（一枚面可同时出两档），表头显该面最重的一档。
     不检面  CONTRIBUTING*（贡献者文档，内部指路是它的职责）/ docs/ / scripts/ / NOTICE / LICENSE / .github
     「lead」一类英文产品词**不入词表**（cue-lead-pieces 的 lead pieces 是正式术语，入表即假阳）。
 
@@ -63,18 +70,62 @@ RULES = (
      "仓外或他目录指路不得出现在成品面（verify/、logs/、dispatch/、BOARD）；指路只许相对本包"),
     ("H-STATE", "③", re.compile(r"在途|证据票|候账|候\s*(?:Owner|M\d|[1-6]\.1)|随我铃|收卷|交卷|派单|(?<!作)工单|候裁|候批|待你|等你一句"),
      "施工状态语禁入成品面（读者无从解释「在途/候账/随我铃」是什么意思）"),
+    # ③b：施工进度标签——与 ③ 同族但词面不同（「P0 骨架」说的是包的状态，不是「在途」这类流程遥测）。
+    # **只判成品面**：历史 CHANGELOG 条目里「由 P0 骨架重写为九节」是当时的 factual record，按留痕原则不判，
+    # 故本码**不进 CHANGELOG_CODES**（那是整面豁免之外的逐码豁免，与留痕原则同一层）。
+    ("H-STALE", "③b", re.compile(r"P[0-9]\s*骨架|骨架\s*·\s*设计权威|(?:仍是|尚是|还是|暂为|尚在)\s*(?:纯)?骨架"
+                                  r"|(?:细化|完善|扩写|补全)\s*候\s*[^，。；、）)]{0,12}(?:开单|派单|开票)"
+                                  r"|候\s*[^，。；、）)]{0,10}\s*(?:细化|完善|补全|开单)"
+                                  r"|待(?:细化|补全|扩写|完善)|占位待(?:补|填)|TODO\s*[:：]|FIXME"),
+     "③ 的子项：成品面不写施工进度标签（「P0 骨架」「细化候×开单」「仍待完善」「TODO:」类）——它写的是包的状态，不是能力；只判成品面"),
     ("H-DATE", "④", re.compile(r"截至\s*20\d{2}(?:[-/.年]\d{1,2}(?:[-/.日]\d{1,2})?)?|20\d{2}-\d{2}-\d{2}\s*(?:未立|未证|实测)"),
      "过程日期不写在墙上：能力边界直接写边界（「本件不做 X」），何时测的不进成品面"),
     ("H-ATTRIB", "⑤", re.compile(r"需求凭据|实测由|账回|跑回|判词|VERIFIED|派\s*[1-6]\.1|归\s*[1-6]\.1|据\s*[1-6]\.1|哨兵单枪|catalog-diff"),
      "过程归因与账目叙事禁入成品面（出处叙事进内部账；成品只写结论形制：能做什么/不能做什么/以什么为准）"),
+    # ⑥：对外额度句缺单位。唯一许可句是 §5-1「注册送 500 积分、每日 10 积分，以服务端为准」——
+    # 这条红线由闸守，不由 lead 的眼睛守（M289）。判据串**显式列出**，不用宽式：
+    # 宽式「任意 ≥10 字子串同行重复」实测跑出 95 枚假红，猜串读出过一枚假缺（同日两枚教训）。
+    # 两支豁免写在尺里、不靠注释：同行已有「积分／credits」即不发条——所以「送 500 积分、每日再 +10」
+    # 这种「500 带单位、10 并列其后」的合规形制天然不红，无须第二套规则。
+    # 与 H-STALE 同族形制：**不进 CHANGELOG_CODES**；射程再限门面句与 references（见 GIFT_SCOPE_SKIP）。
+    ("H-GIFT-UNIT", "⑥", re.compile(r"^(?!.*(?:积分|(?i:credits))).*?"
+                                     r"(?P<hit>送\s*500"
+                                     r"|500[^\n]{0,40}?每日[^\n]{0,8}?(?:再\s*)?\+?10"
+                                     r"|500[^\n]{0,90}?(?:signup|daily|per day))"),
+     "对外额度句必须带单位（§5-1 许可句形：注册送 500 积分、每日 10 积分，以服务端为准）——裸数字是承诺，带单位才是事实"),
 )
 
 SKIP_OUTPUT_POINTERS: list[tuple[str, int, str]] = []
 EXEMPT_DISCARDED: list[tuple[str, str]] = []   # 因窄化被弃用的测试面同名件命中（报账用，不静默吞）
 
-CHANGELOG_CODES = {"H-TICKET", "H-STATE", "H-DATE", "H-ATTRIB"}  # ② 不在 CHANGELOG 面判（charter 只列 ①③④⑤）
+CHANGELOG_CODES = {"H-TICKET", "H-STATE", "H-DATE", "H-ATTRIB"}  # CHANGELOG 面**逐码**判这四支（①③④⑤）；
+#   ②（H-PATH／H-POINTER）与 ③b（H-STALE）、⑥（H-GIFT-UNIT）不在此面判——**逐码不入门**是豁免的唯一形制，
+#   没有「整面豁免」这种口子（M258 裁定，M289 沿用）。
+WARN_CODES = {"H-GIFT-UNIT"}    # ⑥即便命中成品面也记 WARN：它判的是「等他票补齐」的过渡态，
+#   用 ERROR 会把整仓门卡死在别人名下的在途字上；归零与否看 WARN 计数走向，不看门是否红。
+GIFT_SCOPE_SKIP = ("assets", "examples")   # ⑥射程：README／SKILL 门面句＋包内 references；模板面与样例面不判
 LEGEND = {c: spec for c, _, _, spec in RULES}
 LEGEND["H-POINTER"] = "包内相对指路目标不存在——要么补文件，要么删指路；不许留断链"
+
+
+def hit_of(m) -> str:
+    """命中文字：尺子带命名组 `hit` 就报那一小段（⑥的行首否证要吃掉前缀，不能把整行当命中），
+    其余码没有这组，逐字节照旧报整段匹配。"""
+    g = m.groupdict().get("hit")
+    return g if g else m.group(0)
+
+
+def ban_label(code: str) -> str:
+    """报文里的族名前缀：①〜⑤（含 ②b／③b 子项）是五禁本体；⑥是 §5-1 口径校验，不冒充「五禁⑥」。"""
+    return "口径" if code == "H-GIFT-UNIT" else "五禁"
+
+
+def severity(face: str | None, code: str) -> str:
+    """面与码两头定级：成品面=ERROR、CHANGELOG=WARN；WARN_CODES 里的码不分面一律 WARN。
+    一枚文件可以同时出两种级别，所以计数按**逐条**走，表头只显示该面最重的一档。"""
+    if code in WARN_CODES:
+        return "WARN"
+    return "ERROR" if face == "product" else "WARN"
 
 # 指路提取：markdown 链接目标 + 反引号内的相对路径形
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
@@ -107,6 +158,16 @@ def classify(path: Path) -> str | None:
     if "assets" in parts or "references" in parts:
         return "product"
     return None
+
+
+def gift_scope_ok(path: Path) -> bool:
+    """⑥射程（M289 票面）：门面句 README／SKILL 与包内 references 判；assets／examples 不判。
+    仓外路径按成品面从严判那条路照旧给判——射程收的是包内模板与样例面，不是「仓外免检」。"""
+    try:
+        parts = path.resolve().relative_to(ROOT).parts
+    except ValueError:
+        return True
+    return not any(seg in GIFT_SCOPE_SKIP for seg in parts[1:-1])
 
 
 def iter_faces() -> list[Path]:
@@ -200,12 +261,13 @@ def check_pointers(path: Path, text: str) -> list[tuple[int, str, str]]:
 
 
 # ---------------------------------------------------------------- 单文件检查
-def check_file(path: Path) -> list[tuple[str, int, str, str]]:
-    """返回 [(码, 行号, 严重级 note, 详句)]；severity 由调用方按面定。"""
+def check_file(path: Path) -> list[tuple[str, int, str]]:
+    """返回 [(码, 行号, 详句)] 三元组——**severity 不在这里出**，由调用方按面与码定（`severity(face, code)`）。
+    （M271：本函数标注曾写四元组、实返三元组，按标注解包必 `ValueError`——是标注骗人，不是接口少了一项。）"""
     face = classify(path)
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.split("\n")
-    finds: list[tuple[str, int, str, str]] = []
+    finds: list[tuple[str, int, str]] = []
 
     if face == "product":
         for lineno, ptr, why in check_pointers(path, text):
@@ -214,9 +276,11 @@ def check_file(path: Path) -> list[tuple[str, int, str, str]]:
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
             continue
+        if code == "H-GIFT-UNIT" and not gift_scope_ok(path):
+            continue
         for lineno, line in enumerate(lines, 1):
             for m in pat.finditer(line):
-                finds.append((code, lineno, f"五禁{ban}命中「{m.group(0)}」（规格：{spec}）"))
+                finds.append((code, lineno, f"{ban_label(code)}{ban}命中「{hit_of(m)}」（规格：{spec}）"))
                 break  # 每行每码只报一次，报告不被同一行刷屏
     return sorted(finds, key=lambda x: (x[1], x[0]))
 
@@ -232,13 +296,15 @@ def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
 
     for f in faces:
         face = classify(f)
-        sev = "ERROR" if face == "product" else "WARN"
         finds = check_file(f)
-        if finds:
-            per_file.append((f, sev, finds))
+        if not finds:
+            continue
+        sevs = {severity(face, code) for code, _, _ in finds}
+        sev = "ERROR" if "ERROR" in sevs else "WARN"   # 表头显最重一档；计数逐条走（一枚面可两档同出）
+        per_file.append((f, sev, finds))
         for code, _, _ in finds:
             used_codes.add(code)
-            if sev == "ERROR":
+            if severity(face, code) == "ERROR":
                 errors += 1
             else:
                 warnings += 1
@@ -279,7 +345,7 @@ def _fixture_findings(dirpath: Path) -> list[tuple[str, int, str, str]]:
                     continue
                 m = pat.search(line)
                 if m:
-                    finds.append((code, lineno, f.name, f"{ban}命中「{m.group(0)}」"))
+                    finds.append((code, lineno, f.name, f"{ban}命中「{hit_of(m)}」"))
         if not is_changelog:
             for lineno, ptr, why in _pointers(text, dirpath, f.parent, f):
                 finds.append(("H-POINTER", lineno, f.name, f"`{ptr}` {why}"))
@@ -376,6 +442,37 @@ def selftest() -> int:
     if not ok5:
         ok = False
 
+    # 档⑥（M258：③b 施工进度标签——成品面必红、CHANGELOG 面不判，两向同取自测夹具）
+    # 点名用**内容锚**（夹具里带「P0 骨架」的那一行），不押「行号＝末行」：夹具日后加行就会假红/假绿。
+    st_bad = [x for x in bad_f if x[0] == "H-STALE" and x[2].endswith("SKILL.md")]
+    st_cl = [x for x in bad_f if x[0] == "H-STALE" and x[2].endswith("CHANGELOG.md")]
+    st_lines = (bad / "SKILL.md").read_text(encoding="utf-8", errors="replace").splitlines()
+    st_at = [i for i, ln in enumerate(st_lines, 1) if "P0 骨架" in ln]
+    st_named = next((x for x in st_bad if x[1] in st_at), None)
+    ok6 = bool(st_bad) and not st_cl and bool(st_at) and st_named is not None
+    print(f"档⑥ ③b 施工进度标签：成品面发红 {len(st_bad)} 条（期望 ≥1）｜点名到带「P0 骨架」的行（第 {'/'.join(map(str, st_at)) or '—'} 行）＝{'是' if st_named else '否'}"
+          f"｜CHANGELOG 面发条 {len(st_cl)} 条（期望 0，留痕原则）＝{'对' if ok6 else '错'}")
+    if not ok6:
+        ok = False
+
+    # 档⑦（M289：⑥ 对外额度句缺单位——成品面必红、CHANGELOG 面不判、合规三形不得红、射程与逐码降级都验）
+    gu_bad = [x for x in bad_f if x[0] == "H-GIFT-UNIT" and x[2].endswith("SKILL.md")]
+    gu_cl = [x for x in bad_f if x[0] == "H-GIFT-UNIT" and x[2].endswith("CHANGELOG.md")]
+    gu_good = [x for x in _fixture_findings(good) if x[0] == "H-GIFT-UNIT"]
+    gu_anchor = [x for x in gu_bad if "送 500" in x[3]]
+    scope_ok = (gift_scope_ok(ROOT / "demo" / "README.md") and gift_scope_ok(ROOT / "demo" / "references" / "r.md")
+                and not gift_scope_ok(ROOT / "demo" / "assets" / "t.md")
+                and not gift_scope_ok(ROOT / "demo" / "examples" / "e" / "SKILL.md"))
+    sev_ok = (severity("product", "H-GIFT-UNIT") == "WARN" and severity("product", "H-STATE") == "ERROR"
+              and severity("changelog", "H-STATE") == "WARN" and "H-GIFT-UNIT" not in CHANGELOG_CODES)
+    ok7 = bool(gu_bad) and not gu_cl and not gu_good and bool(gu_anchor) and scope_ok and sev_ok
+    print(f"档⑦ ⑥ 额度句缺单位：成品面发红 {len(gu_bad)} 条（期望 ≥1）｜点名到裸数字行＝{'是' if gu_anchor else '否'}"
+          f"｜CHANGELOG 面 {len(gu_cl)} 条（期望 0，逐码不入门）｜合规样 {len(gu_good)} 条发条（期望 0：许可句全形／"
+          f"「500 积分＋每日再 +10」并列／英文带 credits）｜射程 assets·examples 不判＝{'对' if scope_ok else '错'}"
+          f"｜逐码分级 WARN 族＝{'对' if sev_ok else '错'}｜本档={'对' if ok7 else '错'}")
+    if not ok7:
+        ok = False
+
     good_f = _fixture_findings(good)
     print(f"档② 合规样：应零发条，实发 {len(good_f)} 条")
     for c, lineno, fname, d in good_f:
@@ -410,39 +507,47 @@ def check_one(path: Path, strict: bool) -> int:
         note = "（仓内但非公开面，按成品面从严判）" if inside else "（仓外路径，按成品面从严判）"
     else:
         note = f"（面分类：{face}）"
-    sev = "ERROR" if face == "product" else "WARN"
     text = path.read_text(encoding="utf-8", errors="replace")
     finds: list[tuple[str, int, str]] = []
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
             continue
+        if code == "H-GIFT-UNIT" and not gift_scope_ok(path):
+            continue
         for lineno, line in enumerate(text.split("\n"), 1):
             m = pat.search(line)
             if m:
-                finds.append((code, lineno, f"五禁{ban}命中「{m.group(0)}」（规格：{spec}）"))
+                finds.append((code, lineno, f"{ban_label(code)}{ban}命中「{hit_of(m)}」（规格：{spec}）"))
     if face == "product":
         base = _pkg_root(path)
         for lineno, ptr, why in _pointers(text, base, path.parent, path):
             finds.append(("H-POINTER", lineno, f"包内指路 `{ptr}` {why}（规格：{LEGEND['H-POINTER']}）"))
     finds.sort(key=lambda x: (x[1], x[0]))
     codes = {c for c, _, _ in finds}
+    sevs = {severity(face, c) for c, _, _ in finds}
+    sev = "ERROR" if "ERROR" in sevs else "WARN"      # 逐码分级后，表头显最重一档
+    n_warn_only = sum(1 for c, _, _ in finds if severity(face, c) == "WARN")
     if finds:
         print(f"{sev}: {path.name}（{len(finds)} 条）{note}")
         for code, lineno, detail in finds:
-            print(f"  - [{code}] 第 {lineno} 行：{detail}")
+            own = severity(face, code)
+            print(f"  - [{code}{'／' + own if own != sev else ''}] 第 {lineno} 行：{detail}")
+        if n_warn_only:
+            print(f"  其中按码记 WARN（`WARN_CODES`＝{sorted(WARN_CODES)}）：{n_warn_only} 条——不抬升成 ERROR，也不静默吞")
     else:
         print(f"PASS: {path.name} 五禁零命中、指路可跟随 {note}")
     print("  码表: " + "; ".join(f"{c}→{LEGEND[c]}" for c in sorted(codes)))
     if not finds:
         return 0
-    return 1 if (sev == "ERROR" or strict) else 0
+    return 1 if ("ERROR" in sevs or strict) else 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="公开面卫生机检闸（五禁＋指路存在性，纯 stdlib 零网络）。",
-        epilog="出口：ERROR=成品面违禁（发布打回，与红线同级）；WARN=CHANGELOG 命中（留痕原则，人裁）。"
-               "判定与词表全集以本脚本现值为准（--help 看五禁）。")
+        epilog="出口：ERROR=成品面违禁（发布打回，与红线同级）；WARN 有两条通路——①CHANGELOG 面命中（留痕原则，人裁）；"
+               "②成品面命中、但该码在 WARN_CODES 里逐码降级（M289 起，如 ⑥ 额度句缺单位——过渡态不钉门）。"
+               "判定与词表全集以本脚本现值为准（--help 看禁项全集，不止五禁）。")
     ap.add_argument("--strict", action="store_true", help="WARN 也计失败")
     ap.add_argument("--quiet", action="store_true", help="只报汇总")
     ap.add_argument("--selftest", action="store_true", help="跑 scripts/fixtures/hygiene/ 正反守护样＋双跑确定性")
