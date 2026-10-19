@@ -75,14 +75,40 @@ def mk_tmp(prefix: str) -> Path:
     return d
 
 
+def keep_tmp_report(dirs: list) -> list[tuple[str, Path]]:
+    """把登记册分成两档：`在场`／`已自删`。**只读判定**——不删不建，清理逻辑与退码一律不碰（M291 边界）。
+    「站点自己删掉了、路径却还留在登记册」是常态（`build_zip` 的 staging 就是这种形制），所以申报必须
+    两个数并列：只报登记册长度而自称「保留」，等于把没留下的东西报成留下了——用户按那个数去找就扑空。
+    """
+    out: list[tuple[str, Path]] = []
+    for d in dirs:
+        try:
+            alive = d.exists()
+        except OSError:                       # 判定本身出错＝算不在场，绝不抬进「在场 M」
+            alive = False
+        out.append(("在场" if alive else "已自删", d))
+    return out
+
+
+def keep_tmp_lines(dirs: list) -> list[str]:
+    """keep-tmp 的申报文本：首行「登记 N 枚／在场 M 枚」双数并列，随后逐枚标 `[在场]`／`[已自删]`。
+    拆成纯函数是为了让 `--selftest` 能拿一枚**不存在的路径**喂进登记册（注入型反证），
+    而不是只能等人肉跑一次 `--keep-tmp` 去猜它报得对不对。
+    """
+    rows = keep_tmp_report(dirs)
+    n_present = sum(1 for tag, _ in rows if tag == "在场")
+    head = (f'--keep-tmp：本闸自建临时目录 **登记 {len(rows)} 枚／在场 {n_present} 枚**'
+            f'（另有 {len(rows) - n_present} 枚站点已自删——不计入在场，也不称保留）：')
+    return [head] + [f'  [{tag}] {d}' for tag, d in rows]
+
+
 def _tmp_cleanup() -> None:
-    """退出时清掉本闸自建的目录；`--keep-tmp` 时改为逐枚打印保留路径（承「删证据前先固化 provenance」）。"""
+    """退出时清掉本闸自建的目录；`--keep-tmp` 改为**登记 N／在场 M 双数自报**＋逐枚标档。"""
     if not _TMP_MADE:
         return
     if _KEEP_TMP:
-        print(f'--keep-tmp：本闸自建临时目录 **保留 {len(_TMP_MADE)} 枚**（未删，可复查）：')
-        for d in _TMP_MADE:
-            print(f'  保留 {d}')
+        for line in keep_tmp_lines(_TMP_MADE):
+            print(line)
         return
     import shutil as _sh
     leftovers = []
@@ -998,6 +1024,18 @@ def selftest(quiet=False) -> int:
     one("十五档g-零入口报账写明「真无机检面」", True,
         any("真无机检面" in n and "入口存在未识别" in n for n in rg[1]) and not any("真无机检面" in n for n in rug[1]),
         f"绿样读数={[n[:60] for n in rug[1] if '自测入口' in n]}｜未跑读数={[n[:40] for n in rg[1] if '自测入口' in n]}")
+
+    # 廿档（M291：`--keep-tmp` 申报改双数——登记 N／在场 M 并列，逐枚标 [在场]／[已自删]）
+    # 注入型反证：往登记册喂一枚**不存在**的路径，它必须被报成 [已自删] 且不进「在场 M」；跑不出这枚＝本档红。
+    fake = Path(tempfile.gettempdir()) / f"check-shipment-M291INJECT-{os.getpid()}-{len(_TMP_MADE)}"
+    real = fixture_root("good")
+    kl = keep_tmp_lines([real, fake])
+    inj_reported = any(line.endswith(str(fake)) and "[已自删]" in line for line in kl)
+    real_reported = any(line.endswith(str(real)) and "[在场]" in line for line in kl)
+    head_ok = ("登记 2 枚／在场 1 枚" in kl[0]) and not re.search(r"保留 \d+ 枚", kl[0])
+    one("廿档-keep-tmp 申报双数＋反证", True,
+        bool(inj_reported and real_reported and head_ok and real.is_dir()),
+        f"注入枚＝{fake.name}（exists={fake.exists()}）｜首行＝{kl[0][:76]}｜注入命中＝{int(inj_reported)} 枚")
 
     SILENT.clear()
     for line in res:
