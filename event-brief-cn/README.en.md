@@ -63,6 +63,24 @@ python3 scripts/check_card.py scripts/fixtures/bad-card.md    # FAIL (13 finding
 python3 scripts/check_card.py assets/公告速读卡.md             # FAIL (8 findings - a blank card failing the gate is the design, not a defect)
 ```
 
+### First-time Cue setup (three steps, skippable)
+
+This package has three evidence legs: disclosure and regulator domains (data-mcp) + parsing of attachments and long filings (omni) + peer and background cross-checking (cue-research).
+**Not installing raises no error** - the card's first two sections (classification + key numbers) depend on no channel and can be produced from the source text alone; retrieval and parsing for the rest have degraded paths (you supply the material + the agent searches freely), and what you lose is evidence density and traceability.
+
+1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
+3. Install the three skill(s) this package's evidence legs use: `cue-omni-reader` covers the parsing leg, `cue-data-mcp` the disclosure and regulator domains, `cue-research` the peer and background cross-checking - whether the last three sections run is your call; the first two need no channel at all. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
+   - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
+   - one at a time: `npx skills add sensedeal/cue-skills --skill cue-omni-reader`, swapping the last name for `cue-data-mcp` or `cue-research` installs just that one.
+
+   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
+   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
+   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
+
+Everything that spends is **asked before it burns**: one deep-research run takes 3-15 minutes and consumes credits, each launch is reported to you for confirmation (a one-word reply like ok does not count as consent); the parsing leg is billed per file and gets its expected time and spend reported first. Billing and availability follow the server response. What gets reported first is the time scale and whether a spend occurs, not a price - this package writes no pricing wording of any kind, restates no domain list and no tool count.
+
 ## 4. Boundaries and non-promises
 
 - What this skill produces is **a working draft and a structure**, not legal advice and not investment advice. Ratings, target prices, price direction and lasting-impact judgements stay `[待人工]`: it never answers them.
@@ -80,13 +98,13 @@ python3 scripts/check_card.py assets/公告速读卡.md             # FAIL (8 fi
 
 The output shape is taken from a live run of `check_card.py` as it now stands: a failure prints one line `FAIL: <file> (N items)`, then each detail line **starts with an error code (one of four `E-*`)** such as `[E-FORMAT]`, `[E-ANCHOR]`, `[E-BANWORD]`, followed by the lane name, the line number and that lane's spec; the last line `码表:` lists only the codes actually used and what they mean. A pass prints `PASS: <file> (...)` plus two counts - lines scanned, findings raised.
 
-This package uses **four** codes, byte-identical to the sibling packages' table. The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
+This package uses **four** codes, byte-identical to the sibling packages' table (those packages are repo-side and do not ship with this published artifact; compare inside the repository). The fifth, `E-LEDGER`, belongs to ledger state machines; this skill has no ledger, so it is deliberately not enabled - that is not an omission. The full set and the classification rules live in the script, not in this file; run this line from any directory to locate them:
 
     grep -n "^E_LEGEND" ~/.workbuddy/skills/event-brief-cn/scripts/check_card.py
 
 | Symptom (detail prefix) | Cause | Recovery |
 |---|---|---|
-| `[E-FORMAT]` header or date lanes | One of the three self-labels missing, or disclosure date / data date / source left blank or still a placeholder | Complete the header; record only an official locator as the source; state it openly when the two dates disagree |
+| `[E-FORMAT]` header or date lanes | One of the three self-labels missing, or disclosure date / data date / source left blank or still a placeholder | Complete the header; record only an official locator as the source - whether a source really is official is a human check, the gate only judges blank-or-placeholder; state it openly when the two dates disagree |
 | `[E-FORMAT]` section or type lanes | A part is missing or out of order, the type is not single-selected, the classification sentence is not the original title | Restore the order from section 2; keep exactly one tick; copy the announcement title instead of rewording it |
 | `[E-ANCHOR]` figure or basis lanes | A figure has no locator, or an impact candidate's basis is blank or a placeholder | Add a proper locator (page / paragraph / line plus a number); **if you cannot, delete the row - guessing is not an option** |
 | `[E-BANWORD]` banned word, hedge or judgement lanes | A return-promise word appears; a figure is hedged; a rating, target price or price direction is stated without `[待人工]` | Move to a neutral statement or delete; re-copy the number from the source; relocate the judgement into the pending list marked `[待人工]` |
@@ -106,7 +124,7 @@ This package uses **four** codes, byte-identical to the sibling packages' table.
 ## 7. Capability boundaries (honest list)
 
 - The five-part contract, the four lanes and the two fixtures are in place; the good sample's finding count and the bad sample's four-lane firing are **read off the script's own line**, not restated here.
-- **Four real announcements were measured**: every card exits 0 under `check_card.py`, all four single-point break probes exit 1 (the gate really can fail), and the verbatim re-check pass rate is **4/4**. Coverage is four event types (buyback / regulatory letter / administrative penalty / periodic report), one subject each; six other types (earnings pre-announcements, suspensions, equity changes and so on) are not covered, so **4/4 is not "all ten types pass"**. The full-chain account lives in the internal ledger and can be provided on request.
+- **Four real announcements were measured**: every card exits 0 under `check_card.py`, all four single-point break probes exit 1 (the gate really can fail), and the verbatim re-check pass rate is **4/4**. Coverage is four event types (buyback / regulatory letter / administrative penalty / periodic report), one subject each; six other types (earnings pre-announcements, suspensions, equity changes and so on) are not covered, so **4/4 is not "all ten types pass"**. The full-chain account lives in the internal ledger and can be provided on request (the account is repo-side and does not ship with the published artifact).
 - **Three measured limits, stated plainly**: the channel truncates full text at a length limit (whatever it returns now governs), so financial and penalty amounts need the official page or PDF as a second data leg; the Shenzhen regulatory-measure channel returns fields but not body text, so that type's reason sentence goes to the pending list; the extraction footer and the report's own table-of-contents page differ by ±1, so page numbers are always annotated "as in the PDF itself".
 - **4/4 is a verbatim re-check pass rate - not an accuracy figure and not a duration figure**; this package gives no timing, hit-rate or growth number, and the name and blurb faces carry no duration wording either.
 - Channels follow the live catalog as it stands: no domain list, no tool count, no unopened-domain promise; anything not retrieved still goes to the pending list.
