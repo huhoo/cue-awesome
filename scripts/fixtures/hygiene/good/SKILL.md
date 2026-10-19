@@ -20,3 +20,5 @@
 - 产品术语里的英文 lead、board、dashboard 不是内部路径也不是归因。
 - 「下一步工作」「以本次返回为准」「不超过 12 个月」是能力句，不是施工状态语。
 - 版本位 0.1.0、章节号 §4.1、区间 [00:03]~[01:21] 都不是流水号。
+- §5-1 许可句全形：新账号注册送 500 积分、每日 10 积分，以服务端为准。
+- 英文同形：new accounts get 500 credits at signup and 10 credits daily, server-side policy governs.

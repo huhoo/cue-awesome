@@ -24,7 +24,8 @@
     H-STALE    ③b 施工进度标签（P0 骨架／细化候×开单／仍待完善…）——**只判成品面**（历史条目不回改，见 CONTRIBUTING 留痕原则）
     H-DATE     ④ 内部时点戳（「截至 20xx」类过程日期；边界该直接写边界）
     H-ATTRIB   ⑤ 过程归因与账目叙事（需求凭据=/实测由 M1xx/账回/跑回/判词/VERIFIED…）
-    H-GIFT-UNIT ⑥ §5-1 对外额度句缺单位（送 500／500…每日 10／500…signup·daily·per day 而行内无「积分／credits」）
+    H-GIFT-UNIT ⑥ §5-1 对外额度句**两个数字各自带单位**（触发串＝送 500／500…每日 10／500…signup·daily·per day；
+               `500` 与 `10` 之后窗口内各须有「积分／credits」，**缺任一即发条**，命中文字＝那枚裸数字）
                ——**WARN 族**（不是五禁本体，报文里打「口径⑥」不打「五禁⑥」）：判据串显式列出，宽式子串重复禁用；
                射程限 README／SKILL 门面句与包内 references，assets／examples 模板与样例面不判；CHANGELOG 不判（逐码不入门）
 
@@ -85,14 +86,18 @@ RULES = (
     # ⑥：对外额度句缺单位。唯一许可句是 §5-1「注册送 500 积分、每日 10 积分，以服务端为准」——
     # 这条红线由闸守，不由 lead 的眼睛守（M289）。判据串**显式列出**，不用宽式：
     # 宽式「任意 ≥10 字子串同行重复」实测跑出 95 枚假红，猜串读出过一枚假缺（同日两枚教训）。
-    # 两支豁免写在尺里、不靠注释：同行已有「积分／credits」即不发条——所以「送 500 积分、每日再 +10」
-    # 这种「500 带单位、10 并列其后」的合规形制天然不红，无须第二套规则。
-    # 与 H-STALE 同族形制：**不进 CHANGELOG_CODES**；射程再限门面句与 references（见 GIFT_SCOPE_SKIP）。
-    ("H-GIFT-UNIT", "⑥", re.compile(r"^(?!.*(?:积分|(?i:credits))).*?"
-                                     r"(?P<hit>送\s*500"
-                                     r"|500[^\n]{0,40}?每日[^\n]{0,8}?(?:再\s*)?\+?10"
-                                     r"|500[^\n]{0,90}?(?:signup|daily|per day))"),
-     "对外额度句必须带单位（§5-1 许可句形：注册送 500 积分、每日 10 积分，以服务端为准）——裸数字是承诺，带单位才是事实"),
+    # **M298 新 canon＝两个数字都要各自带单位**（Owner 令④「要单位」；旧写法是「行内任意处出现积分／credits
+    # 即整行放行」，那一支全行负向前瞻比令宽——`500 积分、每日再 +10` 这种 10 裸着的并列形从此发条）。
+    # 现形制：`500` 之后窗口（10 字内）须含单位、`10` 之后窗口须含单位，**缺一即发条**，命中文字就是那枚裸数字。
+    # 已知抓不到、也不许为它改成跨行匹配：`500 积分、\n每日再 +10 积分` 这类**跨行句形**——尺按行匹配，
+    # 此形由 4.1 的逐面判据守护（M298 票面③；改成跨行会牵动其它码的射程）。
+    # 与 H-STALE 同族形制：**不进 CHANGELOG_CODES**；射程再限门面句与 references（见 GIFT_SCOPE_SKIP，
+    # assets／examples 不在尺内＝**不得拿「全仓零命中」替这两个面签字**）。
+    ("H-GIFT-UNIT", "⑥", re.compile(
+        r"^(?=.*(?:送\s*500|500[^\n]{0,40}?每日[^\n]{0,8}?(?:再\s*)?\+?10|500[^\n]{0,90}?(?:signup|daily|per day)))"
+        r".*?(?P<hit>(?<![\d.,])500(?![\d])(?![^\n]{0,10}?(?:积分|(?i:credits)))"
+        r"|(?<![\d.,])10(?![\d])(?![^\n]{0,10}?(?:积分|(?i:credits))))"),
+     "对外额度句**两个数字都要带单位**（§5-1 许可句形：注册送 500 积分、每日 10 积分，以服务端为准）——任一枚裸着就是承诺，不是事实"),
 )
 
 SKIP_OUTPUT_POINTERS: list[tuple[str, int, str]] = []
@@ -455,20 +460,27 @@ def selftest() -> int:
     if not ok6:
         ok = False
 
-    # 档⑦（M289：⑥ 对外额度句缺单位——成品面必红、CHANGELOG 面不判、合规三形不得红、射程与逐码降级都验）
+    # 档⑦（M289 立尺、M298 收 canon：⑥ 两个数字各自带单位——成品面必红、并列裸 10 也必红、
+    #        CHANGELOG 面不判、正例只留「两数都带单位」那形、射程与逐码降级都验）
     gu_bad = [x for x in bad_f if x[0] == "H-GIFT-UNIT" and x[2].endswith("SKILL.md")]
     gu_cl = [x for x in bad_f if x[0] == "H-GIFT-UNIT" and x[2].endswith("CHANGELOG.md")]
     gu_good = [x for x in _fixture_findings(good) if x[0] == "H-GIFT-UNIT"]
-    gu_anchor = [x for x in gu_bad if "送 500" in x[3]]
+    gu_lines = (bad / "SKILL.md").read_text(encoding="utf-8", errors="replace").splitlines()
+    ln_both = [i for i, x in enumerate(gu_lines, 1) if "送 500、每日 10" in x]           # 两数全裸那行（内容锚）
+    ln_par = [i for i, x in enumerate(gu_lines, 1) if "500 积分、每日再 +10" in x]         # 并列裸 10 那行（内容锚）
+    gu_anchor = [x for x in gu_bad if x[1] in ln_both and "命中「500」" in x[3]]
+    gu_parallel = [x for x in gu_bad if x[1] in ln_par and "命中「10」" in x[3]]
     scope_ok = (gift_scope_ok(ROOT / "demo" / "README.md") and gift_scope_ok(ROOT / "demo" / "references" / "r.md")
                 and not gift_scope_ok(ROOT / "demo" / "assets" / "t.md")
                 and not gift_scope_ok(ROOT / "demo" / "examples" / "e" / "SKILL.md"))
     sev_ok = (severity("product", "H-GIFT-UNIT") == "WARN" and severity("product", "H-STATE") == "ERROR"
               and severity("changelog", "H-STATE") == "WARN" and "H-GIFT-UNIT" not in CHANGELOG_CODES)
-    ok7 = bool(gu_bad) and not gu_cl and not gu_good and bool(gu_anchor) and scope_ok and sev_ok
-    print(f"档⑦ ⑥ 额度句缺单位：成品面发红 {len(gu_bad)} 条（期望 ≥1）｜点名到裸数字行＝{'是' if gu_anchor else '否'}"
-          f"｜CHANGELOG 面 {len(gu_cl)} 条（期望 0，逐码不入门）｜合规样 {len(gu_good)} 条发条（期望 0：许可句全形／"
-          f"「500 积分＋每日再 +10」并列／英文带 credits）｜射程 assets·examples 不判＝{'对' if scope_ok else '错'}"
+    ok7 = bool(gu_bad) and not gu_cl and not gu_good and bool(gu_anchor) and bool(gu_parallel) and scope_ok and sev_ok
+    print(f"档⑦ ⑥ 额度句两数各自带单位：成品面发红 {len(gu_bad)} 条（期望 ≥2）"
+          f"｜两数全裸那行（第 {'/'.join(map(str, ln_both)) or '—'} 行）点到「500」＝{'是' if gu_anchor else '否'}"
+          f"｜并列裸 10 那行（第 {'/'.join(map(str, ln_par)) or '—'} 行）点到「10」＝{'是' if gu_parallel else '否（M298 的 canon 没落进尺里）'}"
+          f"｜CHANGELOG 面 {len(gu_cl)} 条（期望 0，逐码不入门）｜合规样 {len(gu_good)} 条发条（期望 0：中文两数带单位／英文两数带 credits）"
+          f"｜射程 assets·examples 不判＝{'对' if scope_ok else '错'}（**这两个面零命中不等于它们合规，别拿全仓零命中替它们签字**）"
           f"｜逐码分级 WARN 族＝{'对' if sev_ok else '错'}｜本档={'对' if ok7 else '错'}")
     if not ok7:
         ok = False
