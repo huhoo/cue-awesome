@@ -70,7 +70,7 @@ python3 scripts/check_minutes_card.py assets/会议纪要卡.md                 
 本件的取证腿是一条：音频与视频件的解析（omni），本地件按字节准入、上限由闸自报。
 **不装不报错**——纪要卡可以手填并照样过机检；未开通道时没有逐字稿、没有 [mm:ss] 锚与说话人标签——那些只来自通道返回，本件不猜形制，也不伪造 ASR 谐音后的「清洗版」。
 
-1. 注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）；
+1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
 3. 安装本件取证用到的一枚 skill：`cue-omni-reader`——纪要卡的逐字、[mm:ss] 锚与说话人标签都来自它的返回。这些都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；

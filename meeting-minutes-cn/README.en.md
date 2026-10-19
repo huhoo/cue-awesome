@@ -72,7 +72,7 @@ python3 scripts/check_minutes_card.py assets/会议纪要卡.md                 
 This package has one evidence leg: audio and video parsing (omni), where local files are admitted by byte size and the gate reports its own limit.
 **Not installing raises no error** - the minutes card can be filled by hand and still passes the machine gate; without the channel there is no verbatim transcript, no [mm:ss] anchors and no speaker labels - those exist only in the channel's response, this package neither guesses their format nor fakes a cleaned version of ASR homophones.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
 3. Install the one skill(s) this package's evidence legs use: `cue-omni-reader` - the transcript, the [mm:ss] anchors and the speaker labels on the minutes card come from its response. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
