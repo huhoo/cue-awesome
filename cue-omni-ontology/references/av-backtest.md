@@ -6,6 +6,8 @@
 
 ## Layers of evidence (machine facts are recorded in the internal run ledger, available on request)
 
+这里的 L1–L4 是**回测腿档**（本文件是这套字母在本仓的唯一定义处，别包不引用它）：L1＝URL 侧整片可读性，L2＝本地整档字节一致，L3＝本地有界片段进解析链，L4＝在 L3 的产物上跑完整链。它与本仓另外几包里用作**来源可信级**的 L1/L2/L3 无关——那三级指来源（域直查／用户直供／深研二手），不是腿档。
+
 | Layer | What | Result |
 |---|---|---|
 | L1 URL leg, full videos | 3 public full meetings: 当升 2025H1 回放 (86 MB, h264+aac, 374 s, newscdn CDN), 建行 2025年度 (1.34 GB, 5866 s), 建行 2026H1 (1.34 GB, 5265 s, vod.ccb.cn). Legs: remote `detail=text` (lead ×3) + this path `detail=grounded` (×2) | **all PARSE_FAILED**: `failure_scope=parser, retryable=false, operation_created=true, parser_started=true, billed=false, content_released=false`. Generic message, no per-cause signal; unchanged retries not attempted (per schema) |
