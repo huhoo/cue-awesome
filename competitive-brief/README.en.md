@@ -34,7 +34,7 @@ This package ships its own linter and eight guard samples (4 good + 4 bad), so t
 
 ```bash
 python3 scripts/check_brief.py --help                       # four-lane description, no network
-python3 scripts/check_brief.py --selftest                   # expected last line: selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4）, exit 0
+python3 scripts/check_brief.py --selftest                   # expected last line: selftest: ALL GREEN, exit 0; the tier names and their counts are reported by that line itself and are not restated here
 python3 scripts/check_brief.py scripts/fixtures/good-full.md            # expected PASS (scanned 22 lines, 0 findings)
 python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # expected FAIL (declared counts vs measured, emits E-COVERAGE)
 ```
@@ -46,7 +46,9 @@ All thresholds live in the current `scripts/check_brief.py`; the four lanes are 
 - `cue-omni-reader`: parse web pages / PDFs / audio / video → extract text into evidence table
 - `cue-research`: cross-verify, deep research
 
-Both are free. The skill still runs without them, with reduced capability.
+The install command forms and the three-part self-check (skill installed ≠ credentials configured ≠ channel connected - each verified separately) live in `references/cue-onboarding.md`, section 开通三步; they are not restated here so the two places cannot drift.
+
+Both are provided through Cue channels; usage follows what the server returns, and this package makes no pricing promise. The skill still runs without them, with reduced capability.
 
 ## Domestically reachable evidence paths (when overseas sources do not load)
 
@@ -74,7 +76,7 @@ Cached knowledge or speculation must never masquerade as a sourced row.
 
 ## FAQ and anti-patterns (what you try -> this skill declines, because -> where to go)
 
-This package is a methodology: it ships **no executable gate**, so anti-patterns are held only by the evidence table
+This package is mostly methodology; its only executable surface is the shape checker `scripts/check_brief.py` (four `E-*` codes, `--selftest` available): it judges format and declarations, not whether a line deserves to be written, so anti-patterns are still held by the evidence table
 and the coverage statement. Judgements follow `SKILL.md`'s constraints and `references/evidence-standards.md` as they
 stand; nothing below re-lists them exhaustively.
 
@@ -90,7 +92,7 @@ stand; nothing below re-lists them exhaustively.
 ## When something goes wrong (symptom -> cause -> recovery)
 
 **Whatever is absent from this run's tool output is written as "not found"**: a parameter, field or enum value that does not appear there must not be filled from memory - write "not found" and log it on the pending or coverage list; a blank never stands in for it.
-This package has no scripts, therefore **there are no error codes to report**. The rows below cover process stalls and
+Error codes are not restated here: `scripts/check_brief.py` reports them per detail line, and its closing "码表:" line lists only the codes actually used in that run. The rows below cover process stalls and
 follow only the constraints already written in `SKILL.md` (no new vocabulary, no promise of tool capability):
 
 | Symptom | Cause | Recovery |

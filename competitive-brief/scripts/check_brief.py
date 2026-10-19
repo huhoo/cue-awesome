@@ -4,7 +4,7 @@
 
 用法：
     python3 check_brief.py <evidence-table.md> [--brief <brief.md>]   校验一对产物
-    python3 check_brief.py --selftest                                  跑包内八件夹具（好样 4＋坏样 4）
+    python3 check_brief.py --selftest                                  跑包内守护样：好样、坏样与真样例各档，档名与枚数由末行自报
     python3 check_brief.py --help                                      本说明
 
 出口形制（与套件姊妹件同族）：
@@ -281,7 +281,7 @@ def main() -> int:
         epilog="出口：FAIL 一行计数＋逐条 E-* 详行＋码表；PASS 一行＋扫过与实测计数。判定全集在本脚本现值。")
     ap.add_argument('table', nargs='?', help='待校验的证据表（markdown）')
     ap.add_argument('--brief', help='同批简报（可选；覆盖度申报在读入文件内判）')
-    ap.add_argument('--selftest', action='store_true', help='跑包内八件夹具：好样 4 须全过、坏样 4 须各点一道')
+    ap.add_argument('--selftest', action='store_true', help='跑包内守护样：好样、坏样与真样例各档，档名与枚数由末行自报')
     ap.add_argument('--quiet', action='store_true', help='PASS 行不带计数附注')
     args = ap.parse_args()
     if args.selftest:

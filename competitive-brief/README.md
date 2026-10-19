@@ -32,7 +32,7 @@
 
 ```bash
 python3 scripts/check_brief.py --help                       # 四道说明，零网络
-python3 scripts/check_brief.py --selftest                   # 末行期望：selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4），退码 0
+python3 scripts/check_brief.py --selftest                   # 末行期望：selftest: ALL GREEN，退码 0；档名与各档枚数由脚本那一行自报，本文不复述
 python3 scripts/check_brief.py scripts/fixtures/good-full.md            # 期望 PASS（扫过 22 行，发条 0 条）
 python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望 FAIL（申报计数与表内实测不符，发 E-COVERAGE）
 ```
@@ -44,7 +44,9 @@ python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望
 - `cue-omni-reader`：解析网页/PDF/录音/视频，提取原文填入证据表
 - `cue-research`：交叉验证、深度研究
 
-不计费。不装也能跑，但缺能力。
+开通与安装的命令写法与三层分开自查见 `references/cue-onboarding.md` §开通三步；本文不复述一份，以免两处漂移。
+
+两者都由 Cue 通道提供，用量以服务端返回为准，本件不作价格承诺。不装也能跑，但缺能力。
 
 ## 国内可达取证路径（境外源不通时怎么办）
 
@@ -68,7 +70,7 @@ python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望
 
 ## 常见问题与反模式（你想这么用 → 本件不接，因为 → 替代去向）
 
-本件是方法论，不是脚本：包内**没有可执行门禁**，所以「反模式」全靠证据表与覆盖度声明来兜。
+本件以方法论为主，可执行面只有形制机检 `scripts/check_brief.py`（四枚 `E-*` 码，`--selftest` 可跑）：它判形制与申报对不对，不替你判「这一条该不该写」，所以「反模式」仍靠证据表与覆盖度声明来兜。
 判据以 `SKILL.md` 的约束与 `references/evidence-standards.md` 现文为准，本文不作穷尽复述。
 
 | 你想 | 本件接不接，为什么不接 | 替代去向 |
@@ -83,7 +85,7 @@ python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望
 ## 出错了怎么办（症状 → 原因 → 恢复动作）
 
 **未见于本次返回的一律写「未检索到」**：参数名、字段名、枚举值没有出现在本次工具返回里的，不得凭印象填写；写「未检索到」并记入待核清单或覆盖率账，不得留空顶替。
-本件无可执行脚本，也就**没有错误码可报**；下面是流程卡住时的症状与恢复动作，
+错误码不在本文复述：`scripts/check_brief.py` 的详行自报 `E-*` 码，末行「码表:」只列那次真正用到的码与含义；下面是流程卡住时的症状与恢复动作，
 全部按 `SKILL.md` 既有约束写（不新造术语、不承诺工具能力）：
 
 | 症状 | 原因 | 恢复动作 |
