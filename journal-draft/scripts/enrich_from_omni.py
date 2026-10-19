@@ -540,12 +540,19 @@ def main():
         },
     }
     if a.outline and os.path.exists(a.outline):
+        # 上游返货坏了就停下，不产出一份看起来正常的草稿：这句 outline 只在语义层里做补强，
+        # 缺它或不合式都该由取数方补回，而不是让下游拿一份没有大纲锚的成稿当正常件用。
         try:
             oj = json.loads(read_text(a.outline))
-            sem["outline_nodes"] = oj.get("nodes", [])
-            sem["outline_coverage"] = oj.get("coverage")
-        except Exception as e:
-            sys.stderr.write("outline parse fail: %s\n" % e)
+        except json.JSONDecodeError as e:
+            sys.stderr.write("enrich_from_omni: --outline 不是合法 JSON（%s），取数错误——不产出任何文件\n" % e.msg)
+            sys.exit(1)
+        if not isinstance(oj, dict):
+            sys.stderr.write("enrich_from_omni: --outline 是 JSON %s，本件只收对象（形如 {\"nodes\": [], \"coverage\": ...}），"
+                             "取数错误——不产出任何文件\n" % type(oj).__name__)
+            sys.exit(1)
+        sem["outline_nodes"] = oj.get("nodes", [])
+        sem["outline_coverage"] = oj.get("coverage")
 
     if not os.path.isdir(a.out):
         os.makedirs(a.out)

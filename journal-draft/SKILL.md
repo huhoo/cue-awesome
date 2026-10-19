@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.14"
+version: "0.15.15"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -192,6 +192,8 @@ journal-律所- regions   journal-制造业-客户通讯   journal-券商-月度
      → save_result(result_id)              # 落盘完整 Markdown
    enrich_from_omni.py --md <落盘md> --outline <outline.json> --geo <stylespec.json> --out <dir>
    ```
+
+   `--outline` 是可选参数：不给就按无标题树出件（语义层如实缺位）；**一旦给了文件就必须合式**——内容是合法 JSON 但不是对象（数组／字符串／数字／布尔／null），或根本不是合法 JSON，本步退 1 且不产出任何文件，不拿一份「看起来正常但没有大纲锚」的草稿往下走。样例里三支同名脚本同源同改。
 
    `detail="grounded" / "layout"` 才是 Omni 的高保真档（带 grounding/layout sidecar），但要服务端给本账号下发 `omni.direct_grounding_billing.v1` profile；拿到 `DETAIL_CAPABILITIES_UNAVAILABLE` 就是没下发，**不要重试**，退回 text 档 + 几何层补偿即可。篇幅大的样例计费按页计，跑之前先告诉用户预计费用。
 

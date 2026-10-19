@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.15.15 — 2026-10-17（修缺陷：--outline 坏态不再产出「看起来正常的草稿」，三支同名脚本同批改）
+
+- 病灶：enrich_from_omni.py 读 --outline 时把整段取数包在一个宽 except 里——上游返货是合法 JSON 但不是对象（数组／字符串／数字／布尔／null）时，那句「outline parse fail: 'list' object has no attribute 'get'」就是异常原文被当作说明文字外露，脚本随后照常落两件产物并退码 0。实测三处同码同态：数组行改前 rc=0，产物 semantic.json（759 B）＋unit-patterns.draft.md（1055 B）一枚不少，只 stderr 多一句。危害不在退码，在于下游与用户拿到的是一份没有大纲锚却形制齐全的草稿，看起来与正常件无异。
+- 改法（三处同批，防同 token 多落点漏改）：取件时先分两道判——不是合法 JSON 出一句「--outline 不是合法 JSON（原因），取数错误——不产出任何文件」并退 1；是合法 JSON 但不是对象则点名实收类型（list／str／int／NoneType／bool）同形退 1。两道都在任何写出之前，改后数组行 rc=1、Traceback 0、输出目录都未创建（产物清单前后差逐枚列在交付回执）。原先那个宽 except 一并撤掉：它把「读坏了」与「取数错」混成一句，正是这枚缺陷的形状。
+- 未扩面：--outline 不给仍按无标题树出件（可选性未收）；本轮只把「给了但不合式」这一路从静默改成阻断。SKILL.md 取数段补一句写明这条边界，既有承诺一句未删、未改弱（改前 grep read_outline／outline.json／标题树 三面共 4 处现值，无一处写「坏 outline 也照样出件」，故不存在改弱问题）。
+- 双跑：数组行同命令跑两遍输出逐字节同（路径归一后 cmp 同）；好形跑两遍两件产物逐字节同（不退化）。本包现无可跑自带入口（补自测面是另一张活，尚未开工），故「入口双跑」一格本轮以逐形现场跑替代，如实标注。
+- 版本位：0.15.14 → 0.15.15（修缺陷＝patch）。本包单锁（SKILL.md 一枚 version、无 manifest），码内无版本常量需同步；旧值在非 CHANGELOG 面残留 0。新条目无反引号与美元号。
+
 ### 0.15.14 — 2026-10-16（三处缩略指路改指本包内真实所在，发布物内可跟随）
 
 - 三处面内写的相对路径在发布物里跟不到：`SKILL.md` 与 `references/instantiation.md` 各一处写 `assets/unit-patterns.md`、`assets/examples/qiming-regional-sample/unit-patterns.md` 句内写 `assets/stylespec.json`——本包没有这两个顶层路径，样例件的真身在 `assets/examples/qiming-regional-sample/` 同名件里（现测 8,972 B 与 56,435 B，逐枚 stat 过）。三处一律**改指真实所在的全路径**，不改判据、不删指路。
