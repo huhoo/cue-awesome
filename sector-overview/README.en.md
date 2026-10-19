@@ -8,7 +8,7 @@
 
 Most sector reports can't answer that: verdicts fly, and nowhere in the text is a comparable series cited. This piece does the opposite: **give it an industry name + a window, get back a six-section brief (≤6 pages) in which every verdict word (rising / falling / recovering / under pressure are common examples — which words count is set by the checker as it now stands, not by this list) carries, in the very same sentence, the series it relies on** (an `S<n>` anchor with basis and as-of date) — and every sentence that can't, honestly reads "no comparable series, no conjuncture judgement". Thin is fine. Unanchored verdicts are not.
 
-**Input**: an industry (Shenwan/CITIC L1 or a colloquial name; ambiguity → candidate list, never a guess) + window (default: last 4 complete quarters) + optional focus
+**Input**: an industry (a Shenwan/CITIC first-tier industry name — 一级行业 — or a colloquial name; ambiguity → candidate list, never a guess) + window (default: last 4 complete quarters) + optional focus
 **Output**: `sector-<industry>-<window>/` — `report.md` (portrait & takeaways / volume-price & drivers / supply-demand & capacity / landscape & representatives / policy timeline / review checklist) · `sources.jsonl` · ledger
 **Cost**: five stages + four gates; ≤1 deep-research run (cost reported and asked before firing); expectation averages off by default
 
@@ -28,7 +28,7 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 - **Verdict-anchor co-location is the lifeblood, and literally gate ②**: which words count as verdict words is not listed here — **the judgement is the union of `JUDGE_PHRASE` and `JUDGE_SINGLE` as they currently stand in `check_sector.py`** (the English words above translate common examples; the machine matches the Chinese strings, examples are not exhaustive — one command prints the live sets, see §5) ⇒ a hit must carry `S<n>` in the same sentence, or the sentence must be the verbatim second-state line (a reworded one still fails while it keeps a verdict word or a second-state hint; a hedge carrying neither is invisible to the machine and sits in the human-review lane) — an unanchored verdict is, by this suite's definition, a hallucination (the sector analogue of the sister ticket's invented dates);
 - **No recycled templates**: each run first derives 2–4 analysis dimensions for *this* industry via one deep-research pass (hogs look at inventory, PV looks at production schedules) — the framework is asked anew, never memorized;
-- **Association-sourced numbers are all L3** and land in the review checklist; sector-mean expectation data is off by default (high-risk oversell, refused at the source).
+- **Association-sourced numbers all carry confidence tier L3 (research-second-hand)** and land in the review checklist; sector-mean expectation data is off by default (high-risk oversell, refused at the source).
 
 ## 3. Quick start (three steps)
 
@@ -38,7 +38,7 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` / `cue-research` (`cue-omni-reader` as needed).
+Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` / `cue-research` (`cue-omni-reader` as needed).
 It runs without Cue too (paste association reports; lines marked user-supplied) — but the anchor discipline doesn't relax: only material that can actually anchor a verdict may carry one.
 
 ## 5. What's in the package
@@ -114,7 +114,7 @@ The five codes are a closed, suite-wide identical set (byte-identical with the f
 
 ## 9. Current status (the blunt list)
 
-- **Building-materials half-course run landed (2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to line-by-line sourcing (research-second-hand rows all carry L3 and sit in the review checklist). **Single authoritative count for the whole repo, scope fixed: the volume-price & drivers section holds 6 table rows, each carrying both a scope column and its source anchor — that number is this section's row count only, not the report-wide sourced-row count and not the L3-tier count.** Competing asphalt quotes from two sources stay un-arbitrated by design; continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
+- **Building-materials half-course run landed (2026-09-21)**: 1 research run (~13 min) + 7 direct lookups + 0 omni; portrait/volume-price/supply-demand moved from all-second-state to line-by-line sourcing (research-second-hand rows all carry tier L3 and sit in the review checklist). **Single authoritative count for the whole repo, scope fixed: the volume-price & drivers section holds 6 table rows, each carrying both a scope column and its source anchor — that number is this section's row count only, not the report-wide sourced-row count and not the L3-tier count.** Competing asphalt quotes from two sources stay un-arbitrated by design; continuous weekly series remain unavailable (five "not found" rows on record): **a half-course anchor pass ≠ a claimable price/volume series capability**; dimension quality stays a design value;
 - **capability state**: public with the repo (current version per this package's `CHANGELOG.md` and frontmatter); **a full end-to-end delivery run has not landed** (the half-course run and the smoke are both ≠ full delivery) — until it does, section coverage, runtime and dimension quality stay design values and are not claimed as verified;
 - **Not submitted to any skill market** (P2 frozen repo-wide; timing is the Owner's call);
 - no charts (tables carry as-of dates); no market-data flow, no expectation means; companies appear only as anchored aggregates, never as commentary.
