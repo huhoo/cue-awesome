@@ -32,7 +32,12 @@ Omni parsing and cue-research consume credits: before launching, the agent tells
 
 ## First-time Cue setup (three steps, optional)
 
-Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-omni-reader`: `npx skills add sensedeal/cue-skills --skill cue-omni-reader` (`cue-data-mcp` / `cue-research` as needed; install steps in each of their SKILL.md files).
+Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install the three skills this package uses: `cue-omni-reader` is the parsing leg, add `cue-data-mcp` to list filings, add `cue-research` (at most once, optional) for "why now" background. All three ship in Cue's official skill collection (sensedeal); one command, two forms - whole set `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install), or one at a time `npx skills add sensedeal/cue-skills --skill cue-omni-reader` (swap the last name for `cue-data-mcp` or `cue-research` to install just that one).
+
+   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
+   - credentials configured: the `CUE_API_KEY` from the previous step exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
+   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
 
 It also runs without Cue: `cue.py local` reads the same public filings with local parsing and the checking rules are identical — the measured numbers above were produced this way; but pages come from local extraction, tables may break into loose lines, and you do not see what Cue-channel evidence looks like.
 
@@ -112,12 +117,14 @@ python3 scripts/test_skill_regression.py
 python3 scripts/cue.py --help
 ```
 
+Two runs are byte-comparable: this self-check emits no elapsed-time line and no temporary paths - every file opened by the regression sample and by cue.py is closed immediately - the entry checks handles two ways: file objects still referenced and open after the run (these never get destructed and never emit ResourceWarning) plus warnings surfaced at destruction time; either non-zero flips the exit code, because no-warning alone does not mean no live handle, and the summary line reads only "Ran 12 tests" plus "OK/FAILED". Test count and verdicts are unchanged; only the conclusion is compared. The entry discriminates handle leaks itself too (the C1 family): after the suite it forces one collection pass, and any unclosed handle is named by count with a non-zero exit - the check lives inside the entry, not in an outer `-W` (which only turns the warning into "Exception ignored" and still exits 0), and not in a plain-run grep count (that branch is tautological: it reports 0 whether or not a handle leaks).
+
 ## FAQ and anti-patterns (you want to → this skill does not, because → go here instead)
 
 - Decide whether the company will default → not this skill; it only guarantees quotes come from the source, not that signals are right → you or your credit model decide; this skill supplies checkable evidence.
 - Check claims from research notes, news or third-party databases → not this skill; it reads the company's own filings only → find the underlying announcement or 10-K text first.
 - Cover Hong Kong, bond prospectuses or private companies → not yet; `fetch` only lists cninfo and SEC EDGAR → you can parse other public files with Omni and register them with `ingest --sid … --kind … --date … --title …`, but that route is untested.
-- Turn several filings into an updatable knowledge package that tracks cross-period changes and basis conflicts → not this skill; it verifies quotes and writes lead pieces → [cue-omni-ontology](../cue-omni-ontology/README.en.md) in this repository: updatable knowledge packages, change briefs and a numeric pack, with the same verbatim evidence.
+- Turn several filings into an updatable knowledge package that tracks cross-period changes and basis conflicts → not this skill; it verifies quotes and writes lead pieces → [cue-omni-ontology](../cue-omni-ontology/README.en.md) in this repository (a repository-relative path that does not ship inside the published artifact): updatable knowledge packages, change briefs and a numeric pack, with the same verbatim evidence.
 - Treat `--fix` output as final → not recommended; the swapped-in sentence is the nearest original text chosen by the program, not reviewed by a person for whether it still supports the claim → for key conclusions, look at the page (`page` command).
 
 ## When something goes wrong (symptom → cause → recovery)
@@ -147,4 +154,4 @@ python3 scripts/cue.py --help
 
 ## Boundaries and license
 
-Uses only the company's public filings; not investment or credit advice. Lead pieces and verification output contain limited source excerpts; check the source's terms before sharing. Code and docs are MIT (see LICENSE in this package). The Chinese README is authoritative; agent instructions follow `SKILL.md` (Chinese primary), and `SKILL.en.md` is its synchronized translation.
+Uses only the company's public filings; not investment or credit advice. Lead pieces and verification output contain limited source excerpts; check the source's terms before sharing. Code and docs are MIT; the license text sits in this package's directory in the source repository, and the channel artifact does not carry it (the distribution exclusion list drops it along with the demo images). The Chinese README is authoritative; agent instructions follow `SKILL.md` (Chinese primary), and `SKILL.en.md` is its synchronized translation.

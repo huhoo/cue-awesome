@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Checks each quote word for word within ±1 of the cited page: Cue Omni Reader parses company filings (cninfo/EDGAR) into page-numbered text; --fix corrects cites, restores wording, drops unsupported quotes. Not investment advice. Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.4.13"
+version: "0.4.19"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "Check quotes word-for-word within ±1 of the cited page; --fix corrects cites."
@@ -30,7 +30,7 @@ Script: `scripts/cue.py` next to this file (Python 3.9+ standard library). Below
 | **cue-data-mcp** (optional) | `disclosure_cn` (A-share) / `disclosure` (overseas) domains list filings and announcement ids to check and complete the `fetch` list | `cue.py fetch` lists filings from the public cninfo / SEC EDGAR index (zero credit) |
 | **cue-research** (optional, at most once) | Adds industry, peer or event context to "why now", written into `explanation`, **never used as quote evidence** | Not launched; `explanation` relies on the filings only |
 
-Each official skill's own `SKILL.md` governs how to call it: omni's first call is always `parse`, following the live schema; for data-MCP, first `GET https://cuecue.cn/api/mcp-catalog` anonymously for live domains and `routing`, then discover tools with `tools/list` — no hard-coded tool names.
+Each official skill's own `SKILL.md` governs how to call it (those three skill files are external to this package and do not ship with the published artifact): omni's first call is always `parse`, following the live schema; for data-MCP, first `GET https://cuecue.cn/api/mcp-catalog` anonymously for live domains and `routing`, then discover tools with `tools/list` — no hard-coded tool names.
 
 ## Shared rules
 

@@ -2,12 +2,14 @@
 """offline stand-in for the Cue Omni Reader MCP Bridge (stdio JSON-RPC), for the regression tests only.
 Serves parse / get_parse_status / read_result from a sanitized fixture with the real 1.8.x response shapes; no network, no key."""
 import json, sys
-fx = json.load(open(sys.argv[1], encoding='utf-8')); log = sys.argv[2] if len(sys.argv) > 2 else None
+with open(sys.argv[1], encoding='utf-8') as _f: fx = json.load(_f)
+log = sys.argv[2] if len(sys.argv) > 2 else None
 CHUNK = 15                                     # tiny chunks (characters, like the real Bridge never splits a UTF-8 char) to exercise next_cursor paging
 def chunks(part):
     t = fx['parts'][part]; return [t[i:i + CHUNK] for i in range(0, len(t), CHUNK)] or ['']
 def call(name, a):
-    if log: open(log, 'a').write(json.dumps({'tool': name, 'args': a}) + '\n')
+    if log:
+        with open(log, 'a', encoding='utf-8') as _l: _l.write(json.dumps({'tool': name, 'args': a}) + '\n')
     if name == 'parse': return fx['parse_response']
     if name == 'get_parse_status': return fx['final_response']
     if name == 'read_result':

@@ -32,7 +32,12 @@ Omni 解析和 cue-research 会消耗积分：Agent 发起前会先告诉你要�
 
 ## 首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-omni-reader`：`npx skills add sensedeal/cue-skills --skill cue-omni-reader`（`cue-data-mcp` / `cue-research` 按需，装法见各自 SKILL.md）。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装本件用到的三枚 skill：主解析腿是 `cue-omni-reader`，要列公告清单加 `cue-data-mcp`，要给「为何现在」补背景加 `cue-research`（≤1 次，可不做）。三枚都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（把末尾那枚名字换成 `cue-data-mcp` 或 `cue-research` 就只装那一枚）。
+
+   装完把三件事分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。
+   - 装好＝你这一侧重新列一次已安装 skill，清单里能看到上一步那几枚的名字（这只证明文件到位，不证明取到数）；
+   - 配好凭据＝取 api-key 那一步的 `CUE_API_KEY` 存在于本地凭据设施即可——不要把它的值贴进聊天，也不要在终端回显；
+   - 已连＝匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿得到当场返回；域与工具都以那份返回的现值为准，返回里没有的域本件不装也不承诺。
 
 不装也能跑：`cue.py local` 用本地解析把同一批公开文件读进来，核对规则完全一样——上面的实测数字就是这样跑出来的；但页码靠本地抽取，表格可能被拆成散行，看不到 Cue 通道取证的样子。
 
@@ -112,12 +117,14 @@ python3 scripts/test_skill_regression.py
 python3 scripts/cue.py --help
 ```
 
+跑两遍逐字节可比：这条自检的输出不带耗时行也不带临时路径——回归件与 cue.py 里所有开过的文件都即时关闭——入口对句柄的判别走两路：跑完仍被引用、还开着的文件对象（这一类不靠析构、也不会发 ResourceWarning）＋析构期可见的 ResourceWarning，任一路非 0 即翻退码；无警告本身不等于无活句柄，所以两路都在，汇总行只出「Ran 12 tests」与「OK／FAILED」。用例数与判定一字未改，比的只是结论。入口还自带句柄判别（C1 那族）：跑完整套用例后强制回收一次，收到任何一枚未关闭句柄就点名枚数并以非 0 退出——判别在入口内，不靠外面套 `-W`（那只会把警告打成「Exception ignored」，退码仍 0），也不靠普通跑 grep 计数（那支恒真：漏与不漏都报 0）。
+
 ## 常见问题与反模式（你想这么用 → 本件不接，因为 → 替代去向）
 
 - 想让它判断“这家公司会不会违约” → 不接，它只保证引文出自原文，不判断信号对错 → 由你或你的信用模型判断，本件只给可核对的证据。
 - 想核对研报、新闻或第三方数据库里的说法 → 不接，它只读公司自己的披露文件 → 先找到对应的公司公告或 10-K 原文再核对。
 - 想覆盖港股、债券募集说明书或非上市公司 → 目前不接，`fetch` 只会列巨潮资讯和 SEC EDGAR 的清单 → 可以用 Omni 解析其他公开文件后 `ingest --sid … --kind … --date … --title …` 登记读入，但这条路没有实测过。
-- 想把多份公告整理成可更新的知识包，跟踪跨期变化和口径冲突 → 不是本件的活，本件只核对引文、出线索件 → 同仓库 [cue-omni-ontology](../cue-omni-ontology/README.md)：可更新的知识包、变化简报和数字包，证据同样逐字可查。
+- 想把多份公告整理成可更新的知识包，跟踪跨期变化和口径冲突 → 不是本件的活，本件只核对引文、出线索件 → 同仓库 [cue-omni-ontology](../cue-omni-ontology/README.md)（仓内相对路径，不随发布物交付）：可更新的知识包、变化简报和数字包，证据同样逐字可查。
 - 想把 `--fix` 的结果直接当终稿 → 不建议，换上的原句是程序选出的最相近原文，没有人工复核它是否仍支撑原来的说法 → 关键结论请人工看一眼原页（`page` 命令）。
 
 ## 出错了怎么办（症状 → 原因 → 恢复动作）
@@ -147,4 +154,4 @@ python3 scripts/cue.py --help
 
 ## 边界与许可
 
-只依据公司公开披露的文件；不构成投资或信贷建议。线索件和核对结果含有限长度的原文摘录，分享前请确认来源的使用条件。代码及说明为 MIT（见包内 LICENSE）。中文 README 为权威说明；Agent 指令以 `SKILL.md`（中文主）为准，`SKILL.en.md` 是其同步译文。
+只依据公司公开披露的文件；不构成投资或信贷建议。线索件和核对结果含有限长度的原文摘录，分享前请确认来源的使用条件。代码及说明为 MIT；许可文本在本包的源仓库目录内，渠道发布物不随发（分发件排除清单把它与演示图一并排掉）。中文 README 为权威说明；Agent 指令以 `SKILL.md`（中文主）为准，`SKILL.en.md` 是其同步译文。

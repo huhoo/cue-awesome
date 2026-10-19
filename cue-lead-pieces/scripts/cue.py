@@ -25,7 +25,7 @@ import sys, os, re, json, time, argparse, difflib, datetime, urllib.request, url
 UA_SEC = os.environ.get('CUE_SEC_UA', 'cue-lead-pieces research contact@example.com')
 # ---------------------------------------------------------------- text utils
 import unicodedata
-__version__ = '0.4.13'
+__version__ = '0.4.19'
 class CueError(Exception):
     """a user-facing error: printed as one line on stderr, exit code 2 (no traceback)"""
 def nrm_map(s):
@@ -39,10 +39,11 @@ def nrm_map(s):
     return ''.join(out), idx
 def nrm(s): return nrm_map(s)[0]
 def jload(p, d=None):
-    return json.load(open(p, encoding='utf-8')) if os.path.exists(p) else d
+    if not os.path.exists(p): return d
+    with open(p, encoding='utf-8') as f: return json.load(f)
 def jload_lenient(p):
     """answers written by agents sometimes contain unescaped double quotes inside strings; escape a quote that is not followed by , : } ]"""
-    t = open(p, encoding='utf-8').read()
+    with open(p, encoding='utf-8') as f: t = f.read()
     try: return json.loads(t)
     except json.JSONDecodeError: pass
     o, ins, i = [], False, 0
@@ -58,11 +59,12 @@ def jload_lenient(p):
         o.append(ch); i += 1
     return json.loads(''.join(o))
 def jdump(o, p):
-    os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True); json.dump(o, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
+    with open(p, 'w', encoding='utf-8') as f: json.dump(o, f, ensure_ascii=False, indent=1)
 def get(url, headers=None, data=None, tries=4):
     for a in range(tries):
         try:
-            return urllib.request.urlopen(urllib.request.Request(url, data=data, headers=headers or {'User-Agent': 'Mozilla/5.0'}), timeout=90).read()
+            with urllib.request.urlopen(urllib.request.Request(url, data=data, headers=headers or {'User-Agent': 'Mozilla/5.0'}), timeout=90) as r: return r.read()
         except urllib.error.HTTPError as e:
             if a == tries - 1 or (400 <= e.code < 500 and e.code != 429): raise   # 4xx (except rate limit) will not fix itself on retry
             time.sleep(2 * (a + 1))
@@ -73,7 +75,9 @@ def get(url, headers=None, data=None, tries=4):
 def pdf_pages(path, max_pages=1000):
     try:
         import fitz
-        doc = fitz.open(path); return [doc[i].get_text() for i in range(min(doc.page_count, max_pages))]
+        doc = fitz.open(path)
+        try: return [doc[i].get_text() for i in range(min(doc.page_count, max_pages))]
+        finally: doc.close()
     except ImportError:
         import subprocess
         t = subprocess.run(['pdftotext', '-layout', path, '-'], capture_output=True, text=True).stdout.split('\f')
@@ -188,8 +192,10 @@ def local_pages(d, s):
     url = s['source_url']; ext = '.pdf' if url.lower().endswith('.pdf') else '.htm'; p = f"{d}/raw/{s['sid']}{ext}"
     if not os.path.exists(p):
         os.makedirs(f'{d}/raw', exist_ok=True)
-        open(p, 'wb').write(get(url, {'User-Agent': UA_SEC} if 'sec.gov' in url else None)); time.sleep(0.3)
-    return pdf_pages(p) if ext == '.pdf' else html_pages(open(p, encoding='utf-8', errors='ignore').read())
+        with open(p, 'wb') as f: f.write(get(url, {'User-Agent': UA_SEC} if 'sec.gov' in url else None))
+        time.sleep(0.3)
+    if ext == '.pdf': return pdf_pages(p)
+    with open(p, encoding='utf-8', errors='ignore') as f: return html_pages(f.read())
 def write_source(d, meta, s, pages, parser, basis, warnings=()):
     """write pages/<sid>.jsonl + docs/<sid>.txt for one source and update its entry in sources.json"""
     os.makedirs(f'{d}/pages', exist_ok=True); os.makedirs(f'{d}/docs', exist_ok=True)
@@ -375,7 +381,7 @@ def html_tables_to_rows(t):
 def omni_pages(path, bridge=None):
     p, parser, basis, w = _omni_pages(path, bridge); return [html_tables_to_rows(x) for x in p], parser, basis, w
 def _omni_pages(path, bridge=None):
-    raw = open(path, 'rb').read().decode('utf-8', 'ignore')
+    with open(path, 'rb') as f: raw = f.read().decode('utf-8', 'ignore')
     if not path.lower().endswith('.json'):
         p, basis = text_pages(raw); return p, 'omni-text', basis, ['text-only result (no grounding sidecar); page numbers are ' + basis] if basis == 'block' else []
     try: o = json.loads(raw)
@@ -450,7 +456,11 @@ def load(d):
     meta = jload(f'{d}/sources.json'); S = collections.OrderedDict()
     for s in meta['sources']:
         p = f"{d}/pages/{s['sid']}.jsonl"
-        S[s['sid']] = dict(s, text={json.loads(l)['page']: json.loads(l)['text'] for l in open(p, encoding='utf-8')} if os.path.exists(p) else {})
+        pages = {}
+        if os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                for l in f: pages[json.loads(l)['page']] = json.loads(l)['text']
+        S[s['sid']] = dict(s, text=pages)
     return meta, S
 _NC = {}
 def normpage(k, p, t):
@@ -697,7 +707,9 @@ def table_snippet(t, q):
 def fix_answer(path, d, sig, res, S):
     """repair an answer in place; every kept quote is verbatim text of the cited page afterwards. The verify levels themselves are unchanged."""
     bak = re.sub(r'\.json$', '', path) + '.before_fix.json'
-    if not os.path.exists(bak): open(bak, 'w', encoding='utf-8').write(open(path, encoding='utf-8').read())
+    if not os.path.exists(bak):
+        with open(path, encoding='utf-8') as src: body = src.read()
+        with open(bak, 'w', encoding='utf-8') as dst: dst.write(body)
     cn = any(re.search(r'[\u4e00-\u9fff]', S[k]['title'] or '') for k in S) or any(k.startswith(('AR', 'ANN-')) for k in S)
     it = iter(res); log = collections.Counter(); lines = []
     for i, x in enumerate(sig, 1):

@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Agent 思考，Cue 感知：用 Cue Omni Reader 把公司自己的披露（A股巨潮/美股SEC EDGAR）解析成带原PDF页码的原文，产出信用线索件，并逐句核对答案引文是否逐字出自所注页±1；--fix 改正页码、换回原句、删掉原文没有的。可选 Cue data-MCP 列公告、cue-research 补背景；未开通 Cue 本地解析兜底。实测（本地解析、单一模型与宿主、24家）：裸Agent引文39%对不上，本件流程95%逐字可查。不适合：投资与信贷建议。Triggers: credit signals, quote verification, 10-K, 年报、引文核对。"
 license: MIT
-version: "0.4.13"
+version: "0.4.19"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露，建带页码的信用线索件，逐句核对引文是否逐字出自所注页±1，对不上的标出或改回。"
@@ -30,7 +30,7 @@ Agent 思考，Cue 感知。用 Cue 的通道读一家公司自己披露的文�
 | **cue-data-mcp**（可选） | `disclosure_cn`（A 股）/ `disclosure`（海外）域列公告清单和公告索引号，核对、补全 `fetch` 列出的清单 | `cue.py fetch` 从巨潮资讯 / SEC EDGAR 公开索引列清单（零消耗） |
 | **cue-research**（可选，≤1 次） | 给“为何现在”补行业、同业或事件背景，写进 explanation，**不作引文证据** | 不发起；explanation 只依据披露原文 |
 
-官方技能的调用契约以各自 `SKILL.md` 为准：omni 首调永远 `parse`，按实时 schema 调用；data-MCP 先匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿 live 域与 `routing`，再按 `tools/list` 现场发现工具，不硬编码工具名。
+官方技能的调用契约以各自 `SKILL.md` 为准（那三枚技能面属包外件，不随本发布物交付）：omni 首调永远 `parse`，按实时 schema 调用；data-MCP 先匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿 live 域与 `routing`，再按 `tools/list` 现场发现工具，不硬编码工具名。
 
 ## 共守
 
