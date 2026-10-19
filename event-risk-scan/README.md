@@ -69,7 +69,7 @@ python3 scripts/check_scan_card.py assets/风险扫描卡.md                    
 本件的取证腿是一条：处罚与监管措施、对外担保、制裁执法这些域的取数（data-mcp）。
 **不装不报错**——没有通道时，扫描卡仍可手填并过同一道形制闸——机检判的是：处罚段零条目须勾带窗口的「窗口内未检索到」、担保面零条目须勾含「0 行」的申报；**「未跑」与「未达」的分开勾由人核，机检不判这一态**。代价是覆盖面与可回查性。
 
-1. 注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）；
+1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
 3. 安装本件取证用到的一枚 skill：`cue-data-mcp`——扫描卡的域路由与取数全靠它。这些都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；

@@ -69,7 +69,7 @@ python3 scripts/check_scan_card.py assets/风险扫描卡.md                    
 This package has one evidence leg: retrieval across penalty, regulator-measure, guarantee and sanctions domains (data-mcp).
 **Not installing raises no error** - without the channel the scan card can still be filled by hand and pass the same format gate - what the checker actually enforces is: an empty penalty table must tick the windowed "not found" declaration and an empty guarantee face must tick the "0 rows" declaration; **separating "not run" from "not reached" is a human check - the gate does not judge that state**. What you lose is coverage and traceability.
 
-1. Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily - the server-side policy governs);
+1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
 2. Get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> and store it in your local credential facility - **never paste it into chat**; the agent never handles the key;
 3. Install the one skill(s) this package's evidence legs use: `cue-data-mcp` - the scan card's domain routing and lookups depend on it. All of them ship in Cue's official skill collection (sensedeal); one command, two forms:
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
