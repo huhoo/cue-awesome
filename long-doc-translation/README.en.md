@@ -24,7 +24,11 @@ parse → clean & slice → build style guide + glossary → parallel batched tr
 
 ## Scripts (`scripts/`)
 
-`init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py`
+`init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py` · `check_translation.py`
+
+`check_translation.py` is the package's own self-test face (`--selftest`), zero network and pure stdlib, reading only this package's fixtures and never a user's manuscript. Three tiers: the good sample walks all four tools (segment counts, the seven QA lanes, a dry-run dedup that must not touch disk, and a merged master carrying the whole-book term appendix); the bad sample carries one defect per segment and must be judged red with the file and line named; the counter-example tier breaks the good sample in seven single points - each one must turn its own lane red, plus one positive control (an OCR trace inside a note section must stay green) and the "missing or empty directory" lockout across five scripts. In the first tier "all seven QA lanes green" is judged by **verdict-line structure**: qa_check writes verdicts at two-space indent and detail deeper, and two informational lines at the same indent ("（豁免 …）", "· 正常接缝…") are not verdicts - a lane is green exactly when its block holds **one and only one verdict line, and it starts with the pass mark**. Appending any other verdict line to the block turns it red on the spot, whether it says ❌, ⚠, ⛔, [X] or "FAIL:", and without the symbol having been seen before; a block with only a red line fails too. The exit code cannot cover this (qa_check still exits 0 while reporting red), so the judgment face does. A lane is judged green by verdict-line structure: exactly one verdict line in the block and it must open with the pass marker; the two note lines the checker itself emits are exempt only when the whole line matches their exact shape, and any other two-space-indented line counts as a verdict - so an unfamiliar red symbol cannot slip through, and neither can a conclusion phrased as a note.
+
+Fixture names are not cosmetic: they must follow `part_series_number` (e.g. `01_phil_001.md`). Under any other naming, `overlap_check.py` and `dedup_boundary.py` compare nothing at all and still print a row of green ticks - the silent false pass recorded as hard rule 8.
 
 ## Specs (`references/`)
 
@@ -38,7 +42,8 @@ parse → clean & slice → build style guide + glossary → parallel batched tr
 ## Getting started
 
 ```bash
-python scripts/init_project.py --help        # of the six scripts, only this one accepts --help
+python scripts/init_project.py --help        # two scripts accept --help: init_project.py and check_translation.py
+python scripts/check_translation.py --selftest    # re-verify this package: zero network, pure stdlib, prints its own assertion count
 python scripts/qa_check.py                  # the others print their usage when run bare (missing args exit 1, not a crash)
 python scripts/build_reader.py               # these two carry default paths: a missing directory **errors out with checks to try**
 # Measured: a nonexistent directory always exits 1 with guidance — it never prints "0 segments" and a row of green ticks.

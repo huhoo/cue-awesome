@@ -2,7 +2,7 @@
 name: long-doc-translation
 slug: cue-long-doc-translation
 displayName: 长文档全文翻译流水线
-version: "1.3.10"
+version: "1.3.14"
 summary: "外文长篇（专著/古籍/档案/译著参考）全文中译流水线：主稿+阅读版+逐段备查+术语总表，拿不准的进存疑清单不硬翻。"
 description: "给你一本授权可访问的外文长文（德/英/法/日等），产出四类交付：单一主稿 .md、自包含阅读版 .html（左侧目录、可直发）、逐段译文备查、全书新术语总表（按拼音排序）。流程纪律：分段清单先行、脚注 id 唯一、页边码正则从宽覆盖 OCR 变体；拿不准的术语进存疑清单交人工，不强译成通顺的假话。适合：内部研究、翻译参考、学术资料消化。不适合：受版权保护文本的直接公开出版、法律与医疗文书的执业级承诺。 Do NOT use for: publishing copyrighted text as-is, practice-grade legal output."
 license: MIT
@@ -88,6 +88,7 @@ python scripts/init_project.py <项目目录> --src en         # 指定源语言
 | 发现边界句级重复 | `dedup_boundary.py` |
 | 出主稿 .md + 基础 HTML | `merge_build.py` |
 | 出增强阅读版 HTML | `build_reader.py` |
+| 复验本包自测面（只判包内夹具，不碰你的稿子） | `check_translation.py --selftest` |
 
 ### 出错了怎么办
 
@@ -165,7 +166,10 @@ python scripts/init_project.py <项目目录> --src en         # 指定源语言
 
 ```bash
 python scripts/qa_check.py output/chunks
+python scripts/check_translation.py --selftest    # 包内自带自测面（零网络、纯 stdlib）
 ```
+
+`check_translation.py --selftest` 验的是**本包自己**：三档——好样链（`scripts/fixtures/good/` 三片走完 overlap→qa→dedup(dry-run)→merge 并逐项断言上面七项与交付形制）、坏样必红（`scripts/fixtures/bad/` 每片一处病灶，断言判定真的发生并点名到文件与行号）、反证与封死（对好样做七枚单点破坏，每枚必须让对应一项转红；一枚正向不误拦——注文里的 OCR 残痕必须仍 ✅（同样按判定行结构判：该块只许一枚判定行，且必须是放行行）；缺目录与空目录时五支脚本一律退 1、给「→」下一步、零 Traceback）。 一档里「七项全 ✅」按**判定行结构**判：qa_check 把判定打在两空格缩进、明细打在更深缩进，同缩进还有两类说明行（「（豁免 …）」「· 正常接缝…」）不算结论——一项为绿，当且仅当该块的判定行**恰好一枚且以放行标记开头**。所以往块里追加任何一枚别的判定行都当场翻红，不论它写 ❌、⚠、⛔、[X] 还是 "FAIL:"，也不必先见过那个符号；只留红行同样红。退码兜不住这一类（qa_check 报红仍退 0），判面自己兜。夹具命名必须合 `部_篇_编号`（如 `01_phil_001.md`）：不合式时相邻比较一次都不会发生却照样打印全绿（硬规则 8 记的那一类静默假通过）。。逐项判绿的实际尺是**判定行结构**：该块的判定行必须恰有一枚且以放行标记开头；说明行只认质检脚本自己那两句打全了的话（豁免行与「正常接缝…无需处理」行，且整行须按该形状走到头），其余任何两空格缩进行一律算判定行——换一枚没见过的红符号穿不透，把结论写成「· 不合格…」这类说明句式也穿不透
 
 | # | 检查项 | 合格标准 |
 |---|---|---|
@@ -194,6 +198,7 @@ python scripts/qa_check.py output/chunks
 | `merge_build.py` | 同级标题去重合并 → 主稿 MD + 带 TOC 导航的 HTML；并对外暴露 `SECTIONS/page_val/sort_terms/collect_doubts/collect_new_terms` 等供 `build_reader.py` 复用（需 `pip install markdown pypinyin`） |
 | `build_reader.py` | 在 `merge_build` 之上生成**增强阅读版 HTML**：脚注正文↔注文双向跳转、全文搜索、原书页码跳转、目录高亮、护眼/夜间/大字主题、单文件自包含可直接发送 |
 | `_common.py` | 各脚本**共用**的友好错误提示与目录/参数校验（**非独立工具**，被上面各脚本 import）。它保证了「目录写错就报错退出」而非静默假通过 |
+| `check_translation.py` | **包内自带自测面**（`--selftest`，零网络、纯 stdlib）：三档＝好样链／坏样必红／反证与缺目录封死，判的是本包夹具 `scripts/fixtures/good/`、`scripts/fixtures/bad/`，不动用户稿；末行自报「selftest: ALL GREEN（…断言 N 条，不符 0 条）」 |
 
 推荐顺序：`init_project.py` → `overlap_check.py` → 翻译 → `qa_check.py` → `dedup_boundary.py` → `merge_build.py` → `build_reader.py`。
 

@@ -24,7 +24,9 @@
 
 ## 脚本（`scripts/`）
 
-`init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py`
+`init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py` · `check_translation.py`
+
+`check_translation.py` 是包内自带自测面（`--selftest`）：三档＝好样链（`scripts/fixtures/good/` 三片走完四支脚本并逐项断言）；逐项判绿按判定行结构判——一块只许一枚判定行且须以放行标记开头，说明行只认质检脚本自己那两句完整形状，别的一律算判定行（红符号换形、或把结论写成说明句式都穿不透）／坏样必红（`scripts/fixtures/bad/` 每片一处病灶，断言判定发生并点名到文件与行号）／反证与缺目录封死（七枚单点破坏必须让对应一项转红，另有一枚正向不误拦与五支脚本的「缺目录一律退 1」）。零网络、纯 stdlib，只读本包夹具，不动用户稿。 一档里「七项全 ✅」按**判定行结构**判：qa_check 把判定打在两空格缩进、明细打在更深缩进，同缩进还有两类说明行（「（豁免 …）」「· 正常接缝…」）不算结论——一项为绿，当且仅当该块的判定行**恰好一枚且以放行标记开头**。所以往块里追加任何一枚别的判定行都当场翻红，不论它写 ❌、⚠、⛔、[X] 还是 "FAIL:"，也不必先见过那个符号；只留红行同样红。退码兜不住这一类（qa_check 报红仍退 0），判面自己兜。
 
 ## 规范（`references/`）
 
@@ -38,7 +40,8 @@
 ## 上手
 
 ```bash
-python scripts/init_project.py --help        # 六个脚本里只有这一个支持 --help
+python scripts/init_project.py --help        # 支持 --help 的是 init_project.py 与 check_translation.py 两支
+python scripts/check_translation.py --selftest    # 复验本包自测面：零网络、纯 stdlib，末行自报断言数
 python scripts/qa_check.py                  # 其余脚本不带参数即打印用法（缺参数按错误退 1，不是崩）
 python scripts/build_reader.py               # 这两个有内置默认路径，路径不存在时**报错退出并给检查提示**
 # 实测：目录不存在一律退 1 并提示查路径 / 先跑 init_project，不会「打印 0 个片段再给一排全绿」。
@@ -78,7 +81,7 @@ grep -n "CONFIG\|^[A-Z_]\{2,\} *=" ~/.workbuddy/skills/long-doc-translation/scri
 
 **未见于本次返回的一律写「未检索到」**：参数名、字段名、枚举值没有出现在本次工具返回里的，不得凭印象填写；写「未检索到」并记入待核清单或覆盖率账，不得留空顶替。
 按各脚本**当前实际出口**写：本件所有脚本不抛 traceback；缺参或路径不存在时打印 `[出错] <原因>` 加若干行
-`→ · <修复建议>`，退出码 1（实测：目录不存在一律退 1 并提示查路径/先跑 `init_project`，不会「打印 0 个片段再给一排全绿」）；不带参数运行则打印该脚本的用法块。
+`→ · <修复建议>`，退出码 1（实测：目录不存在一律退 1 并提示查路径/先跑 `init_project`，不会「打印 0 个片段再给一排全绿」——这一条由 `check_translation.py --selftest` 第三档逐枚复跑五支脚本守着）；不带参数运行则打印该脚本的用法块。
 
 | 症状 | 原因 | 恢复动作 |
 |---|---|---|
