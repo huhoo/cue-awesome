@@ -40,7 +40,7 @@
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500、每日 10，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。
 不装也能跑（你贴披露原文，agent 组织成页并标「用户直供」）——但那就看不到通道取证的真实样子了，而这正是本件想展示的。
 
 ## 五、包里有什么

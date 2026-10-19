@@ -40,7 +40,7 @@ Five blocks in fixed order; three header declarations mandatory (generation asof
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 at signup and 10 daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
+Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
 It runs without Cue too (you paste disclosure text; the page marks lines as user-supplied) — but then you don't see what anchored channel lookups actually look like, which is precisely what this piece is meant to show.
 
 ## 5. What's in the package
