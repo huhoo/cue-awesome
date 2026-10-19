@@ -1027,7 +1027,8 @@ def selftest(quiet=False) -> int:
 
     # 廿档（M291：`--keep-tmp` 申报改双数——登记 N／在场 M 并列，逐枚标 [在场]／[已自删]）
     # 注入型反证：往登记册喂一枚**不存在**的路径，它必须被报成 [已自删] 且不进「在场 M」；跑不出这枚＝本档红。
-    fake = Path(tempfile.gettempdir()) / f"check-shipment-M291INJECT-{os.getpid()}-{len(_TMP_MADE)}"
+    fake = Path(tempfile.gettempdir()) / f"check-shipment-M291INJECT-absent-{len(_TMP_MADE)}"   # M295：命名不带进程号
+    # 本机连跑四趟（两两不同进程）selftest 全文要逐字节同——PID 进报账就必破这条，与本闸 :593／:625 自订原则同一口径。
     real = fixture_root("good")
     kl = keep_tmp_lines([real, fake])
     inj_reported = any(line.endswith(str(fake)) and "[已自删]" in line for line in kl)
