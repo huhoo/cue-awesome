@@ -32,7 +32,7 @@
 
 ## 三、快速开始（三步）
 
-1. **装**：本目录放进 agent 的 skills 目录。
+1. **装**：`npx skills add huhoo/cue-awesome --skill dd-checklist`——这条装本件；装完在你这一侧重列一次已安装 skill，清单里看得到 `dd-checklist` 才算文件到位。手动放置也行：把本目录放进 agent 的 skills 目录。
 2. **说**：「给我做一份北辰股份近三年的公开信息预尽调清单」——缺窗口或用途档位会被反问，不会替你猜。
 3. **收**：五段管线跑完过门禁：
 
@@ -46,8 +46,36 @@
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。
-不装也能跑：你贴披露原文，agent 组织成表并标「可信级 L2（用户直供）」——可信级的定义在同仓财报点评件那一面，本件只引用不另定义——但覆盖率账会如实写明「本次未经域直查」，这份清单的价值恰好在那张账上。
+取证腿装 `cue-data-mcp`（`cue-omni-reader` 按需）——这两枚由 Cue 官方技能集合（sensedeal）发布：整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚，按提示挑），单装 `npx skills add sensedeal/cue-skills --skill cue-data-mcp`（把末尾那枚换成 `cue-omni-reader` 就只装那一枚）。装本件是上一节那条 `huhoo/cue-awesome --skill dd-checklist`，两件事别混。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**，也不在终端回显）。
+三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。
+- 装好＝重列一次已安装 skill，清单里看得到上面那些名字；这只证明文件到位，不证明取到数。
+- 配好凭据＝那把 `CUE_API_KEY` 存在于本地凭据设施即可；**key 在场不等于 key 被接受**，接受与否要到下一层才判得出。
+- 已连＝带上那把 key 按目标域 `routing` 里的 `url` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败），且 `tools/list` 有返回；本件的发现流程五步在 `references/channel-map.md` §1，那一节是判据所在。
+匿名 `GET` 块里那枚 `CATALOG` 有返回**只证目录可达**，本件不把它叫「已连」；它给的是各域 `external_status` 与 live 域的 `routing`，`coming_soon` 域不承诺、不写入覆盖率账的「所需域」列。连接报错≠域无数据：如实报。
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<把这里换成上一行列出的那个域 id>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("未取到：该 id 不在目录现值里（或它没有 routing 里的 url 字段）——先跑上面那行列出现场的 id 再填")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "取值失败：ROUTING_URL 为空——先跑上面那行列出现场 id，再把 DOMAIN_ID 换成其中之一" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+取值：块里 `CATALOG` 是本面唯一一处目录入口字面（赋一次、散文不重抄）；`$ROUTING_URL` ＝上面那两行从该域 `routing` 里的 `url` 字段现取的逐字值，别把域名或路径抄死在这张面上；`$CUE_API_KEY` 取自上一层那把本地凭据，不进聊天、不在终端回显，本块不新增任何凭据读取动作。
+通过＝HTTP 200，且返回体里 `result.tools` 非空（只按形状认，形如 `{"result":{"tools":[…]}}`；本面不列具体工具名，也不承诺枚数）。
+
+不装也能跑：你贴披露原文，agent 组织成表并标「可信级 L2（用户直供）」——L2 在本件的用法就这一句：**文本由用户贴入、未经域直查核验**，分档的完整定义在财报点评件那一面（本件只按这一档标注，不另造一套）——但覆盖率账会如实写明「本次未经域直查」，这份清单的价值恰好在那张账上。
 
 ## 五、包里有什么
 

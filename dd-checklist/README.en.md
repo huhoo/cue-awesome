@@ -31,7 +31,7 @@ Give it a single subject, an `asof` date, a lookback window and a purpose tier, 
 
 ## 3. Quick start (three steps)
 
-1. **Install**: drop this directory into your agent's skills directory.
+1. **Install**: `npx skills add huhoo/cue-awesome --skill dd-checklist` — that command installs this package; afterwards list your installed skills again and seeing `dd-checklist` there is what proves the files landed. Dropping this directory into your agent's skills folder works the same way.
 2. **Ask**: "run a public-record pre-diligence checklist on Beichen, last three years". A missing window or purpose tier gets a question back — it will not guess for you.
 3. **Receive**: five stages, then the gate:
 
@@ -45,8 +45,36 @@ Give it a single subject, an `asof` date, a lookback window and a purpose tier, 
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 credits on signup and 10 credits daily, per server policy) → take `CUE_API_KEY` from <https://cuecue.cn/hub/api-key> into local credential storage (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
-It also runs without the channels: paste the disclosures yourself and the agent organizes them, tagged confidence tier L2 (user-supplied) — the tier scale is defined once in this repository by the earnings-note skill; this package only references it — but the coverage ledger will say plainly that no domain query happened, and the value of this deliverable lives precisely in that ledger.
+Install the evidence legs: `cue-data-mcp` (`cue-omni-reader` as needed) — these ship in Cue's official skill collection (sensedeal): the whole set `npx skills add sensedeal/cue-skills` (it lists what is published there; pick what to install), or one at a time `npx skills add sensedeal/cue-skills --skill cue-data-mcp`, swapping the last name for `cue-omni-reader`. This package itself is installed by the command in the section above (`huhoo/cue-awesome --skill dd-checklist`) — do not conflate the two.
+Register at <https://cuecue.cn> (new accounts get 500 credits on signup and 10 credits daily, per server policy) → take `CUE_API_KEY` from <https://cuecue.cn/hub/api-key> into local credential storage (**never paste it into chat**, and do not echo it in a terminal).
+The three layers prove different things and are not interchangeable: **skill installed ≠ credentials configured ≠ channel connected**.
+- installed: list your installed skills again and the names above show up — that only proves the files landed, not that data flows.
+- credentials configured: the `CUE_API_KEY` exists in local credential storage; **a key being present is not a key being accepted** — acceptance only becomes judgeable in the next layer.
+- connected: connect to the target domain with that key following the `url` inside its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; the five-step discovery flow this package follows lives in `references/channel-map.md` §1, and that section holds the verdicts.
+An anonymous `GET` of the `CATALOG` defined in the block returning anything proves only that the **catalog is reachable** — this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`, and a `coming_soon` domain stays unpromised and out of the coverage ledger's "required domains" column. A connection error is not "the domain has no data": report it as-is.
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with one of the ids listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("Not found: that id is not in the catalog response (or its routing has no url field) - run the line above and pick one of the ids listed")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "Fetch failed: ROUTING_URL is empty - run the line above, then set DOMAIN_ID to one of the ids listed" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+Where the value comes from: `$ROUTING_URL` is fetched by the two lines above from the anonymous catalog response - the verbatim `url` field inside that domain's `routing` object, never a hardcoded domain or path; `CATALOG` in the block is the only catalog-entry literal on this face (assigned once, not restated in prose); `$CUE_API_KEY` comes from the local credential facility set up in the layer above, never enters chat, is not echoed in a terminal, and this block adds no new credential-reading step.
+Pass = HTTP 200 with a non-empty `result.tools` in the body (recognised by shape only, e.g. `{"result":{"tools":[…]}}`; this face lists no tool names and promises no counts).
+
+It also runs without the channels: paste the disclosures yourself and the agent organizes them, tagged confidence tier L2 (user-supplied) — L2 as this package uses it means exactly one thing: **the text came from the user and was not verified against a domain query**; the full tier scale is defined by the earnings-note skill and this package only applies that one tag rather than inventing its own scale — but the coverage ledger will say plainly that no domain query happened, and the value of this deliverable lives precisely in that ledger.
 
 ## 5. What is in the package
 
