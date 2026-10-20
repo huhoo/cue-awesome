@@ -38,7 +38,8 @@ The header has its own hard set: **the three self-labels** (`AI 整理初稿`, `
 ## 3. Getting started
 
 ```bash
-# 1. Put it in the skills directory
+# 1. Put it in the skills directory (either route; afterwards list installed skills again and seeing watchlist-digest-cn there is what proves the files landed)
+npx skills add huhoo/cue-awesome --skill watchlist-digest-cn
 mkdir -p ~/.workbuddy/skills
 cp -r watchlist-digest-cn ~/.workbuddy/skills/
 
@@ -84,10 +85,11 @@ The evidence backbone is Cue's three channels: structured disclosures (data-mcp)
    - whole set: `npx skills add sensedeal/cue-skills` (it lists the skills published in that collection; pick what to install);
    - one at a time: `npx skills add sensedeal/cue-skills --skill cue-research`, swapping the last name for `cue-omni-reader` or `cue-data-mcp` to install just that one.
 
-   Afterwards check three separate things, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
-   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows);
-   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal;
-   - connected: an anonymous `GET https://cuecue.cn/api/mcp-catalog` returns on the spot; domains and tools follow that response's current values, and a domain missing from it stays uninstalled and unpromised here.
+   Afterwards check the three layers separately, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
+   - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows); this package's own install command is the first line of section 3 (`npx skills add huhoo/cue-awesome --skill watchlist-digest-cn`) - do not conflate it with the evidence legs;
+   - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal; **a key being present is not a key being accepted**, and acceptance only becomes judgeable in the next layer;
+   - connected: connect to the target domain with that key following its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` - missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; domains and tools follow that response's current values and tool names are never hardcoded.
+   An anonymous `GET https://cuecue.cn/api/mcp-catalog` returning on the spot proves only that the **catalog is reachable** - this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`, and a domain missing from it stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable.
 
 Everything that spends is **asked before it burns**: a deep-research run takes 3-15 minutes and consumes credits, each launch is reported to you first; this package's retrieval legs always report the expected time and spend before starting and never run on their own. Domains and tools follow the live catalog as it stands - this section names only where to register and what to install, and restates neither a list nor a tool count.
 
