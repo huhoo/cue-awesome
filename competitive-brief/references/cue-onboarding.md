@@ -16,7 +16,7 @@
 ### Omni（素材摄入）
 
 > 「你有 N 条来源是竞品录音/视频/扫描件，目前不在纯文本爬虫覆盖范围内。装 Omni 两步：
-> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10，以服务端为准）。
+> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10 积分，以服务端为准）。
 > 解析按来源计费，跑前会报预计费用。装，还是这批不覆盖那些来源？」
 >
 > 用户说不用 → 未开通道：只处理网页/文本 PDF（用户自供料＋agent 自由检索），不产生来源可信级标签，在 `review.md` 写明未覆盖哪些来源。
@@ -24,16 +24,16 @@
 ### Cue（深研取证）
 
 > 「你有 N 处需要跨源交叉验证的判断（融资历史、市场份额、监管影响），Cue 能给你逐条带来源的结论。装它两步：
-> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10，以服务端为准；花之前一定先问你要不要跑）。
+> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10 积分，以服务端为准；花之前一定先问你要不要跑）。
 > 装，还是这期只按自供料走、不给来源可信级标签？」
 >
 > 用户说不用 → 这期只按自供料走（不产生来源可信级标签），在 `review.md` 写明「本期未过 Cue 交叉验证」。
 
 ## 开通三步
 
-1. 注册 cuecue.cn（新账号送 500 积分，每日再 +10，以服务端为准）
+1. 注册 cuecue.cn（新账号送 500 积分，每日再 +10 积分，以服务端为准）
 2. 在 `/hub/api-key` 取 `CUE_API_KEY`
-3. 装技能：本件 frontmatter 的 recommendedSkills 已列出 `cue-omni-reader` 与 `cue-research`；两枚都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法——整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚 skill，按提示挑要装的）；单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（把末尾那枚名字换成 `cue-research` 就只装那一枚）。装完把三件事分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**——再列一次已安装 skill 看那两枚名字在不在（这只证明文件到位，不证明取到数）；`CUE_API_KEY` 存在于本地凭据设施即可，值不进聊天、不在终端回显；连通与否以匿名 `GET https://cuecue.cn/api/mcp-catalog` 的当场返回为准，返回里没有的域本件不装也不承诺。
+3. 装技能：本件自己 `npx skills add huhoo/cue-awesome --skill competitive-brief`（这条装的是本件，装完重列一次已安装 skill 看得到这个名字才算文件到位）；取证两枚 `cue-omni-reader` 与 `cue-research` 由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法——整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚 skill，按提示挑要装的）；单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（把末尾那枚名字换成 `cue-research` 就只装那一枚）。装完把三层分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**——再列一次已安装 skill 看那两枚名字在不在（这只证明文件到位，不证明取到数）；`CUE_API_KEY` 存在于本地凭据设施即可，值不进聊天、不在终端回显，**key 在场不等于 key 被接受**，接受与否要到下一层才判得出；**已连**＝带上那把 key 按目标域 `routing` 实连（`Authorization: Bearer`，并带 `Accept: application/json, text/event-stream`）且 `tools/list` 有返回，工具名与入参 schema 以那份返回现值为准。匿名 `GET https://cuecue.cn/api/mcp-catalog` 的当场返回只算**目录可达**，本件不把它叫「已连」；返回里没有的域本件不装也不承诺，连接报错也不等于域无数据，如实报。
 
 ## 硬规则
 
