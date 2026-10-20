@@ -35,14 +35,16 @@
 
 ## 三、快速开始（三步）
 
-1. **装**：本目录放进 agent 的 skills 目录。
+1. **装**：`npx skills add huhoo/cue-awesome --skill sector-overview`——这条装本件；装完在你这一侧重列一次已安装 skill，清单里看得到 `sector-overview` 才算文件到位。手动放置也行：把本目录放进 agent 的 skills 目录。
 2. **说**：「光伏行业近况盘一下，重点看排产和价格」（触发词中英都行）。≤3 问补齐输入契约。
 3. **收**：五段管线（`+scope → +series → +research → +policy → +companies`）后过 `check_sector.py` 四道，**不过不出**。
    机检 `check_sector.py` 与守护样都在包内，**域清单与守护样条数一律现跑自证**（两条命令见 §五 注行，本文不抄）；真实冒烟的形状教训已回哺入守护样。
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（别贴进聊天）→ 装 `cue-data-mcp` / `cue-research`（`cue-omni-reader` 按需）。
+取证腿装 `cue-data-mcp` / `cue-research`（`cue-omni-reader` 按需）——这几枚由 Cue 官方技能集合（sensedeal）发布：整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚，按提示挑），单装 `npx skills add sensedeal/cue-skills --skill cue-data-mcp`（把末尾那枚换成 `cue-research` 或 `cue-omni-reader` 就只装那一枚）。装本件是上一节那条 `huhoo/cue-awesome --skill sector-overview`，两件事别混。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（别贴进聊天，也不在终端回显）。
+三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。装好＝重列一次已安装 skill 看得到上面那些名字（只证明文件到位，不证明取到数）；配好凭据＝那把 key 存在于本地凭据设施即可，**key 在场不等于 key 被接受**，接受与否要到下一层才判得出；已连＝带上那把 key 按目标域 `routing` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败）且 `tools/list` 有返回，工具名与入参 schema 以那份返回现值为准。匿名 `GET https://cuecue.cn/api/mcp-catalog` 有返回**只证目录可达**，本件不把它叫「已连」；连接报错≠域无数据，如实报。
 不装不报错：你贴协会月报/统计原文也能跑（标「用户直供」），但判断词-锚纪律不放松——直供素材当锚挂得上的才配判断词。
 
 ## 五、包里有什么
@@ -116,7 +118,7 @@ scripts/check_sector.py          四道机检（词面域与守护样清单=脚�
 
 - **建材量价半程实跑已回填（2026-09-21）**：research 1 次（约 13 分钟）+直查 7 次+omni 0；画像/量价/供需三节由全态二升到逐行带源（深研二手快照一律标可信级 L3（深研二手）、挂人工复核）。**全仓唯一权威计数，口径写死：量价与驱动节 6 行——每行同时带「口径」列与来源锚；这个数只是量价节的表行数，不是全报告带源行数，也不等于可信级 L3 层行数。** 同价双源（沥青两个报价）并列不仲裁=契约设计；连续周频序列仍不可得（五项「未检索到」在案）：**半程锚通≠量价序列能力可宣**，维度生成质量维持设计值口径。
 - **能力现状**：本包随仓公开，版本现值以 `CHANGELOG.md` 与 frontmatter 为准；**端到端满量交付尚未跑过**（上一条是半程、另加一次冒烟，两者都≠满量交付），跑通前六节覆盖度、耗时与维度质量一律按设计值对待，不作已验证能力宣称。
-- **未提交技能市场**：P2 整体冻结中，时机由 Owner 定；仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
+- **上架状态（带版本限定）**：本件 **0.1.4 曾随仓内全量首发提交并被 skillhub 渠道受理**（同批七枚全受理，本件在列）；**当前版本没有在本账里留下上架受理记录，所以这里不声称它在架**——哪一版在架以渠道回执为准，本文只写有记录的那一版。仓库内可见性以根 README 与 `CHANGELOG.md` 为准。
 - 图不做（表带 asof）；不含行情数值流与预期均值（`equity_market` 未开放+高危话术自缚）；个股只做聚合不做点评。
 
 ## 十、出处与致谢
