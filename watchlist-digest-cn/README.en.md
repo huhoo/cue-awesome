@@ -88,8 +88,29 @@ The evidence backbone is Cue's three channels: structured disclosures (data-mcp)
    Afterwards check the three layers separately, because they are not the same fact: **skill installed ≠ credentials configured ≠ channel connected**.
    - installed: list your installed skills again and the names from the command above show up (this only proves the files landed, not that data flows); this package's own install command is the first line of section 3 (`npx skills add huhoo/cue-awesome --skill watchlist-digest-cn`) - do not conflate it with the evidence legs;
    - credentials configured: the `CUE_API_KEY` from step 2 exists in your local credential facility - never paste its value into chat and do not echo it in a terminal; **a key being present is not a key being accepted**, and acceptance only becomes judgeable in the next layer;
-   - connected: connect to the target domain with that key following its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` - missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; domains and tools follow that response's current values and tool names are never hardcoded.
-   An anonymous `GET https://cuecue.cn/api/mcp-catalog` returning on the spot proves only that the **catalog is reachable** - this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`, and a domain missing from it stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable.
+   - connected: connect to the target domain with that key following the `url` inside its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` - missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; domains and tools follow that response's current values and tool names are never hardcoded.
+   An anonymous `GET` of the `CATALOG` defined in the block returning on the spot proves only that the **catalog is reachable** - this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`, and a domain missing from it stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable.
+
+   ```bash
+   CATALOG="https://cuecue.cn/api/mcp-catalog"
+   curl -s "$CATALOG" | python3 -c 'import json,sys
+   rows=json.load(sys.stdin)["data"]["domains"]
+   [print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+   DOMAIN_ID="<replace with one of the ids listed by the line above>"
+   ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+   rows=json.load(sys.stdin)["data"]["domains"]
+   hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+   print(*hit,sep="\n") if hit else sys.exit("Not found: that id is not in the catalog response (or its routing has no url field) - run the line above and pick one of the ids listed")' "$DOMAIN_ID")"
+   [ -n "$ROUTING_URL" ] || { echo "Fetch failed: ROUTING_URL is empty - run the line above, then set DOMAIN_ID to one of the ids listed" >&2; exit 1; }
+   curl -s -X POST "$ROUTING_URL" \
+     -H "Authorization: Bearer $CUE_API_KEY" \
+     -H "Accept: application/json, text/event-stream" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+     -w '\nHTTP %{http_code}\n'
+   ```
+
+   Where the value comes from: `$ROUTING_URL` is fetched by the two lines above from the anonymous catalog response - the verbatim `url` field inside that domain's `routing` object, never a hardcoded domain or path; `CATALOG` in the block is the only catalog-entry literal on this face (assigned once, not restated in prose); `$CUE_API_KEY` comes from the local credential facility set up in the layer above, never enters chat, is not echoed in a terminal, and this block adds no new credential-reading step.
+   Pass = HTTP 200 with a non-empty `result.tools` in the body (recognised by shape only, e.g. `{"result":{"tools":[…]}}`; this face lists no tool names and promises no counts).
 
 Everything that spends is **asked before it burns**: a deep-research run takes 3-15 minutes and consumes credits, each launch is reported to you first; this package's retrieval legs always report the expected time and spend before starting and never run on their own. Domains and tools follow the live catalog as it stands - this section names only where to register and what to install, and restates neither a list nor a tool count.
 

@@ -676,17 +676,27 @@ def selftest():
         if not f.is_file():
             print(f"SELFTEST FAIL: 守护样缺失 {f}")
             return 1
-    gf, gnl = check(gd, gr, gs)
-    zf, znl = check(zd, zr)
+    goods = [(gd, gr, gs)]  # 一档好样夹具集（日报＋记账件＋来源件为一枚）：末行枚数由它现算，不写字面量
+    gf, gnl = [], 0
+    for d, r, s in goods:
+        fx, nl = check(d, r, s)
+        gf += fx
+        gnl += nl
+    zeros = [(zd, zr)]  # 二档零新增样夹具集：同上，枚数由夹具集现算
+    zf, znl = [], 0
+    for d, r in zeros:
+        fx, nl = check(d, r)
+        zf += fx
+        znl += nl
     bf, bnl = check(bd, br)
     got = {re.match(r'\[(E-[A-Z]+)\]', x).group(1) for x in bf}
     want = set(FAMILY)
     ok = True
-    print(f"selftest 一档好样：{gd.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
+    print(f"selftest 一档好样：{'、'.join(d.name for d, _r, _s in goods)} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
     for x in gf:
         print('   意外发条 → ' + x)
         ok = False
-    print(f"selftest 二档零新增样：{zd.name} 扫过 {znl} 行，发条 {len(zf)} 条（规格 0，形制＝第二段勾「未检索到新增」带窗口）")
+    print(f"selftest 二档零新增样：{'、'.join(d.name for d, _r in zeros)} 扫过 {znl} 行，发条 {len(zf)} 条（规格 0，形制＝第二段勾「未检索到新增」带窗口）")
     for x in zf:
         print('   意外发条 → ' + x)
         ok = False
@@ -721,7 +731,7 @@ def selftest():
                 print('      实发详行 → ' + x[:120])
     if bad:
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 二档 0/{len(zf)} · 三档四道 {len(got)}/{len(want)} · 四档 {len(res) - len(bad)}/{len(res)} · 五档跨日重放 {'通' if chain_ok else '不通'} · 六档来源对账 {'通' if src_ok else '不通'} · 七档生成器坏输入 {'通' if badin_ok else '不通'}）")
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 {len(goods)} 枚·发条 {len(gf)} 条（规格 0）· 二档 {len(zeros)} 枚·发条 {len(zf)} 条（规格 0）· 三档四道 {len(got)}/{len(want)} · 四档 {len(res) - len(bad)}/{len(res)} · 五档跨日重放 {'通' if chain_ok else '不通'} · 六档来源对账 {'通' if src_ok else '不通'} · 七档生成器坏输入 {'通' if badin_ok else '不通'}）")
     return 0 if ok else 1
 
 
