@@ -2,7 +2,7 @@
 name: cue-lead-pieces
 description: "Checks each quote word for word within ±1 of the cited page: Cue Omni Reader parses company filings (cninfo/EDGAR) into page-numbered text; --fix corrects cites, restores wording, drops unsupported quotes. Not investment advice. Triggers: credit signals, quote verification, 10-K, 年报, 引文核对。"
 license: MIT
-version: "0.4.23"
+version: "0.4.25"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "Check quotes word-for-word within ±1 of the cited page; --fix corrects cites."
