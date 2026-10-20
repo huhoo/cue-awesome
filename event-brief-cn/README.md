@@ -75,9 +75,11 @@ python3 scripts/check_card.py assets/公告速读卡.md             # FAIL（8 �
    装完把三件事分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。
    - 装好＝你这一侧重新列一次已安装 skill，清单里能看到上一步那几枚的名字（这只证明文件到位，不证明取到数）；
    - 配好凭据＝第 2 步那把 `CUE_API_KEY` 存在于本地凭据设施即可——不要把它的值贴进聊天，也不要在终端回显；
-   - 已连＝匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿得到当场返回；域与工具都以那份返回的现值为准，返回里没有的域本件不装也不承诺。
+   - 已连＝带上那把 key 按目标域 `routing` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败；上一格判的是那把 key 在不在本地凭据设施里，**它被不被服务端接受，要到这一格才判得出**），且 `tools/list` 有返回。怎么问：向该域 `routing` 给出的地址发一个 JSON-RPC 的 `tools/list` 请求。算通过的回字：HTTP 200，且返回体里 `result.tools` 非空（逐字形如 `{"result":{"tools":[…]}}`，工具名与入参 schema 就在那一格里）——**工具清单以那份返回现值为准，本件不预先承诺有哪几枚、也不硬编码工具名**。匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿得到当场返回**只证目录可达**，本件不把它叫「已连」：它给的是各域 `external_status` 与 live 域的 `routing`，返回里没有的域本件不装也不承诺。连接报错≠域无数据，如实报，只重试错误标明可重试的部分。
 
 所有消耗**花之前一定先问**：深研单次 3–15 分钟且消耗 credits，发起前逐条报给你确认（「好的／嗯」式单字应答不构成确认）；解析腿按件计费，发起前先报「预计耗时与消耗」再征询。先报的是耗时量级与这笔消耗是否发生，不是报价格——计费与可用性以服务端返回为准，本件不写任何价格类字样，不复述域清单、不写工具数量。
+
+装本件自己：npx skills add huhoo/cue-awesome --skill event-brief-cn（这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 event-brief-cn 才算文件到位）。手动放置也行：把本目录复制进宿主的 skills 目录（如 ~/.claude/skills/event-brief-cn）。
 
 ## 四、边界与不承诺
 

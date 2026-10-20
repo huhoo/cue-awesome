@@ -220,12 +220,17 @@ def selftest():
         if not f.is_file():
             print(f"SELFTEST FAIL: 夹具缺失 {f}")
             return 1
-    gf, gnl = check(good)
+    goods = [good]  # 好样夹具集：末行枚数由它现算，不写字面量
+    gf, gnl = [], 0
+    for g in goods:
+        fx, nl = check(g)
+        gf += fx
+        gnl += nl
     bf, bnl = check(bad)
     got = {c for c in (re.match(r'\[(E-[A-Z]+)\]', x).group(1) for x in bf)}
     want = set(E_LEGEND)
     ok = True
-    print(f"selftest 好样：{good.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
+    print(f"selftest 好样：{'、'.join(g.name for g in goods)} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
     for x in gf:
         print('   意外发条 → ' + x)
         ok = False
@@ -234,7 +239,7 @@ def selftest():
     if missing:
         print('   未发出的码 → ' + ', '.join(missing))
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 0/{len(gf)} · 坏样四道 {len(got)}/{len(want)}）")
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（好样 {len(goods)} 枚·发条 {len(gf)} 条（规格 0）· 坏样四道 {len(got)}/{len(want)}）")
     return 0 if ok else 1
 
 
