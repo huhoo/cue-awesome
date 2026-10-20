@@ -744,12 +744,17 @@ def selftest_body(tmp):
         if not f.is_file():
             print(f"SELFTEST FAIL: 守护样缺失 {f}")
             return 1
-    gf, gnl = check(gd, gr)
+    goods = [(gd, gr)]  # 一档好样夹具集（卡＋记账件为一枚）：末行枚数由它现算，不写字面量
+    gf, gnl = [], 0
+    for d, r in goods:
+        fx, nl = check(d, r)
+        gf += fx
+        gnl += nl
     wf, wnl = check(wd, wr)
     nf, nnl = check(nd, nr)
     tf, tnl = check(tpl, gr)
     ok = True
-    print(f"selftest 一档合规稿：{gd.name} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
+    print(f"selftest 一档合规稿：{'、'.join(d.name for d, _r in goods)} 扫过 {gnl} 行，发条 {len(gf)} 条（规格 0）")
     for x in gf:
         print('   意外发条 → ' + x)
         ok = False
@@ -789,7 +794,7 @@ def selftest_body(tmp):
     gen_ok = gen_bad_input(tmp)
     if not guard_ok or not gen_ok:
         ok = False
-    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 0/{len(gf)} · 一档b 同源链 {'通' if chain_ok else '不通'} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)} · 五档记账件坏态 {'通' if guard_ok else '不通'} · 六档生成器坏输入 {'通' if gen_ok else '不通'}）")
+    print(f"selftest: {'ALL GREEN' if ok else 'FAIL'}（一档 {len(goods)} 枚·发条 {len(gf)} 条（规格 0）· 一档b 同源链 {'通' if chain_ok else '不通'} · 二档 2/2 · 三档 {'发条' if tf else '未发条!'} · 四档 {len(res) - len(bad)}/{len(res)} · 五档记账件坏态 {'通' if guard_ok else '不通'} · 六档生成器坏输入 {'通' if gen_ok else '不通'}）")
     return 0 if ok else 1
 
 
