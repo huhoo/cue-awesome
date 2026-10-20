@@ -353,6 +353,34 @@ def rel_files(root: Path):
     return sorted(out)
 
 
+UNKNOWN_CMD = "入口形未知，不给命令"
+
+
+def entry_cmd(pkg: str, rel: str, kind: str) -> str:
+    """入口的**整条可复制命令**（M318）：带 cwd 与解释器前缀，粘进 shell 的退码＝闸内部真跑那一次。
+
+    选型不是拍的，是量出来的（`verify/m318-entry-cmd-print-2026-10-20/cmd-form-probe.txt`，五形各一枚）：
+      · selftest／runner → 「cd 包目录 && python3 -B 路径 --selftest」／「cd 包目录 && bash 路径」＝与内部同值；
+      · unittest → 「cd 脚本目录 && python3 -m unittest 裸模块名」＝与内部同值；
+        而「cd 包目录 && python3 -m unittest 点分模块名」在 `scripts/test_ontology.py` 上 rc=1（内部 0）**不同值**——
+        与 lead 今早那枚 `No module named experience` 同根，所以这里必须把 cwd 写进命令、并注明须在脚本目录内跑。
+    取不到形状就响亮一句，**禁打空串**：空的命令自报就是一枚假绿入口。
+    """
+    d, _, b = rel.rpartition("/")
+    if not kind or kind == "？" or not (rel.endswith(".py") or rel.endswith(".sh")):
+        return UNKNOWN_CMD
+    if kind.startswith("selftest"):
+        return f"cd {pkg} && python3 -B {rel} --selftest"
+    if kind == "runner":
+        return f"cd {pkg} && {'bash' if rel.endswith('.sh') else 'python3 -B'} {rel}"
+    if kind == "unittest":
+        mod = b[:-3] if b.endswith(".py") else b
+        where = f"{pkg}/{d}" if d else pkg
+        return (f"cd {where} && python3 -m unittest {mod}"
+                "   # 须在脚本目录内跑；在包根用点分模块名会 No module named（实测 rc 与内部不同值）")
+    return UNKNOWN_CMD
+
+
 def run_selftest(root: Path, script_rel: str, extra_args, exe=None, argv=None):
     """在**解包件里**真跑一次；返回 (退码或 None, 出口首行)。禁网：不给代理，cwd 锁在件内。
        `argv` 给非直跑形（unittest 用 `-m unittest discover`），不认「文件在=跑过」。"""
@@ -615,6 +643,13 @@ def check(target: Path, pkg: str, channel_zip: Path | None, max_bytes: int, quie
             _forms = ("（**真无机检面**：包内与仓内都无 test_*.py／run_*／`--selftest` 载体；"
                       "「入口存在未识别」不写在这里——那种形制当场发 ERROR）")
     notes.append(f"成品面 {len(faces)} 面／能力句 {len(cap_lines)} 行／自测入口 {len(ran)} 枚真跑{_forms}")
+    # M318：形制之外还要**命令**。4.1 今夜两枚废弃读数（rc=127 路径不存在、rc=1 变量为空去 grep 脚本名）
+    #   都是「闸知道形制、没给可执行命令」逼着每个人每拍再猜一次入口——猜错产出的是一枚假红或假绿，
+    #   不是包的狀態。这里只加自报行：判定语义／退码／码集／豁免一字未动。
+    for r in ran:
+        notes.append(f"入口命令可复制｜{r[0]}｜入口形={r[1]}｜闸内真跑 rc={r[2]}｜整条：{entry_cmd(pkg, r[0], r[1])}")
+    if not ran:
+        notes.append("入口命令可复制｜本枚无可跑入口，不给命令（形制见上一行；不给空串＝不留假绿入口）")
     if ran:
         stats["entries"] = [(r[0], r[1], r[2], r[3]) for r in ran]
     return hits, notes, stats

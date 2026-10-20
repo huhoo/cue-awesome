@@ -28,11 +28,21 @@
                `500` 与 `10` 之后窗口内各须有「积分／credits」，**缺任一即发条**，命中文字＝那枚裸数字）
                ——**WARN 族**（不是五禁本体，报文里打「口径⑥」不打「五禁⑥」）：判据串显式列出，宽式子串重复禁用；
                射程限 README／SKILL 门面句与包内 references，assets／examples 模板与样例面不判；CHANGELOG 不判（逐码不入门）
+    H-TOOL-PROMISE ⑦ §5-3 对外面文**不承诺固定工具清单、不叫用户按名直调**（工具名与入参 schema 一律以 catalog
+               那份返回现值为准）。触发＝承诺语（A 集 17 枚：固定可用工具清单／工具清单如下／直接按名调用／内置工具／
+               无需 catalog／fixed list／no catalog…）与**清单或工具名**（B 集 2 枚：动作前缀的 snake_case 名／「以下 N 枚」枚举形）
+               **同线同现**才发条；C 集 12 枚限定语（以现值为准／以 catalog 为准／示例／不预先承诺…）同线则不报。
+               **B 集是形状假设（M317c 补行）**：只认**以动作前缀开头**的 snake_case——①动作词不在段首
+               （`alpha_get_quote`）、②名词式（`alpha_api`／`conv_id`）、③camelCase、④纯中文工具名，这四形
+               **一律不匹配＝该报的不报**；这是为不在正当技术句上造假阳而做的**有意收窄，不是缺陷**，
+               真名出现凭靶再扩、不预先宽。
+               枚数一律现算自报（len），不手打。**WARN 族**（M317 先落在 WARN，抬不抬 ERROR 候现网走向）；
+               射程与 CHANGELOG 逐码不入门与 ⑥ 同（共用 SCOPE_GATED）
 
 面与分级（判据口径：能力句直述、指路可跟随、归因留内部）：
     成品面  SKILL*.md / README*.md（含仓根集合仓说明）/ assets/** / references/**  → 五禁全适用（含 ③b 子项），命中=ERROR
-    CHANGELOG  CHANGELOG*.md                                                       → 守①③④⑤（②③b⑥不在此面），命中=WARN
-    逐码降级  WARN_CODES＝{H-GIFT-UNIT}：这支即便命中成品面也记 **WARN** 不记 ERROR——它判的是「等他票补齐」的
+    CHANGELOG  CHANGELOG*.md                                                       → 守①③④⑤（②③b⑥⑦不在此面），命中=WARN
+    逐码降级  WARN_CODES＝{H-GIFT-UNIT, H-TOOL-PROMISE}：这两支即便命中成品面也记 **WARN** 不记 ERROR——它们判的是「等他票补齐」的
               过渡态（M288 落字前应红、落字后归零），拿 ERROR 去卡会把整仓门钉死在别人名下的在途字上。
               计数因此**逐条走**（一枚面可同时出两档），表头显该面最重的一档。
     不检面  CONTRIBUTING*（贡献者文档，内部指路是它的职责）/ docs/ / scripts/ / NOTICE / LICENSE / .github
@@ -64,6 +74,29 @@ SKIP_DIR_NAMES = {"__pycache__", "dist", "build", "node_modules", ".venv", "fixt
 # ---------------------------------------------------------------- 五禁规则表
 # 每条：(码, 五禁项, 编译后正则, 人读规格)
 # 词表只收「过程遥测」的确形：宁可窄而准，宽则由人另开票加词。
+
+# M317（§5-3「live 状态以 catalog 为准、不硬编码工具名」这条红线此前**无机检**——来源＝6.1 的 M313-C3，lead 独立复现）：
+#   新码 H-TOOL-PROMISE ⑦，三集分工，枚数一律现算自报（len(...)）：
+#   A 承诺语＝命中文字（报出来的就是那一小段承诺）；B 清单/工具名＝同现条件（没有清单就没有「固定清单」这回事）；
+#   C 限定语＝同线豁免（§5-3 允许的写法正是「以现值为准」那一族）。三集各逐枚给理由，见账 §2。
+PROMISE_A_ITEMS = (
+    r"固定可用工具清单", r"可用工具清单", r"工具清单(?:如下|固定为|为以下|是下面)", r"清单(?:如下|固定为)",
+    r"以下[一二三四五六七八九十\d]+枚(?:工具|能力)", r"直接按名调用", r"按名调用(?:即可)?", r"直接调用即可",
+    r"内置工具", r"自带工具", r"随包工具", r"无需(?:读取|查)?\s*catalog", r"不必(?:读取|查)?\s*catalog",
+    r"no catalog", r"fixed(?: tool)? list", r"call (?:them|it) by name", r"hardcoded tool",
+)
+PROMISE_B_ITEMS = (
+    r"(?<![A-Za-z0-9_])(?i:(?:get|list|search|fetch|query|read|write|run|call)_[a-z0-9]+(?:_[a-z0-9]+)*)(?![A-Za-z0-9_])",
+    r"(?:以下|如下)\s*[一二三四五六七八九十\d]+\s*枚",
+)
+PROMISE_C_ITEMS = (
+    r"以[^，。；\n]{0,12}现值为准", r"以\s*catalog\s*为准", r"以\s*discovery\s*为准",
+    r"不作对外表述", r"不预先承诺", r"不作为承诺", r"示例", r"举例", r"可能变动", r"会变", r"非固定", r"不固定",
+)
+PROMISE_A = "(?i:" + "|".join(PROMISE_A_ITEMS) + ")"
+PROMISE_B = "(?:" + "|".join(PROMISE_B_ITEMS) + ")"
+PROMISE_C = "(?i:" + "|".join(PROMISE_C_ITEMS) + ")"
+
 RULES = (
     ("H-TICKET", "①", re.compile(r"(?<![A-Za-z0-9])M\d{2,4}(?![A-Za-z0-9])|(?<![A-Za-z])PR\s*#?\d{2,}"),
      "成品面与 CHANGELOG 不写内部流水号（工单/票号/PR 号）；要引能力来源就写能力本身"),
@@ -93,22 +126,75 @@ RULES = (
     # 此形由 4.1 的逐面判据守护（M298 票面③；改成跨行会牵动其它码的射程）。
     # 与 H-STALE 同族形制：**不进 CHANGELOG_CODES**；射程再限门面句与 references（见 GIFT_SCOPE_SKIP，
     # assets／examples 不在尺内＝**不得拿「全仓零命中」替这两个面签字**）。
+    # M306（lead 21:14:56 逮到的两枚单因致盲）：①词表补「每天」与「每日」并列；②`送` 与 500 之间容许
+    #   markdown 强调符——但**只容空白与 * _ ~ 这六类字符、上限 8 枚**，不是把 `[^\n]{0,n}` 放宽成整行放行
+    #   （那正是今日 §10「要变红靠靶不靠扩射程」的反面）。判定窗（数字后 10 字内须含单位）与语义一字未动。
+    # M308（lead 21:44:45 自造靶 T5 逮到的**放宽后新造假阳族**）：**第二支加「额度语境」前置要求**——频率相邻支
+    #   须先出现额度族词才构成触发，族词全集九枚：注册／signup／sign-up／赠送／即送／充值／额度／积分／credits。
+    #   M308-R1（lead 22:04:22 用靶 Z5「本件运送 500 份扫描件…」把我那句假定打回）：**第一支同样受语境约束**——
+    #     裸「送」不再独立构成触发，须族词在其前 40 字内出现；这不是加词、是收门（九枚族词照 M308 定案不动）。
+    #     我原先写的「第一支本身已含额度语义」是假定不是测数：运送／发送／派送／递送／输送 全都含裸「送」。
+    #   M315（lead 22:45:28 用四枚英文靶把上一行那句假定打回）：**第三支同样受额度语境约束**——那句
+    #     「第三支本身已要求英文额度词语」是没验过的假定：`daily`／`per day` 是**频率词**不是额度词，
+    #     所以「The batch processes 500 pages daily and emits 10 summaries.」这类纯产量句照旧发红（＝假阳，
+    #     与中文侧 Z5「运送 500 份扫描件」同一种病穿了英文衣裳）。改法与中文侧同形制、不自创第二套：
+    #     拆成三枝——①`500…signup` 形自带开户义，不需额外语境；②频率形须**前置**英文额度词（40 字内）；
+    #     ③频率形须**后置**英文额度词（40 字内）。后置这一枝不是冗余：英文里「Get 500 … per day, new
+    #     accounts only」这类语序真实存在，只收前置会把已抓得住的开户句一起静掉＝覆盖缩。
+    #     英文语境集十二枚（逐枚理由在 M315 账 §2）：signup／sign up／sign-up／new account／regist(er|ers|
+    #     ered|ering|ration)／credit／bonus／free／grant／allowance／quota／top up／recharge。
+    #     两处刻意不收并写明理由：`points`（评分面里到处是 points，收进来等于给非额度句开门）、
+    #     `registry`（技术名词，故 regist 只接 er/ers/ered/ering/ration 五种后缀）；`trial`／`allocation`
+    #     同因不收（「The trial processed 500 samples daily」正是 E1 那一型）。
+    #     判定窗（数字后 10 字内须含单位）／命中组／WARN_CODES／GIFT_SCOPE_SKIP／CHANGELOG_CODES／
+    #     severity() 照旧一字未动——本枝只加前置条件，不放宽任何窗口。
+    #   残留限度如实记（中英同一条）：语境词是**必要非充分**——「赠送 500 份样本、每天出 10 条」这类量词歧义句、
+    #   以及「Register the handler; the batch processes 500 pages daily」这类同线歧义句仍会触发；凭新靶再收，不放行整行。
     ("H-GIFT-UNIT", "⑥", re.compile(
-        r"^(?=.*(?:送\s*500|500[^\n]{0,40}?每日[^\n]{0,8}?(?:再\s*)?\+?10|500[^\n]{0,90}?(?:signup|daily|per day)))"
+        r"^(?=.*(?:(?:注册|signup|sign-up|赠送|即送|充值|额度|积分|credits)[^\n]{0,40}?送[\s*_~]{0,8}500"
+        r"|(?:注册|signup|sign-up|赠送|即送|充值|额度|积分|credits)[^\n]{0,40}?500[^\n]{0,40}?(?:每日|每天)[^\n]{0,8}?(?:再\s*)?\+?10"
+        r"|500[^\n]{0,90}?(?i:signup|sign[ -]up)"
+        r"|(?i:signup|sign[ -]up|new account|regist(?:er|ers|ered|ering|ration)|credit|bonus|free|grant|allowance|quota|top[ -]?up|recharge)"
+        r"[^\n]{0,40}?500[^\n]{0,90}?(?:daily|per day)"
+        r"|500[^\n]{0,90}?(?:daily|per day)[^\n]{0,40}?"
+        r"(?i:signup|sign[ -]up|new account|regist(?:er|ers|ered|ering|ration)|credit|bonus|free|grant|allowance|quota|top[ -]?up|recharge)))"
         r".*?(?P<hit>(?<![\d.,])500(?![\d])(?![^\n]{0,10}?(?:积分|(?i:credits)))"
         r"|(?<![\d.,])10(?![\d])(?![^\n]{0,10}?(?:积分|(?i:credits))))"),
+
      "对外额度句**两个数字都要带单位**（§5-1 许可句形：注册送 500 积分、每日 10 积分，以服务端为准）——任一枚裸着就是承诺，不是事实"),
+    # ⑦（M317）：§5-3「工具名与入参 schema 一律以 catalog 那份返回现值为准、不硬编码工具名」这条红线此前无机检。
+    #   触发＝A 承诺语 与 B 清单/工具名 **同线同现**；C 限定语同线则不报（那一族正是 §5-3 许可的写法）。
+    #   与 ⑥ 同形制：不进 CHANGELOG_CODES（历史条目不回改，留痕原则同一层）；射程共用 GIFT_SCOPE_SKIP（assets／examples
+    #   是模板与样例面，那里出现示例工具名不是对外承诺）；先 WARN 级，别一上来抬 ERROR。
+    #   已知抓不到、也不许为它改成跨行匹配：「工具清单固定为以下三枚」把名字排在后一行时，本尺按行判、这一行仍发条
+    #   （因为它自带「以下三枚」枚举形），但**纯靠下一行列名的那一形**抓不到——与 ⑥ 的跨行句形同一限度，归 4.1 逐面判据。
+    #   B 集是**形状假设**（M317c 精度补行，lead 2026-10-20 验收注记＋我这一拍的单一变量扫描）：只认
+    #     **以动作前缀开头**的 snake_case（get_/list_/search_/fetch_/query_/read_/write_/run_/call_ 打头）。四形**不匹配**＝该报的不报：
+    #     ①动作词不在段首（`alpha_get_quote`——lookbehind 把中段咬住的那种挡住了）；②名词式 snake_case
+    #     （`alpha_api`、`conv_id` 这类无前缀名）；③camelCase（`getLiveEquityQuote`）；④纯中文工具名（`实时行情`）。
+    #     lead 验收时首组靶正是拿②试的，四枚全静、差点判成「B 集漏逮」；按单一变量重造（同一句承诺、只换名字形状）
+    #     实测：`get_quote_alpha` 红／`alpha_get_quote` 静／`alpha_api` 静／`getLiveQuote` 静／`实时行情` 静／
+    #     `get_quote_alpha、alpha_api` 红（一枚合形即报，一枚不合法名不掩住另一枚）。
+    #     **这枚静是我为「不在 conv_id 那种正当技术句上造假阳」而做的有意收窄，不是缺陷**；真名出现凭靶再扩，不预先宽。
+    #   同一条限度随之升成 §10（lead 落款）：报「漏逮」之前先做**形状敏感度扫描**（只改一个变量看它会不会红），
+    #     并先读被检件自己的限度自述。
+    ("H-TOOL-PROMISE", "⑦", re.compile(
+        r"^(?=.*?(?P<hit>" + PROMISE_A + r"))"
+        r"(?=.*?" + PROMISE_B + r")"
+        r"(?![^\n]*(?:" + PROMISE_C + r"))"),
+     "§5-3：对外面文不承诺固定工具清单、不叫用户按名直调——工具名与入参 schema 一律以 catalog 那份返回现值为准"),
 )
 
 SKIP_OUTPUT_POINTERS: list[tuple[str, int, str]] = []
 EXEMPT_DISCARDED: list[tuple[str, str]] = []   # 因窄化被弃用的测试面同名件命中（报账用，不静默吞）
 
 CHANGELOG_CODES = {"H-TICKET", "H-STATE", "H-DATE", "H-ATTRIB"}  # CHANGELOG 面**逐码**判这四支（①③④⑤）；
-#   ②（H-PATH／H-POINTER）与 ③b（H-STALE）、⑥（H-GIFT-UNIT）不在此面判——**逐码不入门**是豁免的唯一形制，
-#   没有「整面豁免」这种口子（M258 裁定，M289 沿用）。
-WARN_CODES = {"H-GIFT-UNIT"}    # ⑥即便命中成品面也记 WARN：它判的是「等他票补齐」的过渡态，
+#   ②（H-PATH／H-POINTER）与 ③b（H-STALE）、⑥（H-GIFT-UNIT）、⑦（H-TOOL-PROMISE）不在此面判——
+#   **逐码不入门**是豁免的唯一形制，没有「整面豁免」这种口子（M258 裁定，M289 沿用，M317 再加一支）。
+WARN_CODES = {"H-GIFT-UNIT", "H-TOOL-PROMISE"}    # ⑥⑦即便命中成品面也记 WARN：它判的是「等他票补齐」的过渡态，
 #   用 ERROR 会把整仓门卡死在别人名下的在途字上；归零与否看 WARN 计数走向，不看门是否红。
-GIFT_SCOPE_SKIP = ("assets", "examples")   # ⑥射程：README／SKILL 门面句＋包内 references；模板面与样例面不判
+GIFT_SCOPE_SKIP = ("assets", "examples")   # ⑥⑦共用的射程：README／SKILL 门面句＋包内 references；模板面与样例面不判
+SCOPE_GATED = {"H-GIFT-UNIT", "H-TOOL-PROMISE"}   # 走上面那条射程的两支码（M317 起不再只有 ⑥）
 LEGEND = {c: spec for c, _, _, spec in RULES}
 LEGEND["H-POINTER"] = "包内相对指路目标不存在——要么补文件，要么删指路；不许留断链"
 
@@ -122,7 +208,7 @@ def hit_of(m) -> str:
 
 def ban_label(code: str) -> str:
     """报文里的族名前缀：①〜⑤（含 ②b／③b 子项）是五禁本体；⑥是 §5-1 口径校验，不冒充「五禁⑥」。"""
-    return "口径" if code == "H-GIFT-UNIT" else "五禁"
+    return "口径" if code in ("H-GIFT-UNIT", "H-TOOL-PROMISE") else "五禁"
 
 
 def severity(face: str | None, code: str) -> str:
@@ -281,7 +367,7 @@ def check_file(path: Path) -> list[tuple[str, int, str]]:
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
             continue
-        if code == "H-GIFT-UNIT" and not gift_scope_ok(path):
+        if code in SCOPE_GATED and not gift_scope_ok(path):
             continue
         for lineno, line in enumerate(lines, 1):
             for m in pat.finditer(line):
@@ -485,6 +571,120 @@ def selftest() -> int:
     if not ok7:
         ok = False
 
+    # 档⑧（M306 两枚单因 → M308／M308-R1 语境门 → M312 常驻两向）：**双态断言＋枚数一律现算自报**（禁手打计数）。
+    #   红组五枚（含 M312 新加「两数皆裸哨兵」）、零组八枚（含 M312 新加 派送／递送／输送三行），
+    #   锚点全部按**正文子串**匹配——标签一律不许自含九枚族词（M308 那枚「靶面自污」学到的规矩，落样前逐行自查过）。
+    #   一旦离谱，打印句直接点名是哪几枚锚点、在哪一行离的谱（M312 判据③的两种回退都靠这句自证）。
+    RED_ANCHORS = [("合形·送＋粗＋每天裸10", "每天再 **+10**，以服务端为准", "10"),
+                   ("无送·每天形", "每天再 **+10** 的名额", "500"),
+                   ("注册·每天裸10", "注册 500 积分，此后每天再 **+10**", "10"),
+                   ("注册送两数皆裸", "注册送 500、每天 10", "500"),
+                   ("哨兵·即送两数皆裸", "新账号即送 500，每天再 +10。", "500"),
+                   ("英文裸数红样甲·频率词在后", "New accounts get 500 and 10 daily", "500"),
+                   ("英文裸数红样乙·短语在数前", "you get 500 plus 10 per day", "500")]
+    ZERO_ANCHORS = [("正例·加粗带单位", "每天再 **+10 积分**"), ("正例·无加粗带单位", "每天再 +10 积分"),
+                    ("频率相邻哨兵", "都要备份 **500** 份日志"), ("量词靶·跑批页数", "跑批 500 页扫描件"),
+                    ("裸送靶·运送", "运送 500 份扫描件"), ("线路量词·派送", "站点派送 500 单"),
+                    ("线路量词·递送", "仓库递送 500 箱"), ("线路量词·输送", "管线输送 500 吨"),
+                    ("英文产量零样·证英文语境门收窄", "processes 500 pages daily"),
+                    ("英文带单位正例·必然零（单位紧贴数）", "500 credits plus 10 credits")]
+    gu8_lines = (bad / "SKILL.md").read_text(encoding="utf-8", errors="replace").splitlines()
+    good8_lines = (good / "SKILL.md").read_text(encoding="utf-8", errors="replace").splitlines()
+    red_rows, red_missing = [], []
+    for label, frag, want in RED_ANCHORS:
+        ls = [x for x, v in enumerate(gu8_lines, 1) if frag in v]
+        got = [x for x in gu_bad if x[1] in ls and f"命中「{want}」" in x[3]]
+        red_rows.append((label, ls, want, bool(got)))
+        if not ls or not got:
+            red_missing.append(f"{label}@行{'/'.join(map(str, ls)) or '锚缺'}（期望点「{want}」）")
+    zero_rows, zero_off = [], []
+    for label, frag in ZERO_ANCHORS:
+        ls = [x for x, v in enumerate(good8_lines, 1) if frag in v]
+        got = [x for x in gu_good if x[1] in ls]
+        zero_rows.append((label, ls, bool(got)))
+        if not ls:
+            zero_off.append(f"{label}（锚点缺失）")
+        elif got:
+            n = got[0][3]
+            seg = n[n.find("命中"):n.find("命中") + 11]
+            zero_off.append(f"{label}@第{'/'.join(map(str, ls))} 行发条「{seg}」")
+    red_detail = [(l, ('/'.join(map(str, n)) or '—'), w, '红' if h else '未中') for l, n, w, h in red_rows]
+    zero_detail = [(l, ('/'.join(map(str, n)) or '—'), ('发条' if h else '静')) for l, n, h in zero_rows]
+    # M315 加的一条硬线（lead 22:45）：**打印面与现算枚数同拍比对，不等即 selftest 红**——
+    #   防的是「同形重叠把两枚算成一枚」或有人给明细串加 `[:N]` 截断，那时面上仍写「红组 N 枚」而清单已短。
+    n_red_rendered = str(red_detail).count("('")
+    n_zero_rendered = str(zero_detail).count("('")
+    count_off = []
+    if n_red_rendered != len(RED_ANCHORS):
+        count_off.append(f"红组明细串 {n_red_rendered} 条 ≠ 现算 {len(RED_ANCHORS)} 枚")
+    if n_zero_rendered != len(ZERO_ANCHORS):
+        count_off.append(f"零组明细串 {n_zero_rendered} 条 ≠ 现算 {len(ZERO_ANCHORS)} 枚")
+    ok8 = not red_missing and not zero_off and not count_off
+    print(f"档⑧ 语境门双态（枚数现算）：红组 {len(RED_ANCHORS)} 枚／该面发红 {len(gu_bad)} 条／逐枚点名到位＝{'是' if not red_missing else '否'}"
+          f"｜零组 {len(ZERO_ANCHORS)} 枚／越界发条 {len([z for z in zero_off if '发条' in z])} 枚（期望 0）"
+          f"｜明细条数与现算枚数同拍＝{'是' if not count_off else '否'}（红 {n_red_rendered}/{len(RED_ANCHORS)}／零 {n_zero_rendered}/{len(ZERO_ANCHORS)}）"
+          f"｜红组明细＝{red_detail}"
+          f"｜零组明细＝{zero_detail}"
+          + ("" if ok8 else f"｜**离谱者**：红组缺＝{red_missing or '无'}｜零组越界＝{zero_off or '无'}｜条数对拍＝{count_off or '无'}"))
+    if not ok8:
+        ok = False
+
+    # 档⑨（M317 新码 H-TOOL-PROMISE ⑦）：形制照档⑧——**锚点按正文子串、枚数与明细条数一律现算**，
+    #   红组逐枚点名「命中文字就是那一小段承诺」，零组里既有「证 C 集豁免在场」的可翻转靶，
+    #   也有「必然零（无 A）、不证判别」的对照靶——两类并列标注性质，不混成一个「零组全绿」。
+    TP_BAD = [("注入形·命中在清单承诺语", "固定可用工具清单：get_live_equity_quote", "固定可用工具清单"),
+              ("直调口吻·命中在内置工具", "本包内置工具 get_xxx", "内置工具"),
+              ("枚举形·命中在 catalog 否定", "工具清单固定为以下三枚", "无需读取 catalog"),
+              ("中英混排·命中在 fixed list", "（fixed list）：get_live_equity_quote", "fixed list")]
+    TP_ZERO = [("限定语同线·证 C 集豁免在场", "工具清单如下（示例", "可翻转：摘掉 C 豁免它必红"),
+               ("现值口径句·无承诺语", "以那份返回现值为准", "必然零（A 不命中）——不证判别"),
+               ("不承诺句·无承诺语", "工具清单以现值为准、不预先承诺", "必然零（A 不命中）"),
+               ("技术名词句·无承诺语", "registry 列 500 entries", "必然零（A 不命中）"),
+               ("只给清单不给承诺·证同现", "安装步骤如下三枚", "可翻转：只给 B 不给 A 必须零（A∧B 不是任一）")]
+    tp_bad = [x for x in bad_f if x[0] == "H-TOOL-PROMISE" and x[2].endswith("SKILL.md")]
+    tp_good = [x for x in _fixture_findings(good) if x[0] == "H-TOOL-PROMISE"]
+    tp_red_rows, tp_red_missing = [], []
+    for label, frag, want in TP_BAD:
+        ls = [i for i, v in enumerate(gu8_lines, 1) if frag in v]
+        got = [x for x in tp_bad if x[1] in ls and f"命中「{want}」" in x[3]]
+        tp_red_rows.append((label, ls, want, bool(got)))
+        if not ls or not got:
+            tp_red_missing.append(f"{label}@行{'/'.join(map(str, ls)) or '锚缺'}（期望命中「{want}」）")
+    tp_zero_rows, tp_zero_off = [], []
+    for label, frag, nature in TP_ZERO:
+        ls = [i for i, v in enumerate(good8_lines, 1) if frag in v]
+        got = [x for x in tp_good if x[1] in ls]
+        tp_zero_rows.append((label, ls, nature, bool(got)))
+        if not ls:
+            tp_zero_off.append(f"{label}（锚点缺失）")
+        elif got:
+            d = got[0][3]
+            seg = d[d.find("命中"):d.find("命中") + 22]
+            tp_zero_off.append(f"{label}@第{'/'.join(map(str, ls))} 行发条「{seg}」")
+    tp_red_detail = [(l, ('/'.join(map(str, n)) or '—'), w, '红' if h else '未中') for l, n, w, h in tp_red_rows]
+    tp_zero_detail = [(l, ('/'.join(map(str, n)) or '—'), ('发条' if h else '静')) for l, n, _, h in tp_zero_rows]
+    n_tp_red = str(tp_red_detail).count("('")
+    n_tp_zero = str(tp_zero_detail).count("('")
+    tp_count_off = []
+    if n_tp_red != len(TP_BAD):
+        tp_count_off.append(f"红组明细串 {n_tp_red} 条 ≠ 现算 {len(TP_BAD)} 枚")
+    if n_tp_zero != len(TP_ZERO):
+        tp_count_off.append(f"零组明细串 {n_tp_zero} 条 ≠ 现算 {len(TP_ZERO)} 枚")
+    tp_sev_ok = (severity("product", "H-TOOL-PROMISE") == "WARN"
+                 and "H-TOOL-PROMISE" not in CHANGELOG_CODES
+                 and "H-TOOL-PROMISE" in WARN_CODES and "H-TOOL-PROMISE" in SCOPE_GATED
+                 and "H-TOOL-PROMISE" in LEGEND)
+    ok9 = not tp_red_missing and not tp_zero_off and not tp_count_off and tp_sev_ok
+    print(f"档⑨ §5-3 工具清单承诺双态（枚数现算）：红组 {len(TP_BAD)} 枚／该面发红 {len(tp_bad)} 条／逐枚点名到位＝{'是' if not tp_red_missing else '否'}"
+          f"｜零组 {len(TP_ZERO)} 枚／越界发条 {len(tp_zero_off)} 枚（期望 0）"
+          f"｜明细条数与现算枚数同拍＝{'是' if not tp_count_off else '否'}（红 {n_tp_red}/{len(TP_BAD)}／零 {n_tp_zero}/{len(TP_ZERO)}）"
+          f"｜语集枚数 A {len(PROMISE_A_ITEMS)}／B {len(PROMISE_B_ITEMS)}／C {len(PROMISE_C_ITEMS)}（现算，非手打）"
+          f"｜分级与射程＝{'是' if tp_sev_ok else '否'}（WARN_CODES 现算 {len(WARN_CODES)} 枚；CHANGELOG 不入门＝{'H-TOOL-PROMISE' not in CHANGELOG_CODES}）"
+          f"｜红组明细＝{tp_red_detail}｜零组明细＝{tp_zero_detail}｜零组性质＝{[nature for _, _, nature in TP_ZERO]}"
+          + ("" if ok9 else f"｜**离谱者**：红组缺＝{tp_red_missing or '无'}｜零组越界＝{tp_zero_off or '无'}｜条数对拍＝{tp_count_off or '无'}｜分级射程＝{'过' if tp_sev_ok else '不过'}"))
+    if not ok9:
+        ok = False
+
     good_f = _fixture_findings(good)
     print(f"档② 合规样：应零发条，实发 {len(good_f)} 条")
     for c, lineno, fname, d in good_f:
@@ -524,7 +724,7 @@ def check_one(path: Path, strict: bool) -> int:
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
             continue
-        if code == "H-GIFT-UNIT" and not gift_scope_ok(path):
+        if code in SCOPE_GATED and not gift_scope_ok(path):
             continue
         for lineno, line in enumerate(text.split("\n"), 1):
             m = pat.search(line)
