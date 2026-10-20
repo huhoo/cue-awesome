@@ -111,7 +111,8 @@ class NumericPackTests(unittest.TestCase):
         for mut, msg in ((lambda n: n["deltas"][1]["prior"].update(page=77), "not in FY2020"),
                          (lambda n: n["deltas"][1]["prior"].pop("table_id"), "table_id"),
                          (lambda n: n["deltas"][1].update(delta=5.0), "current - prior"),
-                         (lambda n: n["deltas"][1].pop("unit"), "unit")):
+                         (lambda n: n["deltas"][1].pop("unit"), "unit"),
+                         (lambda n: n["deltas"][1]["current"].update(value=True), "value must be a finite number")):
             with self.subTest(msg=msg):
                 n = base_numeric(); mut(n)
                 with self.assertRaisesRegex(numeric.Invalid, msg):
