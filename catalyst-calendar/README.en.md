@@ -47,8 +47,29 @@ Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 c
 The three layers prove different things and are not interchangeable: **skill installed ≠ credentials configured ≠ channel connected**.
 - installed: list your installed skills again and the names above show up — that only proves the files landed, not that data flows.
 - credentials configured: the `CUE_API_KEY` exists in your local credential facility; **a key being present is not a key being accepted** — acceptance only becomes judgeable in the next layer.
-- connected: connect to the target domain with that key, following the domain's own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; tool names and input schemas follow that response's current values, never hardcoded or invented.
-An anonymous `GET https://cuecue.cn/api/mcp-catalog` returning anything proves only that the **catalog is reachable** — this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`. A domain missing from that response stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
+- connected: connect to the target domain with that key, following the `url` inside the domain's own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; tool names and input schemas follow that response's current values, never hardcoded or invented.
+An anonymous `GET` of the `CATALOG` defined in the block returning anything proves only that the **catalog is reachable** — this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`. A domain missing from that response stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with one of the ids listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("Not found: that id is not in the catalog response (or its routing has no url field) - run the line above and pick one of the ids listed")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "Fetch failed: ROUTING_URL is empty - run the line above, then set DOMAIN_ID to one of the ids listed" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+Where the value comes from: `$ROUTING_URL` is fetched by the two lines above from the anonymous catalog response - the verbatim `url` field inside that domain's `routing` object, never a hardcoded domain or path; `CATALOG` in the block is the only catalog-entry literal on this face (assigned once, not restated in prose); `$CUE_API_KEY` comes from the local credential facility set up in the layer above, never enters chat, is not echoed in a terminal, and this block adds no new credential-reading step.
+Pass = HTTP 200 with a non-empty `result.tools` in the body (recognised by shape only, e.g. `{"result":{"tools":[…]}}`; this face lists no tool names and promises no counts).
 
 ## 5. What's in the package
 
