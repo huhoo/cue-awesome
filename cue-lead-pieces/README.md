@@ -37,7 +37,7 @@ Omni 解析和 cue-research 会消耗积分：Agent 发起前会先告诉你要�
    装完把三件事分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。
    - 装好＝你这一侧重新列一次已安装 skill，清单里能看到上一步那几枚的名字（这只证明文件到位，不证明取到数）；
    - 配好凭据＝取 api-key 那一步的 `CUE_API_KEY` 存在于本地凭据设施即可——不要把它的值贴进聊天，也不要在终端回显；
-   - 已连＝匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿得到当场返回；域与工具都以那份返回的现值为准，返回里没有的域本件不装也不承诺。
+   - 已连＝带上那把 key 按目标域 `routing` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败；上一格那把 key 只是在场，**被不被接受要到这一格才判得出**），且 `tools/list` 有返回。怎么问：向该域 `routing` 给出的地址发一个 JSON-RPC 的 `tools/list` 请求。算通过的回字：HTTP 200，且返回体里 `result.tools` 非空（逐字形如 `{"result":{"tools":[…]}}`，工具名与入参 schema 就在那一格里）——**工具清单以那份返回现值为准，本件不预先承诺有哪几枚、也不硬编码工具名**。匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿得到当场返回**只证目录可达**，本件不把它叫「已连」：它给的是各域 `external_status` 与 live 域的 `routing`，返回里没有的域本件不装也不承诺。连接报错≠域无数据，如实报，只重试错误标明可重试的部分。
 
 不装也能跑：`cue.py local` 用本地解析把同一批公开文件读进来，核对规则完全一样——上面的实测数字就是这样跑出来的；但页码靠本地抽取，表格可能被拆成散行，看不到 Cue 通道取证的样子。
 
