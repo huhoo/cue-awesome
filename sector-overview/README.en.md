@@ -40,7 +40,29 @@ Most sector reports can't answer that: verdicts fly, and nowhere in the text is 
 
 Install the evidence legs: `cue-data-mcp` / `cue-research` (`cue-omni-reader` as needed) — these ship in Cue's official skill collection (sensedeal): the whole set `npx skills add sensedeal/cue-skills` (it lists what is published there; pick what to install), or one at a time `npx skills add sensedeal/cue-skills --skill cue-data-mcp`, swapping the last name for `cue-research` or `cue-omni-reader`. This package itself is installed by the command in the section above (`huhoo/cue-awesome --skill sector-overview`) — do not conflate the two.
 Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**, and do not echo it in a terminal).
-The three layers prove different things and are not interchangeable: **skill installed ≠ credentials configured ≠ channel connected**. Installed means the names above show up when you list your installed skills again (files landed, nothing more). Credentials configured means that key exists in your local facility — **present is not accepted**, and acceptance only becomes judgeable in the next layer. Connected means you reached the target domain with that key following its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, protocol behaviour, not an authentication failure) **and** `tools/list` returned; tool names and schemas follow that response's current values. An anonymous `GET https://cuecue.cn/api/mcp-catalog` returning anything proves only that the **catalog is reachable** — this package does not call that "connected", and a connection error is not "the domain has no data": report it as-is.
+The three layers prove different things and are not interchangeable: **skill installed ≠ credentials configured ≠ channel connected**. Installed means the names above show up when you list your installed skills again (files landed, nothing more). Credentials configured means that key exists in your local facility — **present is not accepted**, and acceptance only becomes judgeable in the next layer. Connected means you reached the target domain with that key following the `url` inside its own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, protocol behaviour, not an authentication failure) **and** `tools/list` returned; tool names and schemas follow that response's current values. An anonymous `GET` of the `CATALOG` defined in the block returning anything proves only that the **catalog is reachable** — this package does not call that "connected", and a connection error is not "the domain has no data": report it as-is.
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with one of the ids listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("Not found: that id is not in the catalog response (or its routing has no url field) - run the line above and pick one of the ids listed")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "Fetch failed: ROUTING_URL is empty - run the line above, then set DOMAIN_ID to one of the ids listed" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+Where the value comes from: `$ROUTING_URL` is fetched by the two lines above from the anonymous catalog response - the verbatim `url` field inside that domain's `routing` object, never a hardcoded domain or path; `CATALOG` in the block is the only catalog-entry literal on this face (assigned once, not restated in prose); `$CUE_API_KEY` comes from the local credential facility set up in the layer above, never enters chat, is not echoed in a terminal, and this block adds no new credential-reading step.
+Pass = HTTP 200 with a non-empty `result.tools` in the body (recognised by shape only, e.g. `{"result":{"tools":[…]}}`; this face lists no tool names and promises no counts).
+
 It runs without Cue too (paste association reports; lines marked user-supplied) — but the anchor discipline doesn't relax: only material that can actually anchor a verdict may carry one.
 
 ## 5. What's in the package
