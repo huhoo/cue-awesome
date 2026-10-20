@@ -25,7 +25,7 @@ It answers a plain question: **"In the next three months, what dates matter for 
 
 ## 2. Quick start (three steps)
 
-1. **Install**: put this directory into your agent's skills folder.
+1. **Install**: `npx skills add huhoo/cue-awesome --skill catalyst-calendar` — that command installs this package; afterwards list your installed skills again and seeing `catalyst-calendar` there is what proves the files landed (nothing more than that). Dropping this directory into your agent's skills folder works the same way.
 2. **Ask**: "我的持仓是美的集团、东方雨虹、宁德时代，给我排未来 90 天的催化剂日历" (triggers work in Chinese or English). It aligns inputs in ≤4 questions (issuer set / window / focus types / output dir, each with a default), then opens a `progress.md` ledger.
 3. **Collect**: after `+scope → +events → +derive → +build`, `+check` runs the full gate set of `check_calendar.py` — every judgement is the script as it now stands (two self-check commands in §5); invocation flags per the formal command in `SKILL.md` §3 — **no delivery without passing**.
 
@@ -42,7 +42,13 @@ Progress-style disclosures with no pre-known date (1%/2% buyback milestones) go 
 
 ## 4. First-time Cue setup (three steps, skippable)
 
-Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — the server-side policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` / `cue-research` / `cue-omni-reader`. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
+Install the evidence legs separately: `cue-data-mcp` / `cue-research` / `cue-omni-reader` — these three ship in Cue's official skill collection (sensedeal), one command, two forms: the whole set `npx skills add sensedeal/cue-skills` (it lists the skills published there; pick what to install), or one at a time `npx skills add sensedeal/cue-skills --skill cue-data-mcp`, swapping the last name for `cue-research` or `cue-omni-reader` to install just that one. This package itself is installed by the command in the section above (`huhoo/cue-awesome --skill catalyst-calendar`) — do not conflate the two.
+Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — the server-side policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**, and do not echo it in a terminal).
+The three layers prove different things and are not interchangeable: **skill installed ≠ credentials configured ≠ channel connected**.
+- installed: list your installed skills again and the names above show up — that only proves the files landed, not that data flows.
+- credentials configured: the `CUE_API_KEY` exists in your local credential facility; **a key being present is not a key being accepted** — acceptance only becomes judgeable in the next layer.
+- connected: connect to the target domain with that key, following the domain's own `routing` (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — missing that header gives a 406, which is protocol behaviour, not an authentication failure) **and** `tools/list` returns; tool names and input schemas follow that response's current values, never hardcoded or invented.
+An anonymous `GET https://cuecue.cn/api/mcp-catalog` returning anything proves only that the **catalog is reachable** — this package does not call that "connected"; what it yields is each domain's `external_status` and the live domains' `routing`. A domain missing from that response stays uninstalled and unpromised here. A connection error is not "the domain has no data": report it as-is and retry only what the error marks as retryable. **Not installing raises no error**: the degraded path is you pasting the announcement list (marked as user-supplied); skip the research run and the lock-up/reduction category is marked "not found" — common sense never fills a date. Everything that spends is asked before it burns.
 
 ## 5. What's in the package
 
