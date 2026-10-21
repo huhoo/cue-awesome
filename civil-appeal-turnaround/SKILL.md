@@ -7,6 +7,14 @@ description: "民事一审败诉后的翻案工程：还原法官推理链、定
 agent_created: true
 version: "0.3.5"
 license: MIT
+consumes:
+  - judgment-doc
+  - case-materials
+produces:
+  - appeal-brief
+  - document-pack
+  - fact-ledger
+  - filing-docx
 metadata:
   requires:
     bins: ["python3"]
