@@ -13,8 +13,8 @@
 退码（每条都响亮、零 Traceback）：
   0  实连：HTTP 200 且 result.tools 是非空数组（即该包 README 连通那一节那句判据成立，本件不另述数字）
   4  只取到地址、连通未证——缺省那一支就是这一态，要证连通请带 --post
-  5  连上了但未过：HTTP 码不是 200、或 result.tools 是空数组、或返回体里没有 tools 数组
-  1  取不到／发不出：域不在场、该域没有 routing、routing 缺 url、目录取不回、本地凭据缺位、请求发不出去
+  5  发出去了、也拿到响应、但判据不满足：result.tools 是空数组、返回体里没有它、返回体解析不出、或 result 形状不认识
+  1  取不到／发不出去／HTTP 层报错：域不在场、该域没有 routing、routing 缺 url、目录取不回、本地凭据缺位、请求发不出去，以及 4xx 与 5xx（urllib 在这一支抛 HTTPError，本件按 HTTP 层报错退 1）
   2  用法错：既没给 --domain 也没给 --list
 
 任何失败都走一句人话出口：except 里要用的名字先赋初值，绝不格式化未绑定的变量。
@@ -100,7 +100,7 @@ def main():
     ap.add_argument("--list", action="store_true", help="只列在场域 id、external_status 与 routing 里的 url，不发 POST")
     ap.add_argument("--post", action="store_true", help="显式发那一次 tools/list；不带这一项本件一个包都不发，退码 4（连通未证）")
     ap.add_argument("--catalog-url", default=CATALOG_DEFAULT, help="换目录入口用（默认本件唯一那处）；换源后本件不校验返回里给的 url")
-    ap.add_argument("--catalog-file", help="离线：改读本地目录快照（受控靶用），不发网络；换源后同上")
+    ap.add_argument("--catalog-file", help="离线：改读本地目录快照（受控靶用）：本开关自身只读该文件、不发包；带 --post 时仍会向该快照里给的 url 发一次 POST；换源后同上")
     ap.add_argument("--timeout", type=int, default=20, help="单次请求超时秒数（默认 20）")
     args = ap.parse_args()
 
@@ -171,15 +171,18 @@ def main():
                 except ValueError:
                     continue
     if parsed is None:
-        return die("POST 实得 HTTP %s（目标 host＝%s），但返回体既不是单个 JSON、也没有可解析的 data: 行（首 60 字：%s）——退码 5，按现场回字判，别按本件的解析判" % (code, host, raw[:60]))
-    tools = (parsed.get("result") or {}).get("tools") if isinstance(parsed, dict) else None
+        return die("POST 实得 HTTP %s（目标 host＝%s），但返回体既不是单个 JSON、也没有可解析的 data: 行（首 60 字：%s）——退码 5，按现场回字判，别按本件的解析判" % (code, host, raw[:60]), 5)
+    result = parsed.get("result") if isinstance(parsed, dict) else None
+    if not isinstance(result, dict):
+        return die("POST 实得 HTTP %s（目标 host＝%s），返回体里的 result 不是对象——本件不猜形状（顶层类型＝%s，result 类型＝%s）；退码 5，按现场回字判" % (code, host, type(parsed).__name__, type(result).__name__), 5)
+    tools = result.get("tools")
     n = len(tools) if isinstance(tools, list) else None
     print("域 %s｜external_status=%s｜目标 host=%s｜POST tools/list 实得 HTTP %s｜result.tools 枚数=%s" % (
         rid, status, host, code, n if n is not None else "(返回体里没有 tools 数组)"))
     if code == 200 and isinstance(tools, list) and tools:
         print("退码 0：现场值满足判据（判据本身见该包 README 连通那一节，本件不复制第二处真值）")
         return 0
-    print("退码 5：连上了但判据未满足——要么 HTTP 码不是 200，要么 result.tools 为空数组或返回体里没有它")
+    print("退码 5：请求发出去了、也拿到了响应，但判据未满足——result.tools 是空数组，或返回体里没有它")
     return 5
 
 
