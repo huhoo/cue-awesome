@@ -12,3 +12,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# 宿主 CLI 的本会话本地配置（权限位等），非仓内物、不入库（lead 2026-10-20，Owner 常设授权内）
+.qoder/
