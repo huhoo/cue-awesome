@@ -4,10 +4,12 @@ description: "从用户指定的公开文档建可追溯业务知识包：宿主
 license: MIT
 consumes:
   - parsed-doc
+inputs:
   - source-pages
 produces:
-  - knowledge-pack
   - change-brief
+  - knowledge-pack
+  - validated-numerics
 version: "0.3.9"
 slug: cue-omni-ontology
 displayName: 任意文档·建逐句可回查知识库

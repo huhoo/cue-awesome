@@ -9,10 +9,10 @@ license: MIT
 consumes:
   - parsed-doc
 produces:
-  - translation-draft
-  - reader-html
   - chunk-translation
   - glossary
+  - rendered-html
+  - translation-draft
 metadata:
   requires:
     bins: ["python3"]

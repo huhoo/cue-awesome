@@ -9,10 +9,10 @@ tags: [投研, 行业研究, A股, 景气度]
 license: MIT
 consumes: []
 produces:
-  - sector-report
   - industry-material-pack
-  - source-index
   - run-log
+  - sector-report
+  - source-index
 agent_created: true
 metadata:
   requires:

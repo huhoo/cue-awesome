@@ -7,14 +7,16 @@ description: "自选清单日报（状态文件驱动）：把公司名或 6 位
 version: "0.2.19"
 license: MIT
 consumes:
+  - snapshot-prev
+inputs:
   - company-list
   - event-file
-  - snapshot-prev
 produces:
   - daily-digest
+  - run-account
   - snapshot-prev
   - source-index
-  - run-account
+  - watchlist-file
 metadata:
   requires:
     bins: ["python3"]

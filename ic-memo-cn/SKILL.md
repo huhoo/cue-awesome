@@ -6,16 +6,16 @@ summary: "给一家公司起草投决备忘录：七个结构节，每条数字�
 description: "投决备忘录草稿生成：输入是一家公司名／六位代码或你手上的材料，产出七节备忘录——摘要、事实与数字、业务要点、风险与反方、缺数与未决、人工复核、来源索引；每个数字带披露或监管源＋字符/页定位，取不到的行直接写「未取到」，正反两方各至少一条否则机检拦下。适合投前材料整理、内部讨论稿、需要「每条数都能回原文核」的场合。Do NOT use for: 评级、目标价、买卖建议（一律 `[待人工]`）、最终决议（本件只起草，用户负终审）、估值测算（无行情与持仓数据腿，只做适用性声明）、整体风险打分。Triggers: 投决备忘录 / IC 备忘录 / 投前材料 / 讨论稿逐条可回查"
 version: "0.2.22"
 license: MIT
-consumes:
+inputs:
   - company-identity
-  - user-material
   - facts-file
   - gaps-file
   - materials-file
+  - user-material
 produces:
   - investment-memo
-  - source-index
   - run-account
+  - source-index
 metadata:
   requires:
     bins: ["python3"]

@@ -1,0 +1,121 @@
+# artifact-types.yaml —— 技能间工件的规范词表（M362 定稿，lead 2026-10-21 逐行批）
+#
+# 这张表是全仓唯一的工件命名口径：包面 frontmatter 的 consumes/produces/inputs 只准写这里的规范名，
+# 改名或并名一律改这张表 + 一趟脚本，不散在十八个包里重谈。
+#
+# 两条判据（裁定原文，写在这儿防后人误焊）：
+# 1) **产方必须是「该件产出即为此物」**。用户自有、可手工编辑的东西不是任何件的产物——
+#    所以 company-list 落在 inputs 族、`0 件产`是事实，不硬焊成有产方（watchlist-digest 产出的是
+#    watchlist-file 这个文件本身，不是那份规范化的主体清单）。
+# 2) **en 面不承担声明**：机器只读各包 SKILL.md 的 frontmatter；SKILL.en.md 不加这三个键，
+#    双语等形不适用于声明层。
+#
+# 族（family）只用于合并展示与报告分组，**不用于算边**；边只由规范名相等得出。
+
+aliases:                       # 现名 → 规范名（同物别名，并入）
+  reader-html: rendered-html
+  filing-docx: rendered-docx
+
+families:
+  rendered-document:
+    - rendered-docx
+    - rendered-html
+    - rendered-pptx
+    - rendered-pdf
+  ledger:
+    - run-log
+    - run-account
+    - coverage-ledger
+    - fact-ledger
+  comparable-table:
+    # 分列，不并——并名不是默认动作（裁定原文）
+    - evidence-table
+    - risk-fact-table
+  structured-note:
+    - structured-note
+    - investment-memo
+    - daily-digest
+    - event-brief-card
+    - risk-scan-card
+    - study-card
+    - meeting-minutes
+    - tear-sheet-page
+    - sector-report
+    - decision-brief
+    - appeal-brief
+    - review-report
+    - change-brief
+    - watch-calendar
+  draft:
+    - layout-draft
+    - text-draft
+    - translation-draft
+    - chunk-translation
+    - content-spec
+    - child-spec
+    - glossary
+
+inputs:                        # 这一族写进包面的 inputs: 键，不参与算边
+  - agenda-material
+  - agent-writeup
+  - announcement-doc
+  - case-materials
+  - company-identity
+  - company-list
+  - disclosure-file
+  - draft-answer
+  - event-file
+  - evidence-snapshot
+  - facts-file
+  - gaps-file
+  - journal-sample
+  - judgment-doc
+  - materials-file
+  - meeting-audio
+  - paper-doc
+  - source-file
+  - source-pages
+  - user-material
+
+canonical:                     # 参与算边的工件名（规范名全集；alias 不在列）
+  - event-brief-card
+  - appeal-brief
+  - change-brief
+  - child-spec
+  - chunk-translation
+  - content-spec
+  - coverage-ledger
+  - credit-signal-pack
+  - daily-digest
+  - decision-brief
+  - document-pack
+  - evidence-table
+  - fact-ledger
+  - glossary
+  - industry-material-pack     # 产方有、消方无：图上留空是诚实的（Q3），journal 侧那句本轮不立
+  - investment-memo
+  - knowledge-pack
+  - layout-draft
+  - material-catalog
+  - meeting-minutes
+  - parsed-doc
+  - rendered-docx
+  - rendered-html
+  - rendered-pdf
+  - rendered-pptx
+  - review-report
+  - risk-fact-table
+  - risk-scan-card
+  - run-account
+  - run-log
+  - sector-report
+  - snapshot-prev
+  - source-index
+  - structured-note
+  - study-card
+  - tear-sheet-page
+  - text-draft
+  - translation-draft
+  - validated-numerics         # 你⑤批的：ontology 产出的是被机检过的数值包，名与输入裸数值分开
+  - watch-calendar
+  - watchlist-file             # 你②批的：watchlist-digest 产出这个文件本身；company-list 不因此有产方

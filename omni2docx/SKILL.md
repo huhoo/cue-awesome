@@ -8,12 +8,13 @@ version: "0.6.9"
 license: MIT
 consumes:
   - parsed-doc
+inputs:
   - agent-writeup
 produces:
   - rendered-docx
   - rendered-html
-  - rendered-pptx
   - rendered-pdf
+  - rendered-pptx
 metadata:
   requires:
     bins: ["python3"]
