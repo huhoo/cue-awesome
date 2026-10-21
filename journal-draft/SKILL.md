@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.23"
+version: "0.15.24"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -29,16 +29,19 @@ metadata:
   layer: "framework"
   children: "journal-<企业>-<类型> 由 +spec 派生"
   examples: "examples/<技能名>/ 为成品样例技能，可直接安装或照着改造"
-  requires:
-    bins: ["python（macOS/Linux 上也可能叫 python）"]
-    python:
-      core: ["pymupdf（+learn 抽取、+draft 出 PDF，缺了交不出三件套）"]
-      optional: ["python-docx（docx 文字稿与回填）", "pillow（配图印前校验）"]
-    optionalSkills: ["cue-research", "cue-omni-reader", "cue-buddy", "long-doc-translation"]
-    optionalMcp: ["omni-reader", "pkulaw", "yuandian-mcp", "neodata/westock"]
-    # 「可选」只表示「不装也能跑」，不表示「默认不用」：开工时必须主动推荐并等用户确认，
-    # 禁止用默认值替用户答掉（硬规则 5；判定口径与开通三步见 references/cue-onboarding.md）
-    recommendedSkills: ["cue-research", "cue-omni-reader"]
+  openclaw:
+    requires:
+      bins: ["python（macOS/Linux 上也可能叫 python）"]
+      env: ["CUE_API_KEY"]
+      python:
+        core: ["pymupdf（+learn 抽取、+draft 出 PDF，缺了交不出三件套）"]
+        optional: ["python-docx（docx 文字稿与回填）", "pillow（配图印前校验）"]
+      optionalSkills: ["cue-research", "cue-omni-reader", "cue-buddy", "long-doc-translation"]
+      optionalMcp: ["omni-reader", "pkulaw", "yuandian-mcp", "neodata/westock"]
+      # 「可选」只表示「不装也能跑」，不表示「默认不用」：开工时必须主动推荐并等用户确认，
+      # 禁止用默认值替用户答掉（硬规则 5；判定口径与开通三步见 references/cue-onboarding.md）
+      recommendedSkills: ["cue-research", "cue-omni-reader"]
+    primaryEnv: CUE_API_KEY
   upstream:
     cueSkillsDir: "~/.workbuddy/skills"
 ---

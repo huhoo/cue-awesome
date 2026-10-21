@@ -10,10 +10,14 @@ produces:
   - change-brief
   - knowledge-pack
   - validated-numerics
-version: "0.3.9"
+version: "0.3.10"
 slug: cue-omni-ontology
 displayName: 任意文档·建逐句可回查知识库
 summary: "从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。"
+metadata:
+  openclaw:
+    requires:
+      bins: ["python3"]
 ---
 
 # Cue Omni Ontology

@@ -9,15 +9,18 @@ produces:
   - credit-signal-pack
   - material-catalog
   - parsed-doc
-version: "0.4.28"
+version: "0.4.29"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露，建带页码的信用线索件，逐句核对引文是否逐字出自所注页±1，对不上的标出或改回。"
 tags: [投研, 信用信号, 引文核对, 财报, A股, 美股]
 metadata:
-  requires:
-    bins: ["python3"]
-    recommendedSkills: ["cue-omni-reader", "cue-data-mcp", "cue-research"]
+  openclaw:
+    requires:
+      bins: ["python3"]
+      env: ["CUE_API_KEY"]
+      recommendedSkills: ["cue-omni-reader", "cue-data-mcp", "cue-research"]
+    primaryEnv: CUE_API_KEY
 ---
 
 # cue-lead-pieces
