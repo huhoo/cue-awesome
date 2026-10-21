@@ -27,10 +27,14 @@
 
 形制：纯标准库、零网络、只读；条目全部按名排序（输出与枚举顺序无关，可逐字节对拍）；
       只打相对路径，不打绝对路径；任何读不到的东西走一句人话出口、零 Traceback。
+      列表项只认两格缩进（`^  - `）：不收任意深度的缩进——「放错层的列表」若被算成真边，图上会多出假连接，
+      比少读更贵。读不到又不肯装「空清单」的那一形，走「不可判」点名（见退码 1）。
 退码：0 各表算完（覆盖缺口可以「不作数」，那是原料问题不是本件的失败）；
       1 读不到任何包、某枚 SKILL.md 解析不了、包面出现词表外名字、词表读不到或不成形、
-        原料（--catalog／--domains）指了路径却读不到或形状不认识；
+        原料（--catalog／--domains）指了路径却读不到或形状不认识、
+        某枚键在顶层而它的列表项缩进不是两格（不可判；末行并列「不合=0｜不可判=N 枚」，这些键不并入图）；
       2 用法错（比如 --catalog 与 --domains 同时给、两枚 --legacy 同时给、路径不是目录）。
+      「不可判」那一行的末行只在有话要说时长——干净一趟的 stdout 与出生态逐字节同，这是「零变化对拍」的前提。
 """
 
 import argparse
@@ -111,7 +115,13 @@ def frontmatter_lines(text):
 
 
 def parse_frontmatter_list(text, key):
-    """从 frontmatter 文本里取 `key:` 下的 `  - 值` 列表；无该键返回 None（与空清单区分）。"""
+    """取 `key:` 下的两格缩进列表。返回 (清单或 None, 是否不可判)。
+
+    三态分清：无该键＝(None, False)（由调用方按「缺键」点名）；键在场、列表项两格＝(值, False)；
+    键在场、一条两格项都没读到、其后紧跟的行却是「缩进非两格的类列表行」（去掉缩进后以 `- ` 起头或就是 `-`）
+    ＝([], True)——本件不把它读成空清单，也不按案甲把任意深度缩进都收进来（那会把放错层的列表算成真边）。
+    键后跟的是别的键（含缩进两格的映射行）＝正常空清单，不算不可判。
+    """
     lines = text.split("\n")
     vals, seen, i = [], False, 0
     while i < len(lines):
@@ -128,12 +138,23 @@ def parse_frontmatter_list(text, key):
                 i += 1
             break
         i += 1
-    return sorted(vals) if seen else None
+    if not seen:
+        return None, False
+    if vals:
+        return sorted(vals), False
+    j = i
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j < len(lines):
+        nxt = lines[j]
+        if nxt[:1] in (" ", "\t") and (nxt.lstrip(" \t") == "-" or nxt.lstrip(" \t").startswith("- ")):
+            return [], True
+    return [], False
 
 
 def read_packages(repo):
-    """枚枚读 frontmatter → {包名: {consumes/inputs/produces/legs}}；缺键按空清单计入并记进 notes 供点名。"""
-    out, notes = {}, []
+    """枚枚读 frontmatter → {包名: {consumes/inputs/produces/legs}}；缺键与不可判各自点名，两者都不并入图。"""
+    out, notes, unjudged = {}, [], []
     for d in sorted(p for p in repo.iterdir() if p.is_dir()):
         if d.name in IGNORE_DIRS or d.name.startswith("."):
             continue
@@ -141,12 +162,18 @@ def read_packages(repo):
         if not skill.is_file():
             continue
         fm = frontmatter_lines(skill.read_text(encoding="utf-8", errors="replace"))
-        got = {k: parse_frontmatter_list(fm, k) for k in FM_KEYS}
+        got, bad_keys = {}, []
+        for k in FM_KEYS:
+            got[k], bad = parse_frontmatter_list(fm, k)
+            if bad:
+                bad_keys.append(k)
         miss = [k for k in FM_KEYS if got[k] is None]
         if miss:
             notes.append("%s：frontmatter 里没有 %s（本件按空清单计入，不猜）" % (d.name, "、".join(miss)))
+        for k in bad_keys:
+            unjudged.append("%s：%s 键在场而列表项缩进不是两格（本件按不可判处理，不并入图、不读成空清单）" % (d.name, k))
         out[d.name] = {k: (got[k] or []) for k in FM_KEYS}
-    return out, notes
+    return out, notes, sorted(unjudged)
 
 
 def normalize(pkgs, vocab):
@@ -239,7 +266,7 @@ def main():
         return die("读不到规范词表：%s（边与入参的口径全靠它，缺表不猜名）" % args.vocabulary)
     vocab = load_vocabulary(vpath)
 
-    pkgs, notes = read_packages(repo)
+    pkgs, notes, unjudged = read_packages(repo)
     if not pkgs:
         return die("在 %s 下一枚 SKILL.md 都没读到——本件无从算表" % repo.name)
     pkgs, norm_notes, bad = normalize(pkgs, vocab)
@@ -316,7 +343,7 @@ def main():
           "词表＝%s（canonical %d 枚／inputs 族 %d 枚／alias %d 枚／family %d 枚）｜包 %d 枚（扫自 %s）" % (
               rel(vpath), len(vocab["canonical"]), len(vocab["inputs"]), len(vocab["aliases"]),
               len(vocab["families"]), len(pkgs), label))
-    for n in notes + norm_notes:
+    for n in notes + unjudged + norm_notes:
         print("  注：%s" % n)
     print()
     print("== 表一 孤点（跨件入度与出度皆 0；inputs 不算边、自环不算边）==")
@@ -414,6 +441,11 @@ def main():
         print("  %s 面上提到 %s：现读 %d 次" % (name, other, c))
     print("  枚数=%d 条｜合计出现次数=%d（均由上列现算）｜这一列只算气氛，别拿它当图上的边" % (
         len(ref_rows), sum(c for _n, _o, c in ref_rows)))
+    if unjudged:
+        # 只在有话说时长这一行：干净一趟的 stdout 必须与出生态基线逐字节同（多一枚无条件末行＝把对拍打断）。
+        print()
+        print("  不合=0｜不可判=%d 枚（不可判＝键在顶层而列表项缩进不是两格；这一类不并入图、不读成空清单，退码非 0——认不出＝响亮不可签）" % len(unjudged))
+        return 1
     return 0
 
 
