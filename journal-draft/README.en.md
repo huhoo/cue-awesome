@@ -90,11 +90,19 @@ python scripts/build_draft.py \
 
 If it prints page count, item count and `unknown=0`, you are through. The sample is only 8 pages, so it will report `[FAIL] 量级严重不足` (it is being compared against a 91-page baseline) — **that FAIL is expected**; what matters is that the gate ran, not its verdict. **The exit code is 1 here too** — that is the gate's verdict, not a script crash; when wiring CI, distinguish those two by status code.
 
+**Self-test face** (re-verifies this package itself; it never touches your manuscript):
+
+```bash
+bash scripts/fixtures/run_fixtures.sh
+```
+
+Zero network, standard library only, run with no arguments; the last line reports `ALL GREEN（N items）` and exits 0 (N is whatever the runner now prints; this face does not pin a count), any mismatch prints FAIL lines with the captured output and ends with `NOT GREEN` exiting 1. Five groups are judged: the generator happy path over the real inputs shipped with the package (double run byte-identical), the scale gate **both failing and passing** (balance the baseline and it must exit 0 — that is the anti-tautology probe), malformed input leaving no half-written product - **every bad branch carries all four assertions** (non-zero exit, **the first line of the error output must contain both the parameter name and what is wrong** - one missing means red, so a generic "input is not valid JSON" on line 1 no longer counts as naming anything, zero traceback, empty output directory): three `--content` shapes and one `--spec` shape for `build_draft.py`, the missing-`--content` usage error, and four bad `--outline` branches for `enrich_from_omni.py` (truncated, array, string, and a path that does not exist - naming a path you cannot read is not the same as omitting the option). The fifth group is the **derived face ↔ generator sync ledger** (`scripts/check_derived_sync.py`): the number of faces that *should* be checked is counted from the roster on disk (directories under `examples/` that carry a SKILL.md) and then reconciled against the count declared inside the ledger - a mismatch means red, because a roster-only rule is washed green when a whole example directory disappears while a constant-only rule is washed green when someone deletes one face's fixed inputs, so both locks are needed - after which each face is regenerated with `derive_skill.py` and compared block by block against the face on disk (frontmatter key by key, body split on de-numbered level-2 headings; the derive inputs and the exempt keys are fixed constants inside the ledger, never reverse-engineered from the face on disk). Every roster face must print one reading line - a face that cannot run still prints its line with the reason named - and if the number actually run differs from the number that should have been checked the ledger goes red naming the missing face, because a sync ruler that silently skips one face has not measured what it claims. Adding or removing an example means changing the declared count and the three constant tables (inputs, registry, human-owned items) in the same edit; a partial change is red. Its current shape is a **registry mode**: every known drift is reported item by item and the last line self-reports `已知漂移 N 行｜实跑 P／应检 Q 枚` together with the registry-mode wording, exiting 0, so the ledger cannot block the release chain; it goes red on five things - measured drift above the registered number, an unregistered block or key drifting, a face silently not measured, the two-way lock on human-owned items (missing on disk means red, grown by the generator means red, each direction with its own named sentence), or an exempt key missing on either side. `metadata.version` is exempted line by line as a mirror (it is the second copy of the top-level `version`); the other `metadata` sub-fields stay under hard comparison. Empty the registry inside the ledger and it becomes a strict rule (non-empty diff means red) without touching the verdict logic. That ledger compares only the SKILL.md face; the README, assets and scripts the generator emits in the same run are out of scope. All verdicts stay inside the scripts as they now stand; the fixtures and this runner ship with the artifact.
+
 ### The Cue channel (deep research / document parsing)
 
 **Not required, but strongly recommended** — without it nothing errors, you just lose one layer of cross-verification and the semantic layer falls back to manual entry. Three steps to enable: register at <https://cuecue.cn> → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> → install `cue-research` (Omni parsing additionally needs the local Bridge).
 
-New accounts get **500 credits** on signup plus 10 per day, **and Cue always asks before spending**. At kick-off it asks item by item whether you want to use it; the decision rules are in [`references/cue-onboarding.md`](references/cue-onboarding.md).
+New accounts get **500 credits** on signup plus 10 credits per day, **and Cue always asks before spending**. At kick-off it asks item by item whether you want to use it; the decision rules are in [`references/cue-onboarding.md`](references/cue-onboarding.md).
 
 ---
 
@@ -217,7 +225,7 @@ references/
   agent-interaction.md       question batching and delivery action spec
   regulatory-dynamics-spec.md  spec for the regulatory-dynamics section
 
-scripts/                     12 scripts, all support --help, zero network requests
+scripts/                     a set of scripts (count is whatever the directory now holds; this face does not pin a number), all support --help, zero network requests
 assets/templates/            starter templates: issue-brief / outline / unit-pattern / evidence-card /
                              imagery / progress / content.example / buddy draft
 assets/demo/                 **layout drafts you can open directly** (13-page sample + content source + two semantic diagrams)

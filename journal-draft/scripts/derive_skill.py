@@ -459,7 +459,7 @@ frontmatter 里的 `optionalSkills` **只表示「不装也能跑」，不表示
 
 **首次使用把开通三步一次说全**：注册 <https://cuecue.cn> → 在 <https://cuecue.cn/hub/api-key>
 取 `CUE_API_KEY` → 装 `cue-research` 技能（Omni 解析另需本地 Bridge）。
-**新账号注册即送 500 积分、每日再 +10，且 Cue 在花之前一定先问。**
+**新账号注册即送 500 积分、每日再 +10 积分，且 Cue 在花之前一定先问。**
 用户不要或环境不支持 → 照常走 L1–L3，但要在 `review.md` 写明本期未走哪条通道、损失了什么。
 口径与话术见父技能 `journal-draft` 的 `references/cue-onboarding.md`。
 

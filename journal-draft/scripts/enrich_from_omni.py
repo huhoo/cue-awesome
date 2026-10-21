@@ -539,9 +539,15 @@ def main():
             "has_gfm_table": bool(re.search(r"^\|.*\|$", md, re.M)),
         },
     }
-    if a.outline and os.path.exists(a.outline):
+    if a.outline:
         # 上游返货坏了就停下，不产出一份看起来正常的草稿：这句 outline 只在语义层里做补强，
         # 缺它或不合式都该由取数方补回，而不是让下游拿一份没有大纲锚的成稿当正常件用。
+        # 给了 --outline 却读不到＝取数错误，不退化成「当作没给」：后者照样产出两件同名产物，
+        # 与 outline 在场时的产物形完全同，读者无从分辨少了一层语义。
+        if not os.path.exists(a.outline):
+            sys.stderr.write("enrich_from_omni: --outline 指向的文件不存在（%s），取数错误——不产出任何文件\n"
+                             "      → 可选参数整个省掉才对；既然给了就得把那份 read_outline 落盘再重跑\n" % a.outline)
+            sys.exit(1)
         try:
             oj = json.loads(read_text(a.outline))
         except json.JSONDecodeError as e:

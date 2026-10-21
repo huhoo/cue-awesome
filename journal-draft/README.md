@@ -108,6 +108,20 @@ python scripts/build_draft.py \
 看的是门跑没跑起来，不是门的结果。**此时 `exit code` 也是 1**，
 那是门禁判定结果而不是脚本崩溃，接 CI 时请按状态码区分这两类。
 
+**自测面**（复验本包自己，不碰你的稿子）：
+
+```bash
+bash scripts/fixtures/run_fixtures.sh
+```
+
+零网络、纯标准库，无参直跑，末行自报「ALL GREEN（N 项）」退 0（N 以脚本现跑为准，本面不写死枚数）；任一不符打 FAIL 行并附输出，末行「NOT GREEN」退 1。
+它判五组事：生成器好样链（随包真件走完并双跑产物逐字节同）、量级门禁**能红也能放行**（把基线配平就必须退 0——防恒真那一枚在这里）、
+坏输入不落半成品——**每条坏形支路各四件套**（退非零＋**错误输出第 1 行同时含参数名与病灶词**、缺一即红＋零 Traceback＋产物目录零文件；首行只写「input 不是合法 JSON」这种泛称不算点名）：`build_draft.py` 的 `--content` 三形与 `--spec` 一形、缺 `--content` 的用法错一支，`enrich_from_omni.py` 的坏 `--outline` 四支（截断／数组／字符串／指向不存在文件——给了路径却读不到不算「没给」）。
+第五组是**派生面↔生成器 同源档**（`scripts/check_derived_sync.py`）：应检枚数从盘上名册现算（`examples/` 下带 SKILL.md 的目录），并与档内声明的枚数对拍——两值不符即红（只看名册会被「整枚 example 目录消失」洗绿，只看常量会被「删一枚入参」洗绿，两道锁一起才堵得住），逐枚重跑 `derive_skill.py` 现产该枚 SKILL.md，与在盘面按块比（frontmatter 逐键、正文按去编号的二级标题切块；入参与豁免键固化在档内常量，不许从盘面字段反推）。每枚必出一行读数，跑不成的也成行并点名原因；实跑枚数≠应检枚数即红并点名少的是哪枚——一把同源尺少测一枚就等于没测。增删 example 时必须同时改档内声明枚数与那三张常量表（入参／登记／人工拥有），改一处不改另一处即红。
+它现在的形制是**登记态**：已知漂移逐枚自报，末行自报「已知漂移 N 行｜实跑 P／应检 Q 枚」并声明登记态字样、退 0，所以它不会把发布链堵上；实测超出登记数、未登记的块或键漂了、少测一枚、人工拥有项双向锁（盘面缺这一枚＝红，生成器长出这一枚＝红，两向各出各的点名句）、豁免键在任一侧不在场——这五条一律红。`metadata.version` 按行镜像豁免（它是顶层 `version` 的第二份抄本），其余 `metadata` 子字段照硬比。
+把档内登记清单撤空它就是判定制（非空 diff 即红），翻面不必改判定逻辑。这一档只比 SKILL.md 那一枚面，生成器同批产的 README／assets／scripts 不在射程。
+判定全集仍在各脚本现值，本件不另立规矩；夹具与本件都在 `scripts/fixtures/`，随发布物一起交付。
+
 ### Cue 通道（深度研究 / 文档解析）
 
 **不是必装，但强烈建议装** —— 不装不报错，只会让证据少一层交叉验证、
@@ -115,7 +129,7 @@ python scripts/build_draft.py \
 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` → 装 `cue-research`
 （Omni 解析另需本地 Bridge）。
 
-新账号注册即送 **500 积分**、每日再 +10，**且 Cue 在花之前一定先问**。
+新账号注册即送 **500 积分**、每日再 +10 积分，**且 Cue 在花之前一定先问**。
 开工时会逐条问你要不要用，判定口径见 [`references/cue-onboarding.md`](references/cue-onboarding.md)。
 
 ---
@@ -246,7 +260,7 @@ references/
   instantiation.md           派生流程
   agent-interaction.md       提问批次与交付动作规范
 
-scripts/                     12 个脚本，全部支持 --help，零网络请求
+scripts/                     一批脚本（数目以目录现数为准，本面不写死），全部支持 --help，零网络请求
 assets/templates/            起手模板：issue-brief / outline / unit-pattern / evidence-card /
                              imagery / progress / content.example / 搭子草案
 assets/demo/                 **可直接打开的成品版面稿**（13 页示例 + 内容源 + 两张语义图）

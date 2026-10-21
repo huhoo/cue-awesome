@@ -58,7 +58,7 @@ DETAIL_CAPABILITIES_UNAVAILABLE  retryable=false  billed=false
 `SKILL.md` 的 `+learn` 说「两个通道都必须跑」，指的是**有语义层时的质量基准**，
 不是开工前置条件。但**「不是前置条件」≠「默认可选」**：遇到下表情况时，
 **先按 [`cue-onboarding.md`](cue-onboarding.md) §二 给一次开通指引**（注册 → 取 `CUE_API_KEY` →
-装 Bridge / 连 MCP，含新账号注册即送 500 积分、每日 +10），用户不要或确实装不了，
+装 Bridge / 连 MCP，含新账号注册即送 500 积分、每日 +10 积分），用户不要或确实装不了，
 再走退路。**不要卡在这里，也不要替用户去申请账号或代填 key**：
 
 | 情况 | 现象 | 处置 |

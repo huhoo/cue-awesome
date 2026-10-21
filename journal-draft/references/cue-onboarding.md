@@ -54,7 +54,7 @@
      版本号与 root 授权规则见 `~/.workbuddy/skills/cue-omni-reader/references/setup.md`，
      **不许用隐式 `latest`**；装完跑 `doctor --json` 验证。
 
-**赠送额度（说清楚，别让用户以为要付费）**：新账号注册即送 **500 积分**，此后**每天再 +10**；
+**赠送额度（说清楚，别让用户以为要付费）**：新账号注册即送 **500 积分**，此后**每天再 +10 积分**；
 Omni 与数据 MCP 共用这一个钱包。**Cue 在花钱之前一定会先问**，
 所以不会出现「跑完才发现扣了很多」。额度与计费口径以**服务端实时策略**为权威
 （Omni 看 `doctor`，数据侧看 `cue-data-mcp/references/setup.md`）；

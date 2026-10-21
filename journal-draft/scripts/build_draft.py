@@ -856,6 +856,28 @@ def expand_pages(L, content, autoflow):
     return out
 
 
+def load_json(path, flag, hint):
+    """读入参 JSON：文件缺、坏 JSON、顶层非对象——三种都出一句点名参数的下一步，退 1，零堆栈。
+
+    面承诺的是「对常见操作失误给出可执行的下一步」，而 json.load 直接抛栈时读者拿到的是
+    Traceback；这一层把取数错误接住，且发生在建输出目录之前，所以坏输入不会留下半成品。
+    """
+    if not os.path.exists(path):
+        sys.exit("[ERR] %s 指向的文件不存在：%s\n      %s" % (flag, path, hint))
+    try:
+        with open(path, encoding="utf-8") as f:
+            obj = json.load(f)
+    except json.JSONDecodeError as e:
+        sys.exit("[ERR] %s 不是合法 JSON：%s（第 %s 行第 %s 列）\n      %s"
+                 % (flag, e.msg, e.lineno, e.colno, hint))
+    except OSError as e:
+        sys.exit("[ERR] %s 读不进来：%s\n      %s" % (flag, e, hint))
+    if not isinstance(obj, dict):
+        sys.exit("[ERR] %s 是 JSON %s，本件只收对象（顶层要是一个 {}）\n      %s"
+                 % (flag, type(obj).__name__, hint))
+    return obj
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--spec", default=None)
@@ -873,16 +895,12 @@ def main():
     CTA_DOMAIN = bool(args.cta_domain)
 
     spec = {}
-    if args.spec and os.path.exists(args.spec):
-        with open(args.spec, encoding="utf-8") as f:
-            spec = json.load(f)
-    elif args.spec:
-        sys.exit("[ERR] --spec 指向的文件不存在：%s\n"
-                 "      样式抽取产出的文件名是 stylespec.json，请检查路径；\n"
-                 "      确实要用内置默认网格（不做版式对照）就整个省掉 --spec。" % args.spec)
-
-    with open(args.content, encoding="utf-8") as f:
-        content = json.load(f)
+    if args.spec:
+        spec = load_json(args.spec, "--spec",
+                         "样式抽取产出的文件名是 stylespec.json，请检查路径；"
+                         "确实要用内置默认网格（不做版式对照）就整个省掉 --spec。")
+    content = load_json(args.content, "--content",
+                        "内容件由转写／整理步骤产出（每份一个对象）；先回看那一步的回显再重跑。")
 
     L = build_layout(spec)
     os.makedirs(args.out, exist_ok=True)

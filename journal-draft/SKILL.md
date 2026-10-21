@@ -2,7 +2,7 @@
 name: journal-draft
 slug: cue-journal-draft
 displayName: 期刊底稿生成器
-version: "0.15.16"
+version: "0.15.22"
 summary: "企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。"
 tags:
   - 企业期刊
@@ -86,7 +86,7 @@ journal-律所- regions   journal-制造业-客户通讯   journal-券商-月度
 逐条给判定**（值得用 / 一般 / 不值得 + 理由 + 成本），再请用户确认；没拿到企业长材料就别推荐 Omni，
 本期没有解读稿就别推荐核验——**「根据需求」是逐期重判，不是照抄模板**。
 判定口径、推荐话术与开通三步（注册 → `/hub/api-key` 取 `CUE_API_KEY` → 装技能 / 接 Bridge；
-新账号注册即送 500 积分、每日再 +10、花前必先确认）见
+新账号注册即送 500 积分、每日再 +10 积分、花前必先确认）见
 [`references/cue-onboarding.md`](references/cue-onboarding.md)。用户不要 → 照常走 L1–L3，
 但要在 `review.md` 写明未走哪些通道、损失了什么。
 预算表、续跑台账与交付动作见 [references/agent-interaction.md](references/agent-interaction.md)。
@@ -202,7 +202,7 @@ journal-律所- regions   journal-制造业-客户通讯   journal-券商-月度
    所以值得花一句话问用户：装 Omni 要装本地 Bridge
    （`npx -y @cueai/omni-reader-mcp@<审计版本> setup`，**不许用隐式 `latest`**）
    + 一个 `CUE_API_KEY`（<https://cuecue.cn/hub/api-key> 获取；新账号注册即送 500 积分、
-   每日再 +10），解析按页计费、跑前会先报预计费用。用户不要 / 装不了 / 未授权
+   每日再 +10 积分），解析按页计费、跑前会先报预计费用。用户不要 / 装不了 / 未授权
    （`OMNI_NOT_ENTITLED`、403）时，再退回
    **几何层 + 人工补语义**：`extract_style.py` 照跑，栏目树与单元边界从**样例的目录页**人工抄进
    `stylespec.json` 的 `semantic`，单元模板照 `assets/templates/unit-pattern.template.md` 补。
@@ -345,7 +345,7 @@ python ~/.workbuddy/skills/cue-research/scripts/research_run.py \
 > 上面那行路径只在你已安装 `cue-research` 时存在。若 B1 没问过（或当时还没装），
 > 这里是第二次机会，把话说到用户能自己判断为止：
 > 「本期有 N 处需要跨源交叉验证的内容，Cue 能给你逐条带来源的结论。装它两步：
-> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10，
+> cuecue.cn 注册 → 在 `/hub/api-key` 取 `CUE_API_KEY`（新账号注册即送 500 积分、每日再 +10 积分，
 > 且**花之前一定先问你要不要跑**）。装，还是这期就用 L1–L3？」
 > 用户说不用 / 装不了，再退回 L1–L3：企业官网/公众号 + 政府与监管机构原文 +
 > 结构化数据接口，取证照样成立，只是少了跨源交叉验证与 mimic 调性对齐——
@@ -629,7 +629,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
    每次开工在 B1 里对着本期实际内容给出判定（值得用 / 一般 / 不值得 + 理由 + 花多少），
    **禁止用默认值替用户答掉**；首次使用还要一次说全开通三步（注册 cuecue.cn →
    在 `/hub/api-key` 取 `CUE_API_KEY` → 装 `cue-research` 技能 / 接 Omni Bridge）
-   与赠送额度（新账号注册即送 500 积分、每日再 +10；**Cue 在花之前一定先确认**）。
+   与赠送额度（新账号注册即送 500 积分、每日再 +10 积分；**Cue 在花之前一定先确认**）。
    跑之前提示额度；**上传材料（上期内刊、分所名录、内部稿这类本地文件）必须单独征得同意**。
    用户不要或环境不支持 → 照常走 L1–L3，但必须在 `review.md` 写明本期未走哪些通道、
    因此损失了什么（单源未交叉 / 未过引用核验 / 语义层人工补录）。
@@ -875,7 +875,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 | 脚本 | 用途 |
 |---|---|
 | `scripts/extract_style.py` | 几何层：从样例 PDF 提取 StyleSpec 草稿（页 / 网格 / 字体 / 色板 / 字号 / 页面模板 / 图片槽位 / 跨页重复文本）。见 [references/style-extraction.md](references/style-extraction.md) |
-| `scripts/enrich_from_omni.py` | 语义层：把 Omni 富文本解析结果转成 StyleSpec 的 `semantic` 补丁（目录与栏目树 / 单元边界 / 字数分布 / 题头日期+作者 / 段落型重复条目 / 固定件 / 术语种子）。见 [references/omni-channel.md](references/omni-channel.md) |
+| `scripts/enrich_from_omni.py` | 语义层：把 Omni 富文本解析结果转成 StyleSpec 的 `semantic` 补丁（目录与栏目树 / 单元边界 / 字数分布 / 题头日期+作者 / 段落型重复条目 / 固定件 / 术语种子）。见 [references/omni-channel.md](references/omni-channel.md)；**给了 --outline 就必须读得到**——路径写错不再当作「没给」（那会照常产出两件与在场 outline 同形的产物，读者分辨不出少了一层语义），现在退 1、点名 --outline、零产物 |
 | `scripts/build_draft.py` | 由 StyleSpec + content.json 渲染 mm 级定位的 HTML 底稿（**版面稿**）；`--stats` 出量级达成率 |
 | `scripts/export_pdf.py` | 同份内容自绘 **PDF 版面稿**（PyMuPDF，不依赖浏览器，也不受无头渲染策略限制），务必一并交付 |
 | `scripts/crosscheck.py` | **三件套一致性校验**：content.json 每条文本是否在 html / md / pdf 里都出现（**只检命令里传进来的介质**；文字稿的纯版面字段按 `MD_SKIP` 现值豁免）。三个渲染器各自实现，字段口径漂移时**不报错只丢内容**，靠肉眼发现不了。另扫 `⟨待确认⟩` 这类过程标记——它们会直接印进成品（硬规则 28） |
@@ -886,8 +886,10 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 | `scripts/plan_images.py` | 配图计划：四类决策（skip/reuse/manual/gen）+ 尺寸换算 + prompt 组装 + 一致性分组。见 [references/imagery.md](references/imagery.md) |
 | `scripts/adopt_images.py` | 收录 agent 出好的图并做印前校验（裁切 / 300dpi / 亮度 / 主色距离）＋按索引回填 content.json；**本地跑，不发请求、不需要 key** |
 | `scripts/derive_skill.py` | 从样例目录派生出**独立可安装**的场景技能：瘦身 spec / 抽固定件与术语 / 生成 last-issue 基线 / 自带渲染脚本。见 [references/instantiation.md](references/instantiation.md) |
+| `scripts/check_derived_sync.py` | **派生面↔生成器 同源档**：应检枚数**从盘上名册现算**（examples/ 下带 SKILL.md 的目录），并与档内声明的枚数对拍（两值不符即红——只看名册会被「整枚 example 目录消失」洗绿，只看常量会被「删一枚入参」洗绿，两道锁一起才堵得住），逐枚重跑 `derive_skill.py` 现产该枚 SKILL.md，与在盘面按块比——frontmatter 逐键、正文按去编号的二级标题切块。每枚必出一行读数，跑不成的也成行并点名原因；**实跑≠应检即红并点名少的是哪枚**（一把尺少测一枚就等于没测）。豁免键＝`displayName`／`version`／`summary`／`description`／`tags`（逐键豁免，且某键在任一侧根本不在场即红，防豁免自己烂掉），`metadata.version` 按行镜像豁免（它就是顶层 version 的第二份抄本）；其余键含 `name`／`slug`／`license`／`metadata` 子字段入尺硬比。人工拥有项**双向锁**：盘面上缺这一枚＝红（人工内容被抹掉不该静默），生成器长出这一枚＝红（重跑派生会把它覆盖掉）；两块（编辑质量与定位／溯源）与逐枚运营实况行都在锁里。**本轮形制＝登记态**：已知漂移逐枚自报，末行自报「已知漂移 N 行｜实跑 P／应检 Q 枚」并声明登记态字样、退 0（这样它不堵发布链）；实测超出登记数、未登记的块或键漂了、少测一枚、双向锁、豁免键缺位——这五条都红。撤掉档内登记清单即翻成判定制（非空 diff 即红），判定逻辑本身不用改。读数以块级为主，全文逐行 diff 只作附注。零网络、纯标准库、不落任何文件 |
 | `scripts/audit_layout.py` | **版面质量门禁**：量成品 PDF 的正文字号 / 字号碎裂度 / 行距倍数 / 每行字数 / 字体是否兜底 / 中文空格残留 / 页面密度，与 spec 的实测值比对。专治「门禁全绿但难看」（硬规则 29）。本节所列是其镜像，判定与阈值以脚本现值为准（定位命令见硬规则 29 末）。`--sample <样刊PDF>` 可直接拿样刊当基准，`--strict` 让 WARN 也判失败 |
 | `scripts/audit_editorial.py` | **编辑定位门禁**：读 `positioning.json` + `content.json`，判定位卡完整度 / 单条字数是否落在调性派生的字带 / 兑现「读者要做什么」的条目覆盖率（<50% FAIL）/ 纯 L0 占比（>50% FAIL）/ 句长中位 / 术语密度与行业忌讳词。专治「写得没错但不对路」（硬规则 31）。缺定位卡时 FAIL，`--no-positioning-gate` 可跳过 |
+| `scripts/fixtures/run_fixtures.sh` | **包内自带自测面**（runner 形，`bash` 无参直跑，零网络、纯标准库）：判据分五组——生成器好样链（随包真件走完，双跑产物逐字节同）／量级门禁能红也能放行（基线配平就必须退 0，这一枚防恒真）／坏输入不落半成品（截断 JSON、JSON 数组、JSON 字符串三形各退非零且产物目录零文件）／语义层 `enrich_from_omni.py` 坏 `--outline` 响亮退出且零 Traceback／派生面↔生成器 同源档（`check_derived_sync.py` 直跑必须退 0，输出必须自报已知漂移枚数与登记态字样，且末行必须同时带「实跑」与「应检」双数）。末行自报「ALL GREEN（N 项）」退 0（N 以脚本现跑为准），任一不符「NOT GREEN」退 1。判定全集仍在各脚本现值，本件不另立规矩 |
 | `assets/templates/positioning.template.json` | **刊物定位卡模板**：目的（六选一） / 读者（岗位+处境+专业水平+时间预算） / 价值承诺+reader_action / 调性三刻度 / 行业术语与忌讳。与 `stylespec.json` 平级的第二份机器可读产物 |
 | `assets/examples/qiming-regional-sample/positioning.json` | 定位卡填好的样例（虚构机构） |
 | `assets/templates/buddy.region-policy-scan.json` | Cue 搭子模板草案「区域新规动态」（对应法规动态栏目），已过 `cue-buddy` 的 `+validate`：0 error / 0 warning。做法与变体见 [references/cue-buddy-map.md](references/cue-buddy-map.md) |
@@ -907,6 +909,7 @@ python scripts/derive_skill.py --spec ./stylespec.json \
 做一次冒烟：能打印页数、且 `unknown=0` 就说明环境通了（样例只有 8 页，
 会报 `[FAIL] 量级严重不足`，那是拿 91 页基线在比，属正常，此时看的是门跑没跑起来）。
 出图本身不依赖任何包，也不依赖任何 key。
+冒烟验的是环境，复验本包判定用 `bash scripts/fixtures/run_fixtures.sh`（包内自带自测面，见 §6 脚本表末行）。
 
 ## 7. 样例技能与二次分发
 
