@@ -2,7 +2,7 @@
 name: competitive-brief
 slug: cue-competitive-brief
 displayName: 竞品决策简报·逐条带出处
-version: "0.3.28"
+version: "0.3.29"
 summary: "竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。"
 tags:
   - 竞品分析
@@ -25,9 +25,11 @@ metadata:
   openclaw:
     requires:
       bins: ["python3"]
-      env: ["CUE_API_KEY"]
       recommendedSkills: ["cue-omni-reader", "cue-research"]
-    primaryEnv: CUE_API_KEY
+    envVars:
+      - name: CUE_API_KEY
+        required: false
+        description: "可选凭据：缺位时本包按面文所述走用户直供与降级路径；带上才走渠道侧取证。"
 ---
 
 # competitive-brief

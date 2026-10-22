@@ -1,4 +1,12 @@
 
+### 0.3.29 — 2026-10-21（可选凭据从硬前置改成 envVars 的可选声明）
+- 改因：上一版把这枚渠道变量写进了 requires.env，而那一层的语义是「没有它就不能开工」。本包面文另有 2 行写明不装也能跑（用户直供与降级路径），而包内代码级引用这枚变量共 3 次——所以它是「装了才有渠道数据腿」的可选通道钥匙，不是「没它就不能开工」的前置。这一处属对外把前置说重了（宣告比覆盖面大），不是排版。
+- 改法：requires.env 里那枚串摘掉，改挂 openclaw 层的 envVars 一项——name、required: false、另带一句只述边界的 description（不承诺效果、不带价格）；requires.bins 照原值不动。同批把 primaryEnv 一并摘掉：它的语义是「本件主凭据」，对一把可选的通道钥匙同样说重了。
+- 射程（现数，不按记忆）：声明层改动＝SKILL.md 一枚（本面）；版本位所在文件 1 枚＝SKILL.md；其余件零改动（本件按「含旧号的非 CHANGELOG 件」逐枚现扫，落笔后残留 0）。
+- 现测：渠道面件尺（只读、零网络）对本枚判 ok，全仓末行「名册=18 不合=0 计划位=有」退码 0；卫生闸末行「summary: 面 180，ERROR 0，WARN 233」；面尺末行「面数=23 不合=0」；本包入口自测退码 0、末行「selftest: ALL GREEN（好样 4/4 · 坏样四道 4/4 · 真样例档 过／实测 24 行）」；场景图读数与本轮开工时逐字节同＝否。lint --strict 复跑 rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」。
+- 未动：面文其余段落、inputs／produces／legs 那批场景图声明键、两面 README、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.3.28 → 0.3.29（对外语义更正＝patch）。新条目反引号 0 枚、美元号 0 枚（本条现读：含反引号的行 0 行／出现次数 0 次）。
+
 ### 0.3.28 — 2026-10-21（运行前置声明归位到 openclaw 层＋主凭据声明补齐）
 - 改因：这枚面的运行前置写在 metadata 下的 requires 那一层，而渠道抽取器认的层是 metadata.openclaw（别名两支亦可）——少一层，声明读不到。本包引用那枚主凭据共 10 次、散在 3 枚件里（尺与本件独立扫描两值同），而 frontmatter 未声明它——官方把「代码用了却没声明」判成元数据不符。
 - 改法：把 metadata 下既有的 requires 整枝挂到 metadata.openclaw 下，键序、判定语义与值一字未动，只加一层；本面原无 bins 一枚，按 README 入口命令现读补 bins 为 python3；并在 openclaw 层补 requires.env 与 primaryEnv 各一枚；面内 inputs／produces／consumes 那批场景图声明键与两面 README 未碰。

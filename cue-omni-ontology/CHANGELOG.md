@@ -1,8 +1,8 @@
 # Changelog
 
-### 0.3.10 — 2026-10-21（运行前置声明归位到 openclaw 层＋metadata 块新建）
-- 改因：这枚面的运行前置写在 metadata 下的 requires 那一层，而渠道抽取器认的层是 metadata.openclaw（别名两支亦可）——少一层，声明读不到。本包不引用那枚主凭据（现读 0 枚件、0 次），所以不补声明——硬编一条就是假阳。
-- 改法：把 metadata 下既有的 requires 整枝挂到 metadata.openclaw 下，键序、判定语义与值一字未动，只加一层；本面原无 metadata 块，整块新建并声明 bins 为 python3（面内命令块以 python3 起，现读 SKILL.md 那段）；openclaw 层不补 env 与 primaryEnv；面内 inputs／produces／consumes 那批场景图声明键与两面 README 未碰。
+### 0.3.10 — 2026-10-21（新建 metadata.openclaw 一层并声明运行前置 bins）
+- 改因：本面此前没有 metadata 这一层（现读：改前该文件 frontmatter 内无 metadata 键），而渠道抽取器认的运行前置层是 metadata.openclaw（别名两支亦可）——所以这一层在盘上原本不存在，不是挂错了层。本包也不引用那枚可选凭据（现读 0 枚件、0 次），故只声明前置、不补凭据项：硬编一条就是假阳。
+- 改法：新建 metadata.openclaw 一层，其下 requires 声明 bins 为 python3（依据＝面内命令块以 python3 起，现读 SKILL.md 那段）；env 与 primaryEnv 两支都不写；面内 inputs／produces／legs 那批场景图声明键与两面 README 未碰。叙事勘正：本条首写把这一改动讲成了对既有声明的搬迁，与同条后一半自相矛盾——真实动作是新建，按实况改写；事实与读数不变，版本位不因此再进一枚（当前条勘正，历史条目不回改）。
 - 射程（现数，不按记忆）：声明层改动＝SKILL.md 一枚（本面）；版本位所在文件 3 枚＝SKILL.en.md、SKILL.md、scripts/ontology.py（本包若有多处锁，枚数由这一行现读给出，不手抄）；其余件零改动（本件按「含旧号的非 CHANGELOG 件」逐枚现扫，落笔后残留 0）。
 - 现测：渠道面件尺（只读、零网络）对本枚判 ok，全仓末行「名册=18 不合=0 计划位=有」退码 0；卫生闸末行「summary: 面 180，ERROR 0，WARN 233」；面尺末行「面数=23 不合=0」；本包入口自测退码 0、末行「OK」；场景图读数与本批开工时逐字节同＝是。
 - 未动：面文其余段落、闸与夹具、包内代码判定、CHANGELOG 历史条目（不回改）。
