@@ -28,6 +28,8 @@ HTML through a headless browser).
 
 ## Getting started (three steps)
 
+**Install this skill**: `npx skills add huhoo/cue-awesome --skill omni2docx` - this line installs this package only; afterwards re-list installed skills and the name `omni2docx` must appear, otherwise the files are not in place. Without a CLI environment the fallback is to copy this whole directory into your host's supported skills location (`~/.workbuddy/skills/`).
+
 Prerequisites: `python3` + `pip install python-docx`; scenarios ②③ additionally
 require a connected omni-reader MCP (scenario ① does not). PPTX output needs
 `pip install python-pptx`; `--pdf` needs a local Edge/Chrome/Chromium (skipped

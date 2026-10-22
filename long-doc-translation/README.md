@@ -41,6 +41,8 @@
 
 ## 上手
 
+**装本件自己**：`npx skills add huhoo/cue-awesome --skill long-doc-translation`——这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 `long-doc-translation` 这个名字才算文件到位。没有 CLI 环境时的兜底是把本目录整个放进宿主支持的 skills 目录（`~/.workbuddy/skills/`）。
+
 ```bash
 python scripts/init_project.py --help        # 支持 --help 的是 init_project.py 与 check_translation.py 两支
 python scripts/check_translation.py --selftest    # 复验本包自测面：零网络、纯 stdlib，末行自报断言数

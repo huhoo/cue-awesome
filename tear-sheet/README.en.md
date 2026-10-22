@@ -34,7 +34,7 @@ Five blocks in fixed order; three header declarations mandatory (generation asof
 
 ## 3. Quick start (three steps)
 
-1. **Install**: put this directory into your agent's skills folder.
+1. **Install**: `npx skills add huhoo/cue-awesome --skill tear-sheet` - this line installs this package only; afterwards re-list installed skills and the name `tear-sheet` must appear, otherwise the files are not in place. Without a CLI environment the fallback is to put this directory into your agent's skills folder (`~/.workbuddy/skills/`).
 2. **Ask**: "见客户前给我一页纸看看东方雨虹" or "客户简报里加一节美的" (Chinese or English triggers). ≤3 questions to align inputs.
 3. **Collect**: after three stages, `check_page.py` runs four gates (declarations / column anchors + two-way sources / zero-tolerance word list / format & line budget) — **no delivery without passing**.
 

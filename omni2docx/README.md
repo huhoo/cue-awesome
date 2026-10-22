@@ -25,6 +25,8 @@
 
 ## 上手（三步）
 
+**装本件自己**：`npx skills add huhoo/cue-awesome --skill omni2docx`——这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 `omni2docx` 这个名字才算文件到位。没有 CLI 环境时的兜底是把本目录整个放进宿主支持的 skills 目录（`~/.workbuddy/skills/`）。
+
 前置：`python3` + `pip install python-docx`；场景②③另需 omni-reader MCP 已连接（场景①不需要）。
 PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Chrome/Chromium（缺则明确提示跳过）。
 

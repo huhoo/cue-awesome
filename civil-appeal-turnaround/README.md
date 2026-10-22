@@ -116,8 +116,10 @@ Phase 0-6 不是这四个动词之外的第五件事，它们是这四个动词�
 
 ## 四、上手
 
+**装本件自己（主路）**：`npx skills add huhoo/cue-awesome --skill civil-appeal-turnaround`——这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 `civil-appeal-turnaround` 这个名字才算文件到位。下面那段 `cp -r` 是**无 CLI 环境时的手工放件兜底**，不是主路。
+
 ```bash
-# 1. 放到技能目录
+# 1. 兜底：无 CLI 环境时手工放件（主路是上面那条 npx）
 mkdir -p ~/.workbuddy/skills
 cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 

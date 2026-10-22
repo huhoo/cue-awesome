@@ -34,8 +34,14 @@ A2_RE = re.compile(r'npx skills add\s+sensedeal/[A-Za-z0-9_.-]+')
 B_RE = re.compile(r'(?:cp\s+-r\s+\S+|copy this directory)[^\n]*skills/|mkdir -p ~/\.workbuddy/skills')
 C_RE = re.compile(r'curl -L -o|releases/latest/download|unzip -o -d')
 NOT_FOUND = '未取到'
-CLAWHUB_PROVENANCE = ('listing-runbook.md §3.1:198 只记到 CLI 本体（npm 包 clawhub／bin clawhub／v0.23.3／node≥22／官方演示为全局安装、'
-                      'npx clawhub 未见文档背书）；用户侧安装式串盘上无记录，且本尺零网络、不猜一条顶上——假装有一条才是假陈述')
+# 安装式串里带 @（docs/cli.md:146 的规范式就是 clawhub install @owner/slug）——字符类缺 @ 会把真值读成「没有」，
+# 与「同行两式共用一条 search」是同一族：认不到真形＝读成没有。键名也放宽到 install 前缀一族（install_lines／installCommand…）。
+CH_CMD_RE = re.compile(r'clawhub\s+install\s+[@A-Za-z0-9_.:/-]+')
+CH_KEY_RE = re.compile(r'"install[A-Za-z_]*"\s*:\s*"([^"]+)"')
+CLAWHUB_PROVENANCE = ('两条来路分写（2026-10-22 起）：①服务端 listing 现读无安装式字段——verify/m369-artifact/05-clawhub-cache.json 记 '
+                      'GET clawhub.ai/api/v1/skills/cue-omni-reader 顶层键 latestVersion／metadata／moderation／owner／skill，skill.stats.installs=0；'
+                      '②规范式来自 docs/cli.md:146 节题原句「install @owner/slug」（第 147-151 行：解析最新版→/api/v1/download 取 zip→解到 <workdir>/<dir>/<slug>，'
+                      '并写 .clawhub/lock.json 与 <skill>/.clawhub/origin.json）。本尺零网络，②只从 --clawhub 给的缓存读；读不到就明写未取到，不填 0、不猜一条顶上')
 
 
 def read(p):
@@ -95,10 +101,11 @@ def cell(hits, keys):
 def claw_cell(path_text):
     if path_text is None:
         return NOT_FOUND + '（来路见末行）', False
-    vals = re.findall(r'clawhub\s+install\s+[A-Za-z0-9_.:/-]+', path_text)
-    vals += re.findall(r'"install(?:Command|Cmd|Line)"\s*:\s*"([^"]+)"', path_text)
+    vals = CH_CMD_RE.findall(path_text)
+    vals += [v for v in CH_KEY_RE.findall(path_text) if v not in vals]
     if vals:
-        return '%d 处：%s' % (len(vals), '、'.join(v[:70] for v in vals[:4])), True
+        uniq = sorted(set(vals))
+        return '%d 形（%d 处）：%s' % (len(uniq), len(vals), '、'.join(v[:70] for v in uniq[:4])), True
     return '%s（文件在场，但没有安装式字段；来路见末行）' % NOT_FOUND, False
 
 
@@ -141,6 +148,7 @@ def main():
         claw_text = read(cp)
 
     bad = []
+    arch = {'三面': 0, '包内其它面': 0}
     counts = {'三面现值': 0, '只在包内其它面': 0, '①未取到': 0, '②未取到': 0, '③现值': 0, '③未取到': 0, '形制点名': 0}
     for d in pkgs:
         three, other = blank(), blank()
@@ -157,6 +165,8 @@ def main():
             merge(other, scan(rel, read(p) or ''))
 
         c1, has1 = cell(three, ('A', 'B', 'C'))
+        arch['三面'] += len(three['A'])
+        arch['包内其它面'] += len(other['A'])
         o_hits = other['A'] + other['B'] + other['C']
         if has1:
             counts['三面现值'] += 1
@@ -196,11 +206,14 @@ def main():
             print('%-24s ③%s' % ('', c3))
 
     print('----')
+    rl = repo_root_lines(root)
     print('名册=%d 枚（由盘上现算）｜①三面现值=%d（其中另有包内其它面的枚数见逐枚行）／只在包内其它面=%d／未取到=%d｜'
           '②未取到=%d｜③有 A 式（三面或包内）=%d／未取到=%d' % (
               len(pkgs), counts['三面现值'], counts['只在包内其它面'], counts['①未取到'],
               counts['②未取到'], counts['③现值'], counts['③未取到']))
-    rl = repo_root_lines(root)
+    print('A 式三档现数（由逐枚现算，报数必带档名）：主档＝三面 %d 处｜另档①＝包内（除 CHANGELOG、除三面）%d 处｜另档②＝再加仓根 *.md %d 处＝%d 处' % (
+        arch['三面'], arch['包内其它面'], len(rl['A']), arch['三面'] + arch['包内其它面'] + len(rl['A'])))
+
     print('名册外一格（仓根自己的 *.md 现扫，不写死行号）：A 式 %d 处＝%s｜C 式（release-zip）%d 处＝%s——'
           '这些不在逐枚名册的 ①②③ 计数里，别把它们读成某枚面的现值。' % (
               len(rl['A']), '、'.join(rl['A']) if rl['A'] else '无',

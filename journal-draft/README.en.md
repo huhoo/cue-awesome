@@ -69,6 +69,8 @@ If you are unsure, just ask — it will state plainly what it can do this time, 
 
 ## 2. Quick start
 
+**Install this skill**: `npx skills add huhoo/cue-awesome --skill journal-draft` - this line installs this package only; afterwards re-list installed skills on your side and the name `journal-draft` must appear, otherwise the files are not in place (files in place is not the same as data fetched - the channel route below covers that). Without a CLI environment the fallback is to copy this whole directory into your host's supported skills location (`~/.workbuddy/skills/`).
+
 ```bash
 python -m pip install pymupdf        # required: style extraction + PDF output
 python -m pip install python-docx    # optional: docx text draft and write-back

@@ -118,8 +118,10 @@ This skill's own scripts and flow stay offline. Both channels below are **auxili
 
 ## 4. Getting started
 
+**Install this skill (primary route)**: `npx skills add huhoo/cue-awesome --skill civil-appeal-turnaround` - this line installs this package only; afterwards re-list installed skills and the name `civil-appeal-turnaround` must appear, otherwise the files are not in place. The `cp -r` block below is the **manual fallback for environments without a CLI**, not the primary route.
+
 ```bash
-# 1. Put it in the skills directory
+# 1. Fallback: manual placement when there is no CLI (the primary route is the npx line above)
 mkdir -p ~/.workbuddy/skills
 cp -r civil-appeal-turnaround ~/.workbuddy/skills/
 

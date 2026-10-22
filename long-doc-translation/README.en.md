@@ -43,6 +43,8 @@ Fixture names are not cosmetic: they must follow `part_series_number` (e.g. `01_
 
 ## Getting started
 
+**Install this skill**: `npx skills add huhoo/cue-awesome --skill long-doc-translation` - this line installs this package only; afterwards re-list installed skills and the name `long-doc-translation` must appear, otherwise the files are not in place. Without a CLI environment the fallback is to copy this whole directory into your host's supported skills location (`~/.workbuddy/skills/`).
+
 ```bash
 python scripts/init_project.py --help        # two scripts accept --help: init_project.py and check_translation.py
 python scripts/check_translation.py --selftest    # re-verify this package: zero network, pure stdlib, prints its own assertion count

@@ -83,6 +83,8 @@ grep -n "^  [0-9] \|MD_SKIP = " ~/.workbuddy/skills/journal-draft/scripts/audit_
 
 ## 二、快速开始
 
+**装本件自己**：`npx skills add huhoo/cue-awesome --skill journal-draft`——这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 `journal-draft` 这个名字才算文件到位（文件到位不等于取到数，取数看下面「Cue 通道」那一节）。没有 CLI 环境时的兜底是把本目录整个放进宿主支持的 skills 目录（`~/.workbuddy/skills/`，Windows 看第 3 步那条路径口径换写法）。
+
 ```bash
 python -m pip install pymupdf        # 必须：样式抽取 + PDF 出稿
 python -m pip install python-docx    # 可选：docx 文字稿与回填
