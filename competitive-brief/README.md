@@ -64,7 +64,7 @@ curl -s -X POST "$ROUTING_URL" \
   -w '\nHTTP %{http_code}\n'
 ```
 
-一条命令形（不必手改块里那一行）：`cd competitive-brief && python3 -B scripts/cue_connectivity_check.py --domain <你的域 id> --post`；有哪些域 id 可填，先跑同一支脚本的 `--list`（只列在场域与 url，不发 POST）。匿名 `GET` 只证**目录可达**，带上 key 且 `tools/list` 有返回才证那把 key 被接受；通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。
+一条命令形（不必手改块里那一行）：`cd competitive-brief && python3 -B scripts/cue_connectivity_check.py --domain <你的域 id> --post`；有哪些域 id 可填，先跑同一支脚本的 `--list`（只列在场域与 url，不发 POST）。匿名 `GET` 只证**目录可达**，带上 key 且 `tools/list` 有返回才证那把 key 被接受；通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。这支随包件在把 key 附上去之前先过两关：scheme 必须是 https，且 host 命中授权后缀（缺省那一枚由件头目录入口现值推出，要放行别处请带 --allow-host）；过不了就拒发、退 6，本件不读 key 也不构造那个请求。代价同句写明：换源不免检，老的「换进去什么就打什么」那一形关掉了。
 
 两者都由 Cue 通道提供，用量以服务端返回为准，本件不作价格承诺。不装也能跑，但缺的是整条交叉验证腿与解析腿（缺的那一层只能由你自供料顶上，可信级标签就不产生）。
 
