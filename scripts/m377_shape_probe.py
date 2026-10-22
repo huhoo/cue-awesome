@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# m377_shape_probe.py —— M377 探针：一条命令跑完六形 + 不进表格那一格。
+# m377_shape_probe.py —— M377 探针：一条命令跑完各形 + 不进表格那一格（形数由 SHAPES 现算，不写死）。
 # 每形先写下我的预期句子，再跑，再把实读并排打出来；不一致就在本件的末行汇总里点名（不静默放过）。
 # 合成靶全落 TMPDIR（含一处真仓只读对拍），真仓与包面一字不动；每例跑完即删靶根并断言已删。
 
@@ -51,6 +51,8 @@ SHAPES = [
      "表一把该枚列成不可判而不是孤点／非孤点；列 (a) 与列 (b) 各自报跳过 1 把（该枚的 inputs 与 consumes 都不进表）。"),
 ]
 MISMATCH = []
+# 形数由名册现算：SHAPES 里的每一形 ＋ 形七带域原料那一格（验表三不吃不可判的键）
+RUNS = None  # 在 main 里按 len(SHAPES) 现算，避免又一枚写死的常量
 # 每形期望的「不可判把键数」：写死在这里，跑出来不一致就是事实与预期打架，由本件点名
 EXPECT_KEYS = {"形一": 0, "形二": 0, "形三": 0, "形四": 0, "形五": 0, "形六": 2, "形七": 1}
 
@@ -92,7 +94,9 @@ def real_repo_readings():
 
 
 def main():
-    print("六形探针（合成靶落 TMPDIR；真仓只读，只在末格对拍）")
+    global RUNS
+    RUNS = len(SHAPES) + 1
+    print("%d 形探针（合成靶落 TMPDIR；真仓只读，只在末格对拍）——形数由 SHAPES 现算" % RUNS)
     for label, body, expect in SHAPES:
         items = build(body)
         rc, out, err = run(SHAPE_DIR)
@@ -107,11 +111,13 @@ def main():
         print("   点名行：" + (unj if unj != "(缺行)" else "(无不可判点名)")[:150])
         print("   形制行：" + loose[:150])
         print("   末行：" + (tail if tail != "(缺行)" else "(无不可判末行)"))
+        wantk = EXPECT_KEYS[label[:2]]
         if rc == 0:
             ok("读到边（非孤点=2 枚）", "非孤点=2 枚" in out, line_with(out, "枚数=", "非孤点=")[:70])
-            ok("不出不可判末行", "不可判=" not in out, "退码 0 那一形不该有汇总末行")
+            # 期望值在这一支也得上：不然那五个 0 就是死数，写错也没人发现（lead 逮到的就是这一族）
+            ok("期望 0 把不可判 ⇒ 不出汇总末行", wantk == 0 and "不可判=" not in out,
+               "EXPECT_KEYS=%d｜末行在场＝%s" % (wantk, "不可判=" in out))
         else:
-            wantk = EXPECT_KEYS[label[:2]]
             ok("不可判末行单位两值并列（把键／枚包）", "不可判=%d 把键／1 枚包" % wantk in out, tail[:90])
         if "形一" in label or "形五" in label:
             ok("不出形制不齐点名", loose == "(缺行)", loose[:60])
@@ -164,7 +170,8 @@ def main():
         print("     第 %d 行 旧：%s" % (i, a[:80]))
         print("     第 %d 行 新：%s" % (i, b[:80]))
     print()
-    print("探针小结：%d 格不合预期%s" % (len(MISMATCH), "｜" + "；".join(MISMATCH) if MISMATCH else "（六形＋真仓对拍全合预期）"))
+    print("探针小结：%d 格不合预期%s（跑%d 形＋真仓对拍；形数由名册现算，通与不通都打同一个数）" % (
+        len(MISMATCH), "｜" + "；".join(MISMATCH) if MISMATCH else "（全合预期）", RUNS))
     return 1 if MISMATCH else 0
 
 
