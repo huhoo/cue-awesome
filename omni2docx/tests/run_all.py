@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """run_all.py — omni2docx 回归总入口（CI 友好）。
 
-依次跑 docx 矩阵（run_matrix_test.py）与三格式闭环（run_matrix_multi.py），
+依次跑 docx 矩阵（run_matrix_test.py）、三格式闭环（run_matrix_multi.py）与属性 breakout 专项（run_escape_test.py），
 任一非零退出即整体失败。无需参数：python3 tests/run_all.py。
 """
 import subprocess
@@ -11,7 +11,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PY = sys.executable
-SUITES = ["run_matrix_test.py", "run_matrix_multi.py"]
+SUITES = ["run_matrix_test.py", "run_matrix_multi.py", "run_escape_test.py"]
 
 
 def main():

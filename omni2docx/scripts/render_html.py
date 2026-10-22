@@ -27,7 +27,20 @@ from build_docx import (  # noqa: E402
 
 
 def esc(t):
+    """文本节点专用：转 & < >，不动引号（引号在文本里不是危险字符）。
+    属性值不走这一枚——那是另一枚出口 esc_attr()，两形的危险字符集不同。"""
     return html.escape(t or "", quote=False)
+
+
+def esc_attr(t):
+    """属性值专用出口：& < > " ' 全转（html.escape 的 quote=True 那一支），属性 breakout 由这一枚统一挡。
+
+    件里所有写进 属性="…" 的值都必须经过本函数——包括 src／alt／href／id／class／data-page／style；
+    散点 replace 或就地 html.escape 都不再是第二处真值。上游 Omni 返回的 description／alt／footnote key
+    都是不可信数据，一枚引号就能把属性提前闭合（外部扫描器判这一形是可执行属性注入）。"""
+    if t is None:
+        return ""
+    return html.escape(t if isinstance(t, str) else str(t), quote=True)
 
 
 def slug(text, used):
@@ -53,7 +66,7 @@ def inline(text, footnotes=None):
             if src.startswith(("data:image", "http://", "https://")):
                 out.append('<figure class="img"><img src="%s" alt="%s">'
                            '<figcaption>%s</figcaption></figure>'
-                           % (html.escape(src, quote=True), esc(alt), esc(alt or "图像")))
+                           % (esc_attr(src), esc_attr(alt), esc(alt or "图像")))
             else:
                 out.append('<span class="img-note">［图像：%s］</span>' % esc(alt or "图像"))
         elif tok.startswith("[^"):
@@ -64,7 +77,7 @@ def inline(text, footnotes=None):
                 footnotes[key] = len(footnotes) + 1
                 idx = footnotes[key]
             out.append('<sup class="fn"><a href="#fn-%s" id="fnref-%s">[%s]</a></sup>'
-                       % (esc(key), esc(key), idx))
+                       % (esc_attr(key), esc_attr(key), idx))
         elif tok.startswith("〔"):
             out.append('<span class="srcnote">%s</span>' % esc(tok))
         elif tok.startswith("**") or tok.startswith("__"):
@@ -75,7 +88,7 @@ def inline(text, footnotes=None):
             mm = re.match(r"\[([^\]]+)\]\(([^)]+)\)", tok)
             if mm:
                 out.append('<a href="%s" target="_blank" rel="noopener">%s</a>'
-                           % (html.escape(mm.group(2), quote=True), inline(mm.group(1), footnotes)))
+                           % (esc_attr(mm.group(2)), inline(mm.group(1), footnotes)))
             else:
                 out.append(esc(tok))
         else:
@@ -221,7 +234,7 @@ def block_html(kind, payload, used_ids, footnotes, outline_map, level_offset=0):
             lvl = mr[0]
         lvl = min(max(int(lvl) + level_offset, 1), 6)
         sid = slug(text, used_ids)
-        return ('<h%d id="%s">%s</h%d>' % (lvl, sid, inline(text, footnotes), lvl),
+        return ('<h%d id="%s">%s</h%d>' % (lvl, esc_attr(sid), inline(text, footnotes), lvl),
                 (lvl, text, sid))
     if kind == "para":
         return ("<p>%s</p>" % inline(payload, footnotes), None)
@@ -265,7 +278,7 @@ def render_source(md, outline, grounding, pcfg, used, page_marks=False, level_of
                 last_page = p
                 cls = "pagemark"
                 body.append('<span class="%s" data-page="%s">源第 %s 页</span>'
-                            % (cls, esc(str(p)), esc(str(p))))
+                            % (esc_attr(cls), esc_attr(p), esc(str(p))))
         h, toc_entry = block_html(kind, payload, used, footnotes, om, level_offset)
         body.append(h)
         if toc_entry:
@@ -281,7 +294,7 @@ def toc_html(items, depth=2):
         if lvl > depth:
             continue
         li.append('<li style="margin-left:%dem;list-style:none"><a href="#%s">%s</a></li>'
-                  % (max(lvl - 1, 0) * 1.4, sid, esc(text)))
+                  % (max(lvl - 1, 0) * 1.4, esc_attr(sid), esc(text)))
     if not li:
         return ""
     # 无序列表且去自动编号：标题多自带编号（"一、"/"3.1"），ol 的序号会叠加成双重编号
@@ -295,7 +308,7 @@ def endnotes_html(foot):
         return ""
     items = []
     for key, text in foot:
-        items.append('<li id="fn-%s">%s</li>' % (esc(key), inline(text)))
+        items.append('<li id="fn-%s">%s</li>' % (esc_attr(key), inline(text)))
     return '<section class="endnotes"><h2>注释</h2><ol>%s</ol></section>' % "".join(items)
 
 
@@ -490,7 +503,7 @@ class _Inliner(HTMLParser):
         buf = ["<", tag]
         for k, v in attrs_out:
             buf.append(" %s" % k if v is None
-                       else ' %s="%s"' % (k, html.escape(v, quote=True)))
+                       else ' %s="%s"' % (k, esc_attr(v)))
         buf.append("/>" if self_closing else ">")
         self.out.append("".join(buf))
         if not self_closing and tag not in _VOID:
@@ -614,7 +627,7 @@ def main():
             all_toc.append((1, chapter, slug(chapter, used)))
             all_toc.extend(toc_items)
             parts_body.append('<article><h1 id="%s">%s</h1>%s%s</article>'
-                              % (all_toc[-len(toc_items) - 1][2] if toc_items else slug(chapter, used),
+                              % (esc_attr(all_toc[-len(toc_items) - 1][2] if toc_items else slug(chapter, used)),
                                  esc(chapter), "".join(body), endnotes_html(foot)))
         if data.get("sources"):
             rows = "".join(
