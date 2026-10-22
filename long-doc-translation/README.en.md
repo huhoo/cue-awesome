@@ -22,6 +22,8 @@ parse → clean & slice → build style guide + glossary → parallel batched tr
 - `python3` + `markdown` + `pypinyin` (core scripts run fully offline)
 - omni-reader (optional: stage one "parse" converts PDF / images to text)
 
+Connectivity test for the stage-one parsing leg (parsing runs through the omni-reader MCP inside your host; no curl replaces it): the host lists tools through the JSON-RPC `tools/list` handshake, and connected means that reply contains `parse`, `get_parse_status` and `read_result`. If those names are absent the leg is not connected - the offline steps still run (slice -> translate per segment -> merge), but scans and images cannot be read and only the text layer you already hold is usable: what is missing is parsing, not formatting. Parsing spend follows the server reply; this package neither estimates nor pays it.
+
 ## Scripts (`scripts/`)
 
 `init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py` · `check_translation.py`

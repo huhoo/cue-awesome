@@ -44,6 +44,8 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 该安装方式需要 Node.js/npm；直接复制本目录到宿主支持的 skills 位置也可。离线工具只依赖 Python。真实解析复用官方 [cue-omni-reader](https://github.com/sensedeal/cue-skills/tree/main/cue-omni-reader)，按其 [setup](https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md) 连接 MCP 并配置凭据。此包不自动安装或配置 Omni。key 放入自己的凭据设施，不发到聊天或 Issues。
 
+通道那一腿的已连判据（本件的解析腿是宿主里的 omni-reader MCP，没有 curl 可以替代它）：宿主列工具走的是 MCP 的 `tools/list` 握手——那份返回里认得到 `parse`、`get_parse_status`、`read_result` 这几枚才算已连；只装了 skill、列不到名字，就是没连，本件随即只走「你把文本贴进来」那条路（代价：页锚与逐字定位缺位，来源记录只能到文件级）。解析消耗以服务端返回为准，本件不代估也不代付。
+
 配置好后，给 Agent 真实来源与问题：
 
 ```text

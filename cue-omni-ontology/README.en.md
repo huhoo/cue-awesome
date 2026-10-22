@@ -44,6 +44,8 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 This install route requires Node.js/npm; copying this directory into your host's supported skills location is also possible. Offline tooling only needs Python. Real parsing uses official [cue-omni-reader](https://github.com/sensedeal/cue-skills/tree/main/cue-omni-reader); follow its [setup](https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md) to connect MCP and configure credentials. This package does not install or configure Omni automatically. Keep keys in your secret facility, not chat or Issues.
 
+Connectivity test for that leg (the parsing leg here is the omni-reader MCP inside your host; no curl replaces it): the host lists tools through the JSON-RPC `tools/list` handshake, and connected means that reply contains `parse`, `get_parse_status` and `read_result`. A skill installed without those names means not connected - this package then only takes text you paste in (cost: no page anchors, no verbatim locators, source records stop at file level). Parsing spend follows the server reply; this package neither estimates nor pays it.
+
 Once connected, provide sources and ask:
 
 ```text

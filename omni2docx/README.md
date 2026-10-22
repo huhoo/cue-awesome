@@ -28,6 +28,8 @@
 前置：`python3` + `pip install python-docx`；场景②③另需 omni-reader MCP 已连接（场景①不需要）。
 PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Chrome/Chromium（缺则明确提示跳过）。
 
+场景②③那条解析腿的已连判据（解析走宿主里的 omni-reader MCP，本件的转换本身不发请求）：宿主列工具走的是 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_outline`、`read_result` 这几枚才算已连；列不到就是没连，场景②③做不了，场景①（`--md` 直出）不受影响。解析消耗以服务端返回为准，本件不代估也不代付（见「能力边界」第一条）。
+
 ```bash
 # ① agent markdown 直出（免中间 JSON）
 python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers

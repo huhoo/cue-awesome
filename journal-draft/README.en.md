@@ -102,6 +102,28 @@ Zero network, standard library only, run with no arguments; the last line report
 
 **Not required, but strongly recommended** — without it nothing errors, you just lose one layer of cross-verification and the semantic layer falls back to manual entry. Three steps to enable: register at <https://cuecue.cn> → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> → install `cue-research` (Omni parsing additionally needs the local Bridge).
 
+The channel route (account-side connectivity self-check; this package ships no connectivity script, so the curl lines below are the whole action):
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with a domain id listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("not found: that id is not in the live catalog (or it has no routing.url) - run the listing line first, then fill it in")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "no value: ROUTING_URL is empty - list the ids first, then set DOMAIN_ID to one of them" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+The three layers are never equivalent: skill installed != credentials configured != channel connected. The anonymous `GET` proves **catalog reachability** only; the key is proven *accepted* once a `tools/list` reply comes back with it attached - pass = HTTP 200 with a non-empty `result.tools` (shape only; no tool names or counts are promised here). Domains absent from the catalog are neither installed nor promised on this face. The Omni leg is not in that catalog: its connectivity test is the host listing tools (the same JSON-RPC `tools/list` handshake) and finding `parse` and `get_parse_status` there; if those names are absent, only the user-supplied route is open. The key comes from your local credential facility - never into chat, never echoed back; this block adds no new credential read.
+
 New accounts get **500 credits** on signup plus 10 credits per day, **and Cue always asks before spending**. At kick-off it asks item by item whether you want to use it; the decision rules are in [`references/cue-onboarding.md`](references/cue-onboarding.md).
 
 ---

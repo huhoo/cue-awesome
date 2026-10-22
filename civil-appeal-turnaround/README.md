@@ -170,7 +170,29 @@ python3 scripts/check_tables.py scripts/fixtures/bad-banword.md   # 期望 FAIL�
 
 - `python3`（`scripts/init_case.py` 用，标准库，无第三方包、无网络请求）
 - `python-docx`（**可选**，仅 `scripts/export_docx.py` 导出 Word 递交稿时需要）：`python -m pip install python-docx -i https://pypi.tuna.tsinghua.edu.cn/simple`。不装只是不能出 docx，其余流程不受影响；脚本缺少该依赖时会明确报安装命令，不做静默降级。
-- 除上面两条**可选**辅助（`cue-omni-reader` 解析素材、`cue-research` 列法条与类案候选）外无其他依赖：不装不报错，用前先经使用人确认；判决书与材料由使用人提供，素材进不来时见 §二 末「素材与线索的两条通道」。
+- 除上面两条**可选**辅助（`cue-omni-reader` 解析素材、`cue-research` 列法条与类案候选）外无其他依赖：不装不报错，代价是扫描件读不进来、法条与类案线索缺一条腿（缺的是通道证据，不是排版）；用前先经使用人确认，判决书与材料由使用人提供，素材进不来时见 §二 末「素材与线索的两条通道」。
+
+通道侧的账户自查走这条正路（本包不随带自测脚本，下面两行 curl 就是全部动作；它证的是「目录可达」与「那把 key 被接受」，不替代本件的取数）：
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<把这里换成上一行列出的那个域 id>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("未取到：该 id 不在目录现值里（或它没有 routing 里的 url 字段）——先跑上面那行列出现场的 id 再填")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "取值失败：ROUTING_URL 为空——先跑上面那行列出现场 id，再把 DOMAIN_ID 换成其中之一" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+三层互不等价：装好 skill ≠ 已配凭据 ≠ 通道已连。匿名 `GET` 只证目录可达；带 key 实连且 `tools/list` 有返回才证 key 被接受，通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。`cue-omni-reader` 那一腿是宿主 MCP 的连接：判据同样是宿主列工具（JSON-RPC 的 `tools/list`）返回里认得到 `parse` 与 `get_parse_status`，装完 skill 却列不到那两个名字，就只能走你直供那条路。key 取自本地凭据设施，不进聊天、不在终端回显，本块不新增任何凭据读取动作。
 
 ## 七、资源
 

@@ -1,3 +1,11 @@
+### 1.3.16 — 2026-10-22（解析腿的已连判据进正文（MCP tools/list 握手，不假装有一条 curl））
+- 改因：首屏那一眼给用户的是「可以不开通通道」的绕开理由，而真正跑得起来的通道正路命令不在这面上；正文另有绕开句只说「不装不报错」，没在同一句里写清缺的是什么。
+- 改法：依赖那一节补上这条腿的已连判据：宿主列工具走的是 MCP 的 tools/list 握手，那份返回里认得到 parse／get_parse_status／read_result（转换件另带 read_outline）才算已连；列不到名字就是没连，本件走哪条降级路、缺的是哪一层都写在同句里。这几枚的解析腿不在这张目录里，没有 curl 可以替代它，本面不假装有一条。
+- 射程（现数，不按记忆）：成品面改动 2 枚（口径＝本包被改面逐枚现列：README.md／README.en.md）；版本位所在文件 2 枚（口径＝含旧号的非 CHANGELOG 件逐枚现扫，落笔后残留 0；锁位 manifest.yaml）；闸、脚本与夹具一字未动。
+- 现测：首屏探针末行「名册=18 不合=0｜甲命中行=0 乙缺枚数=0 丙降级无代价行=0」，本枚不在不合名册内；lint --strict rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 180，ERROR 0，WARN 233」；面尺从仓外那一层跑 rc=0、末行「面数=23 不合=0」。
+- 未动：SKILL.md 的判定与契约段、inputs／produces／consumes 那批声明键、两面 README 的其余段落、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：1.3.15 → 1.3.16（成品面指路与代价句更正＝patch）。
+
 ### 1.3.15 — 2026-10-21（运行前置声明归位到 openclaw 层（本包不引用那枚凭据，只归位））
 - 改因：这枚面的运行前置写在 metadata 下的 requires 那一层，而渠道抽取器认的层是 metadata.openclaw（别名两支亦可）——少一层，声明读不到。本包不引用那枚主凭据（现读 0 枚件、0 次），所以不补声明——硬编一条就是假阳。
 - 改法：把 metadata 下既有的 requires 整枝挂到 metadata.openclaw 下，键序、判定语义与值一字未动，只加一层；openclaw 层不补 env 与 primaryEnv；面内 inputs／produces／consumes 那批场景图声明键与两面 README 未碰。

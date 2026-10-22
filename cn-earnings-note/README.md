@@ -10,7 +10,7 @@
 
 **输入**：股票代码或公司全称 + 报告期（如 `2026H1`），可选素材（业绩说明会纪要、PDF、链接）与关注点
 **输出**：`earnings-<代码>-<报告期>/` —— `note.md`（八节初稿 + 来源索引）· `sources.jsonl` · `progress.md` 台账
-**代价**：五段管线 + 一道门禁；不装 Cue 通道也能跑（降级路径见下），装了才有逐数回查
+**代价**：五段管线 + 一道门禁；通道取证腿（data-mcp／omni／research）开没开，决定的是证据密度与逐数回查——两条路各自缺什么、怎么降级，写在 §三 与 `references/data-channels.md` §5 判定表里
 
 ---
 
@@ -82,8 +82,7 @@
 ## 四、依赖声明
 
 - `python3`：仅门禁脚本 `scripts/check_note.py` 需要，纯标准库、零网络。
-- `cue-research` / `cue-omni-reader` / `cue-data-mcp`：frontmatter 里是 `optionalSkills`——**不装不报错**，
-  对应降级见 `references/data-channels.md` §5 判定表。
+- `cue-research` / `cue-omni-reader` / `cue-data-mcp`：frontmatter 里是 `optionalSkills`——**不装不报错**，代价是证据密度与逐数回查那一层整块缺位（缺的是通道取证腿，不是排版）；对应降级见 `references/data-channels.md` §5 判定表。
 - 无其他运行时依赖；素材解析走 omni 通道（本地文件需其 Bridge 与最小目录授权，装/扩权前会先问你）。
 
 ## 五、包里有什么

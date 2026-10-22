@@ -10,7 +10,7 @@ This is not "analyze this stock for me" — it breaks a statutory filing into an
 
 **Input**: stock code or full company name + reporting period (e.g. `2026H1`); optional materials (results-briefing minutes, PDFs, links) and focus areas
 **Output**: `earnings-<code>-<period>/` — `note.md` (eight-section first draft + source index) · `sources.jsonl` · `progress.md` ledger
-**Cost**: five pipeline stages + one delivery gate; it runs without the Cue channels (degradation below) — with them, every number stays traceable
+**Cost**: five pipeline stages + one delivery gate; whether the Cue evidence legs (data-mcp / omni / research) are switched on decides evidence density and per-number traceability — what each path lacks, and the degraded route, are written in section 3 and in the judgement table at `references/data-channels.md` section 5
 
 ---
 

@@ -46,9 +46,29 @@ All thresholds live in the current `scripts/check_brief.py`; the four lanes are 
 - `cue-omni-reader`: parse web pages / PDFs / audio / video → extract text into evidence table
 - `cue-research`: cross-verify, deep research
 
-The install command forms and the three-part self-check (skill installed ≠ credentials configured ≠ channel connected - each verified separately) live in `references/cue-onboarding.md`, section 开通三步; they are not restated here so the two places cannot drift.
+The install command forms and the three-part self-check (skill installed ≠ credentials configured ≠ channel connected - each verified separately) live in `references/cue-onboarding.md`, section 开通三步. This face keeps only the **minimal live-connection form** below; if the two ever read differently, `references/cue-onboarding.md` governs and this block gets corrected from it.
 
-Both are provided through Cue channels; usage follows what the server returns, and this package makes no pricing promise. The skill still runs without them, with reduced capability.
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with a domain id listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("not found: that id is not in the live catalog (or it has no routing.url) - run the listing line first, then fill it in")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "no value: ROUTING_URL is empty - list the ids first, then set DOMAIN_ID to one of them" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+One-command form (no need to edit the line inside the block): `cd competitive-brief && python3 -B scripts/cue_connectivity_check.py --domain <your domain id> --post`; run the same script with `--list` first to see which ids exist (it lists domains and urls, no POST). The anonymous `GET` lines prove **catalog reachability** only; the key is proven *accepted* only once a `tools/list` reply comes back. Pass = HTTP 200 with a non-empty `result.tools` (shape only - no tool names or counts are promised here).
+
+Both are provided through Cue channels; usage follows what the server returns, and this package makes no pricing promise. The skill still runs without them, but what is missing is the whole cross-verification leg and the parsing leg - that layer can only be covered by material you supply yourself, and no source-confidence labels are produced.
 
 ## Domestically reachable evidence paths (when overseas sources do not load)
 

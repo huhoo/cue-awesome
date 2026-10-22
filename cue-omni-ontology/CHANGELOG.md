@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.3.11 — 2026-10-22（解析腿的已连判据进正文：走宿主 MCP 的 tools/list 握手，本面不假装有一条 curl）
+- 改因：首屏那一眼给用户的是「可以不开通通道」的绕开理由，而真正跑得起来的通道正路命令不在这面上；正文另有绕开句只说「不装不报错」，没在同一句里写清缺的是什么。
+- 改法：依赖那一节补上这条腿的已连判据：宿主列工具走的是 MCP 的 tools/list 握手，那份返回里认得到 parse／get_parse_status／read_result（转换件另带 read_outline）才算已连；列不到名字就是没连，本件走哪条降级路、缺的是哪一层都写在同句里。这几枚的解析腿不在这张目录里，没有 curl 可以替代它，本面不假装有一条。
+- 射程（现数，不按记忆）：成品面改动 2 枚（口径＝本包被改面逐枚现列：README.md／README.en.md）；版本位所在文件 3 枚（口径＝含旧号的非 CHANGELOG 件逐枚现扫，落笔后残留 0；锁位 SKILL.en.md 与 scripts/ontology.py 里那枚版本锁——后者初版漏了，是复扫逮出来的，就地补一行「与 SKILL.md 成对」的标注）；闸与夹具一字未动，scripts/ontology.py 只改那枚版本锁那一行、判定逻辑一字未动。
+- 现测：首屏探针末行「名册=18 不合=0｜甲命中行=0 乙缺枚数=0 丙降级无代价行=0」，本枚不在不合名册内；lint --strict rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 180，ERROR 0，WARN 233」；面尺从仓外那一层跑 rc=0、末行「面数=23 不合=0」。
+- 未动：SKILL.md 的判定与契约段、inputs／produces／consumes 那批声明键、两面 README 的其余段落、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.3.10 → 0.3.11（成品面指路与代价句更正＝patch）。
+
 ### 0.3.10 — 2026-10-21（新建 metadata.openclaw 一层并声明运行前置 bins）
 - 改因：本面此前没有 metadata 这一层（现读：改前该文件 frontmatter 内无 metadata 键），而渠道抽取器认的运行前置层是 metadata.openclaw（别名两支亦可）——所以这一层在盘上原本不存在，不是挂错了层。本包也不引用那枚可选凭据（现读 0 枚件、0 次），故只声明前置、不补凭据项：硬编一条就是假阳。
 - 改法：新建 metadata.openclaw 一层，其下 requires 声明 bins 为 python3（依据＝面内命令块以 python3 起，现读 SKILL.md 那段）；env 与 primaryEnv 两支都不写；面内 inputs／produces／legs 那批场景图声明键与两面 README 未碰。叙事勘正：本条首写把这一改动讲成了对既有声明的搬迁，与同条后一半自相矛盾——真实动作是新建，按实况改写；事实与读数不变，版本位不因此再进一枚（当前条勘正，历史条目不回改）。

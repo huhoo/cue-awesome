@@ -22,6 +22,8 @@
 - `python3` + `markdown` + `pypinyin`（核心脚本完全离线运行）
 - omni-reader（可选：阶段一「解析」把 PDF / 图片转成文本）
 
+阶段一那条解析腿的已连判据（解析走宿主里的 omni-reader MCP，没有 curl 可以替代它）：宿主列工具走的是 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_result` 这几枚才算已连。列不到就是没连：本件照旧跑离线那几步（切段→逐段译→合并），代价是扫描件与图片读不进来，只能吃你已有的文本层（缺的是解析那一步，不是排版）。解析消耗以服务端返回为准，本件不代估也不代付。
+
 ## 脚本（`scripts/`）
 
 `init_project.py` · `dedup_boundary.py` · `overlap_check.py` · `qa_check.py` · `merge_build.py` · `build_reader.py` · `_common.py` · `check_translation.py`

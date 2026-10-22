@@ -124,10 +124,31 @@ bash scripts/fixtures/run_fixtures.sh
 
 ### Cue 通道（深度研究 / 文档解析）
 
-**不是必装，但强烈建议装** —— 不装不报错，只会让证据少一层交叉验证、
-语义层退成人工补录。开通三步：<https://cuecue.cn> 注册 →
+**不是必装，但强烈建议装** —— 不装不报错，代价是证据少一层交叉验证、语义层降为人工补录（缺的那一层补不出出处）。开通三步：<https://cuecue.cn> 注册 →
 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` → 装 `cue-research`
 （Omni 解析另需本地 Bridge）。
+
+通道正路（账户侧实连自查；本包不随带自测脚本，下面这几行 curl 就是全部动作）：
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<把这里换成上一行列出的那个域 id>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("未取到：该 id 不在目录现值里（或它没有 routing 里的 url 字段）——先跑上面那行列出现场的 id 再填")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "取值失败：ROUTING_URL 为空——先跑上面那行列出现场 id，再把 DOMAIN_ID 换成其中之一" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+三层互不等价：装好 skill ≠ 已配凭据 ≠ 通道已连。匿名 `GET` 只证**目录可达**；带 key 实连且 `tools/list` 有返回才证那把 key 被接受，通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。目录里没有的域本面不装也不承诺。Omni 那一腿不在这张目录里：它的已连判据是宿主列工具（同样是 JSON-RPC 的 `tools/list` 握手）返回里认得到 `parse` 与 `get_parse_status`，列不到就只能走你直供那条路。key 取自本地凭据设施，不进聊天、不在终端回显，本块不新增任何凭据读取动作。
 
 新账号注册即送 **500 积分**、每日再 +10 积分，**且 Cue 在花之前一定先问**。
 开工时会逐条问你要不要用，判定口径见 [`references/cue-onboarding.md`](references/cue-onboarding.md)。

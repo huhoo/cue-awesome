@@ -172,7 +172,29 @@ Do it as **one verification session**, not a re-delegation: bring `事实台账.
 
 - `python3` (only `scripts/init_case.py`; standard library, no third-party packages, no network requests)
 - `python-docx` (**optional**, needed only by `scripts/export_docx.py` to produce the Word filing copy): `python -m pip install python-docx -i https://pypi.tuna.tsinghua.edu.cn/simple`. Without it you simply get no `.docx`; everything else is unaffected, and the script reports the install command rather than degrading silently.
-- Apart from the two **optional** auxiliaries above (`cue-omni-reader` for material, `cue-research` for statute and case leads) there is no other dependency: absent tools degrade without error, the user confirms before either is run, and the judgment plus materials come from the user - when material cannot get in, see the channel section at the end of section 2.
+- Apart from the two **optional** auxiliaries above (`cue-omni-reader` for material, `cue-research` for statute and case leads) there is no other dependency: absent tools degrade without error, the user confirms before either is run, and the judgment plus materials come from the user - when material cannot get in, see the channel section at the end of section 2. What is lost is stated in the same sentence: scans cannot be read and the statute/case-lead leg is missing - the gap is channel evidence, not formatting.
+
+The channel route on this face (this package ships no connectivity script - the curl lines below are the whole action; what they prove is catalog reachability and that your key is accepted, not that this skill fetched anything):
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with a domain id listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("not found: that id is not in the live catalog (or it has no routing.url) - run the listing line first, then fill it in")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "no value: ROUTING_URL is empty - list the ids first, then set DOMAIN_ID to one of them" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+The three layers are never equivalent: skill installed != credentials configured != channel connected. The anonymous `GET` proves **catalog reachability** only; the key is proven *accepted* once a `tools/list` reply comes back with it attached - pass = HTTP 200 with a non-empty `result.tools` (shape only; no tool names or counts are promised here). The `cue-omni-reader` leg is the MCP connection in your host: it is connected once the host tool listing (the same JSON-RPC `tools/list` handshake) returns `parse` and `get_parse_status`; a skill installed without those names means not connected, and only the user-supplied route stays open. The key comes from your local credential facility - never into chat, never echoed back; this block adds no new credential read.
 
 ## 7. Contents
 

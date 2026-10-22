@@ -43,6 +43,28 @@
 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。
 不装也能跑（你贴披露原文，agent 组织成页并标「用户直供」）——但那就看不到通道取证的真实样子了，而这正是本件想展示的。
 
+三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。装好＝你这一侧重列一次已安装 skill，清单里看得到上面那些名字（只证明文件到位，不证明取到数）；配好凭据＝那把 `CUE_API_KEY` 存在于本地凭据设施即可，**key 在场不等于 key 被接受**；已连＝带上那把 key 按目标域 `routing` 里的 `url` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败），且 `tools/list` 有返回，工具名与入参 schema 一律以那份返回现值为准，不硬编码、不臆造参数。
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<把这里换成上一行列出的那个域 id>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("未取到：该 id 不在目录现值里（或它没有 routing 里的 url 字段）——先跑上面那行列出现场的 id 再填")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "取值失败：ROUTING_URL 为空——先跑上面那行列出现场 id，再把 DOMAIN_ID 换成其中之一" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+`CATALOG` 是本面唯一一处目录入口字面（赋一次、散文不重抄）；`$ROUTING_URL` ＝上面那两行从该域 `routing` 里的 `url` 字段现取的逐字值，别把域名或路径抄死在这张面上。匿名 `GET` 那两行有返回**只证目录可达**，本面不把它叫「已连」；通过＝HTTP 200 且返回体里 `result.tools` 非空（只按形状认，形如 `{"result":{"tools":[…]}}`，本面不列具体工具名也不承诺枚数）。目录返回里没有的域本面不装也不承诺；连接报错不等于域无数据，如实报。这处端点可能以 SSE 形回字（一行 event、紧跟一行 data），要看的 `result.tools` 就在那条 data 载荷里。本块不新增任何凭据读取动作：key 取自上一层那把本地凭据，不进聊天、不在终端回显。**本包不随带连通自测脚本**（这一趟只有上面那两条 curl，别的都不发）。
+
 ## 五、包里有什么
 
 ```

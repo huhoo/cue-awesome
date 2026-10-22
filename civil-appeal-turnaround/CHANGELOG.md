@@ -1,5 +1,21 @@
 # CHANGELOG（civil-appeal-turnaround）
 
+### 0.3.8 — 2026-10-22（通道正路命令带进来的那枚引用，补上对应的可选凭据声明）
+- 改因：上一条目把通道正路命令写进了两面 README，命令里那枚凭据变量因此成了包内新引用——本面的声明层原本没有它（既无 requires.env 也无 envVars 项），官方口径下「代码/面文用了却没声明」判 metadata 不符。声明落后于引用，是这一条目的直接后果。
+- 改法：在 metadata.openclaw 下补 envVars 一项（name: CUE_API_KEY／required: false／description 一句只述边界，不承诺效果、不带价格）；requires.bins／optional／recommendedSkills 照原值不动，也不写 requires.env 与 primaryEnv——那两格的语义是「没它不能开工」与「本件主凭据」，对一把可选的通道钥匙都说重了。
+- 射程（现数，不按记忆）：声明层改动＝SKILL.md 一枚；版本位所在文件 1 枚（口径＝含旧号的非 CHANGELOG 件逐枚现扫，落笔后残留 0）；本条目未新增其它成品面改动，闸、脚本与夹具一字未动。
+- 现测：渠道面件尺复跑 rc=0、末行「名册=18 不合=0 不可判=0 计划位=有」；lint --strict rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 180，ERROR 0，WARN 233」；包内 key 引用现读＝README.md 与 README.en.md 各 1 次（包内 2 枚文件／2 次，与尺的自报同值）；YAML 解析侧断言四条全过（envVars 在 openclaw 下、required 为 False、primaryEnv 与 requires.env 不在场、requires.bins 未被误伤）。
+- 未动：README 两面正文、references、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.3.7 → 0.3.8（声明层补一项＝patch）。
+
+### 0.3.7 — 2026-10-22（通道正路命令进正文＋绕开句的代价写进同一句）
+- 改因：首屏那一眼给用户的是「可以不开通通道」的绕开理由，而真正跑得起来的通道正路命令不在这面上；正文另有绕开句只说「不装不报错」，没在同一句里写清缺的是什么。
+- 改法：开通那一节补上通道正路命令本体（匿名 GET 列目录 → 从该域 routing 现取 url → 带 key POST tools/list），并写明各证到哪一层：匿名 GET 只证目录可达、带 key 有返回才证那把 key 被接受、通过＝HTTP 200 且 result.tools 非空（只按形状认，本面不列工具名也不承诺枚数）；本包不随带连通自测脚本这一句也写在同段。正文那句「不装不报错」补上同句代价——缺的是哪条腿、掉的是哪一层；原句的降级说明与纪律句一字不删，只把它本来就在说的那件代价写进同一行（英文版对应句原已写明代价，本轮按本语言各自复核、不借串）。
+- 射程（现数，不按记忆）：成品面改动 2 枚（口径＝本包被改面逐枚现列：README.md／README.en.md）；版本位所在文件 1 枚（口径＝含旧号的非 CHANGELOG 件逐枚现扫，落笔后残留 0；锁位 无）；闸、脚本与夹具一字未动。
+- 现测：首屏探针末行「名册=18 不合=0｜甲命中行=0 乙缺枚数=0 丙降级无代价行=0」，本枚不在不合名册内；lint --strict rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 180，ERROR 0，WARN 233」；面尺从仓外那一层跑 rc=0、末行「面数=23 不合=0」。
+- 未动：SKILL.md 的判定与契约段、inputs／produces／consumes 那批声明键、两面 README 的其余段落、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.3.6 → 0.3.7（成品面指路与代价句更正＝patch）。
+
 ### 0.3.6 — 2026-10-21（运行前置声明归位到 openclaw 层（本包不引用那枚凭据，只归位））
 - 改因：这枚面的运行前置写在 metadata 下的 requires 那一层，而渠道抽取器认的层是 metadata.openclaw（别名两支亦可）——少一层，声明读不到。本包不引用那枚主凭据（现读 0 枚件、0 次），所以不补声明——硬编一条就是假阳。
 - 改法：把 metadata 下既有的 requires 整枝挂到 metadata.openclaw 下，键序、判定语义与值一字未动，只加一层；openclaw 层不补 env 与 primaryEnv；面内 inputs／produces／consumes 那批场景图声明键与两面 README 未碰。

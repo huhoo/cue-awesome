@@ -43,6 +43,28 @@ Five blocks in fixed order; three header declarations mandatory (generation asof
 Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily — server policy governs) → get `CUE_API_KEY` at <https://cuecue.cn/hub/api-key> into your local credential facility (**never paste it into chat**) → install `cue-data-mcp` (`cue-omni-reader` as needed).
 It runs without Cue too (you paste disclosure text; the page marks lines as user-supplied) — but then you don't see what anchored channel lookups actually look like, which is precisely what this piece is meant to show.
 
+The three layers prove different things and are never equivalent: **skill installed ≠ credential configured ≠ channel connected**. Installed means your own re-listed skill inventory shows those names (files present, nothing more); configured means `CUE_API_KEY` sits in your local credential facility — **a key being present is not a key being accepted**; connected means calling the `url` inside that domain's `routing` with that key (`Authorization: Bearer <$CUE_API_KEY>`, plus `Accept: application/json, text/event-stream` — without that header you get 406, which is protocol behaviour, not an auth failure) and getting a `tools/list` reply back; tool names and input schemas come from that reply, never hardcoded.
+
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<replace with a domain id listed by the line above>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("not found: that id is not in the live catalog (or it has no routing.url) - run the listing line first, then fill it in")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "no value: ROUTING_URL is empty - list the ids first, then set DOMAIN_ID to one of them" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+`CATALOG` is the only catalog literal on this face (assigned once, not restated in prose); `$ROUTING_URL` is taken verbatim from that domain's `routing.url`. The two anonymous `GET` lines prove **catalog reachability only** - this face does not call that "connected". Pass = HTTP 200 with a non-empty `result.tools` (shape only; no tool names or counts are promised here). Domains absent from the catalog are neither installed nor promised by this face, and a connection error does not mean the domain has no data - report it as it came back. The endpoint may reply over SSE (one event line, then one data line); the `result.tools` you want is inside that data payload. This block adds no new credential read: the key comes from the local facility above, never into chat and never echoed back. **This package ships no connectivity script** - the two curl lines above are the whole route, nothing else is sent.
+
 ## 5. What's in the package
 
 ```

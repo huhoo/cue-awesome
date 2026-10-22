@@ -44,9 +44,29 @@ python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望
 - `cue-omni-reader`：解析网页/PDF/录音/视频，提取原文填入证据表
 - `cue-research`：交叉验证、深度研究
 
-开通与安装的命令写法与三层分开自查见 `references/cue-onboarding.md` §开通三步；本文不复述一份，以免两处漂移。
+开通与安装的命令写法与三层分开自查见 `references/cue-onboarding.md` §开通三步；本文只留下面这一条**最小实连形**（不留全量叙述，以免两处漂移——两处若读出不一致，以 `references/cue-onboarding.md` 为准并回来改这里）。
 
-两者都由 Cue 通道提供，用量以服务端返回为准，本件不作价格承诺。不装也能跑，但缺能力。
+```bash
+CATALOG="https://cuecue.cn/api/mcp-catalog"
+curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+[print(r.get("id"), r.get("external_status"), (r.get("routing") or {}).get("url", "-")) for r in rows]'
+DOMAIN_ID="<把这里换成上一行列出的那个域 id>"
+ROUTING_URL="$(curl -s "$CATALOG" | python3 -c 'import json,sys
+rows=json.load(sys.stdin)["data"]["domains"]
+hit=[r["routing"]["url"] for r in rows if r.get("id")==sys.argv[1] and r.get("routing")]
+print(*hit,sep="\n") if hit else sys.exit("未取到：该 id 不在目录现值里（或它没有 routing 里的 url 字段）——先跑上面那行列出现场的 id 再填")' "$DOMAIN_ID")"
+[ -n "$ROUTING_URL" ] || { echo "取值失败：ROUTING_URL 为空——先跑上面那行列出现场 id，再把 DOMAIN_ID 换成其中之一" >&2; exit 1; }
+curl -s -X POST "$ROUTING_URL" \
+  -H "Authorization: Bearer $CUE_API_KEY" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+一条命令形（不必手改块里那一行）：`cd competitive-brief && python3 -B scripts/cue_connectivity_check.py --domain <你的域 id> --post`；有哪些域 id 可填，先跑同一支脚本的 `--list`（只列在场域与 url，不发 POST）。匿名 `GET` 只证**目录可达**，带上 key 且 `tools/list` 有返回才证那把 key 被接受；通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。
+
+两者都由 Cue 通道提供，用量以服务端返回为准，本件不作价格承诺。不装也能跑，但缺的是整条交叉验证腿与解析腿（缺的那一层只能由你自供料顶上，可信级标签就不产生）。
 
 ## 国内可达取证路径（境外源不通时怎么办）
 

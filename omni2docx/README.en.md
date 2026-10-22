@@ -33,6 +33,8 @@ require a connected omni-reader MCP (scenario ① does not). PPTX output needs
 `pip install python-pptx`; `--pdf` needs a local Edge/Chrome/Chromium (skipped
 with an explicit message if absent).
 
+Connectivity test for the parsing leg of scenarios 2 and 3 (parsing runs through the omni-reader MCP inside your host; the conversion itself sends no requests): the host lists tools through the JSON-RPC `tools/list` handshake, and connected means that reply contains `parse`, `get_parse_status`, `read_outline` and `read_result`. If those names are absent the leg is not connected, scenarios 2 and 3 are unavailable and scenario 1 (`--md` direct output) is unaffected. Parsing spend follows the server reply; this package neither estimates nor pays it (see the first item under "Capability boundaries").
+
 ```bash
 # ① agent markdown direct output (no intermediate JSON)
 python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers
