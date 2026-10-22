@@ -27,14 +27,16 @@
 
 形制：纯标准库、零网络、只读；条目全部按名排序（输出与枚举顺序无关，可逐字节对拍）；
       只打相对路径，不打绝对路径；任何读不到的东西走一句人话出口、零 Traceback。
-      列表项只认两格缩进（`^  - `）：不收任意深度的缩进——「放错层的列表」若被算成真边，图上会多出假连接，
-      比少读更贵。读不到又不肯装「空清单」的那一形，走「不可判」点名（见退码 1）。
-退码：0 各表算完（覆盖缺口可以「不作数」，那是原料问题不是本件的失败）；
+      列表项按 YAML 语义收：跨过空行继续收、收到下一个顶格键为止；缩进几格都收（顶格、四格、六格与夹空行都是合法写法，
+      把合法写法判成「读不到」＝假红）。缩进不为两格时另出一句「形制不齐」点名，但不拦退码。
+      真判「不可判」的只剩一形：该键区域内先有映射行、后又冒类列表行——归属读不出，宁可响亮也不猜（见退码 1）。
+退码：0 各表算完（覆盖缺口可以「不作数」，那是原料问题不是本件的失败；形制不齐的点名不拦退码）；
       1 读不到任何包、某枚 SKILL.md 解析不了、包面出现词表外名字、词表读不到或不成形、
         原料（--catalog／--domains）指了路径却读不到或形状不认识、
-        某枚键在顶层而它的列表项缩进不是两格（不可判；末行并列「不合=0｜不可判=N 枚」，这些键不并入图）；
+        某枚键的值归属读不出（不可判；末行并列「不合=0｜不可判=N 把键／M 枚包」，这些键不并入图、不进任何一张表）；
       2 用法错（比如 --catalog 与 --domains 同时给、两枚 --legacy 同时给、路径不是目录）。
-      「不可判」那一行的末行只在有话要说时长——干净一趟的 stdout 与出生态逐字节同，这是「零变化对拍」的前提。
+      「不可判」的末行只在有话要说时长；三表对账一律两值并列（取到 N 把／跳过 M 把），
+      因为一旦有键被跳过，各表枚数就不再是全名册的数——只报一个数会把这件事抹平。
 """
 
 import argparse
@@ -115,46 +117,62 @@ def frontmatter_lines(text):
 
 
 def parse_frontmatter_list(text, key):
-    """取 `key:` 下的两格缩进列表。返回 (清单或 None, 是否不可判)。
+    """取 `key:` 下的列表值。返回 (清单或 None, 归属存疑的类列表行枚数, 区内实际见过的缩进集合)。
 
-    三态分清：无该键＝(None, False)（由调用方按「缺键」点名）；键在场、列表项两格＝(值, False)；
-    键在场、一条两格项都没读到、其后紧跟的行却是「缩进非两格的类列表行」（去掉缩进后以 `- ` 起头或就是 `-`）
-    ＝([], True)——本件不把它读成空清单，也不按案甲把任意深度缩进都收进来（那会把放错层的列表算成真边）。
-    键后跟的是别的键（含缩进两格的映射行）＝正常空清单，不算不可判。
+    四态分清（M377 按 6.1 的 M374-1 改的这一支）：
+      无该键＝(None, 0, set())——由调用方按「缺键」点名；
+      键在场、列表项按 YAML 语义读得到＝(值, 0, 缩进集)——**值收集跨过空行继续收，收到下一个顶格键为止**；
+        缩进是几格都收（顶格与更深都是合法写法，把合法写法判成「读不到」＝假红），只是缩进不为两格时另出一句形制不齐的点名；
+      区内出现归属存疑的类列表行（先见到映射行、之后才冒出的类列表行）＝(值, 枚数>0, 缩进集)——
+        这种键整体按不可判处理：不并入图、不进任何一张表、也不读成空清单；
+      键后紧跟别的顶格键＝正常空清单（值, 0, set()）。
+    不收的是「放错层的列表算成真边」那一形——所以归属存疑时宁可响亮不可判，也不猜。
     """
     lines = text.split("\n")
     vals, seen, i = [], False, 0
     while i < len(lines):
         ln = lines[i]
-        if ln.startswith(key + ":"):
+        if ln.startswith(key + ":") and (len(ln) == len(key) + 1 or ln[len(key) + 1] in (" ", "\t")):
             seen = True
             rest = ln[len(key) + 1:].strip()
             if rest.startswith("[") and rest.endswith("]"):
                 vals = [x.strip().strip("\"'") for x in rest[1:-1].split(",") if x.strip()]
-                break
+                return sorted(vals), 0, set()
             i += 1
-            while i < len(lines) and (lines[i].startswith("  - ") or lines[i].startswith("  -\t")):
-                vals.append(lines[i][4:].strip().strip("\"'"))
+            odd, indents, after_map = 0, set(), False
+            while i < len(lines):
+                s = lines[i]
+                if not s.strip():
+                    i += 1
+                    continue
+                body = s.strip()
+                ind = len(s) - len(s.lstrip(" \t"))
+                is_item = body == "-" or body.startswith("- ") or body.startswith("-\t")
+                if ind == 0 and not is_item:
+                    break                                   # 下一个顶格键＝本键区域结束
+                if is_item:
+                    if after_map:
+                        odd += 1                            # 归属存疑：映射行之后的类列表行
+                    else:
+                        vals.append(body[1:].strip().strip("\"'"))
+                        indents.add(ind)
+                else:
+                    after_map = True
                 i += 1
-            break
+            return (sorted(vals) if vals else []), odd, indents
         i += 1
     if not seen:
-        return None, False
-    if vals:
-        return sorted(vals), False
-    j = i
-    while j < len(lines) and not lines[j].strip():
-        j += 1
-    if j < len(lines):
-        nxt = lines[j]
-        if nxt[:1] in (" ", "\t") and (nxt.lstrip(" \t") == "-" or nxt.lstrip(" \t").startswith("- ")):
-            return [], True
-    return [], False
+        return None, 0, set()
+    return sorted(vals), 0, set()
 
 
 def read_packages(repo):
-    """枚枚读 frontmatter → {包名: {consumes/inputs/produces/legs}}；缺键与不可判各自点名，两者都不并入图。"""
-    out, notes, unjudged = {}, [], []
+    """枚枚读 frontmatter → ({包名: {四把键}}, 缺键点名, 不可判 {包: [键]}, 形制不齐点名)。
+
+    缺键＝按空清单计入并点名（不猜）；不可判＝既不并入图、也不进任何一张表；
+    缩进非两格但语义读得到的＝值照收，另出一句形制不齐（这一类不拦退码——合法写法不该判红）。
+    """
+    out, notes, unj, loose = {}, [], {}, []
     for d in sorted(p for p in repo.iterdir() if p.is_dir()):
         if d.name in IGNORE_DIRS or d.name.startswith("."):
             continue
@@ -162,18 +180,22 @@ def read_packages(repo):
         if not skill.is_file():
             continue
         fm = frontmatter_lines(skill.read_text(encoding="utf-8", errors="replace"))
-        got, bad_keys = {}, []
+        got, bad_here = {}, []
         for k in FM_KEYS:
-            got[k], bad = parse_frontmatter_list(fm, k)
-            if bad:
-                bad_keys.append(k)
+            got[k], odd, indents = parse_frontmatter_list(fm, k)
+            if odd:
+                bad_here.append(k)
+            elif indents and indents != {2}:
+                loose.append("%s：%s 的列表项缩进是 %s 格（合法写法，值已按语义读入；与全仓两格形制不齐）" % (
+                    d.name, k, "、".join(str(x) for x in sorted(indents))))
         miss = [k for k in FM_KEYS if got[k] is None]
         if miss:
             notes.append("%s：frontmatter 里没有 %s（本件按空清单计入，不猜）" % (d.name, "、".join(miss)))
-        for k in bad_keys:
-            unjudged.append("%s：%s 键在场而列表项缩进不是两格（本件按不可判处理，不并入图、不读成空清单）" % (d.name, k))
-        out[d.name] = {k: (got[k] or []) for k in FM_KEYS}
-    return out, notes, sorted(unjudged)
+        if bad_here:
+            unj[d.name] = sorted(bad_here)
+            out.setdefault(d.name, {})
+        out[d.name] = {k: ([] if k in bad_here else (got[k] or [])) for k in FM_KEYS}
+    return out, notes, unj, sorted(loose)
 
 
 def normalize(pkgs, vocab):
@@ -266,7 +288,7 @@ def main():
         return die("读不到规范词表：%s（边与入参的口径全靠它，缺表不猜名）" % args.vocabulary)
     vocab = load_vocabulary(vpath)
 
-    pkgs, notes, unjudged = read_packages(repo)
+    pkgs, notes, unj, loose = read_packages(repo)
     if not pkgs:
         return die("在 %s 下一枚 SKILL.md 都没读到——本件无从算表" % repo.name)
     pkgs, norm_notes, bad = normalize(pkgs, vocab)
@@ -274,6 +296,22 @@ def main():
         for b in bad:
             print("  表外：%s" % b, file=sys.stderr)
         return die("词表校验未过：%d 处包面名字对不上表（改名请改 %s，再跑本件）" % (len(bad), vpath.name))
+
+    # 不可判的键不进任何一张表：受影响那格显式写「不可判」，各表自报行并列「取到 N 把／跳过 M 把」
+    unj_keys_total = sorted((p, k) for p, ks in unj.items() for k in ks)
+    unj_pkgs = sorted(unj)
+
+    def skipped(keys):
+        """该表涉及的键位里，有几把不可判、落在几枚包上。"""
+        pairs = [(p, k) for p, ks in sorted(unj.items()) for k in ks if k in keys]
+        return len(pairs), len({p for p, _k in pairs})
+
+    def unj_note(keys):
+        n, p = skipped(keys)
+        if not n:
+            return ""
+        who = "、".join("%s/%s" % (x, y) for x, y in sorted((a, b) for a, bs in unj.items() for b in bs if b in keys))
+        return "本表跳过 %d 把键／%d 枚包（不可判：%s）" % (n, p, who)
 
     root = repo.resolve()
 
@@ -306,9 +344,12 @@ def main():
         for k in m:
             m[k].sort()
 
-    # 一、孤点：跨件入度与出度都为 0（inputs 不算边、自环不算边）
-    iso, loops = [], []
+    # 一、孤点：跨件入度与出度都为 0（inputs 不算边、自环不算边；不可判的包不进本表，另列一行）
+    iso, loops, unj_rows = [], [], []
     for name, row in sorted(pkgs.items()):
+        if name in unj:
+            unj_rows.append("%s ｜ 不可判（键：%s；本表不判它孤不孤）" % (name, "、".join(unj[name])))
+            continue
         out_deg = {q for a in row["produces"] for q in consumers.get(a, []) if q != name}
         in_deg = {q for a in row["consumes"] for q in producers.get(a, []) if q != name}
         if not out_deg and not in_deg:
@@ -316,16 +357,26 @@ def main():
         self_edges = sorted(a for a in row["produces"] if a in row["consumes"] and producers.get(a) == [name])
         if self_edges:
             loops.append("%s 自环：%s" % (name, "、".join(self_edges)))
+    taken_pkgs = len(pkgs) - len(unj_rows)
 
-    # 二、待补入口：(a) inputs 列 ∥ (b) 断口列 —— 分开报，不相加
-    inputs_rows = {}
+    # 二、待补入口：(a) inputs 列 ∥ (b) 断口列 —— 分开报、不相加；不可判的键不进列
+    inputs_rows, inputs_unj = {}, []
     for name, row in sorted(pkgs.items()):
+        if "inputs" in unj.get(name, []):
+            inputs_unj.append("%s/inputs" % name)
+            continue
         for a in row["inputs"]:
             inputs_rows.setdefault(a, []).append(name)
     for users in inputs_rows.values():
         users.sort()
-    broken_rows = ["%s consumes %s（全仓无任何件 produces）" % (name, a)
-                   for name, row in sorted(pkgs.items()) for a in row["consumes"] if not producers.get(a)]
+    broken_rows, broken_unj = [], []
+    for name, row in sorted(pkgs.items()):
+        if "consumes" in unj.get(name, []):
+            broken_unj.append("%s/consumes" % name)
+            continue
+        for a in row["consumes"]:
+            if not producers.get(a):
+                broken_rows.append("%s consumes %s（全仓无任何件 produces）" % (name, a))
 
     # 三、覆盖缺口：弱口径（域 id 出现在包面文）∥ 强口径（件面显式 legs: 含该域 id）
     face_text = {}
@@ -343,13 +394,18 @@ def main():
           "词表＝%s（canonical %d 枚／inputs 族 %d 枚／alias %d 枚／family %d 枚）｜包 %d 枚（扫自 %s）" % (
               rel(vpath), len(vocab["canonical"]), len(vocab["inputs"]), len(vocab["aliases"]),
               len(vocab["families"]), len(pkgs), label))
-    for n in notes + unjudged + norm_notes:
+    unj_notes = ["%s：%s 的值归属存疑（该键区域内先有映射行、后又冒类列表行；本件按不可判处理：不并入图、不进任何表、不读成空清单）"
+                 % (p, "、".join(ks)) for p, ks in sorted(unj.items())]
+    for n in notes + unj_notes + loose + norm_notes:
         print("  注：%s" % n)
     print()
     print("== 表一 孤点（跨件入度与出度皆 0；inputs 不算边、自环不算边）==")
+    for n in unj_rows:
+        print("  " + n)
     for n in iso:
         print("  %s ｜ %s" % (n, rel(repo / n / "SKILL.md")))
-    print("  枚数=%d（由上列现算）｜全包=%d 枚｜非孤点=%d 枚" % (len(iso), len(pkgs), len(pkgs) - len(iso)))
+    print("  枚数=%d（由上列现算）｜全包=%d 枚｜取到 %d 枚包／跳过 %d 枚包（不可判 %d 把键）｜非孤点=%d 枚" % (
+        len(iso), len(pkgs), taken_pkgs, len(unj_rows), len(unj_keys_total), taken_pkgs - len(iso)))
     if loops:
         print("  附注·自环（自产自消，不计入链条）：")
         for l in loops:
@@ -367,16 +423,20 @@ def main():
         for a, users in sorted(inputs_rows.items()):
             extra = "（族：%s）" % fam_of(a) if fam_of(a) != "(无族)" else ""
             print("    %-22s %d 件消：%s｜%d 件产%s" % (a, len(users), "、".join(users), len(producers.get(a, [])), extra))
-        print("  列 (a) 枚数=%d 项／%d 条包–项配对（均由上列现算）" % (
-            len(inputs_rows), sum(len(v) for v in inputs_rows.values())))
+        print("  列 (a) 枚数=%d 项／%d 条包–项配对｜取到 %d 把键／跳过 %d 把（不可判：%s）" % (
+            len(inputs_rows), sum(len(v) for v in inputs_rows.values()),
+            len(pkgs) - len(inputs_unj), len(inputs_unj), "、".join(inputs_unj) or "无")
+            if inputs_unj else "  列 (a) 枚数=%d 项／%d 条包–项配对（均由上列现算）｜取到 %d 把键／跳过 0 把" % (
+            len(inputs_rows), sum(len(v) for v in inputs_rows.values()), len(pkgs)))
     if not args.legacy_inputs_only:
         if not args.legacy_broken_only:
             print("  列 (b) 断口＝consumes 里无任何件 produces 的项（这才是该补的件）")
         for b in broken_rows:
             print("    " + b)
-        print("  %s枚数=%d（由上列现算）｜consumes 总项=%d" % (
-            "" if args.legacy_broken_only else "列 (b) ", len(broken_rows),
-            sum(len(row["consumes"]) for row in pkgs.values())))
+        cons_total = sum(len(row["consumes"]) for name, row in sorted(pkgs.items()) if "consumes" not in unj.get(name, []))
+        print("  %s枚数=%d（由上列现算）｜consumes 总项=%d｜取到 %d 把键／跳过 %d 把（不可判：%s）" % (
+            "" if args.legacy_broken_only else "列 (b) ", len(broken_rows), cons_total,
+            len(pkgs) - len(broken_unj), len(broken_unj), "、".join(broken_unj) or "无"))
     if not (args.legacy_broken_only or args.legacy_inputs_only):
         print("  本表按裁定不给合计数：(a) 与 (b) 是两类东西，加成一枚就抹掉了这个差别。")
     print()
@@ -406,6 +466,9 @@ def main():
             print("    缺口：" + x)
         print("    弱口径 枚数：live=%d｜引用到=%d｜缺口=%d" % (len(live), len(weak_cov), len(weak_gap)))
         print("  强口径＝某件 frontmatter 显式声明 legs: 含该域 id 原文（值＝catalog 的域 id，不是工具名）")
+        n_sk, p_sk = skipped({"legs", "produces"})
+        if n_sk:
+            print("    本表跳过 %d 把键／%d 枚包（不可判：legs 或 produces 读不出归属的那些；两版读数只覆盖取到的键）" % (n_sk, p_sk))
         print("    现读：全仓声明 legs: 的件数=%d｜legs 值枚数=%d" % (
             sum(1 for row in pkgs.values() if row["legs"]), len(legs_decl)))
         strong_cov, strong_gap = [], []
@@ -441,10 +504,11 @@ def main():
         print("  %s 面上提到 %s：现读 %d 次" % (name, other, c))
     print("  枚数=%d 条｜合计出现次数=%d（均由上列现算）｜这一列只算气氛，别拿它当图上的边" % (
         len(ref_rows), sum(c for _n, _o, c in ref_rows)))
-    if unjudged:
-        # 只在有话说时长这一行：干净一趟的 stdout 必须与出生态基线逐字节同（多一枚无条件末行＝把对拍打断）。
+    if unj_keys_total:
+        # 这一行只在有话说时长：干净一趟的 stdout 不该被汇总行长胖；但一旦出现，单位必须两值并列（把键／枚包）
         print()
-        print("  不合=0｜不可判=%d 枚（不可判＝键在顶层而列表项缩进不是两格；这一类不并入图、不读成空清单，退码非 0——认不出＝响亮不可签）" % len(unjudged))
+        print("  不合=0｜不可判=%d 把键／%d 枚包（不可判＝该键的值归属读不出，不并入图、不进任何表；"
+              "退码非 0——认不出＝响亮不可签）" % (len(unj_keys_total), len(unj_pkgs)))
         return 1
     return 0
 
