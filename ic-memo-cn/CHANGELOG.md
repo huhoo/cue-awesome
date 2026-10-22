@@ -1,6 +1,15 @@
 # CHANGELOG（ic-memo-cn）
 
 > 本文件随发布物交付，但其中提到的仓内路径（verify/ 台账、scripts/check_skills.py、CONTRIBUTING §3、姊妹件码表、内部台账等）不随发布物交付，须回仓内看；历史条目按留痕原则不回改，本行为整档统一说明，不改写任何既有条目。
+### 0.3.0 — 2026-10-22（入口接上三枚上游工件：保形映射件＋三链真跑样例）
+- 改因：本件的入参三件（facts／gaps／materials）此前只由人工转写喂，包内没有任何一条跑得通的路径把姊妹件的产出直接接进来；场景图上本件是孤点——上游三枚各自 produces 的工件类型名在词表里早已定名，下游无人 consumes。
+- 改法：①frontmatter 补 consumes 三条（tear-sheet-page／structured-note／risk-fact-table，三名取 scripts/artifact-types.yaml 的 canonical 现值）；②新增 scripts/upstream_intake.py：只读上游工件，按「一节喂一节」保形落成上面那三件入参——上游自己标「风险」的那节才落 side=bear，标「待人工／未检索到／未取到」的才落缺数账，锚在其来源索引里对不上的行跳过并自报枚数，不改写、不补全、不借别节顶替；看多一侧不由上游产，走 --manual-bull；③scripts/fixtures/upstream/ 放三枚上游工件与其配套件共 8 枚，逐枚由上游包内自己的夹具复制并按 sha256 对拍同值；④scripts/fixtures/run_upstream_chains.sh 把三条链各跑一遍（intake → build_memo → check_memo），逐链自报三段真实退码与出稿文件名，临时目录跑完即删；⑤SKILL.md §2.9 与两面 README 各补一段接口句（写怎么接、接不上怎么自报，不是推荐语）。
+- 射程（现数，不按记忆）：声明层改动＝SKILL.md 一枚；成品面改动＝3 枚（口径＝包内成品面逐枚现列：SKILL.md／README.md／README.en.md）；新增件＝10 枚（口径＝逐枚现列：映射件 1／三链 runner 1／上游夹具 8）；版本位所在文件＝1 枚（口径＝含旧号的非 CHANGELOG 件逐枚现扫，落笔后残留 0）；scripts/build_memo.py 与 scripts/check_memo.py 一字未动。
+- 边界（三链现测）：tear-sheet-page 与 structured-note 两链的 intake／build／check 三段退码全 0；risk-fact-table 单源链上游事实列只带定性陈述，第二节零条时 scripts/build_memo.py 落一行「本次无可锚定的数值行」占位、run.json 记 0，而 scripts/check_memo.py 道四把占位行计入正文并按计数发一条 E-COVERAGE——该链要与一枚带数值事实的来源（或人工补的第二节点名行）同跑才绿，本包不为此改任何判定语义，只在面上写明它单源时的这一形。
+- 现测：场景图末行「枚数=9（由上列现算）｜全包=18 枚｜取到 18 枚包／跳过 0 枚包（不可判 0 把键）｜非孤点=9 枚」，本轮开工时同末行读「枚数=13…非孤点=5 枚」（孤点名册 13→9）；lint --strict rc=0、末行「summary: 18 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 180，ERROR 0，WARN 233」（与开工逐值同，零新增）；面尺从仓外那一层跑 rc=0、末行「面数=23 不合=0」；本包入口自测 rc=0、末行「selftest: ALL GREEN（一档 1 枚·发条 0 条（规格 0）· 一档b 同源链 通 · 二档 2/2 · 三档 发条 · 四档 18/18 · 五档记账件坏态 通 · 六档生成器坏输入 通）」；scripts/fixtures/run_upstream_chains.sh rc=0、末行「链数=3（由上面逐链现报）｜合期望=3｜不合=0｜不可判=0」。
+- 未动：scripts/build_memo.py／scripts/check_memo.py 的判定语义与参数、inputs／produces／legs 那批声明键、其余 17 枚包面、闸与既有夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.2.24 → 0.3.0（加能力＝minor，取 CONTRIBUTING「加能力／改流程 → minor」那一档）。新条目反引号 0 枚、美元号 0 枚。
+
 ### 0.2.24 — 2026-10-21（可选凭据从硬前置改成 envVars 的可选声明）
 - 改因：上一版把这枚渠道变量写进了 requires.env，而那一层的语义是「没有它就不能开工」。本包面文另有 3 行写明不装也能跑（用户直供与降级路径），而包内代码级引用这枚变量共 3 次——所以它是「装了才有渠道数据腿」的可选通道钥匙，不是「没它就不能开工」的前置。这一处属对外把前置说重了（宣告比覆盖面大），不是排版。
 - 改法：requires.env 里那枚串摘掉，改挂 openclaw 层的 envVars 一项——name、required: false、另带一句只述边界的 description（不承诺效果、不带价格）；requires.bins 照原值不动。同批把 primaryEnv 一并摘掉：它的语义是「本件主凭据」，对一把可选的通道钥匙同样说重了。

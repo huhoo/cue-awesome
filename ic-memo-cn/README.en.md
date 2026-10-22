@@ -55,6 +55,25 @@ python3 ~/.workbuddy/skills/ic-memo-cn/scripts/check_memo.py \
 
 Read `assets/投决备忘录.md` first (that is the seven-part shape), then `SKILL.md` §3 for the contract itself.
 
+**Feeding upstream artifacts straight in**: the three upstream artifact types this package declares in `consumes:` - `tear-sheet-page` (tear-sheet's one-page snapshot), `structured-note` (cn-earnings-note's earnings note) and `risk-fact-table` (dd-checklist's seven-column pre-diligence table) - are mapped shape-for-shape into the same three input files by `scripts/upstream_intake.py`, after which the two commands above run unchanged. One section feeds one section only: a row lands as `side=bear` solely when the upstream file itself labelled that section as risk, and only lines the upstream marked `[待人工]` / not-found land in the gap ledger; a line whose anchor is missing from the upstream source index is skipped and counted in the script's own report (nothing is rewritten, completed, or borrowed from another section). **The bull side is not produced upstream** - pass it via `--manual-bull` as line-delimited JSON, and without it the generator still refuses to write:
+
+```bash
+python3 scripts/upstream_intake.py --kind tear-sheet-page \
+        --artifact scripts/fixtures/upstream/tear-sheet-page.md \
+        --sources scripts/fixtures/upstream/tear-sheet-sources.jsonl \
+        --out-dir ./memo-000333 --manual-bull scripts/fixtures/upstream/manual-bull-tear-sheet.jsonl
+python3 scripts/build_memo.py --run-dir ./memo-000333 --subject 000333 --subject-name "Some Corp" \
+        --facts ./memo-000333/facts.jsonl --gaps ./memo-000333/gaps.jsonl \
+        --materials ./memo-000333/materials.jsonl --asof "2026-10-21 09:00"
+python3 scripts/check_memo.py ./memo-000333/memo-000333-2026-10-21.md --run ./memo-000333/run.json
+```
+
+One live sample per chain (each chain reports the real exit status of intake, build and check plus the written filename; the scratch directory is deleted on exit):
+
+```bash
+bash scripts/fixtures/run_upstream_chains.sh    # should exit 0; last line verbatim: 链数=3（由上面逐链现报）｜合期望=3｜不合=0｜不可判=0
+```
+
 ### Self-check
 
 ```bash

@@ -4,8 +4,12 @@ slug: cue-ic-memo-cn
 displayName: "投决备忘录起草·逐条挂源"
 summary: "给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。"
 description: "投决备忘录草稿生成：输入是一家公司名／六位代码或你手上的材料，产出七节备忘录——摘要、事实与数字、业务要点、风险与反方、缺数与未决、人工复核、来源索引；每个数字带披露或监管源＋字符/页定位，取不到的行直接写「未取到」，正反两方各至少一条否则机检拦下。适合投前材料整理、内部讨论稿、需要「每条数都能回原文核」的场合。Do NOT use for: 评级、目标价、买卖建议（一律 `[待人工]`）、最终决议（本件只起草，用户负终审）、估值测算（无行情与持仓数据腿，只做适用性声明）、整体风险打分。Triggers: 投决备忘录 / IC 备忘录 / 投前材料 / 讨论稿逐条可回查"
-version: "0.2.24"
+version: "0.3.0"
 license: MIT
+consumes:
+  - tear-sheet-page
+  - structured-note
+  - risk-fact-table
 inputs:
   - company-identity
   - facts-file
@@ -84,6 +88,15 @@ python3 scripts/check_memo.py <本次目录>/memo-<code>-<YYYY-MM-DD>.md --run <
   跑法：`python3 scripts/build_memo.py --run-dir 本次目录 --subject 000001 --subject-name 示例股份 --facts facts.jsonl --gaps gaps.jsonl --asof "2026-10-19 09:00"` → 退 0，末行自报「事实 1 条／业务 0 条／看多 1 条／看空 1 条｜缺数与未决 1 条」。把第 4 节任一行换成缺 `basis`（或删掉 `side`）即退 1 并报缺哪几键。
 - 产物三件同目录：`memo-<code>-<YYYY-MM-DD>.md`（七节草稿）、`sources.jsonl`（逐条来源）、`run.json`（本次实况账，机检的计数凭据）；`--run-dir` 不存在会自动建。
 - 主键纪律：`--subject` 只收 6 位代码，多候选不代选；`--asof` 是快照时点，一切计数随它成立。
+- **上游产物直喂**（接口，不是推荐）：本件认三枚上游工件——`tear-sheet-page`（单页速览）／`structured-note`（业绩笔记）／`risk-fact-table`（预尽调七列表）。一支 `scripts/upstream_intake.py` 把它们保形落成上面的 `facts.jsonl`／`gaps.jsonl`／`materials.jsonl`，随后照上面两条命令原样跑：
+
+  ```bash
+  python3 scripts/upstream_intake.py --kind <tear-sheet-page|structured-note|risk-fact-table> \
+          --artifact <上游工件> --sources <上游 sources.jsonl 或 coverage 件> \
+          --out-dir <本次目录> [--manual-bull <人工看多逐行 JSON>]
+  ```
+
+  保形口径：只有一节喂一节——上游自己标「风险」的那节才落 `side=bear`，标「待人工／未检索到／未取到」的才落缺数账；锚在其来源索引里对不上就跳过并自报枚数，不改写、不补全、不借别节顶替。**看多一侧上游不产**，仍由 `--manual-bull` 或人工转写补，缺它照样不成文（退 1）。三链各一条真跑样例见 `scripts/fixtures/upstream/` 与 `scripts/fixtures/run_upstream_chains.sh`。
 - 细则（各腿取什么、截断与口径怎么写）仍看 `README.md` 的 §1-§3 与 §5；本节只保证「照 §1 的主键与 §2 的腿取到数之后，一支命令能落成并自证」。
 
 ## 3. 备忘录七节（交付契约）

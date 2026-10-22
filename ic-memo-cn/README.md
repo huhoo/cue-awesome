@@ -55,6 +55,25 @@ python3 ~/.workbuddy/skills/ic-memo-cn/scripts/check_memo.py \
 
 先看 `assets/投决备忘录.md`（七节就长这样），再看 `SKILL.md` §3 契约原文。
 
+**上游产物直喂**：`tear-sheet-page`／`structured-note`／`risk-fact-table` 这三枚上游工件（tear-sheet 的单页速览、cn-earnings-note 的业绩笔记、dd-checklist 的预尽调七列表）由 `scripts/upstream_intake.py` 保形落成上面那三件入参，随后照 §三 那两条命令原样跑——只有一节喂一节：上游自己标「风险」的那节才落 `side=bear`，标「待人工／未检索到／未取到」的才落缺数账，锚在其来源索引里对不上的行跳过并自报枚数（不改写、不补全、不借别节顶替）；**看多一侧上游不产**，用 `--manual-bull` 逐行 JSON 补，缺它照样拒绝成文：
+
+```bash
+python3 scripts/upstream_intake.py --kind tear-sheet-page \
+        --artifact scripts/fixtures/upstream/tear-sheet-page.md \
+        --sources scripts/fixtures/upstream/tear-sheet-sources.jsonl \
+        --out-dir ./memo-000333 --manual-bull scripts/fixtures/upstream/manual-bull-tear-sheet.jsonl
+python3 scripts/build_memo.py --run-dir ./memo-000333 --subject 000333 --subject-name 某某股份 \
+        --facts ./memo-000333/facts.jsonl --gaps ./memo-000333/gaps.jsonl \
+        --materials ./memo-000333/materials.jsonl --asof "2026-10-21 09:00"
+python3 scripts/check_memo.py ./memo-000333/memo-000333-2026-10-21.md --run ./memo-000333/run.json
+```
+
+三条链各一条真跑样例（含逐链 intake／build／check 三段真实退码与出稿文件名，跑完即删临时目录）：
+
+```bash
+bash scripts/fixtures/run_upstream_chains.sh        # 应退 0；末行逐字为「链数=3（由上面逐链现报）｜合期望=3｜不合=0｜不可判=0」
+```
+
 ### 自校验
 
 ```bash
