@@ -74,6 +74,7 @@ unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
 要从当前全部 skill 中选择：`git clone https://github.com/huhoo/cue-awesome.git`，再把需要的子目录拷进 `~/.workbuddy/skills/`。
 第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。
+第四条路是 ClawHub 的 CLI（商店侧形制，文档写的是 `install @owner/slug`）：`clawhub install @huhoo/cue-journal-draft`。那里的 slug 是 `cue-` 加目录名，与技能 CLI 那一式取的不是同一个串——同一个参数位两种取值，别当可互换。
 Windows 目标路径：`C:\Users\<用户名>\.workbuddy\skills\`——三步与文件名同上。
 装完 `cd` 进那件目录，跑它自己 README 里给的自查命令：各件自带，本页不复制其内容。
 

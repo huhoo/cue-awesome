@@ -1,6 +1,14 @@
 # CHANGELOG（ic-memo-cn）
 
 > 本文件随发布物交付，但其中提到的仓内路径（verify/ 台账、scripts/check_skills.py、CONTRIBUTING §3、姊妹件码表、内部台账等）不随发布物交付，须回仓内看；历史条目按留痕原则不回改，本行为整档统一说明，不改写任何既有条目。
+### 0.3.1 — 2026-10-22（上游工件入口的三处判定改成可校验形状：出处一律回查索引、反方不再认节名、缺数账不再吞事实）
+- 改因：scripts/upstream_intake.py 把「上游自标什么就落什么」执行成了三处不可校验的判定——①risk-fact-table 那一支，来源列非空时直接采用列内值、只有列空着才回查索引，于是列里夹带来历不明的编号或 URL 会被原样落成出处；②反方（side=bear）按节名里有没有「风险」两个字判，`## 5. 附注风险扫描` 这类中性节名下的行被当成反方，而真正命中风险科目的行若排在别处反而不落（旧式里那条后半判据还是前半判据的子集，等于没判）；③缺数分类排在「是否 bullet／有无数字／有无来源」三项形状判定之前触发，一条既带数字又带可回查锚、只是引述里出现「未取到」字样的有效事实会被吞进缺数账。
+- 改法：①出处一律经同一把 lookup() 回查同批来源索引（[S#]/[L#] 锚 → 列内值本身是索引 id → 列内值等于某条索引的 ref），三条都不中就跳过并计入自报的「回查不到」；落进 facts 的 source 只取索引里的 ref，不取上游行自带的那一串；②反方按上游侧机检的字面值判——tear-sheet 取页面契约里标题就是「风险」那一节（编号前缀之后逐字相等，不是含二字），structured-note 取上游附注风险六项清单的科目字面值，risk-fact-table 取上游 IMPACTS 枚举：「重大／关注」落反方、「背景」是中性档落第三节，档位不在枚举内的行跳过并自报枚数；节名一律不作依据；③次序改为先判形状（bullet→数字→锚）再判缺数：三项齐的先落成事实，句里的风险词与「未取到」引述不再吞它；表格整行占位（科目之外全是 [待人工]）另立一条进缺数账并写明它是「没值」，散文里的口径说明句不进账。
+- 射程（现数，不按记忆）：判定改动只落在 scripts/upstream_intake.py 一枚件（含件首那三条硬规矩的同步改写——文档串也是 needle）；版本位所在文件 1 枚（口径＝按「盘上含旧号的非 CHANGELOG 件」以字面串现扫，落笔后残留 0；先前用未转义的点号扫会把别串读成版本命中，那一支已改成字面匹配）；scripts/build_memo.py 与 scripts/check_memo.py 一字未动；三枚上游夹具与其配套件按「与上游同 sha」的约束保持原字节，未为凑绿改过任何夹具。
+- 现测：三链不退步——scripts/fixtures/run_upstream_chains.sh rc=0、末行「链数=3（由上面逐链现报）｜合期望=3｜不合=0｜不可判=0」（tear-sheet 与 structured-note 两链 intake／build／check 全 0，risk-fact-table 链仍停在既有那条 E-COVERAGE 已知红、逐字同形）；逐链条数与改前同值（20／10／1 条 facts，反方 2／2／1）；出处审计尺 rc=0、末行「靶=3 枚｜不变量=3 条（逐枚现算）｜不合=0｜两头值：两把都跑」，三枚靶在改动前的快照上逐枚发红、在现件上逐枚合（两头值都在其自报里）；本包入口自测 rc=0、末行 ALL GREEN（含一档b 同源链 通）；lint --strict rc=0、末行「summary: 19 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 184，ERROR 0，WARN 233」；面尺 rc=0、末行「面数=23 不合=0」；首屏探针 rc=0；边探针 rc=0、末行「上游名册=3 不合=0」。
+- 未动：scripts/build_memo.py／scripts/check_memo.py 的判定语义与参数、inputs／produces／consumes 声明键、slug、两面 README、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.3.0 → 0.3.1（入口判定纠偏＝patch；未新增能认的工件形，故不走 minor）。
+
 ### 0.3.0 — 2026-10-22（入口接上三枚上游工件：保形映射件＋三链真跑样例）
 - 改因：本件的入参三件（facts／gaps／materials）此前只由人工转写喂，包内没有任何一条跑得通的路径把姊妹件的产出直接接进来；场景图上本件是孤点——上游三枚各自 produces 的工件类型名在词表里早已定名，下游无人 consumes。
 - 改法：①frontmatter 补 consumes 三条（tear-sheet-page／structured-note／risk-fact-table，三名取 scripts/artifact-types.yaml 的 canonical 现值）；②新增 scripts/upstream_intake.py：只读上游工件，按「一节喂一节」保形落成上面那三件入参——上游自己标「风险」的那节才落 side=bear，标「待人工／未检索到／未取到」的才落缺数账，锚在其来源索引里对不上的行跳过并自报枚数，不改写、不补全、不借别节顶替；看多一侧不由上游产，走 --manual-bull；③scripts/fixtures/upstream/ 放三枚上游工件与其配套件共 8 枚，逐枚由上游包内自己的夹具复制并按 sha256 对拍同值；④scripts/fixtures/run_upstream_chains.sh 把三条链各跑一遍（intake → build_memo → check_memo），逐链自报三段真实退码与出稿文件名，临时目录跑完即删；⑤SKILL.md §2.9 与两面 README 各补一段接口句（写怎么接、接不上怎么自报，不是推荐语）。

@@ -1,4 +1,12 @@
 
+### 0.4.31 — 2026-10-22（英文面的运行前置声明归位到 openclaw 层，版本锁与面件成对退休）
+- 改因：全仓只有本包这一枚 `SKILL.en.md` 还写着裸的 `metadata.requires`，而抽取器认的层是 `metadata.openclaw`——少一层，那份声明在任何工具里都读不到，后来人按它排查会白跑一趟。中文主面早已归位，英文面是当时漏下的那一枚。
+- 改法：把 `requires` 整枝挂到 `openclaw` 下——`bins` 与 `recommendedSkills` 两枚键名、值与顺序照原样搬，一字未动；本面不新增 `envVars`（声明层只读 `SKILL.md`，英文面重复一份就会变成第二个真值源）。同批把随版本走的三处锁一起对齐：`SKILL.md`／`SKILL.en.md` 的 version、`scripts/cue.py` 的 `__version__`、`scripts/test_skill_regression.py` 里那两枚断言字面，四处同号（旧写法只改面不改锁，就会自报与门对不上）。
+- 射程（现数，不按记忆）：声明层改动＝SKILL.en.md 一枚；版本位所在文件 4 枚（口径＝按「盘上含旧号的非 CHANGELOG 件」以字面串现扫得出：SKILL.md／SKILL.en.md／scripts/cue.py／scripts/test_skill_regression.py，落笔后残留 0）；本包其余面文与脚本逻辑一字未动。同批还有一处不在本包内：仓根 README 两条安装路之外新加的第四条路，见仓根面自述，不占本包版本位。
+- 现测：`python3 -B -m unittest discover -s scripts -p "test_*.py"` rc=0／OK（那支回归件同时校 `__version__` 与面内 version 同值，锁没对齐它当场会红）；`python3 -B scripts/cue.py --version` 现读 0.4.31；lint --strict rc=0、末行「summary: 19 skill(s), 0 error(s), 0 warning(s)」；卫生闸 rc=0、末行「summary: 面 184，ERROR 0，WARN 233」；面尺 rc=0、末行「面数=23 不合=0」；场景图 rc=0、末行「全包=19 枚…非孤点=10 枚」。
+- 未动：判定与契约段、inputs／produces 声明键、slug、闸与夹具、CHANGELOG 历史条目（不回改）。
+- 号序：0.4.30 → 0.4.31（英文面声明归位与版本锁对齐＝patch）。
+
 ### 0.4.30 — 2026-10-21（可选凭据从硬前置改成 envVars 的可选声明）
 - 改因：上一版把这枚渠道变量写进了 requires.env，而那一层的语义是「没有它就不能开工」。本包面文另有 3 行写明不装也能跑（用户直供与降级路径），而包内代码级引用这枚变量共 4 次——所以它是「装了才有渠道数据腿」的可选通道钥匙，不是「没它就不能开工」的前置。这一处属对外把前置说重了（宣告比覆盖面大），不是排版。
 - 改法：requires.env 里那枚串摘掉，改挂 openclaw 层的 envVars 一项——name、required: false、另带一句只述边界的 description（不承诺效果、不带价格）；requires.bins 照原值不动。同批把 primaryEnv 一并摘掉：它的语义是「本件主凭据」，对一把可选的通道钥匙同样说重了。

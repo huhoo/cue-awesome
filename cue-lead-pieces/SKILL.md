@@ -9,7 +9,7 @@ produces:
   - credit-signal-pack
   - material-catalog
   - parsed-doc
-version: "0.4.30"
+version: "0.4.31"
 slug: cue-lead-pieces
 displayName: 财报引文逐字核对
 summary: "用 Cue Omni Reader 解析公司披露，建带页码的信用线索件，逐句核对引文是否逐字出自所注页±1，对不上的标出或改回。"

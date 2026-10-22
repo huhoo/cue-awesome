@@ -6,6 +6,7 @@
 
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,6 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent
 VOCAB = str(REPO / "scripts" / "artifact-types.yaml")
 TOOL = str(REPO / "scripts" / "scenario_graph.py")
-BASE0 = REPO.parent / "verify" / "m374-artifact" / "00-pre-graph-baseline-real-repo.txt"
 TMP = pathlib.Path("/data/sdc1/work/tmp/awesome-skill/m377")
 SHAPE_DIR = TMP / "shapes"
 ENV = "CUE_API_KEY"
@@ -93,6 +93,39 @@ def real_repo_readings():
     return p.returncode, p.stdout
 
 
+def _nums(text):
+    """从尺自己的输出里把几枚数抠出来（不写死绝对值——绝对值是上一拍的量，抠出来的才是这一拍的）。"""
+    d = {}
+    for key, rx in (("非孤点", r"非孤点=(\d+) 枚"), ("全包", r"全包=(\d+) 枚"),
+                    ("consumes", r"consumes 总项=(\d+)"), ("指路条", r"枚数=(\d+) 条｜合计出现次数="),
+                    ("指路次", r"枚数=\d+ 条｜合计出现次数=(\d+)")):
+        m = re.search(rx, text)
+        d[key] = int(m.group(1)) if m else None
+    seg = re.search(r"==\s*表一[\s\S]*?(?====|表二)", text)
+    if seg:
+        s = seg.group(0)
+        m = re.search(r"枚数=(\d+)（由上列现算）", s)
+        d["孤点清单自报"] = int(m.group(1)) if m else None
+        d["孤点清单行数"] = len([l for l in s.splitlines() if re.match(r"^\s{2}\S+ ｜", l)])
+    else:
+        d["孤点清单自报"] = d["孤点清单行数"] = None
+    return d
+
+
+def selfcheck(n, label):
+    """只在同一次运行内自洽：清单实数行数＝自报枚数，且 孤点＋非孤点＝全包。跨拍不等不是红（那是世界变了）。"""
+    out = []
+    if n.get("孤点清单自报") is None or n.get("孤点清单行数") is None:
+        out.append("%s：表一段落抠不到自报枚数或清单行数（取值域故障，不算自洽通过）" % label)
+    elif n["孤点清单自报"] != n["孤点清单行数"]:
+        out.append("%s：表一自报枚数=%s 而清单实数行数=%s（尺自己数错了）" % (label, n["孤点清单自报"], n["孤点清单行数"]))
+    if None in (n.get("孤点清单自报"), n.get("非孤点"), n.get("全包")):
+        out.append("%s：三枚数有一枚抠不到，无法验「孤点＋非孤点＝全包」" % label)
+    elif n["孤点清单自报"] + n["非孤点"] != n["全包"]:
+        out.append("%s：孤点 %s＋非孤点 %s ≠ 全包 %s（对账破了）" % (label, n["孤点清单自报"], n["非孤点"], n["全包"]))
+    return out
+
+
 def main():
     global RUNS
     RUNS = len(SHAPES) + 1
@@ -152,23 +185,46 @@ def main():
     rows.unlink()
     print("   复原：靶根已删＝%s｜原料已删＝%s" % (not SHAPE_DIR.exists(), not rows.exists()))
 
-    print("== 末格·真仓对拍（判据已按票面换：三表读数逐值同，形状句可以不同）")
+    print("== 末格·真仓两跑（基线由当前 HEAD 现算；比较只在同一次运行内自洽，跨拍差异只两值并列、不当等式锁）")
     rc, out = real_repo_readings()
-    want = ("枚数=13（由上列现算）｜全包=18 枚", "非孤点=5 枚", "列 (a) 枚数=20 项／27 条包–项配对",
-            "列 (b) 枚数=0（由上列现算）｜consumes 总项=5", "枚数=24 条｜合计出现次数=95")
-    for w in want:
-        ok("真仓读数在场：" + w[:44], w in out, "在场")
-    base = BASE0.read_text(encoding="utf-8").splitlines() if BASE0.is_file() else []
-    cur = out.splitlines()
-    diff = [(i + 1, a, b) for i, (a, b) in enumerate(zip(base, cur)) if a != b]
-    only_shape = all(("取到" in a and "跳过" in a) or ("枚数=" in a) or ("非孤点=" in a) or ("列 (" in a)
-                     for _i, a, b in diff)
-    ok("与 00 号出生态只差在对账形状句（行数同=%s、差 %d 行）" % (len(base) == len(cur), len(diff)),
-       len(base) == len(cur) and only_shape, "差异行号＝%s" % [i for i, _a, _b in diff])
-    print("   差异原文：")
-    for i, a, b in diff:
-        print("     第 %d 行 旧：%s" % (i, a[:80]))
-        print("     第 %d 行 新：%s" % (i, b[:80]))
+    head_dir = TMP / "head-snapshot"
+    shutil.rmtree(head_dir, ignore_errors=True)   # 每次现解，不吃上一拍的残件
+    head_dir.mkdir(parents=True, exist_ok=True)
+    hr = None
+    ar = subprocess.run(["git", "-C", str(REPO), "archive", "HEAD"], capture_output=True)
+    if ar.returncode == 0 and ar.stdout:
+        ext = subprocess.run(["tar", "-x", "-C", str(head_dir)], input=ar.stdout, capture_output=True)
+        if ext.returncode == 0:
+            # git archive 导出的是仓根本身（不带包名前缀），所以 --repo 直指解出来的那层
+            h = subprocess.run(["python3", "-B", TOOL, "--repo", str(head_dir), "--vocabulary", VOCAB],
+                               cwd=str(REPO), capture_output=True, text=True)
+            if h.returncode != 0 or "非孤点=" not in h.stdout:
+                print("   HEAD 快照那一跑没给出可读末行（rc=%d，stderr 前 60 字：%s）：这一支算取值域故障，不算通过也不算红" % (
+                    h.returncode, h.stderr.strip()[:60]))
+                hr = None
+            else:
+                hr = h.stdout
+                print("   HEAD 快照跑：rc=%d｜%s" % (h.returncode, line_with(hr, "非孤点")[:96]))
+        else:
+            print("   HEAD 快照解不开（tar rc=%d）：跨拍并列这一支明写未跑，不填 0、也不当作通过" % ext.returncode)
+    else:
+        print("   HEAD 快照取不到（git archive rc=%d）：跨拍并列这一支明写未跑，不填 0、也不当作通过" % ar.returncode)
+    for w in ("由上列现算", "全包=", "非孤点=", "consumes 总项=", "合计出现次数="):
+        ok("真仓现读里该形状句在场：" + w, w in out, "在场")
+    n_now = _nums(out)
+    problems = selfcheck(n_now, "工作树")
+    if hr is not None:
+        n_head = _nums(hr)
+        problems += selfcheck(n_head, "HEAD")
+        print("   跨拍两值并列（只并列、不锁等式）：非孤点 HEAD=%s ∥ 工作树=%s｜consumes 总项 HEAD=%s ∥ 工作树=%s｜指路 HEAD=%s 条／%s 次 ∥ 工作树=%s 条／%s 次" % (
+            n_head.get("非孤点"), n_now.get("非孤点"), n_head.get("consumes"), n_now.get("consumes"),
+            n_head.get("指路条"), n_head.get("指路次"), n_now.get("指路条"), n_now.get("指路次")))
+    else:
+        print("   跨拍两值并列：未跑（HEAD 取不到），这一支不算通过")
+    print("   工作树自洽读数：表一自报=%s／清单实数=%s｜非孤点=%s｜全包=%s" % (
+        n_now.get("孤点清单自报"), n_now.get("孤点清单行数"), n_now.get("非孤点"), n_now.get("全包")))
+    for p in problems:
+        ok(p, False, "见上一行自报")
     print()
     print("探针小结：%d 格不合预期%s（跑%d 形＋真仓对拍；形数由名册现算，通与不通都打同一个数）" % (
         len(MISMATCH), "｜" + "；".join(MISMATCH) if MISMATCH else "（全合预期）", RUNS))

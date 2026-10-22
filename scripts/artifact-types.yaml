@@ -79,6 +79,7 @@ inputs:                        # 这一族写进包面的 inputs: 键，不参�
   - user-material
 
 canonical:                     # 参与算边的工件名（规范名全集；alias 不在列）
+  - research-brief          # M382 落字补全（lead）：上一拍只写进 families、没进 canonical＝落了一半（4.1 用两头验出来的）
   - event-brief-card
   - appeal-brief
   - change-brief

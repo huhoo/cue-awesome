@@ -74,6 +74,7 @@ unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
 To choose from all current skills: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
 Third route, the skills CLI: `npx skills add huhoo/cue-awesome` (lists all) / `npx skills add huhoo/cue-awesome --skill journal-draft` (one).
+Fourth route, the ClawHub CLI (the store-side form, documented as `install @owner/slug`): `clawhub install @huhoo/cue-journal-draft`. The slug there is `cue-` plus the directory name, which is not the string the skills CLI takes - the two forms are not interchangeable in that argument slot.
 On Windows the destination is `C:\Users\<username>\.workbuddy\skills\` — same three steps, same file names.
 After installing, `cd` into the skill folder and run the self-check commands its own README prints; each skill ships them, this page deliberately does not copy them.
 

@@ -7,10 +7,15 @@
   OUT/materials.jsonl（path+title）——三件都是本件入口 --facts／--gaps／--materials 认的形状，不改 build_memo／check_memo 一字。
 
 三条硬规矩（写在这儿，防下一个手痒的人放宽）：
-  1) 只做**保形映射**：一节喂一节——上游自己标「风险」的那节才落到反方（side=bear），标「待人工／未检索到」的才落到缺数账；
+  1) 只做**保形映射**，且「上游自标」一律取可校验形状、不取节名里的字：
+     反方（side=bear）只有三种来路——tear-sheet 页面里标题就叫「风险」那一节的 bullet；structured-note 里科目命中
+     上游侧那六项附注风险清单字面值（cn-earnings-note SKILL.md §1）的行；risk-fact-table 里影响档位等于上游枚举的
+     「重大／关注」的行（「背景」是中性档，落第三节）。缺数账只收形状不全且原文自标「待人工／未检索到／未取到」的行。
      看多一侧本件不代上游产出（那是人的判断），需要时由 --manual-bull 并进来，并在自报行里数出来。
-  2) 锚取不到就不编：行内 [S#]/[L#] 若不在来源索引里，该行进「锚未命中」计数并跳过，不拿别的锚凑、不写「未标注」。
-  3) 自报行必须齐：读到多少行、产出多少条、跳过多少条（含原因分类），缺一类就是假绿。
+  2) 出处必须回查同批来源索引，且落下去的 source 只取索引里的 ref、不取上游行里自带的那一列：行内 [S#]/[L#] 对不上、
+     或来源列写着一个索引里查无此号的编号／URL，都进「锚未命中」计数并跳过（伪造出处就是这么被夹带的）。
+  3) 自报行必须齐：读到多少行、产出多少条、跳过多少条（含原因分类：锚未命中／行内无锚／非数字单元格／档位不在枚举），
+     缺一类就是假绿。
 退码：0 正常；1 上游一侧一条都没映射出来（空结果不静默；人工行不顶替，且不写三件）；
       2 用法错（kind 不在三枚之内，由 argparse 拒——现测 rc=2，别按 3 读）；
       3 取值域故障（件读不到／上游件无 H1 标题／来源索引为空且未给 --sources／人工件读不到或不是合法 JSON）。
@@ -115,6 +120,41 @@ def resolve(led, ids, skip):
     return None, None
 
 
+# 反方判定的可校验形状（三枚上游各自的机检字面值，不靠节名里有没有「风险」两个字）：
+#   structured-note＝cn-earnings-note SKILL.md §1（附注风险六项清单）的六个科目字面值；
+#   risk-fact-table＝dd-checklist/scripts/check_dd.py:39 的 IMPACTS=("重大","关注","背景")，其中「背景」是中性档、不落反方；
+#   tear-sheet-page＝tear-sheet 页面契约里那一节的标题就是「风险」两字（编号前缀之后逐字相等），不是含「风险」二字。
+RISK_ITEMS = ("关联方", "或有负债", "对外担保", "受限货币资金", "账龄", "合同负债", "商誉")
+DD_BEAR = ("重大", "关注")
+DD_NEUTRAL = ("背景",)
+RISK_TITLE = re.compile(r"^\s*\d*[.、]?\s*风险\s*$")
+
+
+def item_is_risk(text):
+    return any(k in text for k in RISK_ITEMS)
+
+
+def lookup(led, row_text, col_ref, skip):
+    """把一行里可能充当出处的一切写法都回查一遍同批来源索引：[S#]/[L#] 锚 → 列内编号本身是索引 id → 列内值等于某条索引的 ref。
+    三条都不中就计跳过并把这一行丢掉——上游列里夹带来历不明的 URL 走的就是这一道（此前只在来源列为空时才回查）。"""
+    ids = anchors_in(row_text)
+    for a in ids:
+        if a in led:
+            return a, led[a]
+    cr = (col_ref or "").strip()
+    if cr:
+        if cr in led:
+            return cr, led[cr]
+        for sid, meta in led.items():
+            if (meta.get("ref") or "").strip() == cr:
+                return sid, meta
+    if ids or cr:
+        skip["anchor"] += 1
+    else:
+        skip["noanchor"] += 1
+    return None, None
+
+
 # 本件下游的门认「官方链接或公告／问询编号」这一形；上游 ledger 的 ref 常是裸索引号（AN…）或案号，
 # 原样搬下去会被判「缺合规出处锚」。这里只做**加前缀的换形**，不改指称对象：原值完整地留在括号里，可逐字回查。
 GATE_ANCHOR = re.compile(r"https?://|www\.|\.cn|\.com|\.gov|cninfo|巨潮|交易所|证监会|问询|函|公告|编号|document_number")
@@ -180,7 +220,7 @@ def map_tear_sheet(text, led, skip):
                 facts.append({"section": "3", "item": "%s %s（%s）" % (r[0].strip(), r[1].strip(), r[2].strip() if len(r) > 2 else ""),
                               "source": anchor_form(meta["ref"], meta.get("kind", "")), "locator": "§3 在场事件 %s 行" % r[0].strip()})
     for head, lines in sections_of(text):
-        if "风险" not in head:
+        if not RISK_TITLE.match(head.strip()):   # 页面契约里那一节就叫「风险」；含「风险」二字的别的节名（如附注风险扫描）不作依据
             continue
         n = 0
         for ln in lines:
@@ -206,48 +246,63 @@ def map_tear_sheet(text, led, skip):
 def map_note(text, led, skip):
     facts, gaps = [], []
     for head, lines in sections_of(text):
-        risk = ("风险" in head) or ("附注" in head and "风险" in head)
         for ln in lines:
             s = ln.strip()
-            if "[待人工]" in s or "未检索到" in s or "未取到" in s:
-                gaps.append({"item": re.sub(r"\s*\[[SL]\d+\]", "", s[2:] if s.startswith("- ") else s).strip()[:60],
+            if not s.startswith("- "):
+                continue                      # 形状一：非 bullet 行不进任何账（节名里有没有「风险」与本判定无关）
+            body = s[2:].strip()
+            m = NUM.search(s)
+            aid, meta = resolve(led, anchors_in(s), skip) if anchors_in(s) else (None, None)
+            if m and aid:                      # 形状二＋三齐＝有效事实：先落成文，句里带未取到或风险词都不许把它吞掉
+                row = {"item": re.sub(r"\s*\[[SL]\d+\]", "", body).strip(),
+                       "value": m.group(1).strip(), "basis": "上游 §%s 原文口径" % head[:2],
+                       "date": meta.get("date"), "source": anchor_form(meta["ref"], meta.get("kind", "")),
+                       "locator": "§%s「%s」条目" % (head[:2], head[3:6] or head)}
+                if item_is_risk(body):         # 反方只认上游侧那六个科目字面值（cn-earnings-note SKILL.md §1 附注风险六项清单）
+                    row.update({"section": "4", "side": "bear",
+                                "basis": "上游 §%s 原文口径；科目命中附注风险六项之一" % head[:2]})
+                else:
+                    row["section"] = "2"
+                facts.append(row)
+                continue
+            if any(k in s for k in ("[待人工]", "未检索到", "未取到")):   # 形状不全且自标缺位 → 缺数账
+                gaps.append({"item": re.sub(r"\s*\[[SL]\d+\]", "", body).strip()[:60],
                              "why": "上游原文即标注待人工／未取到"})
                 continue
-            if not s.startswith("- "):
-                continue
-            m = NUM.search(s)
             if not m:
                 skip["nonnum"] += 1
+    # 表格行里的整行占位也是缺数（科目之外全是 [待人工]／破折号）——那是「没值」，不是散文里的口径说明句；每份文档只扫一遍
+    for _h, rows2 in tables(text):
+        for r in rows2:
+            if len(r) < 2 or not r[0].strip():
                 continue
-            ids = anchors_in(s)
-            aid, meta = resolve(led, ids, skip)
-            if not aid:
-                continue
-            row = {"item": re.sub(r"\s*\[[SL]\d+\]", "", s[2:]).strip(),
-                   "value": m.group(1).strip(), "basis": "上游 §%s 原文口径" % head[:2],
-                   "date": meta.get("date"), "source": anchor_form(meta["ref"], meta.get("kind", "")), "locator": "§%s「%s」条目" % (head[:2], head[3:6] or head)}
-            if risk:
-                row.update({"section": "4", "side": "bear", "value": "（定性）",
-                            "basis": "上游 §%s 风险条目（原文带数：%s）" % (head[:2], m.group(1).strip())})
-            else:
-                row["section"] = "2"
-            facts.append(row)
+            if all(c.strip() in ("[待人工]", "—", "-", "") for c in r[1:]):
+                gaps.append({"item": ("表内「%s」各栏均为 [待人工]" % r[0].strip())[:60],
+                             "why": "上游表格该行除科目外全是占位（上游按设计不产前瞻值），本件不代填"})
+        # 表格分支：同样按科目判反方，不按节名判
     for head, rows in tables(text):
         if not any("科目" in c for c in head):
             continue
         for r in rows:
+            item = r[0].strip()
             for i in range(1, len(r)):
                 cell = re.sub(r"\s*\[[SL]\d+\]", "", r[i]).strip()
                 if not re.fullmatch(r"[\d,\.]+", cell):
                     skip["nonnum"] += 1
                     continue
-                ids = anchors_in(r[i])
-                aid, meta = resolve(led, ids, skip)
+                aid, meta = resolve(led, anchors_in("|".join(r)), skip)
                 if not aid:
                     continue
-                facts.append({"section": "2", "item": "%s %s" % (r[0].strip(), head[i].strip()), "value": cell,
-                              "basis": "上游 §2 四期差异表（口径见列名）", "date": meta.get("date"),
-                              "source": anchor_form(meta["ref"], meta.get("kind", "")), "locator": "§2 表格 %s 行·%s 列" % (r[0].strip(), head[i].strip())})
+                row = {"item": "%s %s" % (item, head[i].strip()), "value": cell,
+                       "basis": "上游 §2 四期差异表（口径见列名）", "date": meta.get("date"),
+                       "source": anchor_form(meta["ref"], meta.get("kind", "")),
+                       "locator": "§2 表格 %s 行·%s 列" % (r[0].strip(), head[i].strip())}
+                if item_is_risk(item):         # 科目命中六项清单＝反方，哪怕它排在四期差异表里；节名一律不作依据
+                    row.update({"section": "4", "side": "bear",
+                                "basis": "上游 §2 四期差异表；科目命中附注风险六项之一"})
+                else:
+                    row["section"] = "2"
+                facts.append(row)
     return facts, gaps
 
 
@@ -268,19 +323,29 @@ def map_risk_table(text, led, skip):
             if col_fact is None or col_fact >= len(r):
                 continue
             n += 1
-            ref = r[col_anchor].strip() if col_anchor is not None and col_anchor < len(r) else ""
-            if not ref or ref in ("—", "-"):
-                ids = anchors_in("|".join(r))
-                aid, meta = resolve(led, ids, skip)
-                if not aid:
-                    continue
-                ref = meta["ref"]
-            facts.append({"section": "4", "side": "bear", "item": r[col_fact].strip(),
-                          "value": (r[col_grade].strip() if col_grade is not None and col_grade < len(r) else "（定性）"),
-                          "basis": "%s｜%s" % (r[col_cat].strip() if col_cat is not None else "类目未标",
-                                               r[col_state].strip() if col_state is not None else "状态未标"),
-                          "date": (r[col_date].strip() if col_date is not None and col_date < len(r) else ""),
-                          "source": anchor_form(ref, "risk"), "locator": "风险事实表 第 %d 行·%s" % (n, r[col_cat].strip() if col_cat is not None else "")})
+            row_text = "|".join(r)
+            col_ref = r[col_anchor].strip() if col_anchor is not None and col_anchor < len(r) else ""
+            aid, meta = lookup(led, row_text, col_ref, skip)
+            if not aid:
+                continue
+            grade = (r[col_grade].strip() if col_grade is not None and col_grade < len(r) else "")
+            if grade in DD_BEAR:
+                row = {"section": "4", "side": "bear"}
+            elif grade in DD_NEUTRAL:
+                row = {"section": "3"}
+            else:
+                skip["grade"] += 1
+                continue
+            row.update({
+                "item": r[col_fact].strip(),
+                "value": grade or "（未标档）",
+                "basis": "%s｜%s" % (r[col_cat].strip() if col_cat is not None else "类目未标",
+                                     r[col_state].strip() if col_state is not None else "状态未标"),
+                "date": (r[col_date].strip() if col_date is not None and col_date < len(r) else ""),
+                "source": anchor_form(meta["ref"], "risk"),
+                "locator": "风险事实表 第 %d 行·%s（档位＝上游原值「%s」）" % (
+                    n, r[col_cat].strip() if col_cat is not None else "", grade)})
+            facts.append(row)
     for m in re.finditer(r"^\s*[-*]?\s*(无工具项[:：]\s*\d+|本节检索域[:：].*|降级[:：].*|窗外余档[:：].*)$", text, re.M):
         gaps.append({"item": m.group(1).strip()[:60], "why": "上游覆盖率账里自报的缺位项（原文）"})
     for ln in text.split("\n"):
@@ -312,7 +377,7 @@ def main():
     if not led:
         return die("来源索引为空：上游件既无「来源索引」节也未给 --sources（锚无从落实，不编）", 3)
 
-    skip = {"anchor": 0, "noanchor": 0, "nonnum": 0}
+    skip = {"anchor": 0, "noanchor": 0, "nonnum": 0, "grade": 0}
     facts, gaps = MAPS[a.kind](text, led, skip)
     manual = []
     if a.manual_bull:
@@ -339,8 +404,8 @@ def main():
     print("upstream_intake｜kind=%s｜件=%s｜主体=%s" % (a.kind, a.artifact, subject_of(text) or "(件内未标 6 位代码)"))
     print("  来源索引枚数=%d｜上游映射 facts=%d 条（其中反方 %d 条）｜人工并来 side 行=%d 条｜gaps=%d 条｜materials=1 条" % (
         len(led), len(facts), len([x for x in facts if x.get("side") == "bear"]), len(manual), len(gaps)))
-    print("  跳过：锚对不上来源索引 %d 处｜行内无锚 %d 处｜非数字单元格 %d 处（都不凑、不编）" % (
-        skip["anchor"], skip["noanchor"], skip["nonnum"]))
+    print("  跳过：锚或来源列回查不到索引 %d 处｜行内无锚 %d 处｜非数字单元格 %d 处｜档位不在上游枚举内 %d 处（都不凑、不编）" % (
+        skip["anchor"], skip["noanchor"], skip["nonnum"], skip["grade"]))
     return 0
 
 
