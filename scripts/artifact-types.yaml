@@ -42,6 +42,7 @@ families:
     - tear-sheet-page
     - sector-report
     - decision-brief
+    - research-brief        # M382 落字（lead）：cn-research-brief 的成品对象——多源研究速览本体
     - appeal-brief
     - review-report
     - change-brief
