@@ -63,10 +63,10 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 All eleven skills, `cue-omni-ontology` and `cue-lead-pieces` included, ship as one ZIP asset each on the release page below — install any of them with the same three steps; copying a skill's directory out of this repository is the other way in.
 
-The current release is <https://github.com/huhoo/cue-awesome/releases/tag/v2026.10.08>. Later repository changes are not in it until the next release; check the release and the installed skill's frontmatter.
+The release list is <https://github.com/huhoo/cue-awesome/releases>; this sentence deliberately pins no version number, because a number written here goes stale the moment the next release is cut. Check the release page and the installed skill's frontmatter.
 
 ```bash
-curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/latest/download/tear-sheet.zip
+curl -L -o tear-sheet.zip https://github.com/huhoo/cue-awesome/releases/download/v2026.10.23/tear-sheet.zip
 mkdir -p ~/.workbuddy/skills/tear-sheet
 unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
