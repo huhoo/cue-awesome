@@ -3,7 +3,7 @@
 **[English](README.md) · [中文](README.zh-CN.md)**
 
 A personal collection of self-built agent skills for WorkBuddy / Cue. Each subdirectory is a standalone skill — copy the one you need and use it on its own.
-The data legs are served through the Cue channel: configure one API key and they are ready to use - no data source to supply here and no data layer to build here. Domains that are not open are not included; the domain list and the tool surface follow the live catalog (`GET https://cuecue.cn/api/mcp-catalog`).
+The data legs are served through the Cue channel: configure one API key and the open domains in the live catalog are ready to use - no data source to supply here and no data layer to build here. Domains that are not open are not included; the domain list and the tool surface follow the live catalog (`GET https://cuecue.cn/api/mcp-catalog`).
 
 ## Try a public-document knowledge workflow
 
