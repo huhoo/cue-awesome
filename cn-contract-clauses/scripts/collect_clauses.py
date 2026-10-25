@@ -61,7 +61,7 @@ def main():
         return 1
     if a.asof:
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', a.asof):
-            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（清单的时效凭这一天）' % a.asof)
+            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（来源行的解析日用它）' % a.asof)
             return 3
         try:
             dt.date.fromisoformat(a.asof)

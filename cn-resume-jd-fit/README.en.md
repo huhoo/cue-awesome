@@ -62,7 +62,7 @@ The collector is read-only and never matches on your behalf: it moves the requir
 | 2 anchors | `E-ANCHOR` | Each row carries **two** anchors (requirement + evidence) that both exist in section four; source rows need `file:line` or URL **and** parse date |
 | 3 verbatim | `E-QUOTE` | The requirement quote must be verbatim in the JD and the evidence quote verbatim in the resume; with only one side supplied the other lane prints not-verifiable and **is never folded into a pass** |
 | 4 gaps | `E-COVERAGE` | Both gap columns present; any requirement judged unevidenced must be named there; an empty source section fails |
-| 5 verdict words | `E-RANK` | Zero hits for recommend-hire / shortlist / eliminate / rank / sort / score unless the same line carries `[待人工]` |
+| 5 verdict words | `E-RANK` | Zero hits for recommend-hire / shortlist / eliminate / rank / sort / score, and a reworded ranking fires too - a superlative or comparative form (最适合／更匹配／优于) in the same authorial sentence as a conclusion-facing object (本岗位／候选人／申请者／录用) is a ranking even with a verbatim `[S#]` anchor; the line must carry `[待人工]` to pass. Quotes are stripped before judging: the candidate's own words inside 「」 are evidence, not this report's conclusion |
 
 ```bash
 python3 -B scripts/check_fit.py --help                                                        # lane descriptions, no network

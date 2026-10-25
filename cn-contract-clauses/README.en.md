@@ -52,17 +52,17 @@ The collector is read-only and never judges for you: it moves clause rows (recog
 - The parse helper `cue-omni-reader` is optional: **not installing it raises no error, and the cost is that the sheet answers only for the one copy on your disk** - scans and the remote version cannot be read in, so the signed-version layer stays absent. Ask before installing or using it either way; spend only after you agree to it.
 - A connected channel is not a retrieved document: missing scanned pages, summary-only replies, attachments never uploaded - all of them go into section three by name, never patched with common sense or a template.
 - Data boundary: the sheet carries contract text (usually trade secrets and personal data). Storage, forwarding and who sees it are yours to own, **and the counterparty should be told first**; this skill uploads nothing, writes nothing outside its package, and touches no signing system.
-- Locators expire with the file: page and line numbers hold only as of the parse date; if the other side swaps the contract, the sheet has to be redone.
+- Locators expire with the file: page and line numbers hold only as of the parse date; if the other side swaps the contract, the sheet has to be redone. Be exact about what the checker covers here: it verifies that the date sits under the 解析日 label and that the day exists on the calendar - **it cannot verify that this day is when the text was actually retrieved**. If the source file changed and your sheet never quotes the changed lines, no machine can see that; the retrieval moment is yours to log and to keep honest.
 
 ## 5. The five checker lanes and its self-tests
 
 | Lane | Code | What it blocks |
 |---|---|---|
 | 1 format | `E-FORMAT` | Four self-labels verbatim in the head; four sections ordered; the overview is exactly one line and ≤80 characters naming subject / term / price (writing 未见 for what the text lacks); clause rows inside 4-20 |
-| 2 anchors | `E-ANCHOR` | Each point row ends with one `[S#]` and carries a locator; every anchor has a matching row in section four; source rows need **both** a locator and a parse date (well-formed *and* a day that exists - 2026-13-99 is not a date) |
+| 2 anchors | `E-ANCHOR` | Each point row ends with one `[S#]` and carries a locator; every anchor has a matching row in section four; source rows need **both** a locator and a parse date - the date must sit under the 解析日 label and name a day that exists (swapping the label to 合同签署日 fails, and so does 2026-13-99) |
 | 3 verbatim | `E-QUOTE` | The quoted sentence must be verbatim in the source; when a line gives both page and line number **each is checked separately**; without `--source` the lane prints not-verifiable and **is never folded into a pass** |
 | 4 naming | `E-COVERAGE` | All seven categories present (unilateral change / auto-renewal / exclusivity / liquidated damages / dispute venue / data and confidentiality / liability cap), each with a locator or an explicit 未见到; a 待核 slot is not a naming; an unread part mentioned elsewhere but unnamed here fails; an empty source section fails |
-| 5 verdict words | `E-LAW` | Zero hits for lawful / unlawful / void / voidable / amounts to breach / binding / the court will support / delete this clause / risk grade / rating or ranking, unless the same line carries `[待人工]`; quoted contract text is not the author's opinion, quotes are stripped before judging |
+| 5 verdict words | `E-LAW` | Zero hits for lawful / unlawful / void / voidable / amounts to breach / binding / the court will support / delete this clause / risk grade / rating or ranking, unless the same line carries `[待人工]`; **predictions** also fire - a modality word (大概率／预计／应该会／未必) co-occurring with an outcome word (不被支持／被认定／败诉／免责) in the same authorial sentence; quoted contract text is not the author's opinion, quotes are stripped before judging |
 
 ```bash
 python3 -B scripts/check_clauses.py --help                                                        # lane descriptions, no network
