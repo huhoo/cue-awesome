@@ -21,23 +21,35 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 | 目录 | Name | 版本 | 用途 |
 |---|---|---|---|
-| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 公开资料知识与变化简报：无需 Key 的演示、原文证据、区分口径的回答，以及保留历史和冲突的持续更新。提供财报、供应商和产品场景指引。公开试验版，已验范围见包内验证记录。 |
-| [`cue-lead-pieces/`](cue-lead-pieces/) | cue-lead-pieces | [frontmatter](cue-lead-pieces/SKILL.md) | 财报引文逐字核对：从公司自己的公开披露生成线索件（对象 · 为何现在 · 建议动作 · 带来源和页码的原文证据），并把答案里的每句引文对回所注页核对；`verify --fix` 改正注错的页码、把改过字的引文换回原句、删掉原文没有的。A 股（巨潮资讯）披露以 Cue Omni Reader 为主读取通道：grounded 解析把每页文字对到原 PDF 页码；Omni 解析消耗 Cue 积分，花之前先问。美股（SEC EDGAR）披露暂用本地解析；不开通 Cue 也能全程用本地解析跑。文件清单来自免费公开索引。公开试验版：引文核对比例是用本地解析、一个宿主、一个模型在 24 家公司上测的；Omni 页码对齐只在 2 份 A 股文件上实测，数字与局限见包内[验证记录](cue-lead-pieces/references/verification.md)。它只核对引文是否出自原文，不判断信号对错。 |
-| [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | 企业期刊 / 内刊 / 客户通讯 / ESG 报告 / 年鉴特刊的「底稿生成器」：把版式体例从 PDF 里量化成可校验参数（版面网格、版心、字号序列、行距、色板、栏目模板），再按这套参数生产新一期内容。含法规动态栏目规范、CTA 溯源机制。 |
-| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | 长篇外文（德 / 英 / 法 / 日等）学术专著、古籍、档案、译著的全文高质量中译流水线：解析 → 清洗切片 → 建体例与术语表 → 并行分批翻译 → 多维质检 → 合并交付带目录的阅读版。 |
-| [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | 竞品简报生成器：把散落在网页 / PDF / 录音 / 视频里的竞品素材，变成可溯源、可对比、可更新的决策简报。六阶段管线：素材摄入（omni-reader）→ 需求对齐 → 对比框架 → 取证（cue-research）→ 三件套出稿 → 门禁校订。 |
-| [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | [frontmatter](cn-earnings-note/SKILL.md) | A股 / 港股财报深度点评生成器：输入「主体 + 报告期」，产出 8–12 页、**研报结构级（八节骨架）**的 AI 初稿（四期披露差异、分部量价、盈利质量与现金流含金量、附注风险扫描、指引与催化剂、同业对照），逐数可回查，评级与目标价一律标注 `[待人工]`。取证走 Cue 三层通道——结构化披露（Cue 数据 MCP 域）+ 原文解析（omni-reader）+ 横向深研（cue-research）。**P1 端到端实测已完成**（跑次、标的与仍未验证面以本包 README 状态段为准）；港股主体与多主体批量仍按「未验证」对待。基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
-| [`catalyst-calendar/`](catalyst-calendar/) | catalyst-calendar | [frontmatter](catalyst-calendar/SKILL.md) | 持仓催化剂日历：输入「主体集(≤10)+前瞻窗口（默认 90 天）」，产出日期正排、**逐事件带披露锚**的日历（回购节点/激励归属/解禁减持披露/监管回复期限/分红除权/定期报告法定期限推导）。只陈述事件——未披露不入表、利好利空褒贬全禁、无锚即删条。机检四道专拦日期幻觉。**对抗审已通过（2026-09-21）；实跑已在账——计数与仍未验证面以本包 README 状态段为准。** 基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
-| [`tear-sheet/`](tear-sheet/) | tear-sheet | [frontmatter](tear-sheet/SKILL.md) | 公司一页纸（回客件）：主体≤5+用途语境 → 五段固定形制、每行带披露锚、页眉含 asof 与通道用量；默认零深研，观点区永远 `[待人工]`。**对抗审已通过（2026-09-21）；实跑已在账——计数与仍未验证面以本包 README 状态段为准。** |
-| [`sector-overview/`](sector-overview/) | sector-overview | [frontmatter](sector-overview/SKILL.md) | 行业景气全景（六节）：判断词必须与可比序列锚同行，无锚走逐字「不做景气判定」句；政策时间线 statute 三件齐锚。**对抗审已通过（2026-09-21）；实跑已在账——计数与仍未验证面以本包 README 状态段为准。** |
-| [`dd-checklist/`](dd-checklist/) | dd-checklist | [frontmatter](dd-checklist/SKILL.md) | 公开信息预尽调清单-cn：唯一主体 + 回溯窗口 → 九类风险逐条带锚摊开，缺什么/查不到什么同表记账；不出投资判断、不出法律意见。**真实主体端到端已在账；复审已闭——已验范围与仍未验证面以本包 README 状态段为准。** 基座出处见 [NOTICE.md](NOTICE.md) §金融套件。 |
-| [`civil-appeal-turnaround/`](civil-appeal-turnaround/) | civil-appeal-turnaround | [frontmatter](civil-appeal-turnaround/SKILL.md) | 民事一审败诉后的二审翻案工程：把判决书逆向拆成法官的推理链，定位争点被框错在哪一层；逐字比对原始材料，找出被截断 / 被省略 / 被割裂的内容；再把论证铺成阶梯，硬判据是前两层不依赖任何新证据。产出主控清单、复核报告、带总述的上诉状、同日递交的配套文书包（继续保全 / 调证 / 传唤当事人到庭）、四张表。交付的是工作稿与结构，不是法律意见——法条条号刻意留给使用人递交前核对。 |
+| [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。 |
+| [`cue-lead-pieces/`](cue-lead-pieces/) | cue-lead-pieces | [frontmatter](cue-lead-pieces/SKILL.md) | 用 Cue Omni Reader 解析公司披露，建带页码的信用线索件，逐句核对引文是否逐字出自所注页±1，对不上的标出或改回。 |
+| [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | 企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。 |
+| [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | 外文长篇（专著/古籍/档案/译著参考）全文中译流水线：主稿+阅读版+逐段备查+术语总表，拿不准的进存疑清单不硬翻。 |
+| [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | 竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。 |
+| [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | [frontmatter](cn-earnings-note/SKILL.md) | A股/港股财报深度点评初稿：四期差异、科目勾稽、预告对照；数字行按包内规则逐条要证据级标注，评级判断位 [待人工]。 |
+| [`catalyst-calendar/`](catalyst-calendar/) | catalyst-calendar | [frontmatter](catalyst-calendar/SKILL.md) | 未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。 |
+| [`tear-sheet/`](tear-sheet/) | tear-sheet | [frontmatter](tear-sheet/SKILL.md) | 公司一页纸：五段形制机检钉死顺序——近四期双口径、事件≤4、风险1-3 只写直查命中，观点区三行 [待人工] 留白。 |
+| [`sector-overview/`](sector-overview/) | sector-overview | [frontmatter](sector-overview/SKILL.md) | 行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。 |
+| [`dd-checklist/`](dd-checklist/) | dd-checklist | [frontmatter](dd-checklist/SKILL.md) | 给一家 A 股公司拉一份公开信息风险清单：查得到的逐条带披露锚，查不到的逐类写明原因；不给投资结论，不出法律意见。 |
+| [`civil-appeal-turnaround/`](civil-appeal-turnaround/) | civil-appeal-turnaround | [frontmatter](civil-appeal-turnaround/SKILL.md) | 一审败诉后建二审作战体系：判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见，条号递交前核对。 |
+| [`cn-contract-clauses/`](cn-contract-clauses/) | cn-contract-clauses | [frontmatter](cn-contract-clauses/SKILL.md) | 一份合同拆成逐条要点与需盯条款清单：每条挂 [S#] 与页码行号，七类逐类点名，不出法律意见、不判效力。 |
+| [`cn-link-to-note/`](cn-link-to-note/) | cn-link-to-note | [frontmatter](cn-link-to-note/SKILL.md) | 一条链接进来、一条带出处的笔记出去：要点逐条挂 [S#]，原话逐字比回那一页那一行，缺口点名，判断留人工。 |
+| [`cn-research-brief/`](cn-research-brief/) | cn-research-brief | [frontmatter](cn-research-brief/SKILL.md) | 把多份中文来源整理成一份逐条挂源的速览：每条发现带一条可回查来源与检索日，缺的点名，判断留人工。 |
+| [`cn-resume-jd-fit/`](cn-resume-jd-fit/) | cn-resume-jd-fit | [frontmatter](cn-resume-jd-fit/SKILL.md) | 一份简历对一枚 JD 的双向核对：要求逐条挂到简历原话，缺口分两栏点名，不排先后、不下录用结论。 |
+| [`event-brief-cn/`](event-brief-cn/) | event-brief-cn | [frontmatter](event-brief-cn/SKILL.md) | 把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。 |
+| [`event-risk-scan/`](event-risk-scan/) | event-risk-scan | [frontmatter](event-risk-scan/SKILL.md) | 对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。 |
+| [`ic-memo-cn/`](ic-memo-cn/) | ic-memo-cn | [frontmatter](ic-memo-cn/SKILL.md) | 给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。 |
+| [`meeting-minutes-cn/`](meeting-minutes-cn/) | meeting-minutes-cn | [frontmatter](meeting-minutes-cn/SKILL.md) | 把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。 |
+| [`omni2docx/`](omni2docx/) | omni2docx | [frontmatter](omni2docx/SKILL.md) | 把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。 |
+| [`paper-study-cn/`](paper-study-cn/) | paper-study-cn | [frontmatter](paper-study-cn/SKILL.md) | 把一篇论文变成可核对的研读卡：论点-方法-数据-结论逐句挂页锚，复现清单，引用网络，综述骨架与待核清单；不代写、不编引文。 |
+| [`skill-review-cn/`](skill-review-cn/) | skill-review-cn | [frontmatter](skill-review-cn/SKILL.md) | 装之前先给一枚 skill 体检：五面逐条挂原文与检索日，缺的点名，装不装留人工。 |
+| [`watchlist-digest-cn/`](watchlist-digest-cn/) | watchlist-digest-cn | [frontmatter](watchlist-digest-cn/SKILL.md) | 对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。 |
 
 ## 金融研究套件路线图
 
 金融研究类 skill 是对 **anthropics/financial-services**（Apache-2.0）方法论基座的 Cue-native 重写。我方为重实现而非拷贝——数据层完全替换为 Cue 三层通道：**深研（cue-research）· 数据 MCP 域（Cue）· 文档解析（omni-reader）**。出处详见 [NOTICE.md](NOTICE.md)。
 
-> **状态：** 本仓对外发布的金融研究 skill，以上方 Skills 表所列为准。`cn-earnings-note` 已完成 P1 端到端实跑（验收记录见本包 `CHANGELOG.md` 的 Verified 段）。`catalyst-calendar`、`tear-sheet`、`sector-overview` 已于 2026-09-21 通过对抗审终判，且各有一次真实运行在案：催化剂日历——满窗多主体、证据链强制，前瞻稀疏属域面实况，法定期限推导已尝试并当场拒推（该次 statute 通道未取回原文）；公司一页纸——打满主体上限的回客速览、一轮通过；行业景气全景——建材半程，量价逐行带口径与来源锚、两个沥青报价并列不仲裁（设计行为），国内行业量价域仍未开放。**实测计数一律以各包 `README.md` 状态段为唯一权威，本文件不重抄。**版本号以各包 `CHANGELOG.md` 现值为准，不写进本句。路线图其余部分只是已定方向：**未构建、不可用**；上表以外的任何东西都不承诺交付。
+> **状态：** 本仓对外发布的 skill 以上方 Skills 表现列为准（现列即权威，不据以承诺任何渠道收录）；本节路线图讲的是其中的金融研究子集。`cn-earnings-note` 已完成 P1 端到端实跑（验收记录见本包 `CHANGELOG.md` 的 Verified 段）。`catalyst-calendar`、`tear-sheet`、`sector-overview` 已于 2026-09-21 通过对抗审终判，且各有一次真实运行在案：催化剂日历——满窗多主体、证据链强制，前瞻稀疏属域面实况，法定期限推导已尝试并当场拒推（该次 statute 通道未取回原文）；公司一页纸——打满主体上限的回客速览、一轮通过；行业景气全景——建材半程，量价逐行带口径与来源锚、两个沥青报价并列不仲裁（设计行为），国内行业量价域仍未开放。**实测计数一律以各包 `README.md` 状态段为唯一权威，本文件不重抄。**版本号以各包 `CHANGELOG.md` 现值为准，不写进本句。路线图其余部分只是已定方向：**未构建、不可用**；上表以外的任何东西都不承诺交付。
 
 ### 已建 —— 尖兵（审结，首次真实运行已在账）
 
