@@ -209,8 +209,10 @@ LEGEND["H-POINTER"] = "包内相对指路目标不存在——要么补文件，
 INSTALL_FACE_CODE = "H-INSTALL-FACE"
 INSTALL_FACE_LIMIT = 160
 INSTALL_FACE_PATTERNS = ("npx skills add", "curl -L -o", "git clone")
-INSTALL_FACE_SPEC = (f"description 前 {INSTALL_FACE_LIMIT} 字符不得含安装动作串"
-                     f"（写死集合：{'／'.join(INSTALL_FACE_PATTERNS)}）；安装式的正式来路＝仓根与渠道安装字段")
+INSTALL_FACE_SPEC = (f"description 中**起始于**前 {INSTALL_FACE_LIMIT} 字符的安装动作串不得出现"
+                     f"（起点<{INSTALL_FACE_LIMIT}，**尾部可跨界**；写死集合：{'／'.join(INSTALL_FACE_PATTERNS)}）；"
+                     f"安装式的正式来路＝仓根与渠道安装字段；散文引路「装：」**不享豁免**——只判命令串本身，"
+                     f"命令串起于窗口内照样红（靶：prose 样与活体 sector-overview）")
 LEGEND[INSTALL_FACE_CODE] = INSTALL_FACE_SPEC
 
 
@@ -384,13 +386,14 @@ def check_install_face(path: Path, text: str) -> list[tuple[str, int, str]]:
     desc = fm.get("description") if isinstance(fm, dict) else None
     if not isinstance(desc, str) or not desc:
         return []
-    head = desc[:INSTALL_FACE_LIMIT]
     out = []
+    low = desc.casefold()
     for pat in INSTALL_FACE_PATTERNS:
-        i = head.casefold().find(pat.casefold())
-        if i >= 0:
+        i = low.find(pat.casefold())
+        if 0 <= i < INSTALL_FACE_LIMIT:          # M428：按**起点**判——起点在窗口内、尾部跨界也算（店卡会截半截）
+            tail = '（尾部跨界）' if i + len(pat) > INSTALL_FACE_LIMIT else ''
             out.append((INSTALL_FACE_CODE, 1,
-                        f"description 前 {INSTALL_FACE_LIMIT} 字符内出现安装动作串「{pat}」@字符位 {i}"
+                        f"description 起于前 {INSTALL_FACE_LIMIT} 字符内的安装动作串「{pat}」@字符位 {i}{tail}"
                         f"（规格：{INSTALL_FACE_SPEC}；分层：只判活面 SKILL.md，历史条目与票面自引用不判）"))
     return out
 
@@ -744,6 +747,29 @@ def selftest() -> int:
     print(f"档③ 全仓双跑确定性：报告 sha256 前 16 位 {ha} vs {hb} → {'一致' if ha == hb else '不一致'}")
     if ha != hb:
         ok = False
+
+    # 档⑩（M428：卡面前 160 安装式——**按起点判、尾部可跨界**；四形矩阵＋缺席／散文两枚正控）
+    inst = FIXDIR / "install-face"
+    forms = ("at000", "at159", "at161", "absent", "prose")
+    if not all((inst / f / "SKILL.md").is_file() for f in forms):
+        print("   缺 M428 卡面安装式守护样（install-face/at000·at159·at161·absent·prose）→ 本档无法自证")
+        ok = False
+    else:
+        def _hit(f):
+            p = inst / f / "SKILL.md"
+            return check_install_face(p, p.read_text(encoding="utf-8"))
+        h0, h159, h161, ha_, hp = (_hit(f) for f in forms)
+
+        def _pos(h):
+            return [re.search(r"@字符位 (\d+)", d).group(1) for _, _, d in h if re.search(r"@字符位 (\d+)", d)]
+        ok9 = (len(h0) == 1 and _pos(h0) == ["0"] and len(h159) == 1 and _pos(h159) == ["159"]
+               and not h161 and not ha_ and len(hp) == 1 and _pos(hp) == ["2"])
+        print(f"档⑩ 卡面前160安装式（按起点判、尾部可跨界）：起0红 {len(h0)}@{_pos(h0)}"
+              f"｜起159红 {len(h159)}@{_pos(h159)}｜起161红 {len(h161)}（期望 0）"
+              f"｜缺席正控 {len(ha_)}（期望 0）｜散文「装：」＋命令 {len(hp)}@{_pos(hp)}（期望红@2，不享豁免）"
+              f"｜本档={'对' if ok9 else '错'}")
+        if not ok9:
+            ok = False
 
     print(f"selftest: {'ALL GREEN（闸能红、能绿、可复现）' if ok else 'FAIL'}")
     return 0 if ok else 1
