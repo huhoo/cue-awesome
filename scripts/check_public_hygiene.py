@@ -65,6 +65,11 @@ import sys
 import contextlib
 from pathlib import Path
 
+try:                                     # M423：description 必须结构化解析（票面硬约束③）
+    import yaml
+except ImportError:                      # noqa: BLE001
+    yaml = None                          # 缺库⇒该尺响亮不可判，不静默通过
+
 ROOT = Path(__file__).resolve().parent.parent
 FIXDIR = ROOT / "scripts" / "fixtures" / "hygiene"
 
@@ -197,6 +202,16 @@ GIFT_SCOPE_SKIP = ("assets", "examples")   # ⑥⑦共用的射程：README／SK
 SCOPE_GATED = {"H-GIFT-UNIT", "H-TOOL-PROMISE"}   # 走上面那条射程的两支码（M317 起不再只有 ⑥）
 LEGEND = {c: spec for c, _, _, spec in RULES}
 LEGEND["H-POINTER"] = "包内相对指路目标不存在——要么补文件，要么删指路；不许留断链"
+
+# M423（BOARD M416 裁定③）：**卡面前 160 字符不得出现安装动作串**——安装式的正式来路是仓根与渠道安装字段。
+# 形制（M289 同族）：串集合**写死**、逐枚报命中字符位；取数走**结构化**（PyYAML 解析 frontmatter 再切前 160，
+# 不按行正则扫 SKILL.md）；分层＝**只判活面 SKILL.md 的 description**——历史 CHANGELOG 条目与票面自引用不判。
+INSTALL_FACE_CODE = "H-INSTALL-FACE"
+INSTALL_FACE_LIMIT = 160
+INSTALL_FACE_PATTERNS = ("npx skills add", "curl -L -o", "git clone")
+INSTALL_FACE_SPEC = (f"description 前 {INSTALL_FACE_LIMIT} 字符不得含安装动作串"
+                     f"（写死集合：{'／'.join(INSTALL_FACE_PATTERNS)}）；安装式的正式来路＝仓根与渠道安装字段")
+LEGEND[INSTALL_FACE_CODE] = INSTALL_FACE_SPEC
 
 
 def hit_of(m) -> str:
@@ -352,6 +367,34 @@ def check_pointers(path: Path, text: str) -> list[tuple[int, str, str]]:
 
 
 # ---------------------------------------------------------------- 单文件检查
+def check_install_face(path: Path, text: str) -> list[tuple[str, int, str]]:
+    """M423：卡面前 160 安装式尺。**只判活面 SKILL.md 的 description**（PyYAML 结构化后切前 160），
+       历史 CHANGELOG 条目与票面自引用不判；串集合写死、命中报字符位；缺库/解析失败⇒响亮不可判。"""
+    if path.name != "SKILL.md":
+        return []
+    if yaml is None:
+        return [(INSTALL_FACE_CODE, 1, "PyYAML 不在场——本尺不可判（不静默通过）")]
+    m = re.match(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
+    if not m:
+        return []
+    try:
+        fm = yaml.safe_load(m.group(1)) or {}
+    except Exception as exc:                                      # noqa: BLE001
+        return [(INSTALL_FACE_CODE, 1, f"frontmatter 解析失败：{exc}——本尺不可判（不猜）")]
+    desc = fm.get("description") if isinstance(fm, dict) else None
+    if not isinstance(desc, str) or not desc:
+        return []
+    head = desc[:INSTALL_FACE_LIMIT]
+    out = []
+    for pat in INSTALL_FACE_PATTERNS:
+        i = head.casefold().find(pat.casefold())
+        if i >= 0:
+            out.append((INSTALL_FACE_CODE, 1,
+                        f"description 前 {INSTALL_FACE_LIMIT} 字符内出现安装动作串「{pat}」@字符位 {i}"
+                        f"（规格：{INSTALL_FACE_SPEC}；分层：只判活面 SKILL.md，历史条目与票面自引用不判）"))
+    return out
+
+
 def check_file(path: Path) -> list[tuple[str, int, str]]:
     """返回 [(码, 行号, 详句)] 三元组——**severity 不在这里出**，由调用方按面与码定（`severity(face, code)`）。
     （M271：本函数标注曾写四元组、实返三元组，按标注解包必 `ValueError`——是标注骗人，不是接口少了一项。）"""
@@ -363,6 +406,7 @@ def check_file(path: Path) -> list[tuple[str, int, str]]:
     if face == "product":
         for lineno, ptr, why in check_pointers(path, text):
             finds.append(("H-POINTER", lineno, f"包内指路 `{ptr}` {why}（规格：{LEGEND['H-POINTER']}）"))
+        finds.extend(check_install_face(path, text))
 
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
@@ -734,6 +778,7 @@ def check_one(path: Path, strict: bool) -> int:
         base = _pkg_root(path)
         for lineno, ptr, why in _pointers(text, base, path.parent, path):
             finds.append(("H-POINTER", lineno, f"包内指路 `{ptr}` {why}（规格：{LEGEND['H-POINTER']}）"))
+        finds.extend(check_install_face(path, text))
     finds.sort(key=lambda x: (x[1], x[0]))
     codes = {c for c, _, _ in finds}
     sevs = {severity(face, c) for c, _, _ in finds}
