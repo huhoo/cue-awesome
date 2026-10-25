@@ -3,8 +3,8 @@ name: skill-review-cn
 slug: cue-skill-review-cn
 displayName: "装前先给一枚 skill 体检·逐条挂原文"
 summary: "装之前先给一枚 skill 体检：五面逐条挂原文与检索日，缺的点名，装不装留人工。"
-description: "skill 体检报告起草：输入是一枚待装的 skill（本地目录，或商店页／仓库页经解析通道取回的正文），产出是五节报告——被检对象、逐条发现（每条一个 [S#]）、五个检查面（声明层／前置层／面文承诺／样例真跑／许可与出处）、未取到与口径、来源（带 文件:行号 或 URL 与检索日）。机检 check_review.py 五道：形制／锚／判决词／覆盖／真跑申报，零网络。适合装别人 skill 前的初筛、同题对照体检。Do NOT use for: 替你决定装不装（判断位 [待人工]）、执行被检件代码（只读不跑）、上架与评分。Triggers: skill 体检 / 装前检查 / 上架前审"
-version: "0.1.0"
+description: "skill 体检报告起草：输入是一枚待装的 skill（本地目录，或商店页／仓库页经解析通道取回的正文），产出是五节报告——被检对象、逐条发现（每条一个 [S#]）、未取到与口径、来源（带 文件:行号 或 URL 与检索日）。Do NOT use for: 替你决定装不装（判断位 [待人工]）、执行被检件代码（只读不跑）、上架与评分。适合装别人 skill 前的初筛、同题对照体检。机检 check_review.py 五道：形制／锚／判决词／覆盖／真跑申报，零网络。五个检查面（声明层／前置层／面文承诺／样例真跑／许可与出处）。Triggers: skill 体检 / 装前检查 / 上架前审"
+version: "0.1.1"
 license: MIT
 consumes:
   - parsed-doc
