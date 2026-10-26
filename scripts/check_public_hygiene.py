@@ -126,7 +126,9 @@ PEER_MENTION_SPEC = (
     "公开面零提及第三方同类实践（写死集合：" + "／".join(PEER_MENTION_TERMS) + "；"
     "道以按品牌上下文匹配，避免「渠道以」类假阳）；"
     "anthropics/financial-services（Apache-2.0）基座出处行不在禁列；"
-    "verify／logs／dispatch／CHANGELOG 历史条目不判"
+    "verify／logs／dispatch／CHANGELOG 历史条目不判；"
+    "限度：只按品牌语境判——裸「道以」后接非品牌词、裸「dao」不判；"
+    "scripts/** 注释不在射程（§5 那句「含代码注释」由人工守，本尺不证）"
 )
 PEER_SKIP_SEGMENTS = {"verify", "logs", "dispatch", ".attic", "node_modules", ".git"}
 
@@ -318,7 +320,9 @@ def peer_scope_ok(path: Path, fixture: bool = False) -> bool:
     """M444 射程：只到公开面——包内 SKILL*.md／README*.md／NOTICE.md／assets/**／references/**，
        仓根 README*／NOTICE.md；CHANGELOG 与 verify/logs/dispatch 一律不判（内部研究记录与判据引文合法）。
        仓外路径按公开面从严判（3.1 病灶在仓外 NOTICE/README）；内部段名即使仓外也不判。
-       fixture=True 只放行 `scripts/fixtures/...` 这一层（selftest 靶），**不放行 verify/logs/dispatch/CHANGELOG**。"""
+       fixture=True 只放行 `scripts/fixtures/...` 这一层（selftest 靶），**不放行 verify/logs/dispatch/CHANGELOG**。
+       限度：只按品牌语境判——裸「道以」后接非品牌词、裸「dao」不判；scripts/** 注释不在射程
+       （§5 那句「含代码注释」由人工守，本尺不证）。"""
     p = path.resolve()
     if path.name.startswith("CHANGELOG"):
         return False
