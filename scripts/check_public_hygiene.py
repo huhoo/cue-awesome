@@ -102,6 +102,34 @@ PROMISE_A = "(?i:" + "|".join(PROMISE_A_ITEMS) + ")"
 PROMISE_B = "(?:" + "|".join(PROMISE_B_ITEMS) + ")"
 PROMISE_C = "(?i:" + "|".join(PROMISE_C_ITEMS) + ")"
 
+# M444：§5-6/§5-7 公开面零提及第三方同类实践（道以/dao-financial-services）。
+# 词表**写死在件内**，不从记忆拼；anthropics/financial-services（Apache-2.0）是基座出处义务，不在禁列。
+PEER_MENTION_CODE = "H-PEER-MENTION"
+PEER_MENTION_TERMS = (
+    "道以研究院",
+    "道以",
+    "dao-financial-services",
+    "dao-financial",
+    "hzddyy",
+    "dao 研究院",
+)
+PEER_MENTION_RE = re.compile(
+    "道以\\s*研究院"
+    "|道以(?=\\s*(?:dao-financial|（|\\())"
+    "|道以(?=[、，。；：,.;:]|$)"
+    "|参考\\s*道以"
+    "|道以\\s*的"
+    "|dao-financial-services|dao-financial|hzddyy|dao\\s*研究院",
+    re.I,
+)
+PEER_MENTION_SPEC = (
+    "公开面零提及第三方同类实践（写死集合：" + "／".join(PEER_MENTION_TERMS) + "；"
+    "道以按品牌上下文匹配，避免「渠道以」类假阳）；"
+    "anthropics/financial-services（Apache-2.0）基座出处行不在禁列；"
+    "verify／logs／dispatch／CHANGELOG 历史条目不判"
+)
+PEER_SKIP_SEGMENTS = {"verify", "logs", "dispatch", ".attic", "node_modules", ".git"}
+
 RULES = (
     ("H-TICKET", "①", re.compile(r"(?<![A-Za-z0-9])M\d{2,4}(?![A-Za-z0-9])|(?<![A-Za-z])PR\s*#?\d{2,}"),
      "卡面与 README 一律禁（ERROR）；CHANGELOG 属留痕位＝提示不拦（WARN）；要引能力来源就写能力本身"),
@@ -188,6 +216,10 @@ RULES = (
         r"(?=.*?" + PROMISE_B + r")"
         r"(?![^\n]*(?:" + PROMISE_C + r"))"),
      "§5-3：对外面文不承诺固定工具清单、不叫用户按名直调——工具名与入参 schema 一律以 catalog 那份返回现值为准"),
+    # M444（§5-6/§5-7）：公开面零提及第三方同类实践。词表写死在 PEER_MENTION_TERMS；
+    #   射程只到公开面（包内 SKILL/README/assets/references＋仓根 README*/NOTICE），
+    #   verify/logs/dispatch/CHANGELOG 历史条目不判——内部研究记录与判据引文合法。
+    (PEER_MENTION_CODE, "§5-6", PEER_MENTION_RE, PEER_MENTION_SPEC),
 )
 
 SKIP_OUTPUT_POINTERS: list[tuple[str, int, str]] = []
@@ -225,6 +257,8 @@ def hit_of(m) -> str:
 
 def ban_label(code: str) -> str:
     """报文里的族名前缀：①〜⑤（含 ②b／③b 子项）是五禁本体；⑥是 §5-1 口径校验，不冒充「五禁⑥」。"""
+    if code == PEER_MENTION_CODE:
+        return "公开面"
     return "口径" if code in ("H-GIFT-UNIT", "H-TOOL-PROMISE") else "五禁"
 
 
@@ -278,6 +312,31 @@ def gift_scope_ok(path: Path) -> bool:
     except ValueError:
         return True
     return not any(seg in GIFT_SCOPE_SKIP for seg in parts[1:-1])
+
+
+def peer_scope_ok(path: Path, fixture: bool = False) -> bool:
+    """M444 射程：只到公开面——包内 SKILL*.md／README*.md／NOTICE.md／assets/**／references/**，
+       仓根 README*／NOTICE.md；CHANGELOG 与 verify/logs/dispatch 一律不判（内部研究记录与判据引文合法）。
+       仓外路径按公开面从严判（3.1 病灶在仓外 NOTICE/README）；内部段名即使仓外也不判。
+       fixture=True 只放行 `scripts/fixtures/...` 这一层（selftest 靶），**不放行 verify/logs/dispatch/CHANGELOG**。"""
+    p = path.resolve()
+    if path.name.startswith("CHANGELOG"):
+        return False
+    segs = p.parts[:-1]
+    if any(s in PEER_SKIP_SEGMENTS for s in segs):
+        return False
+    if "scripts" in segs and not fixture:
+        return False
+    try:
+        rel = p.relative_to(ROOT)
+    except ValueError:
+        return True                                          # 仓外公开面：3.1 两枚病灶走这条
+    parts = rel.parts
+    if len(parts) == 1:
+        return path.name.startswith("README") or path.name == "NOTICE.md"
+    if path.name.startswith(("SKILL", "README")) or path.name == "NOTICE.md":
+        return True
+    return "assets" in parts[:-1] or "references" in parts[:-1]
 
 
 def iter_faces() -> list[Path]:
@@ -416,6 +475,8 @@ def check_file(path: Path) -> list[tuple[str, int, str]]:
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
             continue
+        if code == PEER_MENTION_CODE and not peer_scope_ok(path):
+            continue
         if code in SCOPE_GATED and not gift_scope_ok(path):
             continue
         for lineno, line in enumerate(lines, 1):
@@ -426,6 +487,21 @@ def check_file(path: Path) -> list[tuple[str, int, str]]:
 
 
 # ---------------------------------------------------------------- 全仓跑
+def check_peer_only(path: Path) -> list[tuple[str, int, str]]:
+    """只跑 H-PEER-MENTION（供仓根／包内 NOTICE.md 的公开面补扫；不跑 H-POINTER 等其他码，
+       避免把 NOTICE 里合法的相对指路误判成新红）。"""
+    if not peer_scope_ok(path):
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    finds = []
+    for lineno, line in enumerate(text.split("\n"), 1):
+        m = PEER_MENTION_RE.search(line)
+        if m:
+            finds.append((PEER_MENTION_CODE, lineno,
+                          f"{ban_label(PEER_MENTION_CODE)}§5-6命中「{hit_of(m)}」（规格：{PEER_MENTION_SPEC}）"))
+    return finds
+
+
 def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
     SKIP_OUTPUT_POINTERS.clear()
     EXEMPT_DISCARDED.clear()
@@ -449,8 +525,18 @@ def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
             else:
                 warnings += 1
 
+    extra_peer = [p for p in [ROOT / "NOTICE.md", *sorted(ROOT.glob("*/NOTICE.md"))] if p.is_file()]
+    for f in extra_peer:
+        finds = check_peer_only(f)
+        if not finds:
+            continue
+        per_file.append((f, "ERROR", finds))
+        used_codes.add(PEER_MENTION_CODE)
+        errors += len(finds)
+
     if not quiet:
-        print(f"公开面卫生机检 — 被扫面 {len(faces)} 个（{sum(1 for p in per_file)} 个有发现）\n")
+        print(f"公开面卫生机检 — 被扫面 {len(faces)} 个（{sum(1 for p in per_file)} 个有发现）"
+              f"＋另扫公开 NOTICE 面 {len(extra_peer)} 个（只判 {PEER_MENTION_CODE}）\n")
         rel = ROOT
         for f, sev, finds in per_file:
             print(f"  {sev:<5} {f.relative_to(rel)}（{len(finds)} 条）")
@@ -482,6 +568,8 @@ def _fixture_findings(dirpath: Path) -> list[tuple[str, int, str, str]]:
         for lineno, line in enumerate(text.split("\n"), 1):
             for code, ban, pat, spec in RULES:
                 if is_changelog and code not in CHANGELOG_CODES:
+                    continue
+                if code == PEER_MENTION_CODE and not peer_scope_ok(f, fixture=True):
                     continue
                 m = pat.search(line)
                 if m:
@@ -794,6 +882,28 @@ def selftest() -> int:
         if not ok10:
             ok = False
 
+    # 档⑫（M444：公开面第三方同类实践——中文/英文靶必红、anthropics 出处正例零、verify 射程反证零）
+    pm = FIXDIR / "peer-mention"
+    pm_dirs = ("chinese", "english", "positive", "lobehub-notice", "lobehub-readme", "scope")
+    if not all((pm / d).is_dir() for d in pm_dirs):
+        print("   缺 M444 公开面第三方同类实践守护样（peer-mention/{chinese,english,positive,lobehub-notice,lobehub-readme,scope}）→ 本档无法自证")
+        ok = False
+    else:
+        def _pm(d):
+            return [x for x in _fixture_findings(pm / d) if x[0] == PEER_MENTION_CODE]
+        zh, en, pos, ln, lr, sc = (_pm(d) for d in pm_dirs)
+        ok12 = (bool(zh) and bool(en) and not pos and not sc and bool(ln) and bool(lr)
+                and any(x[1] == 7 for x in ln) and any(x[1] == 10 for x in lr)
+                and severity("product", PEER_MENTION_CODE) == "ERROR"
+                and "anthropics/financial-services" in LEGEND[PEER_MENTION_CODE])
+        print(f"档⑫ 公开面第三方同类实践：中文靶 {len(zh)}@{[x[1] for x in zh]}"
+              f"｜英文靶 {len(en)}@{[x[1] for x in en]}｜anthropics 正例 {len(pos)}（期望 0）"
+              f"｜verify 射程反证 {len(sc)}（期望 0）｜3.1 NOTICE {len(ln)}@{[x[1] for x in ln]}"
+              f"／README {len(lr)}@{[x[1] for x in lr]}｜分级={severity('product', PEER_MENTION_CODE)}"
+              f"｜本档={'对' if ok12 else '错'}")
+        if not ok12:
+            ok = False
+
     print(f"selftest: {'ALL GREEN（闸能红、能绿、可复现）' if ok else 'FAIL'}")
     return 0 if ok else 1
 
@@ -816,6 +926,8 @@ def check_one(path: Path, strict: bool) -> int:
     finds: list[tuple[str, int, str]] = []
     for code, ban, pat, spec in RULES:
         if face == "changelog" and code not in CHANGELOG_CODES:
+            continue
+        if code == PEER_MENTION_CODE and not peer_scope_ok(path):
             continue
         if code in SCOPE_GATED and not gift_scope_ok(path):
             continue

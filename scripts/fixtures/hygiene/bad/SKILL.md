@@ -20,3 +20,5 @@
 - 直调口吻红样乙：本包内置工具 get_xxx／get_yyy，直接调用即可。
 - 枚举形红样丙（名字排在后一行也照样发条）：无需读取 catalog，工具清单固定为以下三枚。
 - 中英混排红样丁：可用工具（fixed list）：get_live_equity_quote、get_instant_price，直接按名调用即可。
+
+- 公开面提及第三方同类实践红样：方法论参考：道以研究院 dao-financial-services（MIT）。
