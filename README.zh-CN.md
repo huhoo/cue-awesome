@@ -19,6 +19,8 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 ## Skills
 
+> 「用途」列取自各包 frontmatter 的 `summary`,为**逐字现值**——单一权威字段,原样呈现,本表不另撰写、不改写。
+
 | 目录 | Name | 版本 | 用途 |
 |---|---|---|---|
 | [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。 |

@@ -19,6 +19,8 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 
 ## Skills
 
+> The "What it does" column is each package's frontmatter `summary` shown **verbatim** — the single canonical summary field, reproduced as-is and not translated in this table.
+
 | Directory | Name | Version | What it does |
 |---|---|---|---|
 | [`cue-omni-ontology/`](cue-omni-ontology/) | cue-omni-ontology | [frontmatter](cue-omni-ontology/SKILL.md) | 从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。 |
