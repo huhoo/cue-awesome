@@ -104,7 +104,7 @@ PROMISE_C = "(?i:" + "|".join(PROMISE_C_ITEMS) + ")"
 
 RULES = (
     ("H-TICKET", "①", re.compile(r"(?<![A-Za-z0-9])M\d{2,4}(?![A-Za-z0-9])|(?<![A-Za-z])PR\s*#?\d{2,}"),
-     "成品面与 CHANGELOG 不写内部流水号（工单/票号/PR 号）；要引能力来源就写能力本身"),
+     "卡面与 README 一律禁（ERROR）；CHANGELOG 属留痕位＝提示不拦（WARN）；要引能力来源就写能力本身"),
     ("H-PATH", "②", re.compile(r"\bverify/|\blogs/|\bdispatch/|\bBOARD\b|(?<![\w_])dispatch(?![\w_])"),
      "仓外或他目录指路不得出现在成品面（verify/、logs/、dispatch/、BOARD）；指路只许相对本包"),
     ("H-STATE", "③", re.compile(r"在途|证据票|候账|候\s*(?:Owner|M\d|[1-6]\.1)|随我铃|收卷|交卷|派单|(?<!作)工单|候裁|候批|待你|等你一句"),
@@ -231,6 +231,8 @@ def ban_label(code: str) -> str:
 def severity(face: str | None, code: str) -> str:
     """面与码两头定级：成品面=ERROR、CHANGELOG=WARN；WARN_CODES 里的码不分面一律 WARN。
     一枚文件可以同时出两种级别，所以计数按**逐条**走，表头只显示该面最重的一档。"""
+    if code == "H-TICKET":                                       # M438：只 CHANGELOG 留痕位降 WARN
+        return "WARN" if face == "changelog" else "ERROR"
     if code in WARN_CODES:
         return "WARN"
     return "ERROR" if face == "product" else "WARN"
@@ -771,6 +773,27 @@ def selftest() -> int:
         if not ok9:
             ok = False
 
+    # 档⑪（M438：H-TICKET 分级——卡面/README ERROR、CHANGELOG WARN；规格句写明留痕位）
+    tk = FIXDIR / "ticket"
+    tk_dirs = ("skill", "readme", "changelog")
+    if not all((tk / d).is_dir() for d in tk_dirs):
+        print("   缺 M438 H-TICKET 分级守护样（ticket/skill·readme·changelog）→ 本档无法自证")
+        ok = False
+    else:
+        n_s = sum(1 for x in _fixture_findings(tk / "skill") if x[0] == "H-TICKET")
+        n_r = sum(1 for x in _fixture_findings(tk / "readme") if x[0] == "H-TICKET")
+        n_c = sum(1 for x in _fixture_findings(tk / "changelog") if x[0] == "H-TICKET")
+        sev_s = severity("product", "H-TICKET")
+        sev_c = severity("changelog", "H-TICKET")
+        ok10 = (n_s >= 1 and n_r >= 1 and n_c >= 1 and sev_s == "ERROR" and sev_c == "WARN"
+                and "留痕位" in LEGEND["H-TICKET"] and "提示不拦" in LEGEND["H-TICKET"]
+                and "H-TICKET" not in WARN_CODES)
+        print(f"档⑪ H-TICKET 分级：卡面 {n_s} 条→{sev_s}｜README {n_r} 条→{sev_s}"
+              f"｜CHANGELOG {n_c} 条→{sev_c}｜规格含留痕位={('留痕位' in LEGEND['H-TICKET'])}"
+              f"｜本档={'对' if ok10 else '错'}")
+        if not ok10:
+            ok = False
+
     print(f"selftest: {'ALL GREEN（闸能红、能绿、可复现）' if ok else 'FAIL'}")
     return 0 if ok else 1
 
@@ -816,7 +839,7 @@ def check_one(path: Path, strict: bool) -> int:
             own = severity(face, code)
             print(f"  - [{code}{'／' + own if own != sev else ''}] 第 {lineno} 行：{detail}")
         if n_warn_only:
-            print(f"  其中按码记 WARN（`WARN_CODES`＝{sorted(WARN_CODES)}）：{n_warn_only} 条——不抬升成 ERROR，也不静默吞")
+            print(f"  其中记 WARN（按码 WARN_CODES＝{sorted(WARN_CODES)}；CHANGELOG 面按留痕位）：{n_warn_only} 条——不抬升成 ERROR，也不静默吞")
     else:
         print(f"PASS: {path.name} 五禁零命中、指路可跟随 {note}")
     print("  码表: " + "; ".join(f"{c}→{LEGEND[c]}" for c in sorted(codes)))
