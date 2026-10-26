@@ -2,12 +2,12 @@
 
 **One table, split into two things: a chart spec a host can actually draw from (chart type / x-axis / y-axis / series - chosen by a human) and table-reading points (one number per line, each traced back to its cell). No investment advice from the chart, no ratings or target prices, no arithmetic the table does not already contain.**
 
-Drawing tools are plentiful; **what is missing is the check that this number really sits in that cell**. Three hard gates do the difference: a quoted number must appear verbatim in the source table (an invented one fails on the spot), when one line gives both a page and a line number each is checked on its own, and all four limitation classes must each be named - silence counts as a miss.
+Drawing tools are plentiful; **what is missing is the check that this number really sits in that cell**. Three hard gates do the difference: a quoted number must appear verbatim in the source table **and in the cell it claims** - either paired as `「列头」=「数」` (column header = number) or written as the whole row in column order, so an invented number, a number borrowed from the next cell of the same row, or an empty cell described as having a value all fail on the spot; when one line gives both a page and a line number each is checked on its own; and all four limitation classes must each be named - silence counts as a miss.
 
 **Input**: one table's text (a local file, or text pulled back through the parse channel from a PDF / scan / photo of a disclosure)
 **Output**: a four-section artifact (chart spec / table-reading points / limits and gaps / sources with parse date), one line per point, ready to hand to a host renderer
 **Cost**: a four-section contract plus one checker; whether the parse channel is connected decides **whether the scanned or remote table can be retrieved at all** - what each route lacks is written in §2 and §4
-**Checker**: `scripts/check_chart.py`, five lanes (format and row band / anchors and locators / numbers verbatim back to the table / four limitation classes / investment-and-rating assertions), zero network, never does arithmetic, never executes anything the table mentions
+**Checker**: `scripts/check_chart.py`, five lanes (format and row band / anchors and locators / numbers verbatim back to the table and into the cell they claim / four limitation classes / investment-and-rating assertions), zero network, never does arithmetic, never executes anything the table mentions
 
 ---
 
@@ -15,8 +15,8 @@ Drawing tools are plentiful; **what is missing is the check that this number rea
 
 | Step | Action | How | What breaks if skipped |
 |---|---|---|---|
-| 1 | **See the shape first** (30 s, no network, no charge) | `bash scripts/fixtures/run_fixtures.sh` - three tiers in one run: checker self-test, seven bad samples one by one (code set and target position per row), collector skeleton that must fail where designed. Last line self-reports "档数=3｜合期望=3｜不合=0｜不可判=0" | Without seeing the shape you mistake "it can be drawn" for "the numbers match"; this tier shows the difference in 30 seconds |
-| 2 | **Lay the skeleton, then choose the spec** | `python3 -B scripts/collect_chart.py --source table.md --out chart.md` moves each numeric cell verbatim into section two with page and line locators; fill the four spec keys (the chart type answers "what relationship do I want to see") and the four limitation classes in section three | Unfilled slots fail `E-FORMAT` and `E-COVERAGE` (a skeleton is not an artifact); a missing `[S1]` on a point row, or a source row without locator or parse date, fails `E-ANCHOR` |
+| 1 | **See the shape first** (30 s, no network, no charge) | `bash scripts/fixtures/run_fixtures.sh` - three tiers in one run: checker self-test, eleven bad samples one by one (code set, finding count, target line and which lane fired), collector skeleton that must fail where designed. Last line self-reports "档数=3｜合期望=3｜不合=0｜不可判=0" | Without seeing the shape you mistake "it can be drawn" for "the numbers match"; this tier shows the difference in 30 seconds |
+| 2 | **Lay the skeleton, then choose the spec** | `python3 -B scripts/collect_chart.py --source table.md --out chart.md` moves each numeric cell verbatim into section two as `「列头」=「数」` pairs (header = number) with page and line locators - a row whose header cells do not line up falls back to the whole-row-in-order form; fill the four spec keys (the chart type answers "what relationship do I want to see") and the four limitation classes in section three | Unfilled slots fail `E-FORMAT` and `E-COVERAGE` (a skeleton is not an artifact); a missing `[S1]` on a point row, or a source row without locator or parse date, fails `E-ANCHOR` |
 | 3 | **Run the checker, then hand it to the host** | `python3 -B scripts/check_chart.py chart.md --table table.md`, fix each line by its `E-*` code; rendering itself belongs to the host or a spreadsheet - this package emits no image file | An invented number, a silently skipped limitation, or "this company is worth buying" written as your own sentence all travel with the material into the human decision; those are shape-level and the checker catches them, arithmetic still has to go back to the table |
 
 Computing growth rates, rendering files and giving investment conclusions **are not in these three steps** - this skill answers only "which cell says what, and can this chart stand up".
@@ -32,9 +32,9 @@ The one evidence leg is `cue-omni-reader` (parse): when the table lives remotely
 ```bash
 cd cn-table-to-chart
 bash scripts/fixtures/run_fixtures.sh
-# tier 1  checker self-test: good sample passes, seven bad samples each fire their own lane -> ALL GREEN
-# tier 2  one line per bad sample: "expected only E-X / actually exactly E-X / how many findings / which section the target sits in", each row self-reporting whether the injection landed
-# tier 3  collector skeleton from the synthetic table: numbers land in section two, and the skeleton must fail on two lanes - the four spec keys and the four limitation classes are still unjudged
+# tier 1  checker self-test: good sample passes, eleven bad samples each fire their own lane -> ALL GREEN
+# tier 2  one line per bad sample: "expected only E-X / actually exactly E-X / how many findings / which line and which lane", each row self-reporting whether the injection landed
+# tier 3  collector skeleton from the synthetic table: numbers land in section two as header=number pairs, and the skeleton must fail on two lanes - the four spec keys and the four limitation classes are still unjudged
 ```
 
 Your own run is the same two commands:
@@ -44,14 +44,14 @@ python3 -B scripts/collect_chart.py --source my-table.md --out chart.md
 python3 -B scripts/check_chart.py chart.md --table my-table.md
 ```
 
-The collector is read-only and never chooses for you: it reads markdown pipe rows (the row above the separator line is a header, not data), copies the first three numeric cells of each row verbatim into section two and adds both locators; the four spec keys and the four limitation classes stay as to-be-decided slots - **the chart type depends on the relationship you want to see, and guessing from column shapes would turn "can be drawn" into "should be drawn"**, so that choice stays with the human. With no numeric row at all, or an empty file, it exits 1 and says so; an unreadable file or a malformed `--asof` exits 3 (a domain failure is never read as "no violations").
+The collector is read-only and never chooses for you: it reads markdown pipe rows (the row above the separator line is a header, not data and not a point row), copies each numeric cell verbatim into section two as `「列头」=「数」` pairs with both locators, and falls back to the whole-row-in-order form when the header cells do not line up with that row - it never guesses which cell belongs to which column. The four spec keys and the four limitation classes stay as to-be-decided slots - **the chart type depends on the relationship you want to see, and guessing from column shapes would turn "can be drawn" into "should be drawn"**, so that choice stays with the human. The header model is imported from the checker itself (`from check_chart import table_model`), so the two cannot drift into different meanings of "that cell". With no numeric row at all, or an empty file, it exits 1 and says so; an unreadable file or a malformed `--asof` exits 3 (a domain failure is never read as "no violations").
 
 ## 4. Dependencies and the cost of each route
 
 - `python3`: used by checker and collector, standard library only, no network, sends no requests.
 - The parse helper `cue-omni-reader` is optional: **not installing it raises no error, and the cost is that the artifact answers only for the one copy on your disk** - scans and the remote side cannot be read in. Ask before installing or using it either way; spend only after you agree to it.
-- A connected channel is not a retrieved table: rows cut off by the scan, merged cells that no longer map to a header, photos too blurred to read one cell - all of them go into section three by name, never patched with common sense or last year's number.
-- The arithmetic stays in the host: growth rates, shares of total, ratios - this package computes none of them; it moves existing cells and points at where each one came from, and a number the table does not contain fails `E-QUOTE`.
+- A connected channel is not a retrieved table: rows cut off by the scan, merged cells that no longer map to a header, photos too blurred to read one cell - all of them go into section three by name, never patched with common sense or last year's number. When a header cannot be resolved to a cell the checker fires (its detail line says whether the cell was empty or the header spans columns): write that row whole in column order, or name it in section three.
+- The arithmetic stays in the host: growth rates, shares of total, ratios - this package computes none of them; it moves existing cells and points at where each one came from. A number the table does not contain fails `E-QUOTE`, and so does a number taken from a different column of the same row.
 - Data boundary: the artifact carries the table's numbers and its stated basis (disclosure tables often include non-public bases). Storage, forwarding and who sees it are yours to own; this skill uploads nothing and writes nothing outside its package.
 - Locators expire with the file: page and line numbers hold only as of the parse date; if a newer disclosure replaces it, the spec has to be redone.
 
@@ -61,17 +61,21 @@ The collector is read-only and never chooses for you: it reads markdown pipe row
 |---|---|---|
 | 1 format | `E-FORMAT` | Four self-labels verbatim in the head; four sections ordered; all four spec keys present and none still a to-be-decided slot; 3-10 point rows |
 | 2 anchors | `E-ANCHOR` | Each point row ends with one `[S#]` and carries a locator; every anchor has a matching row in section four; source rows need **both** a locator and a parse date - the date must sit under the 解析日 label and name a day that exists (relabel it 合同签署日 and it fires; the checker verifies exactly those two things and cannot verify that the day is when the text was actually retrieved) |
-| 3 verbatim | `E-QUOTE` | The number inside 「」 must be verbatim in the table; when a line gives both page and line number **each is checked separately**; without `--table` the lane prints not-verifiable and **is never folded into a pass** |
+| 3 verbatim | `E-QUOTE` | **Every** 「」 span anywhere in the artifact must be verbatim in the table - point rows and ordinary sentences alike, so a fabricated quote outside a bullet cannot slip through; and the number must sit in the cell it claims, via `「列头」=「数」` (header = number) or the whole row quoted in column order - borrowing the neighbouring cell's number, claiming a value for an empty cell, or borrowing another table's header all fail; when a line gives both page and line number **each is checked separately**; without `--table` the lane prints not-verifiable and **is never folded into a pass** |
 | 4 naming | `E-COVERAGE` | All four limitation classes present (empty cells / merged or spanning headers / units and basis / extrapolation and unread parts), each with a position or an explicit 未见到／未取到; a 待核 slot is not a naming; an unread part mentioned elsewhere but unnamed here fails; an empty source section fails |
-| 5 verdict words | `E-ADVICE` | Investment advice, rating actions and target prices fire **on the word alone - no hedge needed**; reworded verdicts fire too - a superlative or comparative form (最强／优于／更差) in the same **semantic unit** as an investment-conclusion object (估值／基本面／前景／配置) is a verdict, and continuation lines join the unit before them, so a line break is not an escape; quoted table text is not the author's opinion, quotes are stripped first; `[待人工]` only excuses the unit it sits in |
+| 5 verdict words | `E-ADVICE` | Investment advice, rating actions and target prices fire **on the word alone - no hedge needed**; reworded verdicts fire too - a superlative or comparative form (最强／优于／更差) in the same **semantic unit** as an investment-conclusion object (估值／基本面／前景／配置) is a verdict, and continuation lines join the unit before them, so a line break is not an escape; the quote exemption is earned, not given - only spans lane 3 matched verbatim against the table are stripped, so a bracketed sentence the table never contained is read as the author's own words; `[待人工]` only excuses the unit it sits in |
 
 ```bash
 python3 -B scripts/check_chart.py --help                                                        # lane descriptions, no network
-python3 -B scripts/check_chart.py --selftest                                                     # good sample passes, seven bad samples fail
+python3 -B scripts/check_chart.py --selftest                                                     # good sample passes, eleven bad samples fail
 python3 -B scripts/check_chart.py scripts/fixtures/good-chart.md --table scripts/fixtures/target-table.md          # expected PASS
 python3 -B scripts/check_chart.py scripts/fixtures/bad-spec.md --table scripts/fixtures/target-table.md            # expected FAIL: chart type undecided
 python3 -B scripts/check_chart.py scripts/fixtures/bad-no-anchor.md --table scripts/fixtures/target-table.md        # expected FAIL: point row unanchored
 python3 -B scripts/check_chart.py scripts/fixtures/bad-invented-number.md --table scripts/fixtures/target-table.md  # expected FAIL: number not in the table
+python3 -B scripts/check_chart.py scripts/fixtures/bad-unbound-quote.md --table scripts/fixtures/target-table.md    # expected FAIL: a quote outside point rows that the table never contains
+python3 -B scripts/check_chart.py scripts/fixtures/bad-cell-misplaced.md --table scripts/fixtures/target-table.md   # expected FAIL: neighbouring cell's number claimed as this cell
+python3 -B scripts/check_chart.py scripts/fixtures/bad-no-header-pair.md --table scripts/fixtures/target-table.md    # expected FAIL: numbers with no header pair and not whole-row-in-order
+python3 -B scripts/check_chart.py scripts/fixtures/bad-cell-empty-zero.md --table scripts/fixtures/target-table.md   # expected FAIL: an empty cell described as having a value
 python3 -B scripts/check_chart.py scripts/fixtures/bad-missing-limit.md --table scripts/fixtures/target-table.md    # expected FAIL: one class unnamed
 python3 -B scripts/check_chart.py scripts/fixtures/bad-advice.md --table scripts/fixtures/target-table.md           # expected FAIL: target price
 python3 -B scripts/check_chart.py scripts/fixtures/bad-bare-outcome.md --table scripts/fixtures/target-table.md     # expected FAIL: bare verdict, no hedge
@@ -89,7 +93,7 @@ README.md / README.en.md         This file (Chinese authority / English counterp
 CHANGELOG.md                     Version record
 scripts/check_chart.py           Five checker lanes (standard library; --help runs; all decisions live in the script, this file only points)
 scripts/collect_chart.py         Offline collector: lays table numbers into a four-section skeleton, never chooses the chart type, never does arithmetic
-scripts/fixtures/                Synthetic table + one good sample + seven bad samples + three-tier offline runner
+scripts/fixtures/                Synthetic table + one good sample + eleven bad samples + three-tier offline runner
 ```
 
 ## 7. Questions and anti-patterns
@@ -101,5 +105,7 @@ scripts/fixtures/                Synthetic table + one good sample + seven bad s
 | "Compute the year-on-year and the shares" | No | This package computes nothing; arithmetic goes back to the host or a spreadsheet |
 | "Just render the chart for me" | No | The artifact is a spec plus points; rendering belongs to the host - hiding a renderer here would leave nobody responsible for a wrong chart |
 | "I think that number was about 1.6 - put it in quotes" | No | Quoted means verbatim: copy that cell, or write it into section three as unread |
+| "The neighbouring cell's number will do for the one I mean" | No | A number has to sit in the cell it claims - `「列头」=「数」` pairs or the whole row in column order; a borrowed one fires `E-QUOTE` |
+| "I'll bracket a sentence the table never contained, as a quote" | No | 「」 anywhere in the artifact means verbatim table text; what the table never says fires `E-QUOTE` and loses the lane-5 exemption |
 | "Merge the other company's numbers into this chart" | No | One table at a time; cross-table joins carry alignment and basis problems this shape does not cover |
 | "The table is a photo, I have no file" | Yes, keep the evidence | Fetch the text through the parse channel and register it as a source row; if it cannot be retrieved, name it in section three instead of filling cells from memory |

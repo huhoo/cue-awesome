@@ -11,9 +11,9 @@
 五道（判定全集在本脚本，本文只指路）：
     道一 形制 E-FORMAT  ：头部四件自标逐字在位；四节齐且有序；第一节四件规格（图型／横轴／纵轴／序列）齐且都不是待核位；第二节要点条数落在 3–10 这一带；第四节至少一行来源
     道二 锚   E-ANCHOR  ：每条要点行末尾带 [S#] 且该行有定位（第 N 页 或 文件:行号）；锚在第四节要有对应行；来源行必须同时带定位与解析日——解析日＝日期挂在「解析日」标签下且是日历上存在的一天；机检只核这两件，核不了那天是否真是取回当天
-    道三 逐字 E-QUOTE   ：「」里那个数必须逐字在表里（第一节引的也算）；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --table 时明写不可判、不并入通过
+    道三 逐字 E-QUOTE   ：全篇任何一行里的「」都必须逐字在表里（不分行形、不分节——条目行以外的假引文同样发条）；数还要落在所报**那一行的那一格**：管道行按 | 拆列后两形之一才放行——A 整行照序（引的数与该行非空格逐格逐序相等）或 B 「列头」=「数」配对（按列头取到那一格，格里的数就得是它）；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --table 时明写不可判、不并入通过
     道四 点名 E-COVERAGE：第三节四类限度（缺格与空值／合并格与跨列表头／单位与口径／表外推与未读到）逐类在位，每类要么给定位要么写「未见到／未取到」，待核不算点名；别处报了未读到而第三节没点名的发红
-    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中。判的是「作者替读者下了结论」这个动作，两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段按段落切——行首不是标题／列表／表格就接到上一段，写完「增速放缓」换行再写「建议减仓」算同一句。引号里的表内原文不算作者表态（先剥引号再判）；要留判断就同一语义段里挂 [待人工]
+    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中。判的是「作者替读者下了结论」这个动作，两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段按段落切——行首不是标题／列表／表格就接到上一段，写完「增速放缓」换行再写「建议减仓」算同一句。剥引号只剥**已被道三逐字核过的那一段**（表里真有这句才算照抄，表里没有的书名号就是作者自己的话，照样判）；要留判断就同一语义段里挂 [待人工]
 
 退码：0 全过（不可判项在输出里明写，不改退码）；1 有发条；2 用法错；3 取值域故障（产物或表原文读不到——不读成「零违例」）。
 出口形制：失败＝一行 "FAIL: <文件>（N 条）"，其下每条详行先打错误码前缀；全过＝一行 "PASS: …" 加计数行。
@@ -37,6 +37,8 @@ MIN_ROWS, MAX_ROWS = 3, 10
 
 ANCHOR_RE = re.compile(r'\[S(\d+)\]\s*$')
 QUOTE_RE = re.compile(r'[「『](.+?)[」』]', re.S)
+BIND_RE = re.compile(r'[「『]([^」』]{1,60})[」』]\s*[=＝]\s*[「『]([^」』]{1,60})[」』]')
+CELL_ROW_RE = re.compile(r'^\s*\|(.+)\|\s*$')
 PAGE_RE = re.compile(r'第\s*(\d+)\s*页')
 LINE_RE = re.compile(r'([A-Za-z0-9_./-]+):(\d+)')
 DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
@@ -62,6 +64,46 @@ def norm(t: str) -> str:
 
 def strip_quotes(s: str) -> str:
     return QUOTE_RE.sub('', s)
+
+
+def split_cells(line: str):
+    m = CELL_ROW_RE.match(line)
+    if m is None:
+        return None
+    return [c.strip() for c in m.group(1).split('|')]
+
+
+def is_sep_cells(cs) -> bool:
+    return bool(cs) and len(cs) >= 2 and all(c and set(c) <= set('-: ') for c in cs)
+
+
+def table_model(tbl_lines):
+    """行号 → 该行各格 ＋ 它所属表的列头。分隔行的上一行按 markdown 语义当列头；
+    列头格数与数据行格数不等就是跨列表头，模型原样带出来，不猜哪一格对哪一列。没有分隔行的管道行不构成表，认不出列头就不判格位。"""
+    model, i, n = {}, 0, len(tbl_lines)
+    while i < n:
+        if split_cells(tbl_lines[i]) is None:
+            i += 1
+            continue
+        block, j = [], i
+        while j < n and split_cells(tbl_lines[j]) is not None:
+            block.append((j + 1, split_cells(tbl_lines[j])))
+            j += 1
+        sep = next((k for k, (_, cs) in enumerate(block) if is_sep_cells(cs)), None)
+        if sep is not None:
+            header = block[sep - 1][1] if sep >= 1 else []
+            for no, cs in block[sep + 1:]:
+                if not is_sep_cells(cs):
+                    model[no] = {'cells': cs, 'header': header}
+        i = j
+    return model
+
+
+def strip_verified(s: str, verified):
+    """道五剥引号：只剥表里逐字真有的那一段。verified=None 表示没给表原文（无从判，按旧行径全剥并另记不可判）。"""
+    if verified is None:
+        return QUOTE_RE.sub('', s)
+    return QUOTE_RE.sub(lambda m: '' if norm(m.group(1)) in verified else m.group(0), s)
 
 
 def units_of(lines):
@@ -126,6 +168,18 @@ def scan(path: Path, tbl_lines):
         issues.append((code, lane, no, msg))
 
     lines = path.read_text(encoding='utf-8', errors='replace').split('\n')
+    model = table_model(tbl_lines) if tbl_lines is not None else {}
+    verified = None
+    if tbl_lines is not None:
+        verified = set()
+        ntxt = norm('\n'.join(tbl_lines))
+        for i, ln in enumerate(lines, 1):
+            for q in QUOTE_RE.findall(ln):
+                if norm(q) in ntxt:
+                    verified.add(norm(q))
+                else:
+                    add('E-QUOTE', '逐字回表（全篇）', i,
+                        '「%s」在表原文里找不到逐字（规格：全篇书名号只有一个用途＝逐字引表里的原文，条目行内外都一样；表里没有的要么别括，要么写进第三节说未读到，不能凭印象补）' % q[:22])
     if not lines or not lines[0].startswith('# '):
         add('E-FORMAT', '标题', 1, '首行不是「# 标题」这一形（规格：产物按标题命名，首行就得是标题）')
     head_end = next((i for i, l in enumerate(lines) if l.startswith('## ')), len(lines))
@@ -153,18 +207,11 @@ def scan(path: Path, tbl_lines):
         i0, i1 = bounds[n]
         return [(i + 1, lines[i].strip()) for i in range(i0 + 1, i1) if lines[i].strip().startswith(('- ', '* '))]
 
-    def verify_row(no, s, where):
-        """该行每一段引文与每一个定位都各自比；页码与行号同时给时两个都要成立。"""
+    def verify_row(no, s):
+        """两个定位各自比：页码要在那一页找得到，行号要在那一行找得到——只读其一会把假的那枚放过。"""
         qs = QUOTE_RE.findall(s)
-        if not qs:
+        if not qs or tbl_lines is None:
             return
-        if tbl_lines is None:
-            unverifiable.append('%s第 %d 行有引文，但未给 --table 表原文（不可判不并入通过）' % (where, no))
-            return
-        txt = '\n'.join(tbl_lines)
-        for q in qs:
-            if norm(q) not in norm(txt):
-                add('E-QUOTE', '逐字回表', no, '「%s」在表原文里找不到逐字（规格：数要么照抄那一格，要么写进第三节说未读到，不能凭印象补）' % q[:22])
         for pg in sorted(set(PAGE_RE.findall(s))):
             blk = page_block(tbl_lines, int(pg))
             if blk is None:
@@ -177,6 +224,74 @@ def scan(path: Path, tbl_lines):
                 add('E-QUOTE', '行号定位', no, '%s:%d 超出表原文行数（现读行数=%d）——行号与页码同时给时两个都要各自成立' % (fname, n, len(tbl_lines)))
             elif not any(norm(q) in norm(tbl_lines[n - 1]) for q in qs):
                 add('E-QUOTE', '行号定位', no, '%s:%d 那一行没有这格数（现读：%s）' % (fname, n, tbl_lines[n - 1][:26]))
+
+    def verify_cells(no, s):
+        """数落在所报那一行的那一格才放行——A 整行照序，B 「列头」=「数」配对，两形之一；配了列头就得按列头取到那一格。
+        全篇每一行都过这一道，不分条目行内外（非条目行想借「数在这一行」蒙过去同样发条）。"""
+        if tbl_lines is None:
+            return
+        spans = QUOTE_RE.findall(s)
+        rows_cited = []
+        for _, ln_no in LINE_RE.findall(s):
+            R = model.get(int(ln_no))
+            if R is not None:
+                rows_cited.append((int(ln_no), R))
+        if not rows_cited:
+            return
+        binds = [(norm(h), norm(v), h, v) for h, v in BIND_RE.findall(s)]
+
+        for hn, vn, hraw, vraw in binds:
+            hit, why = None, []
+            for ln_no, R in rows_cited:
+                cs, hdr = R['cells'], R['header']
+                nhdr = [norm(x) for x in hdr]
+                if hn not in nhdr:
+                    why.append('第 %d 行的列头里没有「%s」' % (ln_no, hraw))
+                    continue
+                k = nhdr.index(hn)
+                if k >= len(cs):
+                    why.append('第 %d 行列头 %d 格对不上数据 %d 格（跨列表头或合并格），按列头定位不到那一格——整行照序写或落第三节点名' % (ln_no, len(hdr), len(cs)))
+                    continue
+                if norm(cs[k]) == vn:
+                    hit = cs[k]
+                    break
+                why.append('第 %d 行按「%s」取到的那一格是 %s' % (ln_no, hdr[k], cs[k] if cs[k].strip() else '空格（表里没写值）'))
+            if hit is None:
+                add('E-QUOTE', '格位·列头配对不成立', no,
+                    '「%s」=「%s」这一对里，那一格不是这个数（%s；规格：格里是几就写几——空值「—」不等于 0，也不等于上一年的数，对不回列头就别配成一对）'
+                    % (hraw, vraw, '；'.join(why)))
+
+        if not spans:
+            return
+        for ln_no, R in rows_cited:
+            cs, hdr = R['cells'], R['header']
+            nhdr = [norm(x) for x in hdr]
+            label = norm(cs[0]) if cs else ''
+            data = [norm(c) for c in cs[1:] if c.strip()]
+            vals = [(q, norm(q)) for q in spans if norm(q) != label and norm(q) not in nhdr and norm(q) in data]
+            if not vals or [v for _, v in vals] == data:
+                continue
+            shown = '、'.join(c for c in cs[1:] if c.strip())
+            if not binds:
+                add('E-QUOTE', '格位·整行照序或配列头', no,
+                    '第 %d 行按 | 拆列后的数=%s，本行括的是 %s——既不是整行照序，也没写一个「列头」=「数」（规格：光说数在这一行不够，得说清是哪一格；跨列表头对不回列头的就整行照序写或落第三节）'
+                    % (ln_no, shown, '、'.join('「%s」' % q for q, _ in vals)))
+                continue
+            for q, v in vals:
+                ok = any(vv == v and hh in nhdr and nhdr.index(hh) < len(cs) and norm(cs[nhdr.index(hh)]) == v
+                         for hh, vv, _, _ in binds)
+                if not ok:
+                    add('E-QUOTE', '格位·数没配列头', no,
+                        '「%s」确实在第 %d 行里，但没有一个列头配对把它指到这一格（现读列头=%s；该行各格=%s）——同一行另一格的数不能顶替你要说的那一格，跨表借列头也不算（本行只认这一行的列头）'
+                        % (q, ln_no, '、'.join(hdr) or '该表没认到列头', shown))
+
+    # 道三的另一半：逐行核格位，全篇都跑——非条目行想借「数在这一行」蒙过去也不行
+    if tbl_lines is not None:
+        for i, ln in enumerate(lines, 1):
+            verify_cells(i, ln)
+    elif any(QUOTE_RE.findall(l) for l in lines):
+        unverifiable.append('全篇 %d 处书名号引文既没逐字回表、也没核格位（未给 --table 表原文；不可判不并入通过，这一趟道五的引号豁免按未核处理）'
+                            % sum(len(QUOTE_RE.findall(l)) for l in lines))
 
     # 第一节：规格四件
     if 1 in bounds:
@@ -193,7 +308,7 @@ def scan(path: Path, tbl_lines):
             elif TODO_RE.search(got[k][1]):
                 add('E-FORMAT', '规格待核', got[k][0], '「%s」仍是待核位（规格：这一件要人选，待核不算填过——本件不代选图型）' % k)
             else:
-                verify_row(got[k][0], got[k][1], '第一节')
+                verify_row(got[k][0], got[k][1])
 
     # 第二节：要点条数与锚
     listed = {}
@@ -227,7 +342,7 @@ def scan(path: Path, tbl_lines):
                 add('E-ANCHOR', '锚', no, '锚 [S%s] 在第四节没有对应行（规格：用的每个编号都要回得到来源行）' % m.group(1))
             if not LINE_RE.search(s) and not PAGE_RE.search(s):
                 add('E-ANCHOR', '定位', no, '要点行没有定位（规格：带 第 N 页 或 文件:行号，读者才翻得到那一格）')
-            verify_row(no, s, '要点')
+            verify_row(no, s)
 
     # 第三节：四类限度点名
     if 3 in bounds:
@@ -247,7 +362,7 @@ def scan(path: Path, tbl_lines):
                     add('E-COVERAGE', '待核不算点名', no, '「%s」这一类仍是待核位（规格：填位置或写未见到，待核不算点名）' % k)
                 elif not (LINE_RE.search(s) or PAGE_RE.search(s) or UNSEEN_RE.search(strip_quotes(s))):
                     add('E-COVERAGE', '点名形制', no, '「%s」这一类既没给位置也没写未见到（规格：两类之一，别留半句）' % k)
-                verify_row(no, s, '限度')
+                verify_row(no, s)
         for i, ln in enumerate(lines, 1):
             if 3 in bounds and bounds[3][0] < i - 1 < bounds[3][1]:
                 continue
@@ -256,33 +371,37 @@ def scan(path: Path, tbl_lines):
             if UNSEEN_RE.search(strip_quotes(ln)) and not any(UNSEEN_RE.search(l) for l in lines[bounds[3][0] + 1:bounds[3][1]]):
                 add('E-COVERAGE', '缺口点名', i, '这一行报了未读到，而第三节没有任何未见到／未取到条目（规格：没读到的部分一律在第三节点名，不补常识性推断）')
 
-    # 第五节判据：语义段制，裸断言与结构式两网并行
+    # 第五节判据：语义段制，裸断言与结构式两网并行；剥的引号只剥表里逐字真有的那一段
     for unit in units_of(lines):
-        text = strip_quotes('\n'.join(l for _, l in unit)).replace('\n', '')
+        text = strip_verified('\n'.join(l for _, l in unit), verified).replace('\n', '')
         if PLACE_RE.search(text):
             continue
         m = ADVICE_RE.search(text)
         if m:
-            no = next((i for i, l in unit if ADVICE_RE.search(strip_quotes(l))), unit[0][0])
-            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；要写就同一语义段里挂 [待人工]）' % m.group(0))
+            no = next((i for i, l in unit if ADVICE_RE.search(strip_verified(l, verified))), unit[0][0])
+            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；引号只豁免表里逐字真有的那一段，表里没有的括起来照样判；要写就同一语义段里挂 [待人工]）' % m.group(0))
             continue
         s, tg = SUPER_RE.search(text), TARGET_RE.search(text)
         if s and tg:
-            no = next((i for i, l in unit if SUPER_RE.search(strip_quotes(l))), unit[0][0])
+            no = next((i for i, l in unit if SUPER_RE.search(strip_verified(l, verified))), unit[0][0])
             add('E-ADVICE', '结论式名次', no, '作者句子里「%s」与「%s」同语义段同现——换了说法的投资结论同样拦（规格：不据图替读者下判断；换行不算躲开，续行并入上一段；要留就挂 [待人工]）'
                 % (s.group(0), tg.group(0)))
     return issues, lines, unverifiable
 
 
 codes_doc = {'E-FORMAT': '道一 形制与规格四件', 'E-ANCHOR': '道二 锚与定位与解析日标签',
-             'E-QUOTE': '道三 数逐字回表（页码与行号各比各的）', 'E-COVERAGE': '道四 四类限度点名',
-             'E-ADVICE': '道五 投资断言零命中（语义段制）'}
+             'E-QUOTE': '道三 逐字回表（全篇书名号都回表；数按列头配对或整行照序落那一格；页码与行号各比各的）', 'E-COVERAGE': '道四 四类限度点名',
+             'E-ADVICE': '道五 投资断言零命中（语义段制，只豁免逐字核过的引文）'}
 
 FX = Path(__file__).resolve().parent / 'fixtures'
 CASES = [('good-chart.md', 0, None),
          ('bad-spec.md', 1, 'E-FORMAT'),
          ('bad-no-anchor.md', 1, 'E-ANCHOR'),
          ('bad-invented-number.md', 1, 'E-QUOTE'),
+         ('bad-unbound-quote.md', 1, 'E-QUOTE'),
+         ('bad-cell-misplaced.md', 1, 'E-QUOTE'),
+         ('bad-no-header-pair.md', 1, 'E-QUOTE'),
+         ('bad-cell-empty-zero.md', 1, 'E-QUOTE'),
          ('bad-missing-limit.md', 1, 'E-COVERAGE'),
          ('bad-advice.md', 1, 'E-ADVICE'),
          ('bad-bare-outcome.md', 1, 'E-ADVICE'),
