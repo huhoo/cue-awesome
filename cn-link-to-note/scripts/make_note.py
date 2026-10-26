@@ -78,7 +78,7 @@ def main():
     today = dt.date.today().isoformat()
     if a.asof:
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', a.asof):
-            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（笔记进库后靠这一天判时效）' % a.asof)
+            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（笔记进库后靠这一天判时效——这一天由你记录；机检只核它形制对不对、在不在，不证它是否真是取回当天）' % a.asof)
             return 3
         asof = a.asof
     else:
