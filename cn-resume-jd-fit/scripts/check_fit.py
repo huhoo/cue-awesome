@@ -4,12 +4,13 @@
 
 用法：
     python3 -B scripts/check_fit.py <报告.md> [--jd JD.md] [--resume 简历.md]
-    python3 -B scripts/check_fit.py --selftest              跑包内夹具（好样须过、五枚坏样须各发它该发的那一道）
+    python3 -B scripts/check_fit.py --selftest              跑包内夹具（好样须过、七枚坏样须各发它该发的那一道）
     python3 -B scripts/check_fit.py --help                   本说明
     校样件时给上两枚原文：--jd scripts/fixtures/target-jd.md --resume scripts/fixtures/target-resume.md
 
 五道（判定全集在本脚本，本文只指路）：
-    道一 形制 E-FORMAT   ：头部四件自标逐字在位；四节齐且有序；一句话结论只一行且 ≤80 字符；逐条对齐行数落在 3–15 这一带
+    道一 形制 E-FORMAT   ：头部四件自标逐字在位；四节齐且有序；一句话结论只一行且 ≤80 字符，且这一行要有两件结构在场——**报到哪几条**（计数＋条）与**未读到／缺口点名**；逐条对齐行数落在 3–15 这一带
+    道一附 结论位归属    ：第一节若引原话，同一行必须写明那是谁的话（简历自述／JD 原文一类），否则发 E-RANK——被引者的话只能当证据，搬进「结论」这一格就成了报告自己的名次
     道二 锚   E-ANCHOR   ：每条对齐行必须同时有要求锚与证据锚，且两个编号在第四节都有对应行；来源行必须带 定位（文件:行号 或 URL）＋解析日
     道三 逐字 E-QUOTE    ：要求引号里那句必须逐字在 JD 原文里，证据引号里那句必须逐字在简历原文里——只给一侧时另一侧明写不可判，不并入通过
     道四 缺口 E-COVERAGE ：第三节两栏（JD 有要求而简历无证据／简历有内容而 JD 不关心）都要在位；第二节判为无证据的要求必须在第三节点名；第四节零来源行发红
@@ -42,6 +43,11 @@ RANK_RE = re.compile(r'推荐录用|建议录用|优先录用|应当录用|不�
 SUPER_RE = re.compile(r'最[^\n]{0,6}?(?:适合|合适|匹配|契合|符合|贴近|接近|优|佳|强)|最[一二三]名|第一名|首选|次选|更[^\n]{0,6}?(?:适合|合适|匹配|契合|符合|优|强|佳)|优于|胜过|高过|压过')
 CONCL_RE = re.compile(r'本岗位|该岗位|这个岗位|此岗位|岗位|候选人|申请者|应聘者|应聘|录用|入职|进人|招人|综上|因此|所以|建议|推荐|结论|取舍')
 NOEVID_RE = re.compile(r'无证据|没有证据|未见证据|未取到')
+
+# 第一节「结论」位的结构判据（不靠扩名次词表）：要说清匹配到哪几条＋未读到哪些；引号必须带归属。
+COUNT_RE = re.compile(r'(?<![\d])(?:\d+|[一二三四五六七八九十两]+)\s*条')
+GAPWORD_FIT_RE = re.compile(r'未取到|未读到|无证据|没有证据|部分证据|缺口|未见|只有部分')
+ATTRIB_RE = re.compile(r'自述|原话|原文|写的|写道|说过|简历|JD|岗位说明|对方|本人')
 MIN_ROWS, MAX_ROWS = 3, 15
 MAX_CONCLUSION = 80
 
@@ -94,11 +100,24 @@ def scan(path: Path, jd_text, resume_text):
     if 1 in bounds:
         i0, i1 = bounds[1]
         body = [l.strip() for l in lines[i0 + 1:i1] if l.strip() and not l.strip().startswith(('#', '>'))]
+        concl = body[0] if len(body) == 1 else ''
         if len(body) != 1:
             add('E-FORMAT', '结论行', i0 + 1, '一句话结论有 %d 行（规格：只一行——多出来的那句就不叫一句话）' % len(body))
         elif len(body[0]) > MAX_CONCLUSION:
             add('E-FORMAT', '结论长度', i0 + 1, '一句话结论 %d 字符，超 %d 帽（规格：结论要短到能被一眼读完）'
                 % (len(body[0]), MAX_CONCLUSION))
+        elif concl:
+            if not COUNT_RE.search(concl):
+                add('E-FORMAT', '结论结构', i0 + 1, '一句话结论没报到哪一条（现读=%s；规格：这一格要说清「几条有逐字证据、几条没有」——不计数就不是核对结果，是一句感想）'
+                    % concl[:26])
+            if not GAPWORD_FIT_RE.search(concl):
+                add('E-FORMAT', '结论结构', i0 + 1, '一句话结论没点名缺口（现读=%s；规格：要说清未取到／无证据／只有部分证据的是哪几条，缺这一半就把缺口藏进了语气里）'
+                    % concl[:26])
+            for q in QUOTE_RE.findall(concl):
+                if not ATTRIB_RE.search(concl):
+                    add('E-RANK', '结论位带引号无归属', i0 + 1, '第一节引了原话「%s」却没写这是谁的话（规格：被引者的话只能当证据、不能当本报告的结论——要么写明「简历自述／JD 原文」，要么把这句放回第二节挂锚；这条与引号内容无关，判的是「结论」这一格的框架）'
+                        % q[:18])
+                    break
 
     listed = {}
     if 4 in bounds:
@@ -113,7 +132,7 @@ def scan(path: Path, jd_text, resume_text):
             else:
                 listed[int(m.group(1))] = no
             if not DATE_RE.search(ln):
-                add('E-ANCHOR', '来源', no, '来源行缺解析日 YYYY-MM-DD（规格：两侧文档都在改，日期是这份核对的时效凭据）')
+                add('E-ANCHOR', '来源', no, '来源行缺解析日 YYYY-MM-DD（规格：两侧文档都在改，这一行要说清正文是哪一天取回的；机检只核它成形、是日历上存在的一天，核不了那天是否真是取回当天——取回时刻由人登记并对得上）')
             if not LOC_RE.search(ln):
                 add('E-ANCHOR', '来源', no, '来源行既无 URL 也无 文件:行号 定位（规格：要回到一处原文，得有个位置）')
 
@@ -214,7 +233,9 @@ CASES = [('good-fit.md', 0, None),
          ('bad-no-anchor.md', 1, 'E-ANCHOR'),
          ('bad-invented-evidence.md', 1, 'E-QUOTE'),
          ('bad-missing-gap.md', 1, 'E-COVERAGE'),
-         ('bad-hire-verdict.md', 1, 'E-RANK')]
+         ('bad-hire-verdict.md', 1, 'E-RANK'),
+         ('bad-concl-structure.md', 1, 'E-FORMAT'),
+         ('bad-concl-quote.md', 1, 'E-RANK')]
 
 
 def selftest(jd, resume):
@@ -245,8 +266,10 @@ def selftest(jd, resume):
             continue
         print('  ok   %s（退码 %d·期望 %s·实发码 %s·注入生效=%s）' % (
             name, rc, want_code or '全过', '、'.join(codes) or '无', '是' if (rc or codes) else '不适用（好样）'))
-    print('selftest: ' + ('ALL GREEN（好样 1 枚·坏样五枚各只发它该发的那一道 5/5·逐枚报注入生效与否）'
-                          if bad == 0 else '%d 条不合预期' % bad))
+    n_good = sum(1 for x in CASES if x[2] is None)
+    n_bad = len(CASES) - n_good
+    print('selftest: ' + ('ALL GREEN（好样 %d 枚·坏样 %d 枚各只发它该发的那一道 %d/%d·逐枚报注入生效与否）'
+                          % (n_good, n_bad, n_bad, n_bad) if bad == 0 else '%d 条不合预期' % bad))
     return 1 if bad else 0
 
 

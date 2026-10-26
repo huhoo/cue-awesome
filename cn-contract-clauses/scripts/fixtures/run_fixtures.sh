@@ -17,7 +17,7 @@ for f in "$ROOT/scripts/check_clauses.py" "$ROOT/scripts/collect_clauses.py" "$F
 done
 SRC="scripts/fixtures/target-contract.md"
 
-echo "档① 机检自测（好样须过、五枚坏样须各发它该发的那一道，两侧比对带原文）"
+echo "档① 机检自测（好样须过、七枚坏样须各发它该发的那一道，两侧比对带原文）"
 out=$(cd "$ROOT" && python3 -B scripts/check_clauses.py --selftest 2>&1); rc=$?
 echo "$(printf '%s\n' "$out" | tail -1)"; echo "  实发退码=$rc｜期望=0"
 if [ "$rc" -ne 0 ]; then echo "  → 不合"; bad=$((bad + 1)); else echo "  → 合"; fi
@@ -31,6 +31,8 @@ bad-no-anchor.md|E-ANCHOR
 bad-invented-quote.md|E-QUOTE
 bad-missing-type.md|E-COVERAGE
 bad-legal-verdict.md|E-LAW
+bad-outcome-bare.md|E-LAW
+bad-outcome-split.md|E-LAW
 PAIRS
 n=0
 while IFS='|' read -r fx want; do

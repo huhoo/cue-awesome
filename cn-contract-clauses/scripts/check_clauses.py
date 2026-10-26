@@ -4,7 +4,7 @@
 
 用法：
     python3 -B scripts/check_clauses.py <清单.md> [--source 合同原文.md]
-    python3 -B scripts/check_clauses.py --selftest        跑包内夹具（好样须过、五枚坏样须各发它该发的那一道）
+    python3 -B scripts/check_clauses.py --selftest        跑包内夹具（好样须过、七枚坏样须各发它该发的那一道）
     python3 -B scripts/check_clauses.py --help             本说明
     校样件时给上原文：--source scripts/fixtures/target-contract.md
 
@@ -13,7 +13,7 @@
     道二 锚   E-ANCHOR  ：每条要点行末尾带 [S#] 且该行有定位（第 N 页 或 文件:行号）；锚在第四节要有对应行；来源行必须同时带定位与解析日——解析日＝日期挂在「解析日」标签下且是日历上存在的一天，换成「合同签署日 2026-10-24」那种发条
     道三 逐字 E-QUOTE   ：引号里那句必须逐字在原文里；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --source 时明写不可判、不并入通过
     道四 点名 E-COVERAGE ：第三节七类需盯条款（单方变更／自动续约／排他／违约金／争议解决地／数据与保密／责任上限）逐类都要在位，每类要么给定位、要么写「未见到」；待填与待核不算点名；正文别处报了未读到而第三节没点名的发红；第四节零来源行发红
-    道五 断言 E-LAW     ：作者自己写的句子里不得出现法律意见与效力断言（合法／违法／无效／可撤销／构成违约／有约束力／法院会支持／建议删除该条／风险等级 等），也不得出现**预测式结论**——情态／概率词（大概率／预计／应该会／未必…）与裁判结果词（不被支持／被认定／败诉／免责…）同句同现即发条；评级排序字样同样零命中。引号里的合同原文不算作者表态，比对时先剥掉；要写判断就同行挂 [待人工]
+    道五 断言 E-LAW     ：作者自己写的句子里不得出现法律意见与效力断言（合法／违法／无效／可撤销／构成违约／有约束力／法院会支持／建议删除该条／风险等级 等），也不得出现**对裁判结果的表态**——裁判结果词（不被支持／获支持／被认定／被驳回／败诉／免责／获偿…）**单独出现就发条，不要求情态词在场**；写「大概率要再核」之后换行再写「最终不被支持」按同一语义段算（判的是句子不是物理行，续行并入前段）。评级排序字样同样零命中。引号里的合同原文不算作者表态，比对时先剥掉；要写判断就在同一语义段里挂 [待人工]
 
 退码：0 全过（不可判项在输出里明写，不改退码）；1 有发条；2 用法错；3 取值域故障（清单或原文读不到——不读成「零违例」）。
 出口形制：失败＝一行 "FAIL: <文件>（N 条）"，其下每条详行先打错误码前缀；全过＝一行 "PASS: …" 加计数行。
@@ -67,6 +67,30 @@ OUTCOME_RE = re.compile(r'不[会能]?被支持|不[会能]?获支持|不予支�
 
 def norm(t: str) -> str:
     return re.sub(r'\s+', '', t)
+
+
+UNIT_START_RE = re.compile(r'^\\s*(#|[-*+|>]\\s?|\\|)')
+
+
+def units_of(lines):
+    """把正文切成「语义段」：行首是标题／列表项／表格／引用块的开新段，其余行接到前一段——
+    道五判的是作者表态，表态不因排版换行而消失。返回 [ [(行号, 行内容), ...], ... ]。"""
+    out, cur = [], []
+    for i, ln in enumerate(lines, 1):
+        if not ln.strip():
+            if cur:
+                out.append(cur)
+                cur = []
+            continue
+        if UNIT_START_RE.match(ln) or not cur:
+            if cur:
+                out.append(cur)
+            cur = [(i, ln)]
+        else:
+            cur.append((i, ln))
+    if cur:
+        out.append(cur)
+    return out
 
 
 def parse_date_state(s: str):
@@ -164,7 +188,7 @@ def scan(path: Path, src_lines):
                 listed[int(m.group(1))] = no
             ok_label, lab, shown = parse_date_state(ln)
             if not ok_label:
-                add('E-ANCHOR', '来源', no, '来源行的日期没挂在「解析日」标签下或不是日历上存在的一天（现读标签=%s，现读日期=%s；规格：形制对不等于它是解析日——「合同签署日 2026-10-24」那种日期不算这份清单的时效凭据，2026-13-99 那一形也不收）'
+                add('E-ANCHOR', '来源', no, '来源行的日期没挂在「解析日」标签下或不是日历上存在的一天（现读标签=%s，现读日期=%s；规格：形制对不等于它是解析日——「合同签署日 2026-10-24」那种日期不在解析日标签下，2026-13-99 那一形也不是真实存在的一天；机检核这两件，核不了那天是否真是取回当天）'
                     % (lab, '、'.join(shown) or '无'))
             if not LINE_RE.search(ln) and not PAGE_RE.search(ln) and not re.search(r'https?://|www\.', ln):
                 add('E-ANCHOR', '来源', no, '来源行既无 URL 也无 文件:行号／第 N 页（规格：要回到一处原文，得有个位置）')
@@ -239,17 +263,19 @@ def scan(path: Path, src_lines):
                     UNSEEN_RE.search(l) for l in lines[bounds[3][0] + 1:bounds[3][1]]):
                 add('E-COVERAGE', '缺口点名', i, '这一行报了未读到，而第三节没有任何未见到条目（规格：未读到的部分一律在第三节点名，不补常识性推断）')
 
-    for i, ln in enumerate(lines, 1):
-        authorial = strip_quotes(ln)
-        if PLACE_RE.search(ln):
+    for unit in units_of(lines):
+        text = strip_quotes('\n'.join(l for _, l in unit)).replace('\n', '')
+        if PLACE_RE.search(text):
             continue
-        m = LAW_RE.search(authorial)
+        m = LAW_RE.search(text)
         if m:
-            add('E-LAW', '断言', i, '作者句子里出现「%s」（规格：本件不出实务级法律意见、不判定条款效力、不替代律师审查，也不评级排序；要写就同行挂 [待人工]）' % m.group(0))
-            continue
-        p, o = PROB_RE.search(authorial), OUTCOME_RE.search(authorial)
-        if p and o:
-            add('E-LAW', '预测式结论', i, '作者句子里「%s」与「%s」同句——对裁判结果的预测就是法律意见，换掉断言词不等于出局（规格：本件不预测法院或仲裁会不会支持这一条，只登记文里写了什么；要留这个判断就同行挂 [待人工]）' % (p.group(0), o.group(0)))
+            add('E-LAW', '断言', unit[0][0], '作者句子里出现「%s」（规格：本件不出实务级法律意见、不判定条款效力、不替代律师审查，也不评级排序；要写就同一语义段里挂 [待人工]）' % m.group(0))
+        o = OUTCOME_RE.search(text)
+        if o:
+            no = next((i for i, l in unit if OUTCOME_RE.search(strip_quotes(l))), unit[0][0])
+            q = PROB_RE.search(text)
+            add('E-LAW', '裁判结果表态', no, '作者句子里出现对裁判结果的表态「%s」%s——这一支不靠情态词在场，也不按物理行切：写完「大概率要再核」再换行写「最终不被支持」算同一语义段（规格：本件不替法院或仲裁表态，也不预测某条会不会被支持；要留这个判断就同一语义段里挂 [待人工]）'
+                % (o.group(0), '，并带情态「%s」' % q.group(0) if q else '（裸断言，无情态词也发条）'))
     return issues, lines, unverifiable
 
 
@@ -292,7 +318,9 @@ CASES = [('good-clauses.md', 0, None),
          ('bad-no-anchor.md', 1, 'E-ANCHOR'),
          ('bad-invented-quote.md', 1, 'E-QUOTE'),
          ('bad-missing-type.md', 1, 'E-COVERAGE'),
-         ('bad-legal-verdict.md', 1, 'E-LAW')]
+         ('bad-legal-verdict.md', 1, 'E-LAW'),
+         ('bad-outcome-bare.md', 1, 'E-LAW'),
+         ('bad-outcome-split.md', 1, 'E-LAW')]
 
 
 def selftest(source):
@@ -323,8 +351,10 @@ def selftest(source):
             continue
         print('  ok   %s（退码 %d·期望 %s·实发码 %s·注入生效=%s）' % (
             name, rc, want_code or '全过', '、'.join(codes) or '无', '是' if (rc or codes) else '不适用（好样）'))
-    print('selftest: ' + ('ALL GREEN（好样 1 枚·坏样五枚各只发它该发的那一道 5/5·逐枚报注入生效与否）'
-                          if bad == 0 else '%d 条不合预期' % bad))
+    n_good = sum(1 for x in CASES if x[2] is None)
+    n_bad = len(CASES) - n_good
+    print('selftest: ' + ('ALL GREEN（好样 %d 枚·坏样 %d 枚各只发它该发的那一道 %d/%d·逐枚报注入生效与否）'
+                          % (n_good, n_bad, n_bad, n_bad) if bad == 0 else '%d 条不合预期' % bad))
     return 1 if bad else 0
 
 

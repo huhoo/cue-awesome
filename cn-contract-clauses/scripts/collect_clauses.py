@@ -66,7 +66,7 @@ def main():
         try:
             dt.date.fromisoformat(a.asof)
         except ValueError:
-            print('取值域故障：--asof 成形但不是日历上存在的一天，现读=%r（解析日是这份清单的时效凭据，2026-13-99 那一形不收）' % a.asof)
+            print('取值域故障：--asof 成形但不是日历上存在的一天，现读=%r（来源行的解析日要的是真实存在的一天，2026-13-99 那一形不收）' % a.asof)
             return 3
         asof = a.asof
     else:

@@ -69,7 +69,7 @@ def main():
     today = dt.date.today().isoformat()
     if a.asof:
         if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', a.asof):
-            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（两侧文档都在改，日期是这份核对的时效凭据）' % a.asof)
+            print('取值域故障：--asof 要写成 YYYY-MM-DD，现读=%r（来源行的解析日要的是真实存在的一天）' % a.asof)
             return 3
         asof = a.asof
     else:

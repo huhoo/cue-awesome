@@ -18,7 +18,7 @@ done
 JD="scripts/fixtures/target-jd.md"
 RS="scripts/fixtures/target-resume.md"
 
-echo "档① 机检自测（好样须过、五枚坏样须各发它该发的那一道，两侧原文都给）"
+echo "档① 机检自测（好样须过、七枚坏样须各发它该发的那一道，两侧原文都给）"
 out=$(cd "$ROOT" && python3 -B scripts/check_fit.py --selftest 2>&1); rc=$?
 echo "$(printf '%s\n' "$out" | tail -1)"; echo "  实发退码=$rc｜期望=0"
 if [ "$rc" -ne 0 ]; then echo "  → 不合"; bad=$((bad + 1)); else echo "  → 合"; fi
@@ -32,6 +32,8 @@ bad-no-anchor.md|E-ANCHOR
 bad-invented-evidence.md|E-QUOTE
 bad-missing-gap.md|E-COVERAGE
 bad-hire-verdict.md|E-RANK
+bad-concl-structure.md|E-FORMAT
+bad-concl-quote.md|E-RANK
 PAIRS
 n=0
 while IFS='|' read -r fx want; do
@@ -65,7 +67,7 @@ else
   echo "    → 不合（这一形变了就复读 check_fit 的道三出口与末行自报，别沿用本断言）"; bad=$((bad + 1))
 fi
 
-echo "档③ 采集器出骨架，骨架过机检——期望红在「证据待填不是原文逐字」那五条"
+echo "档③ 采集器出骨架，骨架过机检——期望红在两道：证据待填不是原文逐字（五条）＋一句话结论还没结构（待填位不算报数）"
 out=$(cd "$ROOT" && python3 -B scripts/collect_fit.py --jd "$JD" --resume "$RS" --out "$WORK/skeleton.md" 2>&1); rc=$?
 echo "$(printf '%s\n' "$out" | head -1)"; echo "  实发退码=$rc｜期望=0"
 if [ "$rc" -ne 0 ]; then
@@ -76,8 +78,9 @@ if [ -f "$WORK/skeleton.md" ]; then
   out=$(cd "$ROOT" && python3 -B scripts/check_fit.py "$WORK/skeleton.md" --jd "$JD" --resume "$RS" 2>&1); rc=$?
   codes=$(printf '%s\n' "$out" | grep -o 'E-[A-Z]*' | sort -u | tr '\n' ',' | sed 's/,$//')
   hit=$(printf '%s\n' "$out" | grep -c '证据引号里那句在简历原文里找不到')
-  echo "  实发退码=$rc｜期望=1｜码集=$codes（期望只 E-QUOTE）｜待填红命中=$hit｜骨架要求行=$(grep -c '^- 要求「' "$WORK/skeleton.md")"
-  if [ "$rc" -eq 1 ] && [ "$codes" = "E-QUOTE" ] && [ "$hit" -ge 1 ]; then
+  sh=$(printf '%s\n' "$out" | grep -c '一句话结论没')
+  echo "  实发退码=$rc｜期望=1｜码集=$codes（期望 E-FORMAT、E-QUOTE 两道：证据位不是原文逐字，一句话结论也还没结构）｜待填红命中=$hit｜结构红命中=$sh｜骨架要求行=$(grep -c '^- 要求「' "$WORK/skeleton.md")"
+  if [ "$rc" -eq 1 ] && [ "$codes" = "E-FORMAT,E-QUOTE" ] && [ "$hit" -ge 1 ] && [ "$sh" -ge 1 ]; then
     echo "    → 合（匹配这一步没做就红在这里，骨架不该被当成核对报告交付）"
   else
     echo "    → 不合：期望的红不再在场（退码 $rc／码集 $codes／命中 $hit）——这一形变了就复读 collect_fit 的待填句与 check_fit 的道三判据，别沿用本断言"

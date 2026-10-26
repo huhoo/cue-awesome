@@ -6,7 +6,7 @@
 
 **输入**：一份合同正文（本地文件，或经解析通道取回的 PDF／扫描件／签署页照片正文）
 **输出**：四节清单（概览三件／逐条要点／需盯条款七类／来源与解析日），一条一行，可直接带去讨论
-**代价**：四节契约 + 一道机检；解析通道开没开，决定的是「手里这份是不是签署那一版」那一层——两条路各自缺什么、走哪条，写在 §二 与 §四
+**代价**：四节契约 + 一道机检；解析通道开没开，决定的是**远端那份正文取不取得到**——「手里这份是不是签署那一版」这一格两条路都不判（本件不读签署页标记、不对版本链，由你指定哪一版为准）；两条路各自缺什么、走哪条，写在 §二 与 §四
 **机检**：`scripts/check_clauses.py` 五道（形制与条数带／锚与定位／引文逐字回原文／七类点名／法律与效力断言零命中），零网络、不执行合同里提到的任何程序
 
 ---
@@ -15,7 +15,7 @@
 
 | 步 | 动作 | 怎么做 | 不做会怎样 |
 |---|---|---|---|
-| ① | **先看形状**（30 秒、零网络、零计费） | `bash scripts/fixtures/run_fixtures.sh` —— 三档一次跑完：机检自测、五枚坏样逐枚单跑、采集器出骨架且该红就红。末行自报「档数=3｜合期望=3｜不合=0｜不可判=0」 | 没见过形状就上手，容易把「读着挺顺」当成「每条都回得去」；这一档 30 秒就能看出差别 |
+| ① | **先看形状**（30 秒、零网络、零计费） | `bash scripts/fixtures/run_fixtures.sh` —— 三档一次跑完：机检自测、七枚坏样逐枚单跑、采集器出骨架且该红就红。末行自报「档数=3｜合期望=3｜不合=0｜不可判=0」 | 没见过形状就上手，容易把「读着挺顺」当成「每条都回得去」；这一档 30 秒就能看出差别 |
 | ② | **排骨架，逐类判要盯** | `python3 -B scripts/collect_clauses.py --source 合同.md --out 清单.md` 把条款行逐条搬进第二节并自带页码与行号；第三节七个待核位逐类填「原文位置＋一句逐字引文」，文里确实没有这一类就写未见到 | 待核位没填就红在 `E-COVERAGE`（骨架不是清单）；要点行漏挂 `[S1]`、或来源行缺定位缺解析日，红在 `E-ANCHOR` |
 | ③ | **过机检，再带去讨论** | `python3 -B scripts/check_clauses.py 清单.md --source 合同.md`，按详行 `E-*` 码逐条改；机检过完它仍只是一份阅读材料——要不要接受某一条、怎么谈、请不请律师，是人的判断 | 凭印象造的那句原文、悄悄少判的一类、把「这条无效」写进要点，都会跟着材料进到人的判断里——这三类都是形制层，机检能拦；内容层还得回原文 |
 
@@ -25,14 +25,14 @@
 
 **装本件自己（主路）**：`npx skills add huhoo/cue-awesome --skill cn-contract-clauses`——这条只装本包；装完在你这一侧重列一次已安装 skill，清单里看得到 `cn-contract-clauses` 这个名字才算文件到位。没有 CLI 环境时的兜底是把本目录整个放进宿主支持的 skills 目录（`~/.workbuddy/skills/`）。
 
-本件唯一的取证腿是 `cue-omni-reader`（解析）：合同在远端（云盘 PDF、扫描件、签署页照片）时，正文靠它取回成本地能读的那一份——**本机没有那份文件也能读，而且逐字带页码或行号正是这一腿的价值**，所以它是主路不是装饰。它的已连判据（纯解析腿，没有 curl 可以替代它）：宿主列工具走 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_result` 这几枚才算已连。列不到就是没连：本件照旧只读你手上那份本地文件，代价是「手里这份是不是签署的那一版」那一层整块缺位（缺的是版本同一性这层证据，不是排版）。三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。key 取自本地凭据设施，不进聊天、不在终端回显，本面不新增任何凭据读取动作；解析的消耗以服务端返回为准，本件不代估也不代付，花之前一定先问。
+本件唯一的取证腿是 `cue-omni-reader`（解析）：合同在远端（云盘 PDF、扫描件、签署页照片）时，正文靠它取回成本地能读的那一份——**本机没有那份文件也能读，而且逐字带页码或行号正是这一腿的价值**，所以它是主路不是装饰。它的已连判据（纯解析腿，没有 curl 可以替代它）：宿主列工具走 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_result` 这几枚才算已连。列不到就是没连：本件照旧只读你手上那份本地文件，代价是**远端那份正文读不进来**（缺的是那一页那一行的逐字正文，不是排版）。版本同一性这一格另说：通道连上也不判——解析按你指定的对象取正文，本件不读签署页标记、不对版本链，「是不是签署那一版」由你指定并对齐。三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。key 取自本地凭据设施，不进聊天、不在终端回显，本面不新增任何凭据读取动作；解析的消耗以服务端返回为准，本件不代估也不代付，花之前一定先问。
 
 ## 三、离线样例：30 秒看到形状
 
 ```bash
 cd cn-contract-clauses
 bash scripts/fixtures/run_fixtures.sh
-# 档① 机检自测：好样须过、五枚坏样须各发它该发的那一道 → selftest: ALL GREEN
+# 档① 机检自测：好样须过、七枚坏样须各发它该发的那一道 → selftest: ALL GREEN
 # 档② 逐枚单跑：一枚一行，逐行报「期望只发 E-X／实发码恰为 E-X／发条几条」，并自报注入生效与否
 # 档③ 采集器出骨架：把合成合同的条款行搬进第二节，骨架过机检期望红在七类需盯条款的待核位
 ```
@@ -49,7 +49,7 @@ python3 -B scripts/check_clauses.py 清单.md --source 我的合同.md
 ## 四、依赖与两条路的代价
 
 - `python3`：机检与采集器都用它，纯标准库、零网络、不发任何请求。
-- 解析辅助 `cue-omni-reader` 是可选的：**不装不报错，代价是这份清单只能对你手上那一份文件负责**——扫描件与远端那一版读不进来，「是不是签署那一版」那一层永远缺位。装与不装都先问你要不要用，消耗花之前一定先问。
+- 解析辅助 `cue-omni-reader` 是可选的：**不装不报错，代价是这份清单只能对你手上那一份文件负责**——扫描件与远端那侧的正文读不进来。装了也不换一样东西：版本同一性两条路都不判（不读签署页标记、不对版本链），要盯「这是不是签署那一版」得由你指定基准版再对齐。装与不装都先问你要不要用，消耗花之前一定先问。
 - 连了通道也不等于取到正文：扫描缺页、只给摘要不给全文、附件没传上来的，一律落第三节点名，不拿常识补、不拿范本套。
 - 数据边界：清单里带着合同原文（通常含商业秘密与个人信息）。存放、转发、给谁看由你自己负责，**该告知对方的先告知**；本件不上传、不落盘到本包之外，也不接任何签署系统。
 - 定位会随文件改动失效：页码与行号只在解析日那一刻成立，对方换了一版合同，这份清单就得重做。说清楚这一格机检管到哪：它核「日期挂在解析日标签下」＋「这一天在日历上存在」，**核不了那一天是不是正文真正被取回的当天**——那份文件改了字、清单里又没引到改动的那几行，机器看不见；取回时刻由人自己登记并对得上。
@@ -62,17 +62,19 @@ python3 -B scripts/check_clauses.py 清单.md --source 我的合同.md
 | 道二 锚 | `E-ANCHOR` | 每条要点行末尾一枚 `[S#]` 且这一行有定位；锚在第四节要有对应行；来源行必须同时带定位与解析日——日期要挂在「解析日」标签下且是日历上存在的一天（换成「合同签署日 2026-10-24」发红，2026-13-99 也发红） |
 | 道三 逐字 | `E-QUOTE` | 引号那句逐字在原文里；同行给了页码又给行号时**两个定位各自成立**（只读其一会把假的那枚放过）；没给 `--source` 时明写不可判、不并入通过 |
 | 道四 点名 | `E-COVERAGE` | 第三节七类（单方变更／自动续约／排他／违约金／争议解决地／数据与保密／责任上限）逐类在位，每类要么给定位要么写未见到，待核不算点名；别处报了未读到而第三节没点名发红；第四节零来源行发红 |
-| 道五 断言 | `E-LAW` | 合法／违法／无效／可撤销／构成违约／有约束力／法院会支持／建议删除该条／风险等级／评级排序 一类零命中（同行挂 `[待人工]` 才放行）；**预测式同句也算**——情态／概率词（大概率／预计／应该会／未必…）与裁判结果词（不被支持／被认定／败诉／免责…）在同一句作者句子里同现即发条；引号里的合同原文不算作者表态，比对时先剥引号 |
+| 道五 断言 | `E-LAW` | 合法／违法／无效／可撤销／构成违约／有约束力／法院会支持／建议删除该条／风险等级／评级排序 一类零命中；**对裁判结果的表态单靠结果词就发条**——「该条不被支持」这种不挂情态词的裸断言同样发红，先写「大概率要再核」再换行写「最终不被支持」按同一语义段算（判的是句子不是物理行，续行并入前段）；`[待人工]` 要挂在同一语义段里才放行；引号里的合同原文不算作者表态，比对时先剥引号 |
 
 ```bash
 python3 -B scripts/check_clauses.py --help                                                        # 五道说明，零网络
-python3 -B scripts/check_clauses.py --selftest                                                     # 好样须过、五枚坏样须发红
+python3 -B scripts/check_clauses.py --selftest                                                     # 好样须过、七枚坏样须发红
 python3 -B scripts/check_clauses.py scripts/fixtures/good-clauses.md --source scripts/fixtures/target-contract.md          # 应 PASS
 python3 -B scripts/check_clauses.py scripts/fixtures/bad-format.md --source scripts/fixtures/target-contract.md            # 应 FAIL：概览不是一行
 python3 -B scripts/check_clauses.py scripts/fixtures/bad-no-anchor.md --source scripts/fixtures/target-contract.md          # 应 FAIL：要点行没挂锚
 python3 -B scripts/check_clauses.py scripts/fixtures/bad-invented-quote.md --source scripts/fixtures/target-contract.md     # 应 FAIL：引号里那句是转述
 python3 -B scripts/check_clauses.py scripts/fixtures/bad-missing-type.md --source scripts/fixtures/target-contract.md       # 应 FAIL：七类里少点一类
 python3 -B scripts/check_clauses.py scripts/fixtures/bad-legal-verdict.md --source scripts/fixtures/target-contract.md      # 应 FAIL：下了效力结论
+python3 -B scripts/check_clauses.py scripts/fixtures/bad-outcome-bare.md --source scripts/fixtures/target-contract.md     # 应 FAIL：裸结果断言（不挂情态词也红）
+python3 -B scripts/check_clauses.py scripts/fixtures/bad-outcome-split.md --source scripts/fixtures/target-contract.md    # 应 FAIL：表态拆在相邻两行（按语义段算，不按物理行）
 python3 -B scripts/check_clauses.py scripts/fixtures/good-clauses.md --quiet                        # 只报末行与计数
 ```
 
@@ -86,7 +88,7 @@ README.md / README.en.md       本文件（中文权威／英文对照）
 CHANGELOG.md                   版本记录
 scripts/check_clauses.py       机检五道（纯标准库，--help 可跑；判定全集在脚本，本文只指路）
 scripts/collect_clauses.py     离线采集器（把条款行搬成四节骨架，不代判哪一类要盯）
-scripts/fixtures/              合成合同一枚＋好样一枚＋坏样五枚＋离线三档 runner
+scripts/fixtures/              合成合同一枚＋好样一枚＋坏样七枚（含裸结果断言与表态拆两行两支）＋离线三档 runner
 ```
 
 ## 七、常见问题与反模式
