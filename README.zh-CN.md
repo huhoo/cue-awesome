@@ -38,6 +38,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 | [`cn-link-to-note/`](cn-link-to-note/) | cn-link-to-note | [frontmatter](cn-link-to-note/SKILL.md) | 一条链接进来、一条带出处的笔记出去：要点逐条挂 [S#]，原话逐字比回那一页那一行，缺口点名，判断留人工。 |
 | [`cn-research-brief/`](cn-research-brief/) | cn-research-brief | [frontmatter](cn-research-brief/SKILL.md) | 把多份中文来源整理成一份逐条挂源的速览：每条发现带一条可回查来源与检索日，缺的点名，判断留人工。 |
 | [`cn-resume-jd-fit/`](cn-resume-jd-fit/) | cn-resume-jd-fit | [frontmatter](cn-resume-jd-fit/SKILL.md) | 一份简历对一枚 JD 的双向核对：要求逐条挂到简历原话，缺口分两栏点名，不排先后、不下录用结论。 |
+| [`cn-table-to-chart/`](cn-table-to-chart/) | cn-table-to-chart | [frontmatter](cn-table-to-chart/SKILL.md) | 一张表变成能画的图规格＋读表要点：每个数逐字回那一格，页码与行号各比各的，四类限度逐类点名，不据图给投资建议。 |
 | [`event-brief-cn/`](event-brief-cn/) | event-brief-cn | [frontmatter](event-brief-cn/SKILL.md) | 把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。 |
 | [`event-risk-scan/`](event-risk-scan/) | event-risk-scan | [frontmatter](event-risk-scan/SKILL.md) | 对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。 |
 | [`ic-memo-cn/`](ic-memo-cn/) | ic-memo-cn | [frontmatter](ic-memo-cn/SKILL.md) | 给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。 |
@@ -75,7 +76,7 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 ## 安装
 
-十一件（含 `cue-omni-ontology`、`cue-lead-pieces`）在下方发布页各挂一个 ZIP 资产，任一件都可用同一套三步安装；也可以直接从本仓库复制对应目录。
+上面 Skills 表里每一件都可以从本仓库装走：直接复制对应目录，或用下方发布页挂的 ZIP 资产。哪几件当前挂了 ZIP，以发布页为准——这一句有意不写枚数，也不替某一次发布兜底；下面的目录复制与技能 CLI 两条路对表里每一件都成立，不依赖发布页。
 
 发布列表见 <https://github.com/huhoo/cue-awesome/releases>。这一句有意不写具体版本号——号写在这里，下一次发布一出它就过期；请核对发布页和已安装 skill 的 frontmatter。
 
@@ -85,7 +86,7 @@ mkdir -p ~/.workbuddy/skills/tear-sheet
 unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-三行里的 `tear-sheet` 换成你要的那件即可（catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet）——每行都是完整命令，不用改引号也不用管转义。
+三行里的 `tear-sheet` 换成上面 Skills 表「Name」列里的任意一件，`v2026.…` 那个号按「哪一次发布的资产列表里真有这枚 ZIP」去挑——后一次发布可能不带前一次带过的资产。除这两处，每行都是完整命令，不用改引号也不用管转义。
 要从当前全部 skill 中选择：`git clone https://github.com/huhoo/cue-awesome.git`，再把需要的子目录拷进 `~/.workbuddy/skills/`。
 第三条路是技能 CLI：`npx skills add huhoo/cue-awesome`（列出全部）/ `npx skills add huhoo/cue-awesome --skill journal-draft`（只装一件）。
 第四条路是 ClawHub 的 CLI（商店侧形制，文档写的是 `install @owner/slug`）：`clawhub install @huhoo/cue-journal-draft`。那里的 slug 是 `cue-` 加目录名，与技能 CLI 那一式取的不是同一个串——同一个参数位两种取值，别当可互换。

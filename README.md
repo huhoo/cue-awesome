@@ -38,6 +38,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`cn-link-to-note/`](cn-link-to-note/) | cn-link-to-note | [frontmatter](cn-link-to-note/SKILL.md) | 一条链接进来、一条带出处的笔记出去：要点逐条挂 [S#]，原话逐字比回那一页那一行，缺口点名，判断留人工。 |
 | [`cn-research-brief/`](cn-research-brief/) | cn-research-brief | [frontmatter](cn-research-brief/SKILL.md) | 把多份中文来源整理成一份逐条挂源的速览：每条发现带一条可回查来源与检索日，缺的点名，判断留人工。 |
 | [`cn-resume-jd-fit/`](cn-resume-jd-fit/) | cn-resume-jd-fit | [frontmatter](cn-resume-jd-fit/SKILL.md) | 一份简历对一枚 JD 的双向核对：要求逐条挂到简历原话，缺口分两栏点名，不排先后、不下录用结论。 |
+| [`cn-table-to-chart/`](cn-table-to-chart/) | cn-table-to-chart | [frontmatter](cn-table-to-chart/SKILL.md) | 一张表变成能画的图规格＋读表要点：每个数逐字回那一格，页码与行号各比各的，四类限度逐类点名，不据图给投资建议。 |
 | [`event-brief-cn/`](event-brief-cn/) | event-brief-cn | [frontmatter](event-brief-cn/SKILL.md) | 把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。 |
 | [`event-risk-scan/`](event-risk-scan/) | event-risk-scan | [frontmatter](event-risk-scan/SKILL.md) | 对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。 |
 | [`ic-memo-cn/`](ic-memo-cn/) | ic-memo-cn | [frontmatter](ic-memo-cn/SKILL.md) | 给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。 |
@@ -75,7 +76,7 @@ Two items formerly listed here are now built and reviewed — `sector-overview` 
 
 ## Install
 
-All eleven skills, `cue-omni-ontology` and `cue-lead-pieces` included, ship as one ZIP asset each on the release page below — install any of them with the same three steps; copying a skill's directory out of this repository is the other way in.
+Every skill listed in the Skills table above can be installed from this repository — copy its directory in, or take the ZIP asset from the release page below. Which skills currently carry a ZIP asset follows the release page itself: this sentence deliberately names no count and does not vouch for an asset that a given release may not include. The directory-copy and skills-CLI routes below cover every listed skill either way.
 
 The release list is <https://github.com/huhoo/cue-awesome/releases>; this sentence deliberately pins no version number, because a number written here goes stale the moment the next release is cut. Check the release page and the installed skill's frontmatter.
 
@@ -85,7 +86,7 @@ mkdir -p ~/.workbuddy/skills/tear-sheet
 unzip -o -d ~/.workbuddy/skills/tear-sheet tear-sheet.zip
 ```
 
-Replace `tear-sheet` in those three lines with the skill you want (catalyst-calendar / civil-appeal-turnaround / cn-earnings-note / competitive-brief / cue-lead-pieces / cue-omni-ontology / dd-checklist / journal-draft / long-doc-translation / sector-overview / tear-sheet) — each line is complete as it stands, nothing to escape or quote.
+Replace `tear-sheet` in those three lines with the name of any skill from the **Name** column of the Skills table above, and take the `v2026.…` tag from the release whose asset list actually shows that ZIP — a later release may not carry every asset an earlier one did. Each line is complete as it stands otherwise, nothing to escape or quote.
 To choose from all current skills: `git clone https://github.com/huhoo/cue-awesome.git`, then copy the skill folders you need into `~/.workbuddy/skills/`.
 Third route, the skills CLI: `npx skills add huhoo/cue-awesome` (lists all) / `npx skills add huhoo/cue-awesome --skill journal-draft` (one).
 Fourth route, the ClawHub CLI (the store-side form, documented as `install @owner/slug`): `clawhub install @huhoo/cue-journal-draft`. The slug there is `cue-` plus the directory name, which is not the string the skills CLI takes - the two forms are not interchangeable in that argument slot.
