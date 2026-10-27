@@ -41,6 +41,9 @@ bad-merged-bind.md|E-QUOTE|格位·列头配对不成立|target-table-merged.md
 bad-conclusion-crossline.md|E-ADVICE|投资断言|target-table-noted.md
 bad-author-voice-verb.md|E-ADVICE|投资断言|target-table-noted.md
 bad-quote-conclusion.md|E-ADVICE|投资断言|target-table-noted.md
+bad-quote-source-only.md|E-ADVICE|投资断言|target-table-noted.md
+bad-quote-third-party.md|E-ADVICE|投资断言|target-table-noted.md
+bad-quote-bare.md|E-ADVICE|投资断言|target-table-noted.md
 bad-missing-limit.md|E-COVERAGE|四类点名|
 bad-advice.md|E-ADVICE|投资断言|
 bad-bare-outcome.md|E-ADVICE|投资断言|

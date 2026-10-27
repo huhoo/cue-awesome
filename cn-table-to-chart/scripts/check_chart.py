@@ -13,8 +13,7 @@
     道二 锚   E-ANCHOR  ：每条要点行末尾带 [S#] 且该行有定位（第 N 页 或 文件:行号）；锚在第四节要有对应行；来源行必须同时带定位与解析日——解析日＝日期挂在「解析日」标签下且是日历上存在的一天；机检只核这两件，核不了那天是否真是取回当天
     道三 逐字 E-QUOTE   ：全篇任何一行里的「」都必须逐字在表里（不分行形、不分节——条目行以外的假引文同样发条）；数还要落在所报**那一行的那一格**：管道行按 | 拆列后两形之一才放行——A 整行照序（引的数与该行非空格逐格逐序相等）或 B 「列头」=「数」配对（按列头取到那一格，格里的数就得是它）；**B 的前置条件是列头格数等于该行数据格数**，列头被并（跨列表头／合并格）时格数不等，配对形在这一行整行不成立——首格也不放行，把并列列头默认对到第一格就是猜，这一行只认 A 或写进第三节；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --table 时明写不可判、不并入通过
     道四 点名 E-COVERAGE：第三节四类限度（缺格与空值／合并格与跨列表头／单位与口径／表外推与未读到）逐类在位，每类要么给定位要么写「未见到／未取到」，待核不算点名；别处报了未读到而第三节没点名的发红
-    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中。判的是「作者替读者下了结论」这个动作，两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段只按**结构**切——标题／列表项／表格／引用块／编号项才另起一段，其余行（**含仅有缩进的普通续行**）接到上一段：写完「增速放缓」换行再写「建议减仓」算同一句，「结论：」顶格、下一行两格缩进接引文也算同一句。剥引号有两重条件：**那一段在表里逐字真有**，且**这一段不是作者在说话**——书名号之外出现作者声音（结论／因此／所以／可见／说明／表明／意味着／看出／认为／主张／我们一类），引号里的话就照作者的算（逐字回表只证这话在表里出现过，不证它是表的原文而不是本文的结论）；出处或第三方主语在场（表注／原文／那句／列示／口径／有人／市场…）才算引用、仍然绿，裸引文（框架里没有作者声音）按引用放行。要留判断就同一语义段里挂 [待人工]
-
+    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中，判的是「这一段字面里有没有投资话」这个可观察的最小事实。两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段只按结构切——标题／列表项／表格／引用块／编号项另起段，其余行含仅有缩进的普通续行并入上一段（换行与缩进都不算躲开）。**本件不设引用豁免**：书名号里的内容同样参与判定——表里真有这句只证它出现过，不为它背书；前几轮那两枚声音词表在整段上各做一次存在性判断，出处词任一枚在场就把整段洗白（段首挂表注、段尾写作者结论即静默过），那是会摆的形状，0.1.4 起退役。合法出口只有一个：第三节点名、不括原话、带定位。要留判断就同一语义段里挂 [待人工]。代价（三面同批写明）：表内含投资倾向表述时引用它就红，红的是引用行为不是造数——这是选定的保守面，不是缺陷。
 退码：0 全过（不可判项在输出里明写，不改退码）；1 有发条；2 用法错；3 取值域故障（产物或表原文读不到——不读成「零违例」）。
 出口形制：失败＝一行 "FAIL: <文件>（N 条）"，其下每条详行先打错误码前缀；全过＝一行 "PASS: …" 加计数行。
 """
@@ -54,16 +53,11 @@ ADVICE_RE = re.compile(
     r'推荐买入|推荐配置|第一梯队|首选标的|跑赢行业|跑输行业|超配|低配|抄底|逃顶|止盈止损|必涨|必跌|看好后市|看空后市')
 SUPER_RE = re.compile(r'最[^\n]{0,6}?(?:强|高|好|优|差|低|稳|抗跌)|更[^\n]{0,6}?(?:强|好|优|差)|优于|逊于|胜过|压过|首选|次选')
 TARGET_RE = re.compile(r'估值|基本面|成长性|前景|后市|标的|投资|买入|卖出|加仓|减仓|配置|风险回报|回报')
-# 道五的引号豁免判的是「这一段是不是作者在说话」，两枚声音对照着判，不靠单枚词表排除：
-#   作者声音＝结论词＋断言动词＋第一人称主语（结论／因此／所以／可见／说明／表明／意味着／看出／认为／主张／断定／我们…）；
-#   出处或第三方主语在场＝这话不是作者下的（表注／原文／脚注／备注／那句／列示／口径／记载／据表／有人／市场／卖方／分析师…）。
-# 作者声音落在引号外、且这一段没有出处或第三方主语 ⇒ 书名号里的话照作者自己的算（逐字回表只证这话在表里出现过，不证它不是本文的结论）；
-# 裸引文（框架里没有作者声音）与第三方声音仍按引用放行——词表不求穷尽自然语言，判的是可观察的声音归属。
-AUTHOR_VOICE_RE = re.compile(
-    r'结论|综上|显然|因此|因而|所以|可见|说明|表明|意味着|看出|认为|主张|断定|判定|判为|我看|我们|我方|笔者|本人')
-OTHER_VOICE_RE = re.compile(
-    r'有人|市场|卖方|买方|分析师|研报|媒体|报道|公告称|管理层|审计机构|评级机构|第三方|原文|表注|脚注|备注|那句|这句话|'
-    r'列示|口径|记载|写成|写着|未给|没有写|据表|按表|照抄')
+# B 案（0.1.4）：道五**不设引用豁免**——书名号里的内容同样参与投资断言判定。
+# 前几轮的「作者声音 ∥ 出处主语」两枚词表在整段上各做一次存在性判断，出处词任一枚在场就把整段豁免掉
+# （段首挂表注字样、段尾写作者投资结论会静默过），且每轮都得再补同义词——那是会摆的形状。
+# 现在判的是可观察的最小事实：这一段的字面里有没有投资／评级／目标话；出口只有一个——第三节点名、不括原话。
+# 代价（面文三面同批写明）：表里真有投资倾向表述时，引用它就红；红的是引用行为，不是造数。
 
 # 语义段的边界只认结构：标题／列表项／表格／引用块／编号项才另起一段（行首最多三格缩进算同一层的标记）。
 # 仅有缩进的普通续行**不是**新段——「结论：」顶格、下一行两格缩进接引文，仍是一段（面文那句「换行不算躲开」靠这一枚兑现）。
@@ -109,17 +103,6 @@ def table_model(tbl_lines):
                     model[no] = {'cells': cs, 'header': header}
         i = j
     return model
-
-
-def strip_verified(s: str, verified, exempt: bool = True) -> str:
-    """道五剥引号：只剥表里逐字真有的那一段，且只剥在「不是作者在说话」的段里。
-    verified=None 表示没给表原文（无从判，按旧行径全剥并另记不可判）；exempt=False 表示作者声音落在引号外、
-    这一段里没有出处或第三方主语，书名号里的话一字不剥——逐字回表只证这话在表里出现过，不证它不是本文的话。"""
-    if not exempt:
-        return s
-    if verified is None:
-        return QUOTE_RE.sub('', s)
-    return QUOTE_RE.sub(lambda m: '' if norm(m.group(1)) in verified else m.group(0), s)
 
 
 def units_of(lines):
@@ -312,7 +295,7 @@ def scan(path: Path, tbl_lines):
         for i, ln in enumerate(lines, 1):
             verify_cells(i, ln)
     elif any(QUOTE_RE.findall(l) for l in lines):
-        unverifiable.append('全篇 %d 处书名号引文既没逐字回表、也没核格位（未给 --table 表原文；不可判不并入通过，这一趟道五的引号豁免按未核处理）'
+        unverifiable.append('全篇 %d 处书名号引文既没逐字回表、也没核格位（未给 --table 表原文，逐字回表与格位这两项无从核，故列为不可判；不可判不并入通过——道五不依赖表原文，书名号里的内容照旧参与判定）'
                             % sum(len(QUOTE_RE.findall(l)) for l in lines))
 
     # 第一节：规格四件
@@ -354,8 +337,15 @@ def scan(path: Path, tbl_lines):
     if 2 in bounds:
         rows = rows_in(2)
         if not MIN_ROWS <= len(rows) <= MAX_ROWS:
-            add('E-FORMAT', '条数带', bounds[2][0] + 1, '要点 %d 条，不在 %d–%d 这一带（规格：少于 %d＝这张表没读透，多于 %d＝把整张表抄下来了）'
-                % (len(rows), MIN_ROWS, MAX_ROWS, MIN_ROWS, MAX_ROWS))
+            plain = [lines[i].strip() for i in range(bounds[2][0] + 1, bounds[2][1])
+                     if lines[i].strip() and not lines[i].strip().startswith(('- ', '* '))]
+            if plain:
+                add('E-FORMAT', '条数带·列表符', bounds[2][0] + 1,
+                    '第二节没有以「- 」或「* 」起的要点行（现读该节有 %d 行普通文字——机检按列表符计条数，普通行不算要点；契约：每条写成一行列表项，行首必须是 - 或 *）'
+                    % len(plain))
+            else:
+                add('E-FORMAT', '条数带', bounds[2][0] + 1, '要点 %d 条，不在 %d–%d 这一带（规格：少于 %d＝这张表没读透，多于 %d＝把整张表抄下来了）'
+                    % (len(rows), MIN_ROWS, MAX_ROWS, MIN_ROWS, MAX_ROWS))
         for no, s in rows:
             m = ANCHOR_RE.search(s)
             if not m:
@@ -393,26 +383,20 @@ def scan(path: Path, tbl_lines):
             if UNSEEN_RE.search(strip_quotes(ln)) and not any(UNSEEN_RE.search(l) for l in lines[bounds[3][0] + 1:bounds[3][1]]):
                 add('E-COVERAGE', '缺口点名', i, '这一行报了未读到，而第三节没有任何未见到／未取到条目（规格：没读到的部分一律在第三节点名，不补常识性推断）')
 
-    # 第五节判据：语义段制，裸断言与结构式两网并行；剥的引号只给「逐字真有」且「这一段不是作者在说话」的那一段
+    # 第五节判据：语义段制，两网并行；B 案不设引用豁免——书名号内同样判（引号里藏不进作者的话，也藏不进表里的投资话）
     for unit in units_of(lines):
         raw = '\n'.join(l for _, l in unit)
-        frame = QUOTE_RE.sub('', raw)
-        author = AUTHOR_VOICE_RE.search(frame)
-        source = OTHER_VOICE_RE.search(frame)
-        exempt = not (author and not source)
-        why = '' if exempt else ('（这一段是作者在说话——「%s」落在引号外，而这一段里没有出处或第三方主语（表注／原文／那句／有人…那类会把话还给出处），'
-                                '逐字回表只证这话在表里出现过、不证它不是本文的话，故不豁免）' % author.group(0))
-        text = strip_verified(raw, verified, exempt).replace('\n', '')
+        text = raw.replace('\n', '')
         if PLACE_RE.search(text):
             continue
         m = ADVICE_RE.search(text)
         if m:
-            no = next((i for i, l in unit if ADVICE_RE.search(strip_verified(l, verified, exempt))), unit[0][0])
-            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；引号豁免两重：那一段在表里逐字真有，且这一段不是作者在说话——表里没有的括起来照样判，表里真有的话只要这一段是作者声音（结论／表明／因此／我们认为…）也照样判，出处或第三方主语在场（表注／原文／那句／有人…）才算引用；分行不算躲开，缩进续行并入上一段%s；要写就同一语义段里挂 [待人工]）' % (m.group(0), why))
+            no = next((i for i, l in unit if ADVICE_RE.search(l)), unit[0][0])
+            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；**本件不设引用豁免**——书名号里的内容同样判，表里有这句只证它出现过、不为它背书；分行与缩进不算躲开（缩进续行并入上一段）；合法出口＝第三节点名、不括原话；要留判断就同一语义段里挂 [待人工]）' % m.group(0))
             continue
         s, tg = SUPER_RE.search(text), TARGET_RE.search(text)
         if s and tg:
-            no = next((i for i, l in unit if SUPER_RE.search(strip_verified(l, verified, exempt))), unit[0][0])
+            no = next((i for i, l in unit if SUPER_RE.search(l)), unit[0][0])
             add('E-ADVICE', '结论式名次', no, '作者句子里「%s」与「%s」同语义段同现——换了说法的投资结论同样拦（规格：不据图替读者下判断；换行不算躲开，续行并入上一段；要留就挂 [待人工]）'
                 % (s.group(0), tg.group(0)))
     return issues, lines, unverifiable
@@ -421,7 +405,7 @@ def scan(path: Path, tbl_lines):
 codes_doc = {'E-FORMAT': '道一 形制与规格四件', 'E-ANCHOR': '道二 锚与定位与解析日标签',
              'E-QUOTE': '道三 逐字回表（全篇书名号都回表；数按列头配对或整行照序落那一格，列头格数不等于数据格数时配对形整行不成立；页码与行号各比各的）',
              'E-COVERAGE': '道四 四类限度点名',
-             'E-ADVICE': '道五 投资断言零命中（语义段制；豁免只给逐字真有、且作者声音不在场的那一段）'}
+             'E-ADVICE': '道五 投资断言零命中（语义段制；不设引用豁免，书名号内同样判）'}
 
 FX = Path(__file__).resolve().parent / 'fixtures'
 CASES = [('good-chart.md', 0, None),
@@ -440,6 +424,9 @@ CASES = [('good-chart.md', 0, None),
          ('bad-conclusion-crossline.md', 1, 'E-ADVICE'),
          ('bad-author-voice-verb.md', 1, 'E-ADVICE'),
          ('bad-quote-conclusion.md', 1, 'E-ADVICE'),
+         ('bad-quote-source-only.md', 1, 'E-ADVICE'),
+         ('bad-quote-third-party.md', 1, 'E-ADVICE'),
+         ('bad-quote-bare.md', 1, 'E-ADVICE'),
          ('bad-missing-limit.md', 1, 'E-COVERAGE'),
          ('bad-advice.md', 1, 'E-ADVICE'),
          ('bad-bare-outcome.md', 1, 'E-ADVICE'),
@@ -448,6 +435,8 @@ CASES = [('good-chart.md', 0, None),
 CASE_TABLE = {'good-quoted-note.md': 'target-table-noted.md', 'bad-quote-conclusion.md': 'target-table-noted.md',
               'good-plain-quote.md': 'target-table-noted.md', 'good-third-party.md': 'target-table-noted.md',
               'bad-conclusion-crossline.md': 'target-table-noted.md', 'bad-author-voice-verb.md': 'target-table-noted.md',
+              'bad-quote-source-only.md': 'target-table-noted.md', 'bad-quote-third-party.md': 'target-table-noted.md',
+              'bad-quote-bare.md': 'target-table-noted.md',
               'good-merged-order.md': 'target-table-merged.md', 'bad-merged-bind.md': 'target-table-merged.md'}
 
 
