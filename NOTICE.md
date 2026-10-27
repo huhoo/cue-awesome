@@ -4,11 +4,11 @@
 
 本技能随包提供的两个成品样例与一个 `+learn` 中间产物样例，**全部经过实体脱敏**：
 
-| 目录 | 内容 |
+| 目录（路径从仓根起算） | 内容 |
 |---|---|
-| `examples/journal-qiming-regional/` | 成品样例 A：A4 单栏 / 双月刊 / 短条目+长文混合 |
-| `examples/journal-hengshi-observation/` | 成品样例 B：非 A4 双栏 / 月刊 / 纯文章型（反向样本） |
-| `assets/examples/qiming-regional-sample/` | `+learn` 阶段的中间产物（StyleSpec / semantic / UnitPattern） |
+| `journal-draft/examples/journal-qiming-regional/` | 成品样例 A：A4 单栏 / 双月刊 / 短条目+长文混合 |
+| `journal-draft/examples/journal-hengshi-observation/` | 成品样例 B：非 A4 双栏 / 月刊 / 纯文章型（反向样本） |
+| `journal-draft/assets/examples/qiming-regional-sample/` | `+learn` 阶段的中间产物（StyleSpec / semantic / UnitPattern） |
 
 **已替换为虚构合成实体的字段**：机构名与刊物名、自然人姓名、客户与项目名称、
 源文件名与站点域名、正文摘录语料（含法规名称的具体编号）。
@@ -22,10 +22,10 @@
 
 **选题领域同样保留**：样例涉及的题材（公开的金融监管与跨境资本市场动态，
 含公开法规与公开机构名）按原样保留 —— 这些是公开信息，不涉及第三方非公开内容。
-若你介意这层「选题指纹」，最彻底的做法是把 `assets/examples/` 整个替换为自己抽取的样例。
+若你介意这层「选题指纹」，最彻底的做法是把 `journal-draft/assets/examples/` 整个替换为自己抽取的样例。
 
 **逐字引用已清除**：样例中原本存在的第三方正文摘录段落，已全部改写为标注「示意语料」
-的合成段落；`assets/diagram-templates/` 中承载实质内容的那份图定义也已重写为中性的
+的合成段落；`journal-draft/assets/diagram-templates/` 中承载实质内容的那份图定义也已重写为中性的
 角色化示例（只保留布局结构）。
 
 也就是说：样例演示的是**这套流水线怎么工作**，不指向任何一家真实机构或其出版物，
