@@ -11,9 +11,9 @@
 五道（判定全集在本脚本，本文只指路）：
     道一 形制 E-FORMAT  ：头部四件自标逐字在位；四节齐且有序；第一节四件规格（图型／横轴／纵轴／序列）齐且都不是待核位；第二节要点条数落在 3–10 这一带；第四节至少一行来源
     道二 锚   E-ANCHOR  ：每条要点行末尾带 [S#] 且该行有定位（第 N 页 或 文件:行号）；锚在第四节要有对应行；来源行必须同时带定位与解析日——解析日＝日期挂在「解析日」标签下且是日历上存在的一天；机检只核这两件，核不了那天是否真是取回当天
-    道三 逐字 E-QUOTE   ：全篇任何一行里的「」都必须逐字在表里（不分行形、不分节——条目行以外的假引文同样发条）；数还要落在所报**那一行的那一格**：管道行按 | 拆列后两形之一才放行——A 整行照序（引的数与该行非空格逐格逐序相等）或 B 「列头」=「数」配对（按列头取到那一格，格里的数就得是它）；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --table 时明写不可判、不并入通过
+    道三 逐字 E-QUOTE   ：全篇任何一行里的「」都必须逐字在表里（不分行形、不分节——条目行以外的假引文同样发条）；数还要落在所报**那一行的那一格**：管道行按 | 拆列后两形之一才放行——A 整行照序（引的数与该行非空格逐格逐序相等）或 B 「列头」=「数」配对（按列头取到那一格，格里的数就得是它）；**B 的前置条件是列头格数等于该行数据格数**，列头被并（跨列表头／合并格）时格数不等，配对形在这一行整行不成立——首格也不放行，把并列列头默认对到第一格就是猜，这一行只认 A 或写进第三节；同一行既给页码又给行号时**两个定位各比各的**（只读其一会把假的那枚放过）；没给 --table 时明写不可判、不并入通过
     道四 点名 E-COVERAGE：第三节四类限度（缺格与空值／合并格与跨列表头／单位与口径／表外推与未读到）逐类在位，每类要么给定位要么写「未见到／未取到」，待核不算点名；别处报了未读到而第三节没点名的发红
-    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中。判的是「作者替读者下了结论」这个动作，两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段按段落切——行首不是标题／列表／表格就接到上一段，写完「增速放缓」换行再写「建议减仓」算同一句。剥引号只剥**已被道三逐字核过的那一段**（表里真有这句才算照抄，表里没有的书名号就是作者自己的话，照样判）；要留判断就同一语义段里挂 [待人工]
+    道五 断言 E-ADVICE  ：投资建议、评级与目标价、名次排序一律零命中。判的是「作者替读者下了结论」这个动作，两张网并行：①裸断言（建议买入／目标价看至／值得投资／可投／首选／看空…）**单靠词就发条，不要求情态词在场**；②最高级／比较级形态（最高／最强／更优／优于…）与投资结论对象词（估值／基本面／前景／买入…）**同语义段同现**也发条。语义段按段落切——行首不是标题／列表／表格就接到上一段，写完「增速放缓」换行再写「建议减仓」算同一句。剥引号有两重条件：**这一段是表里逐字真有的那一段**，且**这一段不是作者的结论位**——书名号之外的字里出现结论／因此／所以／可见／说明一类词，引号里的话就照作者的算（逐字回表只证这话在表里出现过，不证它是表的原文而不是本文的结论；把表注那句原样引在归属位里仍然绿）。要留判断就同一语义段里挂 [待人工]
 
 退码：0 全过（不可判项在输出里明写，不改退码）；1 有发条；2 用法错；3 取值域故障（产物或表原文读不到——不读成「零违例」）。
 出口形制：失败＝一行 "FAIL: <文件>（N 条）"，其下每条详行先打错误码前缀；全过＝一行 "PASS: …" 加计数行。
@@ -54,6 +54,9 @@ ADVICE_RE = re.compile(
     r'推荐买入|推荐配置|第一梯队|首选标的|跑赢行业|跑输行业|超配|低配|抄底|逃顶|止盈止损|必涨|必跌|看好后市|看空后市')
 SUPER_RE = re.compile(r'最[^\n]{0,6}?(?:强|高|好|优|差|低|稳|抗跌)|更[^\n]{0,6}?(?:强|好|优|差)|优于|逊于|胜过|压过|首选|次选')
 TARGET_RE = re.compile(r'估值|基本面|成长性|前景|后市|标的|投资|买入|卖出|加仓|减仓|配置|风险回报|回报')
+# 结论位：作者在这一段里站出来下判断的那些词。落在书名号之外才算（引号内的表内原文先摘掉再数），
+# 因为「逐字回表」只证这话在表里出现过，不证它是表的原文而不是本文的结论。
+CONCL_SLOT_RE = re.compile(r'结论|综上|因此|因而|所以|可见|显然|这说明|这表明|意味着|说明|断定|判定|可以看出|看得出')
 
 UNIT_START_RE = re.compile(r'^\s*(#|[-*+|>]?\s|\|)')
 
@@ -99,8 +102,12 @@ def table_model(tbl_lines):
     return model
 
 
-def strip_verified(s: str, verified):
-    """道五剥引号：只剥表里逐字真有的那一段。verified=None 表示没给表原文（无从判，按旧行径全剥并另记不可判）。"""
+def strip_verified(s: str, verified, exempt: bool = True) -> str:
+    """道五剥引号：只剥表里逐字真有的那一段，且**只在非结论位里剥**。
+    verified=None 表示没给表原文（无从判，按旧行径全剥并另记不可判）；exempt=False 表示这一段是作者的结论位，
+    书名号里的话一字不剥——逐字回表只证这话在表里出现过，不证它不是本文的结论。"""
+    if not exempt:
+        return s
     if verified is None:
         return QUOTE_RE.sub('', s)
     return QUOTE_RE.sub(lambda m: '' if norm(m.group(1)) in verified else m.group(0), s)
@@ -245,13 +252,13 @@ def scan(path: Path, tbl_lines):
             for ln_no, R in rows_cited:
                 cs, hdr = R['cells'], R['header']
                 nhdr = [norm(x) for x in hdr]
+                if len(hdr) != len(cs):
+                    why.append('第 %d 行的列头 %d 格对不上数据 %d 格＝跨列表头或合并格，本件不按列名猜那一格（把并列的列头默认对到第一格就是猜）——这一行只认整行照序，或把这一格写进第三节' % (ln_no, len(hdr), len(cs)))
+                    continue
                 if hn not in nhdr:
-                    why.append('第 %d 行的列头里没有「%s」' % (ln_no, hraw))
+                    why.append('第 %d 行的列头里没有「%s」（现读列头=%s）' % (ln_no, hraw, '、'.join(hdr) or '该表没认到列头'))
                     continue
                 k = nhdr.index(hn)
-                if k >= len(cs):
-                    why.append('第 %d 行列头 %d 格对不上数据 %d 格（跨列表头或合并格），按列头定位不到那一格——整行照序写或落第三节点名' % (ln_no, len(hdr), len(cs)))
-                    continue
                 if norm(cs[k]) == vn:
                     hit = cs[k]
                     break
@@ -272,6 +279,12 @@ def scan(path: Path, tbl_lines):
             if not vals or [v for _, v in vals] == data:
                 continue
             shown = '、'.join(c for c in cs[1:] if c.strip())
+            if len(hdr) != len(cs):
+                if not binds:
+                    add('E-QUOTE', '格位·列头对不齐只认整行照序', no,
+                        '第 %d 行的列头 %d 格对不上数据 %d 格＝跨列表头或合并格，本件不按列名猜那一格；本行括的是 %s（该行各格=%s）——这一行要么整行照序按列次序括全，要么写进第三节'
+                        % (ln_no, len(hdr), len(cs), '、'.join('「%s」' % q for q, _ in vals), shown))
+                continue
             if not binds:
                 add('E-QUOTE', '格位·整行照序或配列头', no,
                     '第 %d 行按 | 拆列后的数=%s，本行括的是 %s——既不是整行照序，也没写一个「列头」=「数」（规格：光说数在这一行不够，得说清是哪一格；跨列表头对不回列头的就整行照序写或落第三节）'
@@ -371,30 +384,37 @@ def scan(path: Path, tbl_lines):
             if UNSEEN_RE.search(strip_quotes(ln)) and not any(UNSEEN_RE.search(l) for l in lines[bounds[3][0] + 1:bounds[3][1]]):
                 add('E-COVERAGE', '缺口点名', i, '这一行报了未读到，而第三节没有任何未见到／未取到条目（规格：没读到的部分一律在第三节点名，不补常识性推断）')
 
-    # 第五节判据：语义段制，裸断言与结构式两网并行；剥的引号只剥表里逐字真有的那一段
+    # 第五节判据：语义段制，裸断言与结构式两网并行；剥的引号只剥逐字核过、且不在结论位里的那一段
     for unit in units_of(lines):
-        text = strip_verified('\n'.join(l for _, l in unit), verified).replace('\n', '')
+        raw = '\n'.join(l for _, l in unit)
+        frame = QUOTE_RE.sub('', raw)
+        exempt = not CONCL_SLOT_RE.search(frame)
+        why = '' if exempt else '（这一段是作者的结论位——「%s」在引号外，逐字回表只证这话在表里出现过、不证它不是本文的话，故不豁免）' % CONCL_SLOT_RE.search(frame).group(0)
+        text = strip_verified(raw, verified, exempt).replace('\n', '')
         if PLACE_RE.search(text):
             continue
         m = ADVICE_RE.search(text)
         if m:
-            no = next((i for i, l in unit if ADVICE_RE.search(strip_verified(l, verified))), unit[0][0])
-            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；引号只豁免表里逐字真有的那一段，表里没有的括起来照样判；要写就同一语义段里挂 [待人工]）' % m.group(0))
+            no = next((i for i, l in unit if ADVICE_RE.search(strip_verified(l, verified, exempt))), unit[0][0])
+            add('E-ADVICE', '投资断言', no, '作者句子里出现投资／评级／目标价断言「%s」（规格：本件不据图给投资建议、不判评级与目标价；裸断言单靠词就发条，不要求情态词在场；引号豁免两重：表里逐字真有的那一段、且不在结论位里——表里没有的括起来照样判，表里有的写进结论位也照样判%s；要写就同一语义段里挂 [待人工]）' % (m.group(0), why))
             continue
         s, tg = SUPER_RE.search(text), TARGET_RE.search(text)
         if s and tg:
-            no = next((i for i, l in unit if SUPER_RE.search(strip_verified(l, verified))), unit[0][0])
+            no = next((i for i, l in unit if SUPER_RE.search(strip_verified(l, verified, exempt))), unit[0][0])
             add('E-ADVICE', '结论式名次', no, '作者句子里「%s」与「%s」同语义段同现——换了说法的投资结论同样拦（规格：不据图替读者下判断；换行不算躲开，续行并入上一段；要留就挂 [待人工]）'
                 % (s.group(0), tg.group(0)))
     return issues, lines, unverifiable
 
 
 codes_doc = {'E-FORMAT': '道一 形制与规格四件', 'E-ANCHOR': '道二 锚与定位与解析日标签',
-             'E-QUOTE': '道三 逐字回表（全篇书名号都回表；数按列头配对或整行照序落那一格；页码与行号各比各的）', 'E-COVERAGE': '道四 四类限度点名',
-             'E-ADVICE': '道五 投资断言零命中（语义段制，只豁免逐字核过的引文）'}
+             'E-QUOTE': '道三 逐字回表（全篇书名号都回表；数按列头配对或整行照序落那一格，列头格数不等于数据格数时配对形整行不成立；页码与行号各比各的）',
+             'E-COVERAGE': '道四 四类限度点名',
+             'E-ADVICE': '道五 投资断言零命中（语义段制；豁免只给逐字核过且不在结论位里的那一段）'}
 
 FX = Path(__file__).resolve().parent / 'fixtures'
 CASES = [('good-chart.md', 0, None),
+         ('good-quoted-note.md', 0, None),
+         ('good-merged-order.md', 0, None),
          ('bad-spec.md', 1, 'E-FORMAT'),
          ('bad-no-anchor.md', 1, 'E-ANCHOR'),
          ('bad-invented-number.md', 1, 'E-QUOTE'),
@@ -402,10 +422,15 @@ CASES = [('good-chart.md', 0, None),
          ('bad-cell-misplaced.md', 1, 'E-QUOTE'),
          ('bad-no-header-pair.md', 1, 'E-QUOTE'),
          ('bad-cell-empty-zero.md', 1, 'E-QUOTE'),
+         ('bad-merged-bind.md', 1, 'E-QUOTE'),
+         ('bad-quote-conclusion.md', 1, 'E-ADVICE'),
          ('bad-missing-limit.md', 1, 'E-COVERAGE'),
          ('bad-advice.md', 1, 'E-ADVICE'),
          ('bad-bare-outcome.md', 1, 'E-ADVICE'),
          ('bad-superlative.md', 1, 'E-ADVICE')]
+# 四枚夹具各配自己那张表：带表注的那张证「表里真有这句」，跨列表头那张证「格数不等时配对形整行不成立」
+CASE_TABLE = {'good-quoted-note.md': 'target-table-noted.md', 'bad-quote-conclusion.md': 'target-table-noted.md',
+              'good-merged-order.md': 'target-table-merged.md', 'bad-merged-bind.md': 'target-table-merged.md'}
 
 
 def run_one(path: Path, source=None, quiet=False):
@@ -444,9 +469,14 @@ def selftest(source):
         if not p.is_file():
             print('  取值域故障：夹具不在场 %s（不读成「零违例」）' % name)
             return 3
+        tbl = CASE_TABLE.get(name)
+        srcp = FX / tbl if tbl else Path(source)
+        if not srcp.is_file():
+            print('  取值域故障：这一枚夹具要的表原文不在场 %s（没有原文，道三与格位无从跑）' % srcp.name)
+            return 3
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            rc, _, _ = run_one(p, source)
+            rc, _, _ = run_one(p, str(srcp))
         detail = buf.getvalue()
         codes = sorted(set(re.findall(r'E-[A-Z]+', '\n'.join(l for l in detail.splitlines() if l.lstrip().startswith('[E-')))))
         landed = bool(detail.strip()) or rc != 0
@@ -462,8 +492,8 @@ def selftest(source):
             print('  不合 %s：好样期望全过，实发 %s' % (name, '、'.join(codes)))
             bad += 1
             continue
-        print('  ok   %s（退码 %d·期望 %s·实发码 %s·注入生效=%s）' % (
-            name, rc, want_code or '全过', '、'.join(codes) or '无', '是' if (rc or codes) else '不适用（好样）'))
+        print('  ok   %s（退码 %d·期望 %s·实发码 %s·表=%s·注入生效=%s）' % (
+            name, rc, want_code or '全过', '、'.join(codes) or '无', tbl or '默认合成表', '是' if (rc or codes) else '不适用（好样）'))
     n_good = sum(1 for x in CASES if x[2] is None)
     n_bad = len(CASES) - n_good
     print('selftest: ' + ('ALL GREEN（好样 %d 枚·坏样 %d 枚各只发它该发的那一道 %d/%d·逐枚报注入生效与否）'

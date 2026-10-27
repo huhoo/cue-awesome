@@ -12,7 +12,7 @@ trap 'rm -rf "$WORK"' EXIT
 
 bad=0
 unk=0
-for f in "$ROOT/scripts/check_chart.py" "$ROOT/scripts/collect_chart.py" "$FIX/good-chart.md" "$FIX/target-table.md"; do
+for f in "$ROOT/scripts/check_chart.py" "$ROOT/scripts/collect_chart.py" "$FIX/good-chart.md" "$FIX/target-table.md" "$FIX/target-table-noted.md" "$FIX/target-table-merged.md"; do
   if [ ! -f "$f" ]; then echo "3 取值域故障：取不到 $f（不读成「夹具全过」）"; exit 3; fi
 done
 TBL="scripts/fixtures/target-table.md"
@@ -25,35 +25,41 @@ if [ "$rc" -ne 0 ]; then echo "  → 不合"; bad=$((bad + 1)); else echo "  →
 echo "档② 逐枚单跑（每枚只发它该发的那一道，且靶要落在那一道的判据段里；另跑一支不给表原文的，验「不可判」那条形制）"
 pairfile="$WORK/pairs.txt"
 cat > "$pairfile" <<'PAIRS'
-good-chart.md|PASS|
-bad-spec.md|E-FORMAT|规格待核
-bad-no-anchor.md|E-ANCHOR|锚
-bad-invented-number.md|E-QUOTE|逐字回表（全篇）
-bad-unbound-quote.md|E-QUOTE|逐字回表（全篇）
-bad-cell-misplaced.md|E-QUOTE|格位·整行照序或配列头
-bad-no-header-pair.md|E-QUOTE|格位·数没配列头
-bad-cell-empty-zero.md|E-QUOTE|格位·列头配对不成立
-bad-missing-limit.md|E-COVERAGE|四类点名
-bad-advice.md|E-ADVICE|投资断言
-bad-bare-outcome.md|E-ADVICE|投资断言
-bad-superlative.md|E-ADVICE|结论式名次
+good-chart.md|PASS||
+good-quoted-note.md|PASS||target-table-noted.md
+good-merged-order.md|PASS||target-table-merged.md
+bad-spec.md|E-FORMAT|规格待核|
+bad-no-anchor.md|E-ANCHOR|锚|
+bad-invented-number.md|E-QUOTE|逐字回表（全篇）|
+bad-unbound-quote.md|E-QUOTE|逐字回表（全篇）|
+bad-cell-misplaced.md|E-QUOTE|格位·整行照序或配列头|
+bad-no-header-pair.md|E-QUOTE|格位·数没配列头|
+bad-cell-empty-zero.md|E-QUOTE|格位·列头配对不成立|
+bad-merged-bind.md|E-QUOTE|格位·列头配对不成立|target-table-merged.md
+bad-quote-conclusion.md|E-ADVICE|投资断言|target-table-noted.md
+bad-missing-limit.md|E-COVERAGE|四类点名|
+bad-advice.md|E-ADVICE|投资断言|
+bad-bare-outcome.md|E-ADVICE|投资断言|
+bad-superlative.md|E-ADVICE|结论式名次|
 PAIRS
 n=0
-while IFS='|' read -r fx want wantseg; do
+while IFS='|' read -r fx want wantseg fxTbl; do
   [ -n "$fx" ] || continue
   n=$((n + 1))
   if [ ! -f "$FIX/$fx" ]; then echo "  $fx｜→ 不可判：夹具不在场（不填 0）"; unk=$((unk + 1)); continue; fi
-  out=$(cd "$ROOT" && python3 -B scripts/check_chart.py "scripts/fixtures/$fx" --table "$TBL" 2>&1); rc=$?
+  tbl="$TBL"; [ -n "$fxTbl" ] && tbl="scripts/fixtures/$fxTbl"
+  if [ -n "$fxTbl" ] && [ ! -f "$FIX/$fxTbl" ]; then echo "  $fx｜→ 不可判：这一枚要的表原文不在场 $fxTbl（不填 0）"; unk=$((unk + 1)); continue; fi
+  out=$(cd "$ROOT" && python3 -B scripts/check_chart.py "scripts/fixtures/$fx" --table "$tbl" 2>&1); rc=$?
   detail=$(printf '%s\n' "$out" | grep '^\s*\[E-')
   codes=$(printf '%s\n' "$detail" | grep -o 'E-[A-Z]*' | sort -u | tr '\n' ',' | sed 's/,$//')
   hits=$(printf '%s\n' "$detail" | grep -c '^\s*\[E-')
   segs=$(printf '%s\n' "$detail" | sed -n 's/^\s*\[E-[A-Z]*\] \[\([^]]*\)\].*/\1/p' | sort -u | paste -sd '/' -)
   rows=$(printf '%s\n' "$detail" | grep -oE '第 [0-9]+ 行' | head -1)
   if [ "$want" = "PASS" ]; then
-    echo "  $fx｜期望退码 0／实发 $rc｜期望码集=空／实发 ${codes:-空}"
+    echo "  $fx｜期望退码 0／实发 $rc｜期望码集=空／实发 ${codes:-空}｜表=${fxTbl:-默认合成表}"
     if [ "$rc" -eq 0 ] && [ -z "$codes" ]; then echo "    → 合（注入生效=不适用）"; else echo "    → 不合"; bad=$((bad + 1)); fi
   else
-    echo "  $fx｜期望退码 1／实发 $rc｜期望只发 $want｜实发码 $codes｜发条 $hits 条｜靶位=$rows｜判据段=${segs:-无}"
+    echo "  $fx｜期望退码 1／实发 $rc｜期望只发 $want｜实发码 $codes｜发条 $hits 条｜靶位=$rows｜判据段=${segs:-无}｜表=${fxTbl:-默认合成表}"
     if [ "$rc" -eq 1 ] && [ "$codes" = "$want" ] && [ "$hits" -ge 1 ] && [[ "$segs" == *"$wantseg"* ]]; then
       echo "    → 合（注入生效=是：这一道确实发了条，且靶落在它扫的那一段里）"
     else
