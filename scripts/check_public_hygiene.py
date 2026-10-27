@@ -283,7 +283,8 @@ OUTPUT_VERB = re.compile(r"写\s*`|交付物|产出|生成|落盘|输出|模板\
 
 # ---------------------------------------------------------------- 面分类
 def classify(path: Path) -> str | None:
-    """返回 'product'（成品面）|'changelog'|None（不检/仓外）。入参可为仓外路径：判 None 交调用方从严。"""
+    """返回 'product'（成品面）|'changelog'|None（不检/仓外）。入参可为仓外路径：判 None 交调用方从严。
+    M455：NOTICE.md 与其余成品面同尺全码；H-INSTALL-FACE 按其自述只判活面 SKILL.md（非 NOTICE 专属豁免）。"""
     try:
         parts = path.resolve().relative_to(ROOT).parts
     except ValueError:
@@ -292,11 +293,13 @@ def classify(path: Path) -> str | None:
         return None
     name = path.name
     if len(parts) == 1:  # 仓根文件
-        if name.startswith("README"):
+        if name.startswith("README") or name == "NOTICE.md":
             return "product"
         return None
-    if name.startswith("CONTRIBUTING") or name in {"NOTICE.md", "LICENSE.md"}:
+    if name.startswith("CONTRIBUTING") or name == "LICENSE.md":
         return None
+    if name == "NOTICE.md":
+        return "product"
     if name.startswith("CHANGELOG"):
         return "changelog"
     if name.startswith("SKILL") or name.startswith("README"):
@@ -491,21 +494,6 @@ def check_file(path: Path) -> list[tuple[str, int, str]]:
 
 
 # ---------------------------------------------------------------- 全仓跑
-def check_peer_only(path: Path) -> list[tuple[str, int, str]]:
-    """只跑 H-PEER-MENTION（供仓根／包内 NOTICE.md 的公开面补扫；不跑 H-POINTER 等其他码，
-       避免把 NOTICE 里合法的相对指路误判成新红）。"""
-    if not peer_scope_ok(path):
-        return []
-    text = path.read_text(encoding="utf-8", errors="replace")
-    finds = []
-    for lineno, line in enumerate(text.split("\n"), 1):
-        m = PEER_MENTION_RE.search(line)
-        if m:
-            finds.append((PEER_MENTION_CODE, lineno,
-                          f"{ban_label(PEER_MENTION_CODE)}§5-6命中「{hit_of(m)}」（规格：{PEER_MENTION_SPEC}）"))
-    return finds
-
-
 def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
     SKIP_OUTPUT_POINTERS.clear()
     EXEMPT_DISCARDED.clear()
@@ -529,18 +517,10 @@ def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
             else:
                 warnings += 1
 
-    extra_peer = [p for p in [ROOT / "NOTICE.md", *sorted(ROOT.glob("*/NOTICE.md"))] if p.is_file()]
-    for f in extra_peer:
-        finds = check_peer_only(f)
-        if not finds:
-            continue
-        per_file.append((f, "ERROR", finds))
-        used_codes.add(PEER_MENTION_CODE)
-        errors += len(finds)
-
+    notice_faces = [f for f in faces if f.name == "NOTICE.md"]
     if not quiet:
         print(f"公开面卫生机检 — 被扫面 {len(faces)} 个（{sum(1 for p in per_file)} 个有发现）"
-              f"＋另扫公开 NOTICE 面 {len(extra_peer)} 个（只判 {PEER_MENTION_CODE}）\n")
+              f"｜NOTICE 面 {len(notice_faces)} 个已判全码（不再只判 {PEER_MENTION_CODE}）\n")
         rel = ROOT
         for f, sev, finds in per_file:
             print(f"  {sev:<5} {f.relative_to(rel)}（{len(finds)} 条）")
@@ -906,6 +886,22 @@ def selftest() -> int:
               f"／README {len(lr)}@{[x[1] for x in lr]}｜分级={severity('product', PEER_MENTION_CODE)}"
               f"｜本档={'对' if ok12 else '错'}")
         if not ok12:
+            ok = False
+
+    # 档⑬（M455：NOTICE 补扫扩全码——坏指路必红点名行号；verify/ 不入面、射程不外溢）
+    ns = FIXDIR / "notice-scope" / "NOTICE.md"
+    verify_probe = ROOT / "verify" / "__m455_scope__.md"
+    if not ns.is_file():
+        print("   缺 M455 NOTICE 全码靶（notice-scope/NOTICE.md）→ 本档无法自证")
+        ok = False
+    else:
+        np_finds = check_pointers(ns, ns.read_text(encoding="utf-8", errors="replace"))
+        hp = [x for x in np_finds if x[0] == 3]
+        ok13 = (bool(hp) and classify(ROOT / "NOTICE.md") == "product"
+                and classify(verify_probe) is None)
+        print(f"档⑬ NOTICE 全码射程：坏指路红 {len(hp)}@3｜根 NOTICE face={classify(ROOT / 'NOTICE.md')}"
+              f"｜verify 靶 face={classify(verify_probe)}（须 None）｜本档={'对' if ok13 else '错'}")
+        if not ok13:
             ok = False
 
     print(f"selftest: {'ALL GREEN（闸能红、能绿、可复现）' if ok else 'FAIL'}")
