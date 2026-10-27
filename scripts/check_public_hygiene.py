@@ -40,12 +40,13 @@
                射程与 CHANGELOG 逐码不入门与 ⑥ 同（共用 SCOPE_GATED）
 
 面与分级（判据口径：能力句直述、指路可跟随、归因留内部）：
-    成品面  SKILL*.md / README*.md（含仓根集合仓说明）/ assets/** / references/**  → 五禁全适用（含 ③b 子项），命中=ERROR
+    成品面  SKILL*.md / README*.md（含仓根集合仓说明）/ NOTICE.md / LICENSE.md / assets/** / references/**  → 全码适用（含 ③b 子项），命中=ERROR
     CHANGELOG  CHANGELOG*.md                                                       → 守①③④⑤（②③b⑥⑦不在此面），命中=WARN
     逐码降级  WARN_CODES＝{H-GIFT-UNIT, H-TOOL-PROMISE}：这两支即便命中成品面也记 **WARN** 不记 ERROR——它们判的是「等他票补齐」的
               过渡态（M288 落字前应红、落字后归零），拿 ERROR 去卡会把整仓门钉死在别人名下的在途字上。
               计数因此**逐条走**（一枚面可同时出两档），表头显该面最重的一档。
-    不检面  CONTRIBUTING*（贡献者文档，内部指路是它的职责）/ docs/ / scripts/ / NOTICE / LICENSE / .github
+    不检面  CONTRIBUTING*（贡献者文档，内部指路是它的职责）/ docs/ / scripts/ / verify/ / logs/ / dispatch/ / .github
+    LICENSE 面  仓根／包内 LICENSE.md → 与成品面同尺全码；显式豁免清单＝{H-INSTALL-FACE}（该码自述只判活面 SKILL.md，纯法律文本不适用安装式）
     「lead」一类英文产品词**不入词表**（cue-lead-pieces 的 lead pieces 是正式术语，入表即假阳）。
 
 岗单周检与新票探针接法（照抄即可，勿改路径）：
@@ -74,7 +75,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXDIR = ROOT / "scripts" / "fixtures" / "hygiene"
 
 NON_SKILL_DIRS = {".github", "docs", "scripts", "assets", ".git", ".workbuddy", ".attic"}
-SKIP_DIR_NAMES = {"__pycache__", "dist", "build", "node_modules", ".venv", "fixtures"}
+SKIP_DIR_NAMES = {"__pycache__", "dist", "build", "node_modules", ".venv", "fixtures",
+                  "verify", "logs", "dispatch"}   # M475：内部记录目录不入面（与 peer 射程同）
 
 # ---------------------------------------------------------------- 五禁规则表
 # 每条：(码, 五禁项, 编译后正则, 人读规格)
@@ -234,6 +236,10 @@ WARN_CODES = {"H-GIFT-UNIT", "H-TOOL-PROMISE"}    # ⑥⑦即便命中成品面�
 #   用 ERROR 会把整仓门卡死在别人名下的在途字上；归零与否看 WARN 计数走向，不看门是否红。
 GIFT_SCOPE_SKIP = ("assets", "examples")   # ⑥⑦共用的射程：README／SKILL 门面句＋包内 references；模板面与样例面不判
 SCOPE_GATED = {"H-GIFT-UNIT", "H-TOOL-PROMISE"}   # 走上面那条射程的两支码（M317 起不再只有 ⑥）
+# M475：LICENSE 面进 iter_faces 全码；唯一显式豁免安装式（该码自述只判活面 SKILL.md，纯法律文本不适用）。
+LICENSE_EXEMPT_CODES = ("H-INSTALL-FACE",)
+LICENSE_SCOPE_NOTE = ("本闸对 LICENSE 只判这些码：RULES 全码＋H-POINTER，减去显式豁免 H-INSTALL-FACE"
+                      "（其自述只判活面 SKILL.md，纯法律文本不适用安装式）。")
 LEGEND = {c: spec for c, _, _, spec in RULES}
 LEGEND["H-POINTER"] = "包内相对指路目标不存在——要么补文件，要么删指路；不许留断链"
 
@@ -284,7 +290,8 @@ OUTPUT_VERB = re.compile(r"写\s*`|交付物|产出|生成|落盘|输出|模板\
 # ---------------------------------------------------------------- 面分类
 def classify(path: Path) -> str | None:
     """返回 'product'（成品面）|'changelog'|None（不检/仓外）。入参可为仓外路径：判 None 交调用方从严。
-    M455：NOTICE.md 与其余成品面同尺全码；H-INSTALL-FACE 按其自述只判活面 SKILL.md（非 NOTICE 专属豁免）。"""
+    M455：NOTICE.md 与其余成品面同尺全码；M475：LICENSE.md 同尺全码，唯一显式豁免 H-INSTALL-FACE（只判活面 SKILL.md）；
+            verify/logs/dispatch 不入面（与 peer 射程同）。"""
     try:
         parts = path.resolve().relative_to(ROOT).parts
     except ValueError:
@@ -292,11 +299,13 @@ def classify(path: Path) -> str | None:
     if any(p in SKIP_DIR_NAMES for p in parts[:-1]):
         return None
     name = path.name
+    if name == "LICENSE.md":                                  # M475：仓根与包内一律成品面
+        return "product"
     if len(parts) == 1:  # 仓根文件
         if name.startswith("README") or name == "NOTICE.md":
             return "product"
         return None
-    if name.startswith("CONTRIBUTING") or name == "LICENSE.md":
+    if name.startswith("CONTRIBUTING"):
         return None
     if name == "NOTICE.md":
         return "product"
@@ -311,7 +320,10 @@ def classify(path: Path) -> str | None:
 
 def gift_scope_ok(path: Path) -> bool:
     """⑥射程（M289 票面）：门面句 README／SKILL 与包内 references 判；assets／examples 不判。
-    仓外路径按成品面从严判那条路照旧给判——射程收的是包内模板与样例面，不是「仓外免检」。"""
+    仓外路径按成品面从严判那条路照旧给判——射程收的是包内模板与样例面，不是「仓外免检」。
+    M475：LICENSE.md 例外——法律文本走全码，不受 examples／assets 样例射程影响。"""
+    if path.name == "LICENSE.md":
+        return True
     try:
         parts = path.resolve().relative_to(ROOT).parts
     except ValueError:
@@ -320,8 +332,8 @@ def gift_scope_ok(path: Path) -> bool:
 
 
 def peer_scope_ok(path: Path, fixture: bool = False) -> bool:
-    """M444 射程：只到公开面——包内 SKILL*.md／README*.md／NOTICE.md／assets/**／references/**，
-       仓根 README*／NOTICE.md；CHANGELOG 与 verify/logs/dispatch 一律不判（内部研究记录与判据引文合法）。
+    """M444 射程：只到公开面——包内 SKILL*.md／README*.md／NOTICE.md／LICENSE.md／assets/**／references/**，
+       仓根 README*／NOTICE.md／LICENSE.md；CHANGELOG 与 verify/logs/dispatch 一律不判（内部研究记录与判据引文合法）。
        仓外路径按公开面从严判（3.1 病灶在仓外 NOTICE/README）；内部段名即使仓外也不判。
        fixture=True 只放行 `scripts/fixtures/...` 这一层（selftest 靶），**不放行 verify/logs/dispatch/CHANGELOG**。
        限度：只按品牌语境判——裸「道以」后接非品牌词、裸「dao」不判；scripts/** 注释不在射程
@@ -340,8 +352,8 @@ def peer_scope_ok(path: Path, fixture: bool = False) -> bool:
         return True                                          # 仓外公开面：3.1 两枚病灶走这条
     parts = rel.parts
     if len(parts) == 1:
-        return path.name.startswith("README") or path.name == "NOTICE.md"
-    if path.name.startswith(("SKILL", "README")) or path.name == "NOTICE.md":
+        return path.name.startswith("README") or path.name in ("NOTICE.md", "LICENSE.md")
+    if path.name.startswith(("SKILL", "README")) or path.name in ("NOTICE.md", "LICENSE.md"):
         return True
     return "assets" in parts[:-1] or "references" in parts[:-1]
 
@@ -518,9 +530,12 @@ def run_repo(strict: bool, quiet: bool) -> tuple[int, int, int]:
                 warnings += 1
 
     notice_faces = [f for f in faces if f.name == "NOTICE.md"]
+    license_faces = [f for f in faces if f.name == "LICENSE.md"]
     if not quiet:
         print(f"公开面卫生机检 — 被扫面 {len(faces)} 个（{sum(1 for p in per_file)} 个有发现）"
-              f"｜NOTICE 面 {len(notice_faces)} 个已判全码（不再只判 {PEER_MENTION_CODE}）\n")
+              f"｜NOTICE 面 {len(notice_faces)} 个已判全码（不再只判 {PEER_MENTION_CODE}）"
+              f"｜LICENSE 面 {len(license_faces)} 个已判全码"
+              f"（显式豁免 {'／'.join(LICENSE_EXEMPT_CODES)}：只判活面 SKILL.md）\n")
         rel = ROOT
         for f, sev, finds in per_file:
             print(f"  {sev:<5} {f.relative_to(rel)}（{len(finds)} 条）")
@@ -890,7 +905,7 @@ def selftest() -> int:
 
     # 档⑬（M455：NOTICE 补扫扩全码——坏指路必红点名行号；verify/ 不入面、射程不外溢）
     ns = FIXDIR / "notice-scope" / "NOTICE.md"
-    verify_probe = ROOT / "verify" / "__m455_scope__.md"
+    verify_probe = ROOT / "verify" / "NOTICE.md"
     if not ns.is_file():
         print("   缺 M455 NOTICE 全码靶（notice-scope/NOTICE.md）→ 本档无法自证")
         ok = False
@@ -902,6 +917,28 @@ def selftest() -> int:
         print(f"档⑬ NOTICE 全码射程：坏指路红 {len(hp)}@3｜根 NOTICE face={classify(ROOT / 'NOTICE.md')}"
               f"｜verify 靶 face={classify(verify_probe)}（须 None）｜本档={'对' if ok13 else '错'}")
         if not ok13:
+            ok = False
+
+    # 档⑭（M475：LICENSE 纳入全码——坏指路必红点名行号；verify/ 不入面、射程不外溢）
+    ls = FIXDIR / "license-scope" / "LICENSE.md"
+    verify_probe_l = ROOT / "verify" / "LICENSE.md"
+    if not ls.is_file():
+        print("   缺 M475 LICENSE 全码靶（license-scope/LICENSE.md）→ 本档无法自证")
+        ok = False
+    else:
+        lp_finds = check_pointers(ls, ls.read_text(encoding="utf-8", errors="replace"))
+        hp_l = [x for x in lp_finds if x[0] == 3]
+        ok14 = (bool(hp_l) and classify(ROOT / "LICENSE.md") == "product"
+                and classify(verify_probe_l) is None
+                and peer_scope_ok(ROOT / "LICENSE.md") is True
+                and gift_scope_ok(ls) is True
+                and LICENSE_EXEMPT_CODES == ("H-INSTALL-FACE",)
+                and "本闸对 LICENSE" in LICENSE_SCOPE_NOTE)
+        print(f"档⑭ LICENSE 全码射程：坏指路红 {len(hp_l)}@3｜根 LICENSE face={classify(ROOT / 'LICENSE.md')}"
+              f"｜verify 靶 face={classify(verify_probe_l)}（须 None）"
+              f"｜peer 射程={peer_scope_ok(ROOT / 'LICENSE.md')}｜gift 射程={gift_scope_ok(ls)}"
+              f"｜豁免={LICENSE_EXEMPT_CODES}｜本档={'对' if ok14 else '错'}")
+        if not ok14:
             ok = False
 
     print(f"selftest: {'ALL GREEN（闸能红、能绿、可复现）' if ok else 'FAIL'}")
