@@ -27,6 +27,8 @@ pairfile="$WORK/pairs.txt"
 cat > "$pairfile" <<'PAIRS'
 good-chart.md|PASS||
 good-quoted-note.md|PASS||target-table-noted.md
+good-plain-quote.md|PASS||target-table-noted.md
+good-third-party.md|PASS||target-table-noted.md
 good-merged-order.md|PASS||target-table-merged.md
 bad-spec.md|E-FORMAT|规格待核|
 bad-no-anchor.md|E-ANCHOR|锚|
@@ -36,6 +38,8 @@ bad-cell-misplaced.md|E-QUOTE|格位·整行照序或配列头|
 bad-no-header-pair.md|E-QUOTE|格位·数没配列头|
 bad-cell-empty-zero.md|E-QUOTE|格位·列头配对不成立|
 bad-merged-bind.md|E-QUOTE|格位·列头配对不成立|target-table-merged.md
+bad-conclusion-crossline.md|E-ADVICE|投资断言|target-table-noted.md
+bad-author-voice-verb.md|E-ADVICE|投资断言|target-table-noted.md
 bad-quote-conclusion.md|E-ADVICE|投资断言|target-table-noted.md
 bad-missing-limit.md|E-COVERAGE|四类点名|
 bad-advice.md|E-ADVICE|投资断言|
