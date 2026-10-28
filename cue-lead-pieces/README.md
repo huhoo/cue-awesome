@@ -119,6 +119,8 @@ npx skills add huhoo/cue-awesome --skill cue-lead-pieces
 
 Agent 的推荐流程写在 `SKILL.md` 里。
 
+**交回来的东西长什么样**：`scripts/fixtures/good_lead_pack_sample.md` 是 `cue.py brief` 那一条命令的 stdout 原样（跑本包合成夹具 `scripts/fixtures/omni_real_shape.json`，合成主体、假编号），一行没改；里面那条复跑链先以 `leads --no-llm` 落缓存再读缓存，所以即便 `CUE_LLM_BASE_URL`、`CUE_LLM_API_KEY`、`CUE_LLM_MODEL` 三枚在场也不发请求——样例头部把这一支的条件与去掉它会发生什么一并写明。
+
 ## 交付与验证
 
 实测记录见包内 `references/verification.md`，版本记录见 `CHANGELOG.md`。要点：

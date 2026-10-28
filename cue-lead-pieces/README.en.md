@@ -119,6 +119,8 @@ This route requires Node.js/npm; copying this directory into your host's support
 
 The recommended agent flow is in `SKILL.md`.
 
+**What the output looks like**: `scripts/fixtures/good_lead_pack_sample.md` is the verbatim stdout of the `cue.py brief` command, run against this package's own synthetic fixture (`scripts/fixtures/omni_real_shape.json` - synthetic entity, fake ids), not one line edited. Its reproduction chain lands the lead cache first with `leads --no-llm` and then reads it, so no request goes out even when `CUE_LLM_BASE_URL`, `CUE_LLM_API_KEY` and `CUE_LLM_MODEL` are all set; the sample header spells out that condition and what happens without it.
+
 ## Delivery and verification
 
 The measurement record is `references/verification.md` in this package; versions are in `CHANGELOG.md`. In short:
