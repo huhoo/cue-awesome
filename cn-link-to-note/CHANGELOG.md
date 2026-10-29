@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.1.4 — 2026-10-29（连上判据按路分写：面文那句「认得到 `parse`／`get_parse_status`／`read_result` 才算连上」把两路合成一条尺、又把工具在场当解析可用判据；非能力面变更）
+- 改因：与上一票出门的两包同源（6.1 第十批复判落的两条 major）。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386「a remote-only connection covers URLs with no local install, but cannot read local files」；`cue-omni-reader/SKILL.md:21`（行长 244）列 209；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚 `parse`／`get_parse_status`／`cancel_parse`。⇒ 旧句把两路压成一条尺：已连的 remote-only 宿主被本件判成没连（它没有 `read_result`），Bridge 那面又少四枚；而「列到名字」并不证解析可用。
+- 改法（三面同形、中英同射程）：名集方向改成「**连上之后**那份返回里应当能看到这些名字」并按路分写（remote-only 三枚、Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚）；端到端那句写成两路各自可执行——URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件），本件不自证也不代跑；尾句逐字取 Lead 点形（本票票面「点形＝你的 §四 a」），一字未改，英文只随句位首字母大写。SKILL 面补三态句「装好 skill ≠ 已配凭据 ≠ 通道已连」，句形取同族母本 `journal-draft/README.md:153`（E4 冻结面，只引句形不改它一字）；README 两面三态已在场，不堆第二句。指路只引解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`，数据腿那页不在本面引（本件只依赖解析腿：面上数据腿串 0 枚、脚本不碰通道）。「这条笔记当初摘的是哪一版」那一格仍由你指定并对齐，一字未动。
+- 落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:58∥542∥291；README.md:28∥701∥344；README.en.md:28∥1712∥749。
+- 现测（写后复扫，判据①②可数）：本包三面宽式复扫（才算连上｜才算已连｜已连判据｜在场才算｜count as connected｜considered connected｜connected means｜proves connection｜proof of connection｜connected-test，re.I 逐行 splitlines）＝面 3∥行 0∥次 0；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚；含 `cancel_parse` 的面 3 枚；三态句在场 3 面。本包自带自测与仓闸读数记在本票回执。
+- 号序与槽位：0.1.3 → 0.1.4（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-link-to-note | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`）。
+
 ### 0.1.3 — 2026-10-29（非能力面变更，仅为解渠道侧 latestVersion 未前移：0.1.2 已受理但详情端点仍报 0.1.1）
 - 改因：**这一条没有行为差异**。0.1.2 那次提交已被渠道受理（本地发布日志 `verify/publish-2026-10-26/w27-skillhub.log` 第 4 行现读 `rc=0 ver="0.1.2"`，受理时刻北京 2026-10-26 08:47:58），可详情端点那侧到现在仍把最新值报成 0.1.1——版本位已消耗、内容已在场，只是没前移成可见的最新版。时距现算：此刻北京 2026-10-29 09:53:31，距受理 73.09 小时（4386 分），是同类样本实测最大 829 分的 5.29 倍。同版重发会被「版本已存在」拒掉，唯一能走的是版本前进一格。**这条写给下一位读的话只有一句：0.1.3 与 0.1.2 内容等同，别把它读成渠道慢，也别在它身上找行为差异。**详情端点与版本列表那两枚现值是分发侧读数，本票零对外、我没自取，出处记在账上。
 - 改了哪一处：只动一枚字面——`SKILL.md:7` 的 version 由 "0.1.2" 改 "0.1.3"。本包单槽（无分发机读面、英文面不设版本位、脚本内无随版本走的字面），现扫 0.1.2 在非本文件面残留 0 枚。能力句一字未动：四节契约、要点 3–7 条、至多一枚原话、四道码集、`scripts/check_note.py` 与 `scripts/make_note.py` 的判据与随包输出串（含 0.1.1／0.1.2 那两批改过的 scope 句）全部原样；三面 README／SKILL 其余行、夹具七枚、runner 一字未碰。

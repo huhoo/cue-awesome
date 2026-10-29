@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.1.4 — 2026-10-29（连上判据按路分写：面文那句「认得到 `parse`、`get_parse_status`、`read_result` 才算已连」把 remote-only 与 Bridge 两路合成一条尺，又把工具在场当了解析可用判据；非能力面变更）
+- 改因：与上一票出门的两包同源（6.1 第十批复判落的两条 major）。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386「a remote-only connection covers URLs with no local install, but cannot read local files」；`cue-omni-reader/SKILL.md:21`（行长 244）列 209「remote-only cannot read local files」；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚。⇒ 旧句三处失真：已连的 remote-only 宿主被本件判成没连（它按产品契约就没有 `read_result`）；Bridge 那面全集七枚，凑来的三枚两路都不等；「工具在场」被当成解析可用判据，而两路端到端证据各不同、remote-only 又不读本地件。
+- 改法（三面同形、中英同射程）：名集方向改成「**连上之后**那份返回里应当能看到这些名字」并按路分写（remote-only 三枚 `parse`／`get_parse_status`／`cancel_parse`；Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚）；端到端那句写成两路各自可执行——URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件），本件不自证也不代跑；尾句逐字取 Lead 点形（本票票面「点形＝你的 §四 a」），一字未改，英文只随句位首字母大写。SKILL 面补三态句「装好 skill ≠ 已配凭据 ≠ 通道已连」，句形取同族母本 `journal-draft/README.md:153`（E4 冻结面，只引句形不改它一字）；README 两面三态已在场，不堆第二句；「版本同一性由你指定并对齐」那一格一字未动。指路只引解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`，数据腿那页不在本面引（本件只依赖解析腿：面上数据腿串 0 枚、脚本不碰通道）。
+- 落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:58∥568∥317；README.md:28∥794∥385；README.en.md:28∥2051∥894。
+- 现测（写后复扫，判据①②可数）：本包三面宽式复扫（才算连上｜才算已连｜已连判据｜在场才算｜count as connected｜considered connected｜connected means｜proves connection｜proof of connection｜connected-test，re.I 逐行 splitlines）＝面 3∥行 0∥次 0；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚；含 `cancel_parse` 的面 3 枚；三态句在场 3 面。仓闸与本包自带自测读数记在本票回执。
+- 号序与槽位：0.1.3 → 0.1.4（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-contract-clauses | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`）。
+
 ### 0.1.3 — 2026-10-25（补判打回两枚：①降格没落全——随包报错原文与面文仍把通道说成能判版本同一性；②道五按物理行切、裸结果断言放行）
 - 改因：补判打回（审方复跑成立）。①属**承诺降格未落全**，②属**判据收紧**。
 - ①降格落到每一处：`scripts/collect_clauses.py` 的非法 `--asof` 报错原文里那句「解析日是这份清单的时效凭据」改成「来源行的解析日要的是真实存在的一天」——现跑 `--asof 2026-13-99` 得 rc=3、首行不再含「时效凭据」（旧句是用户会看到的句子，上一拍我只改了面文没改随包输出）。面文一族同批改齐：SKILL.md 的 envVars 那句与 §4 降级句、README.md 的 代价／§二／§四 三句、README.en.md 对应三句，一律改成「通道开没开决定的是**正文取不取得到**；版本同一性这一格两条路都不判——本件不读签署页标记、不对版本链，由你指定基准版并对齐」。这与同包 SKILL §1 那句「以哪一版为准由你指定；本件不猜」对上，不再是两张皮。现扫落点：「时效凭据」在面文与脚本里 0 处（历史条目按留痕原则不回改，CHANGELOG:6／:25 是记改因，合法保留）。
