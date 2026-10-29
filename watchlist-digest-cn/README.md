@@ -82,7 +82,7 @@ python3 scripts/check_digest.py assets/自选清单日报.md --run scripts/fixtu
 
 1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 存入本地凭据——**不要贴进聊天**，agent 不经手密钥；
-3. 安装本件取证用到的三枚 skill：`cue-research`／`cue-omni-reader`／`cue-data-mcp`——装哪几枚按你要跑的腿定：只解析原文就装 `cue-omni-reader`，要结构化披露加 `cue-data-mcp`，要横向深研加 `cue-research`。这三枚由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：
+3. 安装本件取证用到的三枚 skill：`cue-research`／`cue-omni-reader`／`cue-data-mcp`——装哪几枚按你要跑的腿定：只解析原文就装 `cue-omni-reader`，要结构化披露加 `cue-data-mcp`，要横向深研加 `cue-research`。这三枚由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法： 两条腿的官方配置页在这里只给指针、不复述开通步骤：结构化披露与横向深研走数据腿，其官方配置页 <https://cuecue.cn/hub/mcp>；原文解析走解析腿，其官方配置页 <https://cuecue.cn/hub/omni-reader>。哪条腿对应哪几枚，照上面那句「装哪几枚按你要跑的腿定」读；不装会少什么本面已写着（证据密度与回查能力下降、靠名称定位那一路随之失效只能给 6 位码），这里不复写。
    - 整套：`npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；
    - 单装：`npx skills add sensedeal/cue-skills --skill cue-research`，把末尾那枚名字换成 `cue-omni-reader` 或 `cue-data-mcp` 就只装那一枚。
 

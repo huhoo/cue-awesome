@@ -42,7 +42,7 @@ python3 scripts/ontology.py demo --out /path/to/work/cue-demo
 npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 ```
 
-该安装方式需要 Node.js/npm；直接复制本目录到宿主支持的 skills 位置也可。离线工具只依赖 Python。真实解析复用官方 [cue-omni-reader](https://github.com/sensedeal/cue-skills/tree/main/cue-omni-reader)，按其 [setup](https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md) 连接 MCP 并配置凭据。此包不自动安装或配置 Omni。key 放入自己的凭据设施，不发到聊天或 Issues。
+该安装方式需要 Node.js/npm；直接复制本目录到宿主支持的 skills 位置也可。离线工具只依赖 Python。真实解析复用官方 [cue-omni-reader](https://github.com/sensedeal/cue-skills/tree/main/cue-omni-reader)，按其 [setup](https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md) 连接 MCP 并配置凭据。此包不自动安装或配置 Omni。key 放入自己的凭据设施，不发到聊天或 Issues。 这一腿的官方配置页只给指针、不复述步骤：<https://cuecue.cn/hub/omni-reader>；不连它会少什么，本面下面那一段已按原话写着（页锚与逐字定位缺位、来源记录只能到文件级），这里不复写一遍。本包面文没有把结构化披露或横向深研列为取证腿（全包现扫 cue-data-mcp 与 cue-research 各 0 枚），所以这里只给解析腿那一页，不塞没写过的腿。
 
 通道那一腿的已连判据（本件的解析腿是宿主里的 omni-reader MCP，没有 curl 可以替代它）**按路分写**：宿主列工具走的是 MCP 的 `tools/list` 握手，**连上之后**那份返回里应当能看到这些名字——remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚；两路枚数不同，拿一个固定数去判两路必错一边。只装了 skill、列不到名字，就是没连（装 skill 与配凭据、连通道是三件事，别合成一件），本件随即只走「你把文本贴进来」那条路（代价：页锚与逐字定位缺位，来源记录只能到文件级）。名字在场只证它们被暴露，不证解析跑得通——URL 那一腿要拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿要拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件）；本件不自证也不代跑。解析消耗以服务端返回为准，本件不代估也不代付。
 
