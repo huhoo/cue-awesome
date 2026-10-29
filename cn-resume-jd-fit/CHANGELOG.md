@@ -4,7 +4,7 @@
 - 改因：与已入仓两批同族（6.1 第十批复判落的两条 major 之后，同型句在全仓的余落点按批清）。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386「a remote-only connection covers URLs with no local install, but cannot read local files」；`cue-omni-reader/SKILL.md:21`（行长 244）列 209；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚 `parse`／`get_parse_status`／`cancel_parse`。⇒ 旧句三处失真：已连的 remote-only 宿主被本件判成没连（它没有 `read_result`）；Bridge 那面全集七枚，凑来的三枚两路都不等；「工具在场」被当成解析可用判据，而两路的端到端证据各不同、remote-only 又不读本地件。
 - 改法（三面同形、中英同射程，与批一四包逐字同串）：名集方向改成「连上之后那份返回里应当能看到这些名字」并按路分写（remote-only 三枚含 `cancel_parse`、Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚）；端到端句写成两路各自可执行——URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件），本件不自证也不代跑；SKILL 面补三态句「装好 skill ≠ 已配凭据 ≠ 通道已连」，句形取同族母本 `journal-draft/README.md:153`（E4 冻结面，只引句形不改它一字）；README 两面三态原已在场，不堆第二句。指路只引解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`——本件只依赖解析腿：面上数据腿叙述 0 行（按功能词现读，剔 frontmatter 声明位与夹具）、脚本不碰通道，数据腿那页不在本面引。
 - 落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:58∥566∥315；README.md:28∥774∥366；README.en.md:28∥1909∥805。
-- 现测（写后用 Lead 固化的闸件复扫，不给布尔）：`nameset_defect_scan.py --faces cn-resume-jd-fit`＝面 0∥行 0∥次 0（同件先跑 --selftest rc=0：正控 4 枚实漏 0、反控 7 枚误伤 0）；含 `cancel_parse` 的面 3 枚；三态句在场 3 面；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚。顶条一律描述式，不复写被废的句子（改因与现测两处都只作过去时叙述）。
+- 现测（写后用 Lead 固化的闸件复扫，不给布尔）：那把以固定工具名列判已连为靶的病灶尺限定本包复扫＝面 0∥行 0∥次 0（同一把尺先跑自测当时 rc=0：正控 4 枚实漏 0、反控 7 枚误伤 0）；含 `cancel_parse` 的面 3 枚；三态句在场 3 面；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚。顶条一律描述式，不复写被废的句子（改因与现测两处都只作过去时叙述）。
 - 号序与槽位：0.1.2 → 0.1.3（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-resume-jd-fit | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`），脚本无常量版本字面。
 
 ### 0.1.2 — 2026-10-25（补判打回一枚：结论位把被引者的话搬成报告自己的名次，机检放行）
