@@ -1,6 +1,6 @@
 # Changelog
 
-### 0.3.15 — 2026-10-29（按路分写端到端判据：四面那句「一次真实本地文件 parse」把 URL 路与 Bridge 路合成一条尺，remote-only 那面做不成；非能力面变更）
+### 0.3.15 — 2026-10-29（按路分写解析可用的验收判据：四面那句把 URL 路与 Bridge 路压成同一条验收动作，remote-only 那面照它做不成；非能力面变更）
 - 改因：与同批 omni2docx 那一枚同源（6.1 第十批 Major 10-C，结论「不签 LGTM；blocker 0／major 2／minor 0」，判定窗 HEAD `fa6d62abb01972b15bf03eb599030dd23d943444`）。产品仓边界句同法逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386 与 `cue-omni-reader/SKILL.md:21`（行长 244）列 209 都明写 remote-only **cannot read local files**；`README.md:17`∥`SKILL.md:76` 列 1 起写明 remote-only 恰好三枚 `parse`／`get_parse_status`／`cancel_parse`。⇒ 本包四面在列完两路名集之后，又把「一次真实本地文件 parse」写成端到端可用的共同必要条件——上一票修好了名集那半，这半仍合着一条尺。
 - 改法（中英同射程）：那半句换成按路分写，串与同批 omni2docx 逐字相同、逐字取 Lead 点形（本票票面「点形＝你的 §四 a」），一字未改，英文只随句位首字母大写。落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:43∥824∥645；SKILL.en.md:29∥1738∥1316；README.md:47∥512∥407；README.en.md:47∥1172∥928。
 - 复验（与同批那条共用的尺，两把都跑）：票面判据①那条旧式串（`真实本地文件.{0,24}parse` ∥ `real local-file parse`）改后本包仍命中 4 行——按路分写必须写「本地文件那一腿…真实本地文件跑一次 parse」，这条尺照字面过不了，如实报数不自改判据。分辨力在缺陷式 `端到端[^。]{0,40}真实本地文件|end-to-end[^.]{0,60}real local-file parse`：本包改前（HEAD）4 行 → 改后 0 行；新式尺 `URL 那一腿要拿一枚真实 URL 跑一次 parse|the URL route is verified by one real URL parse`：改前 0 行 → 改后 4 行。两包合计 9 → 0 与 0 → 9（另一包读数写在它自己的顶条里）。
