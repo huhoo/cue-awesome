@@ -66,7 +66,7 @@ python3 scripts/check_scan_card.py assets/风险扫描卡.md                    
 
 ### First-time Cue setup (three steps, skippable)
 
-This package has one evidence leg: retrieval across penalty, regulator-measure, guarantee and sanctions domains (data-mcp).
+This package has one evidence leg: retrieval across penalty, regulator-measure, guarantee and sanctions domains (data-mcp). This single evidence leg has its official page - pointers only, no restated setup steps: the data leg at <https://cuecue.cn/hub/mcp>. What you lose without it is already the next sentence of this face, so it is not repeated here. This face does not list original-document parsing as an evidence leg, so the parsing-leg page is not pointed to.
 **Not installing raises no error** - without the channel the scan card can still be filled by hand and pass the same format gate - what the checker actually enforces is: an empty penalty table must tick the windowed "not found" declaration and an empty guarantee face must tick the "0 rows" declaration; **separating "not run" from "not reached" is a human check - the gate does not judge that state**. What you lose is coverage and traceability.
 
 1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
