@@ -30,13 +30,13 @@
 前置：`python3` + `pip install python-docx`；场景②③另需 omni-reader MCP 已连接（场景①不需要）。
 PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Chrome/Chromium（缺则明确提示跳过）。
 
-场景②③那条解析腿的已连判据（解析走宿主里的 omni-reader MCP，本件的转换本身不发请求）：宿主列工具走的是 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_outline`、`read_result` 这几枚才算已连；列不到就是没连，场景②③做不了，场景①（`--md` 直出）不受影响。解析消耗以服务端返回为准，本件不代估也不代付（见「能力边界」第一条）。
+场景②③那条解析腿的已连判据（解析走宿主里的 omni-reader MCP，本件的转换本身不发请求）**按路分写**：宿主列工具走的是 MCP 的 `tools/list` 握手，**连上之后**那份返回里应当能看到这些名字——remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚；两路枚数不同，拿一个固定数去判两路必错一边。列不到就是没连，场景②③做不了，场景①（`--md` 直出）不受影响。名字在场只证它们被暴露，不证解析跑得通：端到端可用要靠一次真实本地文件的 parse 去证，本件不自证也不代跑。解析消耗以服务端返回为准，本件不代估也不代付（见「能力边界」第一条）。
 
 ### 首次使用：连上 Omni 解析通道
 
-**去哪连**：解析这一腿走宿主里那枚 **cue-omni-reader** MCP——单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（本地文件那一路另需它本机的 Bridge 与最小目录授权）；装完再列一次已连接的工具，认得到上面那四枚名字才算连上。**本件不读凭据**：`CUE_API_KEY` 由通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
+**去哪连（三态分开看：装好 skill ≠ 已配凭据 ≠ 通道已连）**：`npx skills add sensedeal/cue-skills --skill cue-omni-reader` 这一条只把文件放到位——跑完再列一次已安装 skill，名字在场只说明这一层，它不产生连接。配凭据是第二层（官方配置页 <https://cuecue.cn/hub/omni-reader>，凭据页 <https://cuecue.cn/hub/api-key>，key 存本地凭据设施、不进聊天也不在终端回显）；通道已连是第三层，判据按路分写见上一条（remote-only 三枚／Bridge 七枚，别拿一个固定数判两路）。URL 那一腿无需本机安装，本地文件那一腿要 audited Bridge、最小根授权、跑 doctor、再让宿主 reload/reconnect。名字在场不证解析可用——端到端要拿一枚真实本地文件跑一次 parse 才算，本件不自证也不代跑。**本件不读凭据**：`CUE_API_KEY` 由通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
 
-**不装不报错**：没连上只是场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令 `python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。
+**不装不报错（限定：不调用解析这条腿，且本地输入与 python-docx 等前提齐备）**：没连上只是场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令 `python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。这条证的是本包自己的渲染，不证通道可用。
 
 ```bash
 # ① agent markdown 直出（免中间 JSON）

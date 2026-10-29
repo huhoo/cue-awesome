@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "把 Omni 解析结果重建为 Word / HTML / PPT：页锚点分页、真标题+目录、表格脚注溯源、多源证据附录。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck。开关与制式：--profile 公文/诉讼/研报制式，--pdf 打印件、--inline 公众号不重排、版式池 kpi/compare/timeline。"
-version: "0.6.15"
+version: "0.6.16"
 license: MIT
 consumes:
   - parsed-doc
@@ -38,9 +38,9 @@ tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 
 ## 首次使用：连上 Omni 解析通道
 
-**去哪连**：解析这一腿走宿主里那枚 **cue-omni-reader** MCP——单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（本地文件那一路另需它本机的 Bridge 与最小目录授权）；连没连上按 `tools/list` 那份返回判，`parse`／`get_parse_status`／`read_outline`／`read_result` 四枚名字在场才算连上。**本件不读凭据**：`CUE_API_KEY` 归通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
+**去哪连（三态分开看：装好 skill ≠ 已配凭据 ≠ 通道已连）**：装那枚 skill 只把文件放到位——`npx skills add sensedeal/cue-skills --skill cue-omni-reader`，跑完再列一次已安装 skill，名字在场只说明文件到位，这一步不产生连接。连接是下一个动作，且分两路：现成 URL 那一腿无需本机安装；本地文件那一腿要那枚 audited Bridge、最小根授权、跑 doctor，再让宿主 reload/reconnect。指路按官方页优先：解析腿配置专页 <https://cuecue.cn/hub/omni-reader>（凭据页 <https://cuecue.cn/hub/api-key>，key 存本地凭据设施，不进聊天、不在终端回显），安装细节见其配置文档 <https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md>。**连上之后**，宿主列出的工具里应能看到这些名字：remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚——两路枚数不同，拿一个固定数去判两路必错一边。名字在场只证它们被暴露，不证解析跑得通：要证端到端可用，得拿一枚真实本地文件跑一次 parse，本包不自证也不代跑。**本件不读凭据**：`CUE_API_KEY` 归通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
 
-**不装不报错**：没连上只是场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令可跑通：`python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后用同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。
+**不装不报错（限定：不调用解析这条腿，且本地输入与 python-docx 等前提齐备）**：没连上时场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令可跑通：`python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后用同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。这条只证本包自己的渲染，不证通道可用。
 
 ## 定位：完整链路，两个环节有效组合
 

@@ -1,5 +1,13 @@
 # CHANGELOG(omni2docx)
 
+### 0.6.16 — 2026-10-29（对外承诺句射程修正：入口段那句「单装＋四枚在场才算连上」把三种独立状态压成了一种；非能力面变更）
+- 改因：第九批复查对外承诺句后落的一枚 major（改的是面文射程，不改判定）。装好 skill、已配凭据、通道已连是三件各有证据的事，我们写成了一句「连上」。产品仓两处原文本拍逐字复跑（只读）：`cue-skills/README.md:66`——cue-omni-reader 不带运行时解析脚本，要 load 它的 SKILL.md 并连接官方 Omni MCP 面，现成 URL 那一腿无需本机安装、本地文件用 audited Bridge 且需最小根授权；`cue-omni-reader/SKILL.md:76`——remote-only 恰好 3 枚 `parse`／`get_parse_status`／`cancel_parse`，Bridge 是这 3 枚再加 `read_result`／`read_outline`／`discard_result`／`save_result`（共 7 枚）。我们那句把两路压成一个四名集：已连的 remote-only 宿主被我们判成没连（它本来就没有 read_outline／read_result），Bridge 那一面又缺了 discard_result／save_result，两个方向都错。再加 `cue-omni-reader/README.md:66`「only a real local-file parse validates the route end-to-end」——工具在场永远不证端到端可用。
+- 落点不止上一票那两枚新段：同包 README.md 第 33 行那条 0.6.11 写下的判据句、README.en.md 第 38 行的英文同位句是同一病灶（票面五落点之外我按 token 复扫出来的，Lead 复扫认下），只改新段会在同包留下互斥承诺。本票实际改了 3 枚面、8 处行（判据句 2 处＋三态句 3 处＋限定句 3 处，行号现读：SKILL.md 41／43，README.md 33／37／39，README.en.md 38／42／44）。
+- 改法（三面同形、中英同射程）：①「单装」改成只到位「文件到位」那一层，并另起一动作写连接——URL 那路无需本机安装，本地文件那路要 audited Bridge＋最小根授权＋doctor＋宿主 reload/reconnect；②已连判据按路分写，方向从「在场才算连上」改成「连上之后应能在宿主列出的工具里看到这些名字」，remote-only 3 枚／Bridge 7 枚两数并列，不再用固定枚数判两路（首屏尺的甲乙逻辑与三枚工具名照旧留在面上，改的是方向不是判据）；③端到端降成一句实话：名字在场只证被暴露，要证解析可用得跑一次真实本地文件 parse，本件不自证也不代跑；④「不装不报错」加前提限定——不调用解析这条腿、且本地输入与 python-docx 等前提齐备，并写明那条零凭据命令证的是本包渲染、不证通道。
+- 指路（新增，可数）：入口段加解析腿官方配置页 `https://cuecue.cn/hub/omni-reader` 与凭据页 `https://cuecue.cn/hub/api-key`（两枚串在产品仓与 `scripts/cue_onramp.py:25-27` 有盘上出处，非自造；实测 200 那条记录在 `content/post-jike-v3-ledger.md:22`）。本包只依赖解析腿，故只引这两页；数据腿专页 `hub/mcp` 本包 0 枚——不依赖就不塞，塞了就是新的假指路。
+- 未动：六支脚本、判据码集、验收口径、profile 表与「装本件自己」那条安装式（README.md:28／README.en.md:31）一字未改；三面其余段落未改。
+- 号序与槽位：0.6.15 → 0.6.16（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——现扫非 CHANGELOG 面只有 `SKILL.md:7` 载版本位（无 manifest、无 SKILL.en.md、脚本内无版本常量），旧值残留 0 枚。
+
 ### 0.6.15 — 2026-10-28（三面各补一段「首次使用」：解析那条腿去哪连、没连上会怎样，原来只在改因句里出现过一次）
 - 改因：全包的族词（注册／开通／api.?key／配置文档／CUE_API_KEY）此前只命中一枚、且那枚在 0.6.11 那条的改因句里——用户面（SKILL.md／README.md／README.en.md）0 枚。而本包前置条件第一行写着「omni-reader MCP 已连接（Bridge 就绪）」：新读者读完三面也不知道去哪儿连、连不上会掉哪一段，入口断在这一格。0.6.11 那拍把「已连判据」（tools/list 那四枚名字）写进了正文，判据在场，缺的是前面那一步——去哪儿装、以及不装时的退路。
 - 改法：三面各加一段「首次使用：连上 Omni 解析通道」，每段两行——一行「去哪连」（宿主里那枚 cue-omni-reader MCP；单装那条命令原文；本地文件那一路另需它本机的 Bridge 与最小目录授权；装完再列一次已连接工具，四枚名字在场才算连上），一行「不装不报错」（没连上只关场景②③，场景①照常，并给零凭据那条命令原文与同口径验收命令）。话术照同族母本（cn-earnings-note 的首次使用那一段）逐句对射程改，不新造：本包不读凭据这句写死——CUE_API_KEY 归通道侧自己取用，本包的转换与排版不发请求、不代持凭据；赠送与消耗一律以服务端实时策略为准、口径是积分，本件不代估不代付、不承诺任何单价（三面新段里没有任何价格承诺：唯一相关的一串出现在否定位——「不承诺任何单价」，与母本同句同形；也没点名任何第三方同类实践）。

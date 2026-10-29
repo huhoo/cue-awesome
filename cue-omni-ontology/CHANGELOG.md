@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.3.14 — 2026-10-29（对外承诺句射程修正：入口与判据那几句把「装好 skill／已配凭据／通道已连」压成一件；非能力面变更）
+- 改因：第九批复查对外承诺句后落的一枚 major（改的是面文射程，不改判定），与同批 omni2docx 那一枚同源。本包面文原来写「装完再列一次工具，返回里认得到 parse／get_parse_status／read_result 这几枚才算已连」——①它把三种独立状态压成一句「已连」，装 skill 只证文件到位，不产生连接；②名集按产品仓 `cue-omni-reader/SKILL.md:76` 原文是两路两数：remote-only 恰好 `parse`／`get_parse_status`／`cancel_parse` 三枚，Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚，我们那三枚的凑法既不等于 remote-only 全集（缺 cancel_parse）也不等于 Bridge 全集；③`cue-omni-reader/README.md:66` 明写只有跑一次真实本地文件 parse 才证数据路端到端可用，工具在场不证它。产品仓 `README.md:66` 另写明 URL 那腿无需本机安装、本地文件那腿需 audited Bridge 与最小根授权，`SKILL.md:22` 补 doctor 与宿主 reload/reconnect——本票三处逐字在盘上复跑过（只读）。
+- 落点：4 枚面、6 处行（行号现读 SKILL.md 43／45，SKILL.en.md 29／31，README.md 47，README.en.md 47）。其中 README 两面那两条是上一票没在射程内的同族句，本票按 token 复扫补上，只改新段会在同包留下互斥承诺。
+- 改法（中英同射程）：①三态分写——装好 skill ≠ 已配凭据 ≠ 通道已连，句形取同族母本 `journal-draft/README.md:153`（那枚面在冻结名单内，本票一字未动，只引句形）；②已连判据按路分写、方向从「在场才算连上」改成「连上之后应能在宿主列出的工具里看到这些名字」，3 枚与 7 枚并列，不再用固定数判两路；③端到端降成一句实话——名字在场只证被暴露，端到端要真实本地文件 parse 一次，本包不自证也不代跑；④「不装不报错」加前提限定（不调用解析腿、且已有可贴的文本或文件与 Python 3.10+），并把零凭据演示定位成证本包工具链、不证通道。
+- 指路（新增，可数）：两面 SKILL 的入口段加解析腿官方配置页 `https://cuecue.cn/hub/omni-reader` 与凭据页 `https://cuecue.cn/hub/api-key`（盘上出处同批记在 omni2docx 那条里）；本包只依赖解析腿，`hub/mcp` 保持 0 枚、不塞。
+- 未动：六段流程、判定与 schema、两支自测、产物形制、README 里「装本件自己」的安装式（README.md:42／README.en.md:42）一字未改；那句「两文口径一致」没改窄也没放宽——两面各自补齐同一射程的段，它是随改动成真。
+- 号序与槽位：0.3.13 → 0.3.14（对外承诺句射程修正＝patch，非能力面变更）。本包三枚版本字面同批推进（SKILL.md:13／SKILL.en.md:5／scripts/ontology.py 的 VERSION，那行注释自写「升号必须同改这两处」），改后三处同读 0.3.14、旧值在非 CHANGELOG 面残留 0 枚。
+
 ### 0.3.13 — 2026-10-28（英文面补上对应入口段：那句「两文口径一致」就地成真，没有把承诺改小）
 - 改因：上一票给中文 SKILL 面补了入口段，英文面没有对应物——它只有 `## First useful result`（零凭据演示那一节），段内不含已连判据、也不含带代价的降级句。两种数法当场分得开：按收窄式（first use 后不接 ful、where to connect、enable the channel、CUE_API_KEY、npx skills add、sign up）现读中文面真入口 1 枚∥英文面 0 枚；把串放宽成「First use」就会把 `First useful result` 误读成入口段——那是上一拍票面读数出错的地方，本条按收窄式记值。裁语是补英文面对应段，不改窄也不放宽 `SKILL.md` 第 27 行那句「两文口径一致」：承诺成真比把承诺改小对读者更负责。
 - 改法：`SKILL.en.md` 在 `## First useful result` 之前加一段 `## First use: connect the parsing channel`，两行与中文面同射程——Where to connect（真解析用宿主里那枚官方 cue-omni-reader MCP，本包不代装也不代连；装完在宿主里再列一次工具，走 JSON-RPC 的 tools/list 握手，那份返回里认得到 parse／get_parse_status／read_result 才算连上；凭据留在你自己的凭据设施，本包脚本不读 CUE_API_KEY、不在聊天里索取 key，只在回读 artifact 分片时按 CUE_OMNI_BRIDGE 起那枚桥，key 归通道自己的环境）；No install, no error（装了却列不到那几枚名字就是没连上，本件随即只接你贴进来的文本，**what you lose is page anchors, verbatim locators, and source records above file level**；解析消耗以服务端返回为准，本件不代估也不代付；没连上不等于不能用，但下一节那条零凭据演示是另一条路径——虚构材料、不联网、不调解析 API，别把它的产出读成通道已连）。
