@@ -37,6 +37,12 @@ with an explicit message if absent).
 
 Connectivity test for the parsing leg of scenarios 2 and 3 (parsing runs through the omni-reader MCP inside your host; the conversion itself sends no requests): the host lists tools through the JSON-RPC `tools/list` handshake, and connected means that reply contains `parse`, `get_parse_status`, `read_outline` and `read_result`. If those names are absent the leg is not connected, scenarios 2 and 3 are unavailable and scenario 1 (`--md` direct output) is unaffected. Parsing spend follows the server reply; this package neither estimates nor pays it (see the first item under "Capability boundaries").
 
+### First use: connect the Omni parsing channel
+
+**Where to connect**: the parsing leg runs through the **cue-omni-reader** MCP inside your host - install it on its own with `npx skills add sensedeal/cue-skills --skill cue-omni-reader` (local files additionally need its local Bridge and a minimal directory grant). Afterwards re-list the connected tools: the skill is connected only when those four names show up. **This package does not read credentials**: `CUE_API_KEY` belongs to the channel side, while this package's conversion and layout send no requests and never hold the credential. Parsing spend and any new-account grant follow the server's live policy (grants are stated in credits); this package neither estimates nor pays them and promises no unit price of any kind.
+
+**No install, no error**: without the channel only scenarios 2 and 3 (grounded rebuild / multi-source merge) are unavailable - what you lose is page-level anchor reconstruction and multi-source traceability; scenario 1 still works with zero credentials: `python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers`, then validate on the same yardstick with `python scripts/validate_docx.py --md output.md --docx deliverable.docx`.
+
 ```bash
 # ① agent markdown direct output (no intermediate JSON)
 python scripts/build_docx.py --md output.md --out deliverable.docx --profile gov --page-numbers

@@ -32,6 +32,12 @@ PPTX 输出另需 `pip install python-pptx`；`--pdf` 另需本机装有 Edge/Ch
 
 场景②③那条解析腿的已连判据（解析走宿主里的 omni-reader MCP，本件的转换本身不发请求）：宿主列工具走的是 MCP 的 `tools/list` 握手——返回里认得到 `parse`、`get_parse_status`、`read_outline`、`read_result` 这几枚才算已连；列不到就是没连，场景②③做不了，场景①（`--md` 直出）不受影响。解析消耗以服务端返回为准，本件不代估也不代付（见「能力边界」第一条）。
 
+### 首次使用：连上 Omni 解析通道
+
+**去哪连**：解析这一腿走宿主里那枚 **cue-omni-reader** MCP——单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（本地文件那一路另需它本机的 Bridge 与最小目录授权）；装完再列一次已连接的工具，认得到上面那四枚名字才算连上。**本件不读凭据**：`CUE_API_KEY` 由通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
+
+**不装不报错**：没连上只是场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令 `python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。
+
 ```bash
 # ① agent markdown 直出（免中间 JSON）
 python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers

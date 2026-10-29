@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "把 Omni 解析结果重建为 Word / HTML / PPT：页锚点分页、真标题+目录、表格脚注溯源、多源证据附录。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck。开关与制式：--profile 公文/诉讼/研报制式，--pdf 打印件、--inline 公众号不重排、版式池 kpi/compare/timeline。"
-version: "0.6.14"
+version: "0.6.15"
 license: MIT
 consumes:
   - parsed-doc
@@ -35,6 +35,12 @@ tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 
 - 跨平台：引擎为纯 Python + python-docx，Windows / macOS / Linux 均可运行；示例命令用相对路径与 `python`，不写死文件系统布局。
 - 字体说明：预设制式用中文字体名（宋体/黑体/仿宋_GB2312/楷体）。docx 只携带字体名，在非 Windows 环境打开时 Word/WPS 会自动替换为本机字体；公文/法律等制式文档建议在 Windows/WPS 环境打开验收。
+
+## 首次使用：连上 Omni 解析通道
+
+**去哪连**：解析这一腿走宿主里那枚 **cue-omni-reader** MCP——单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（本地文件那一路另需它本机的 Bridge 与最小目录授权）；连没连上按 `tools/list` 那份返回判，`parse`／`get_parse_status`／`read_outline`／`read_result` 四枚名字在场才算连上。**本件不读凭据**：`CUE_API_KEY` 归通道侧自己取用，本包的转换与排版不发请求、不代持凭据。解析消耗与新账号赠送一律以服务端实时策略为准（那是积分口径），本件不代估也不代付，不承诺任何单价。
+
+**不装不报错**：没连上只是场景②③（grounded 重建／多源合并）做不了，缺的是页级锚点还原与多源溯源那一层；场景①照常——零凭据一条命令可跑通：`python scripts/build_docx.py --md 产出.md --out 交付.docx --profile gov --page-numbers`，随后用同口径验收 `python scripts/validate_docx.py --md 产出.md --docx 交付.docx`。
 
 ## 定位：完整链路，两个环节有效组合
 
