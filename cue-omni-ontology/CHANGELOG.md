@@ -1,5 +1,13 @@
 # Changelog
 
+### 0.3.13 — 2026-10-28（英文面补上对应入口段：那句「两文口径一致」就地成真，没有把承诺改小）
+- 改因：上一票给中文 SKILL 面补了入口段，英文面没有对应物——它只有 `## First useful result`（零凭据演示那一节），段内不含已连判据、也不含带代价的降级句。两种数法当场分得开：按收窄式（first use 后不接 ful、where to connect、enable the channel、CUE_API_KEY、npx skills add、sign up）现读中文面真入口 1 枚∥英文面 0 枚；把串放宽成「First use」就会把 `First useful result` 误读成入口段——那是上一拍票面读数出错的地方，本条按收窄式记值。裁语是补英文面对应段，不改窄也不放宽 `SKILL.md` 第 27 行那句「两文口径一致」：承诺成真比把承诺改小对读者更负责。
+- 改法：`SKILL.en.md` 在 `## First useful result` 之前加一段 `## First use: connect the parsing channel`，两行与中文面同射程——Where to connect（真解析用宿主里那枚官方 cue-omni-reader MCP，本包不代装也不代连；装完在宿主里再列一次工具，走 JSON-RPC 的 tools/list 握手，那份返回里认得到 parse／get_parse_status／read_result 才算连上；凭据留在你自己的凭据设施，本包脚本不读 CUE_API_KEY、不在聊天里索取 key，只在回读 artifact 分片时按 CUE_OMNI_BRIDGE 起那枚桥，key 归通道自己的环境）；No install, no error（装了却列不到那几枚名字就是没连上，本件随即只接你贴进来的文本，**what you lose is page anchors, verbatim locators, and source records above file level**；解析消耗以服务端返回为准，本件不代估也不代付；没连上不等于不能用，但下一节那条零凭据演示是另一条路径——虚构材料、不联网、不调解析 API，别把它的产出读成通道已连）。
+- 取词与现值：句子从本包 README.en.md 第 47 行那枚现有句（Connectivity test 那段）与脚本现值取，不翻译中文面句形、不新造承诺。脚本现值同上一票复扫：scripts 内 CUE_API_KEY 字面 0 处、真网络调用 0 处、只读 CUE_OMNI_BRIDGE 一枚（`omni_source.py:45`，类注释原话写着本模块从不读取、打印或转手 key）。新段里没有价格承诺，也没有未开放域与第三方同类实践点名。
+- 三面一字未动（边界写着重复即红）：中文 SKILL 面除本批那一枚版本字面外零改动；README.md／README.en.md 的入口段仍各 1 枚、两面一字未增未减。
+- 号序与槽位：0.3.12 → 0.3.13（补英文面对应段＝patch；判定、schema、产物形制与两支自测脚本一字未动，故本票不触发「加/改判据必重验旧靶」）。三枚版本字面同批推进（SKILL.md、SKILL.en.md、scripts/ontology.py 的 VERSION），改后同读 0.3.13。
+- 现测（读数在各尺自报行；出包字节数与 sha 按 K-66 在所有写盘与执行都结束之后再取，记在回执——写进本条它自己就会变，故此处不复数）：首屏尺 rc=0 且丙降级无代价行=0、安装式对表 rc=0、lint --strict rc=0、卫生闸 rc=0 且成品面 ERROR 与基线同值、两支包内自测各 rc=0、出包与发布物闸各 rc=0，且从 zip 内读回英文面新段在场、三枚版本字面同值。
+
 ### 0.3.12 — 2026-10-28（SKILL 面补一段入口：连通道那两行此前只在 README 两面有，而技能加载只读 SKILL 这一面）
 - 改因：入口串（首次使用／去哪连／已连判据／不装不报错）此前在本包是 SKILL.md 0 枚、README.md 1 枚、README.en.md 1 枚。README 那两行写得再对，agent 加载技能时读的是 SKILL.md 这一面——缺的就是第三面上那一步：往哪儿连、怎么算连上、没连上掉哪一层。与本包 0.3.11 那拍（把已连判据从首屏绕开句改成正文真形）同源，只是这次缺的面不是行。
 - 改法：SKILL.md 在「先交付一个有用结果」之前加一段「## 首次使用：连上解析通道」，两行——一行去哪连（解析这一腿复用官方 cue-omni-reader 的 MCP，本包不自动安装也不代连；装完在宿主里再列一次工具，走 MCP 的 tools/list 握手，那份返回里认得到 parse／get_parse_status／read_result 这几枚才算已连；凭据由用户在自己的凭据设施里配置，本包脚本不读 key、不在聊天里索取 key，只在回读 artifact 分片时按 CUE_OMNI_BRIDGE 起那枚桥，key 归通道自己的环境），一行不装不报错并**把缺的那一层写进同一句**（列不到那几枚名字就是没连上，本件随即只走「你把文本贴进来」那条路，缺的是页锚与逐字定位那一层，来源记录只能到文件级）。取词全部来自本包 README 已有的那枚入口句与脚本现值，不新造承诺：本包不自动安装或配置 Omni、解析消耗以服务端返回为准、本件不代估也不代付（无价格承诺，唯一相关的一串在否定位）；并明确写开「没连上」与「下一节那条零凭据演示」是两条路径，别把演示产出当成已连通道的读数。
