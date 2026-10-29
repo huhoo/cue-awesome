@@ -4,7 +4,7 @@ slug: cue-omni2docx
 displayName: "Omni 解析转 Word·HTML·PPT"
 summary: "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
 description: "把 Omni 解析结果重建为 Word / HTML / PPT：页锚点分页、真标题+目录、表格脚注溯源、多源证据附录。Do NOT use for: 像素级版面复刻、无 omni-reader 的解析层（--md 直出除外）；Triggers: Omni 转 Word/HTML/PPT / 保真重建 / 多源证据整合 / 扫描件转 Word / 公众号排版 / 汇报 deck; omni to docx / parse to deck。开关与制式：--profile 公文/诉讼/研报制式，--pdf 打印件、--inline 公众号不重排、版式池 kpi/compare/timeline。"
-version: "0.6.17"
+version: "0.6.18"
 license: MIT
 consumes:
   - parsed-doc
@@ -28,7 +28,8 @@ tags: [文档转换, Word, HTML, PPT, 解析重建, 公文, 诉讼, 研报]
 
 | 依赖                                                           | 用途                                     | 缺失时                                                                              |
 | ------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------- |
-| **omni-reader MCP** 已连接（Bridge 就绪）                           | 解析层：parse / read_outline / read_result | 场景②③（grounded 重建/多源合并）不可用，先引导用户安装配置 omni-reader MCP；**场景①（--md 直出）不依赖 omni，仍可用** |
+| **解析腿可连：宿主里配好 omni-reader 的 MCP**（现成 URL 那一腿不需要本机 Bridge） | 解析层取正文：`parse`／`get_parse_status`／`cancel_parse`；带 Bridge 的那一面再加 `read_result`／`read_outline`／`discard_result`／`save_result` | 连不上则场景②③（grounded 重建／多源合并）不可用，先按官方配置页 <https://cuecue.cn/hub/omni-reader> 连解析腿——URL 那一腿配好就能跑，不必装 Bridge；**场景①（`--md` 直出）不依赖 omni，仍可用**（缺的是页锚与逐字定位那一层） |
+| **Bridge 就绪（只有大件 artifact 读回这一格需要它）** | 把被判 `kind=artifact` 的侧车按 `next_cursor` 逐跳 `read_result` 拼回，与回执声明的 digest 对拍（见「大件分支」那一节） | 没装 Bridge 时 URL 那一腿照样能解析，只是这条读回走不通：侧车取不回来，重建只能停在回执给的那一段（缺的是完整正文与逐字定位，不是排版）——本件不声称 URL-only 覆盖完整的大件重建流程 |
 | **Python 3.9+ 且已装 `python-docx`**（`pip install python-docx`） | 渲染层：build_docx.py / validate_docx.py   | 引擎无法运行，先装依赖；调用方式用用户环境通用的 `python`，不假设任何特定安装路径                                    |
 | **`python-pptx`**（`pip install python-pptx`；仅 PPTX 输出）  | 汇报渲染：render_pptx.py                    | 仅 PPTX 不可用；docx / HTML 输出不受影响                                                                  |
 | **headless 浏览器**（Edge/Chrome/Chromium；仅 `--pdf`）      | HTML → 打印件 PDF                        | 明确提示"未找到浏览器，跳过 PDF"，**不静默失败**；用户装浏览器后再跑 `--pdf` 即可                                          |
