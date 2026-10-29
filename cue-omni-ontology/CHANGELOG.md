@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.3.15 — 2026-10-29（按路分写端到端判据：四面那句「一次真实本地文件 parse」把 URL 路与 Bridge 路合成一条尺，remote-only 那面做不成；非能力面变更）
+- 改因：与同批 omni2docx 那一枚同源（6.1 第十批 Major 10-C，结论「不签 LGTM；blocker 0／major 2／minor 0」，判定窗 HEAD `fa6d62abb01972b15bf03eb599030dd23d943444`）。产品仓边界句同法逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386 与 `cue-omni-reader/SKILL.md:21`（行长 244）列 209 都明写 remote-only **cannot read local files**；`README.md:17`∥`SKILL.md:76` 列 1 起写明 remote-only 恰好三枚 `parse`／`get_parse_status`／`cancel_parse`。⇒ 本包四面在列完两路名集之后，又把「一次真实本地文件 parse」写成端到端可用的共同必要条件——上一票修好了名集那半，这半仍合着一条尺。
+- 改法（中英同射程）：那半句换成按路分写，串与同批 omni2docx 逐字相同、逐字取 Lead 点形（本票票面「点形＝你的 §四 a」），一字未改，英文只随句位首字母大写。落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:43∥824∥645；SKILL.en.md:29∥1738∥1316；README.md:47∥512∥407；README.en.md:47∥1172∥928。
+- 复验（与同批那条共用的尺，两把都跑）：票面判据①那条旧式串（`真实本地文件.{0,24}parse` ∥ `real local-file parse`）改后本包仍命中 4 行——按路分写必须写「本地文件那一腿…真实本地文件跑一次 parse」，这条尺照字面过不了，如实报数不自改判据。分辨力在缺陷式 `端到端[^。]{0,40}真实本地文件|end-to-end[^.]{0,60}real local-file parse`：本包改前（HEAD）4 行 → 改后 0 行；新式尺 `URL 那一腿要拿一枚真实 URL 跑一次 parse|the URL route is verified by one real URL parse`：改前 0 行 → 改后 4 行。两包合计 9 → 0 与 0 → 9（另一包读数写在它自己的顶条里）。
+- 未动：六段流程、判定与 schema、两支自测（`scripts/test_ontology.py`∥`scripts/test_numeric.py`）、产物形制、README 两面「装本件自己」的安装式（README.md:42／README.en.md:42）、上一票新增的三态分写与按路名集、以及那句「两文口径一致」——都不改窄也不删除。判定与 schema 一字未动，故本票不触发重验旧靶。
+- 号序与槽位：0.3.14 → 0.3.15（对外承诺句射程修正＝patch，非能力面变更）。本包三枚版本字面同批推进（`SKILL.md:13`／`SKILL.en.md:5`／`scripts/ontology.py:27` 的 `VERSION`，那行注释原文「升号必须同改这两处（包内产物与自报行都取这一枚）」）；`grep -rn '^version:' cue-omni-ontology | grep -v fixtures/` 现读 2 枚，加脚本常量共 3 枚，合成靶不在本包。
+
 ### 0.3.14 — 2026-10-29（对外承诺句射程修正：入口与判据那几句把「装好 skill／已配凭据／通道已连」压成一件；非能力面变更）
 - 改因：第九批复查对外承诺句后落的一枚 major（改的是面文射程，不改判定），与同批 omni2docx 那一枚同源。本包面文原来写「装完再列一次工具，返回里认得到 parse／get_parse_status／read_result 这几枚才算已连」——①它把三种独立状态压成一句「已连」，装 skill 只证文件到位，不产生连接；②名集按产品仓 `cue-omni-reader/SKILL.md:76` 原文是两路两数：remote-only 恰好 `parse`／`get_parse_status`／`cancel_parse` 三枚，Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚，我们那三枚的凑法既不等于 remote-only 全集（缺 cancel_parse）也不等于 Bridge 全集；③`cue-omni-reader/README.md:66` 明写只有跑一次真实本地文件 parse 才证数据路端到端可用，工具在场不证它。产品仓 `README.md:66` 另写明 URL 那腿无需本机安装、本地文件那腿需 audited Bridge 与最小根授权，`SKILL.md:22` 补 doctor 与宿主 reload/reconnect——本票三处逐字在盘上复跑过（只读）。
 - 落点：4 枚面、6 处行（行号现读 SKILL.md 43／45，SKILL.en.md 29／31，README.md 47，README.en.md 47）。其中 README 两面那两条是上一票没在射程内的同族句，本票按 token 复扫补上，只改新段会在同包留下互斥承诺。

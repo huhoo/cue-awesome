@@ -10,7 +10,7 @@ produces:
   - change-brief
   - knowledge-pack
   - validated-numerics
-version: "0.3.14"
+version: "0.3.15"
 slug: cue-omni-ontology
 displayName: 任意文档·建逐句可回查知识库
 summary: "从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。"
@@ -40,7 +40,7 @@ metadata:
 
 ## 首次使用：连上解析通道
 
-**去哪连（三态分开看：装好 skill ≠ 已配凭据 ≠ 通道已连）**：解析这一腿复用官方 **cue-omni-reader** 的 MCP，本包不自动安装也不代连。装那枚 skill 只把文件放到位（跑完再列一次已安装 skill，名字在场只说明这一层，它不产生连接）；配凭据是第二层（解析腿配置专页 <https://cuecue.cn/hub/omni-reader>，凭据页 <https://cuecue.cn/hub/api-key>，安装细节见其配置文档 <https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md>）；通道已连是第三层，判据按路分写：**连上之后**宿主列出的工具里应能看到这些名字——remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚；两路枚数不同，拿一个固定数判两路必错一边。现成 URL 那一腿无需本机安装；本地文件那一腿要那枚 audited Bridge、最小根授权、跑 doctor，再让宿主 reload/reconnect。名字在场只证它们被暴露，不证解析跑得通：端到端可用要靠一次真实本地文件的 parse 去证，本包不自证也不代跑。凭据由用户在自己的凭据设施里配置——本包脚本不读 key、不在聊天里索取 key，它只在回读 artifact 分片时按 `CUE_OMNI_BRIDGE` 起那枚桥，key 归通道自己的环境。
+**去哪连（三态分开看：装好 skill ≠ 已配凭据 ≠ 通道已连）**：解析这一腿复用官方 **cue-omni-reader** 的 MCP，本包不自动安装也不代连。装那枚 skill 只把文件放到位（跑完再列一次已安装 skill，名字在场只说明这一层，它不产生连接）；配凭据是第二层（解析腿配置专页 <https://cuecue.cn/hub/omni-reader>，凭据页 <https://cuecue.cn/hub/api-key>，安装细节见其配置文档 <https://github.com/sensedeal/cue-skills/blob/main/cue-omni-reader/references/setup.md>）；通道已连是第三层，判据按路分写：**连上之后**宿主列出的工具里应能看到这些名字——remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚；两路枚数不同，拿一个固定数判两路必错一边。现成 URL 那一腿无需本机安装；本地文件那一腿要那枚 audited Bridge、最小根授权、跑 doctor，再让宿主 reload/reconnect。名字在场只证它们被暴露，不证解析跑得通——URL 那一腿要拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿要拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件）；本件不自证也不代跑。凭据由用户在自己的凭据设施里配置——本包脚本不读 key、不在聊天里索取 key，它只在回读 artifact 分片时按 `CUE_OMNI_BRIDGE` 起那枚桥，key 归通道自己的环境。
 
 **不装不报错（限定：不调用解析这条腿，且你手上已有可贴的文本或文件、Python 3.10+ 齐备）**：列不到那几枚名字就是没连上，本件随即只走「你把文本贴进来」那条路，缺的是页锚与逐字定位那一层，来源记录只能到文件级；解析消耗以服务端返回为准，本件不代估也不代付。没连上不等于不能用，但下一节那条零凭据演示走的是另一条路径（虚构材料、不联网、不调解析 API），它证本包的工具链、不证通道可用，别把它的产出当成已连通道的读数。
 
