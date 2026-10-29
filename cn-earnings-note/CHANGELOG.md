@@ -1,9 +1,9 @@
 # 更新日志
 
 ### 0.3.44 — 2026-10-29（指路补两页：发现流程那一格把三层与「key 在场不等于被接受」写对了，缺的是两张官方配置页；句子一字未动，非能力面变更）
-- 改因：与同批 watchlist-digest-cn 那一格同源——本包 `references/data-channels.md` 的装配段已把三层分开写清（装好 skill、已配凭据、通道已连各证什么；匿名 `GET https://cuecue.cn/api/mcp-catalog` 只算目录可达；带 Bearer 按发现流程第 2 步实连且 `tools/list` 有返回才算连上），但没有指向官方配置页的一条，读者知道差哪一层却不知道去哪补。产品仓两页常量本趟逐字复跑（只读）：`gtm/scripts/cue_onramp.py:25-27` 的 PAGE_MCP／PAGE_OMNI；本票未访问 live 页面，不代签网页现值。
+- 改因：与同批 watchlist-digest-cn 那一格同源——本包 `references/data-channels.md` 的装配段已把三层分开写清（装好 skill、已配凭据、通道已连各证什么；匿名 `GET https://cuecue.cn/api/mcp-catalog` 只算目录可达；带 Bearer 按发现流程第 2 步实连且 `tools/list` 有返回才算连上），但没有指向官方配置页的一条，读者知道差哪一层却不知道去哪补。产品仓那两页常量本趟以只读方式复跑过，页面字面与此处同形；本票未访问 live 页面，不代签网页现值。
 - 改法（只补一句指路，原句一字不动）：该行末尾加「配置指路：数据腿官方配置页 `https://cuecue.cn/hub/mcp`、解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`（本件取数走数据腿、远端正文取回走解析腿），取 key 走 `https://cuecue.cn/hub/api-key`」。两页都引的依据是本包两腿确实都在：面上数据腿叙述按功能词现读 64 行、解析腿叙述 12 行；随包 `scripts/cue_connectivity_check.py` 读 `CUE_API_KEY` 并打 mcp-catalog，本趟现读该件仍取网。
-- 复验（为什么这处不动句）：Lead 固化的闸件——那把以固定工具名列判已连为靶的病灶尺——把本行列入反控清单（已知正确句），该尺自测当时现读 rc=0——正控 4 枚实漏 0、反控 7 枚误伤 0，本行判「否（不命中）」；限定本包与 watchlist-digest-cn 两包面级复扫 现读 面 0∥行 0∥次 0。旧那把含裸串的宽式会把这行判成病灶，照它归零就是把没病的句子改坏——这一格 Lead 已在他名下记进 §10。
+- 复验（为什么这处不动句）：Lead 固化的闸件——那把以固定工具名列判已连为靶的病灶尺——把本行列入反控清单（已知正确句），该尺自测当时现读 rc=0——正控 4 枚实漏 0、反控 7 枚误伤 0，本行判「否（不命中）」；限定本包与 watchlist-digest-cn 两包面级复扫 现读 面 0∥行 0∥次 0。旧那把含裸串的宽式会把这行判成病灶，照它归零就是把没病的句子改坏——这一格已按仓内同型规矩入账，本节不复写节号与路径。
 - 现测（写后）：本包 `hub/mcp` 1 枚、`hub/omni-reader` 1 枚、`hub/api-key` 4 枚（改前该行为 1 枚，本趟只增两句面字）；改后行长度 580 → 728 字符；判定与 schema、逐股口径、那支连通件与 references 其余各面一字未动，故本票不触发重验旧靶。
 - 号序与槽位：0.3.43 → 0.3.44（指路补齐＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-earnings-note | grep -v fixtures/` 现读 1 枚（`SKILL.md:5`）。
 
