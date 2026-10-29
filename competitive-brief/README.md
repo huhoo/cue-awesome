@@ -44,7 +44,7 @@ python3 scripts/check_brief.py scripts/fixtures/bad-coverage.md         # 期望
 - `cue-omni-reader`：解析网页/PDF/录音/视频，提取原文填入证据表
 - `cue-research`：交叉验证、深度研究
 
-开通与安装的命令写法与三层分开自查见 `references/cue-onboarding.md` §开通三步；本文只留下面这一条**最小实连形**（不留全量叙述，以免两处漂移——两处若读出不一致，以 `references/cue-onboarding.md` 为准并回来改这里）。
+开通与安装的命令写法与三层分开自查见 `references/cue-onboarding.md` §开通三步；本文只留下面这一条**最小实连形**（不留全量叙述，以免两处漂移——两处若读出不一致，以 `references/cue-onboarding.md` 为准并回来改这里）。配置指路给指针不复述步骤：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件两条腿都用——取数走数据腿、远端正文取证走解析腿）。
 
 ```bash
 CATALOG="https://cuecue.cn/api/mcp-catalog"

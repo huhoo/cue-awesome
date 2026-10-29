@@ -46,7 +46,7 @@ All thresholds live in the current `scripts/check_brief.py`; the four lanes are 
 - `cue-omni-reader`: parse web pages / PDFs / audio / video → extract text into evidence table
 - `cue-research`: cross-verify, deep research
 
-The install command forms and the three-part self-check (skill installed ≠ credentials configured ≠ channel connected - each verified separately) live in `references/cue-onboarding.md`, section 开通三步. This face keeps only the **minimal live-connection form** below; if the two ever read differently, `references/cue-onboarding.md` governs and this block gets corrected from it.
+The install command forms and the three-part self-check (skill installed ≠ credentials configured ≠ channel connected - each verified separately) live in `references/cue-onboarding.md`, section 开通三步. This face keeps only the **minimal live-connection form** below; if the two ever read differently, `references/cue-onboarding.md` governs and this block gets corrected from it. Configuration pointers only, no restated steps: the data-leg page <https://cuecue.cn/hub/mcp> and the parsing-leg page <https://cuecue.cn/hub/omni-reader> (this skill uses both - data for the numbers, parsing for remote text).
 
 ```bash
 CATALOG="https://cuecue.cn/api/mcp-catalog"

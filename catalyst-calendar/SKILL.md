@@ -2,7 +2,7 @@
 name: catalyst-calendar
 displayName: 持仓催化剂日历
 slug: cue-catalyst-calendar
-version: "0.1.30"
+version: "0.1.32"
 summary: "未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
 description: "给你持仓列表 + 时间窗，产出按日期排的盯盘日历：每条事件的日期要么已有披露在场且含明确 YYYY-MM-DD，要么 statute 原文推导且适用条件在锚内可判；未披露的推测事件、任何日期算术都进不了表。机检对评级词与褒贬零容忍（词族以机检现值为准，本文所举为常见例）。适合：财报季前置、组合盯盘节奏、投研会材料。不适合：涨跌与择时建议、事件影响判断（本件只陈述不判断，也没有留白判断位）。豁免只有两条口径：类型列整列不扫、官方披露词组按词形豁免。 Do NOT use for: trade timing, impact calls, rumour-sourced events."
 tags: [投研]
@@ -83,7 +83,7 @@ calendar-<日期>-<n>主体/
 
 ## 5. 通道依赖与降级
 
-首次开通三层本件自己写全（见本件 README 的「首次开通 Cue」那一节）：装本件用 `npx skills add huhoo/cue-awesome --skill catalyst-calendar`，取证腿三枚 `cue-data-mcp` / `cue-research` / `cue-omni-reader` 由 sensedeal 集合发布（整套 `npx skills add sensedeal/cue-skills`，单装 `--skill cue-data-mcp` 换末尾那枚名字）；注册→`/hub/api-key` 取 key 入本地凭据→带 Bearer 按域 `routing` 实连且 `tools/list` 有返回才算「已连」，匿名 catalog 有返回只算「目录可达」。**不装不报错**。降级路径：data-mcp 不可得→用户贴公告清单（标可信级 L2，即用户直供）；降级取数（用户直供清单等）同样落 `evidence/` 并标来源级别，不留无痕通道。research 不发起→解禁/减持类整类标「未检索到」，**不以常识补日**。全降级仍可用，代价是日历覆盖度。
+首次开通三层本件自己写全（见本件 README 的「首次开通 Cue」那一节）：装本件用 `npx skills add huhoo/cue-awesome --skill catalyst-calendar`，取证腿三枚 `cue-data-mcp` / `cue-research` / `cue-omni-reader` 由 sensedeal 集合发布（整套 `npx skills add sensedeal/cue-skills`，单装 `--skill cue-data-mcp` 换末尾那枚名字）；注册→`/hub/api-key` 取 key 入本地凭据→带 Bearer 按域 `routing` 实连且 `tools/list` 有返回才算「已连」，匿名 catalog 有返回只算「目录可达」。**不装不报错**。降级路径：data-mcp 不可得→用户贴公告清单（标可信级 L2，即用户直供）；降级取数（用户直供清单等）同样落 `evidence/` 并标来源级别，不留无痕通道。research 不发起→解禁/减持类整类标「未检索到」，**不以常识补日**。全降级仍可用，代价是日历覆盖度。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>（本件的取证以数据腿为主；连不上就走上一句那条降级路径，代价照旧写在同一处）；取证走解析腿时，其官方配置页 <https://cuecue.cn/hub/omni-reader>——那是按需的一腿，不配它本件照样出日历，缺的是远端正文那层的逐字与页码。
 
 ## 6. 边界与拒答
 

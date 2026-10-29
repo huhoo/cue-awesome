@@ -2,7 +2,7 @@
 name: dd-checklist
 displayName: 公开信息预尽调清单
 slug: cue-dd-checklist
-version: "0.1.32"
+version: "0.1.34"
 summary: "给一家 A 股公司拉一份公开信息风险清单：查得到的逐条带披露锚，查不到的逐类写明原因；不给投资结论，不出法律意见。"
 description: "给你一家公司 + 基准日 + 回看窗口 + 用途档位（投资/授信/并购），还你一张固定七列的风险事实表：每条都回指具体披露（公告号、函件号、裁判文书号或 URL），外加九类覆盖率对账表，写清每类查没查到、没查到是没工具还是真零条。不适合：投资意见、法律意见、批量多主体、公开面之外的深查（会标注需商用库）。适合：投前初筛、授信背景核查、并购线索起点。八道机检管形制：无锚、无日期、归属不清的条目进不了表，「无风险」「可投」类措辞出现即拦，账、流水、快照三者互相对账；但锚内容是否本站真造（整份快照或流水链重写）机器验不出，须人工抽 3 对原文——SKILL §7 把这条边界写死，本件不假装能挡。"
 tags: [尽调, 风险清单, A股, 带锚披露]
@@ -212,7 +212,7 @@ python3 scripts/gen_fixtures.py              # 幂等重铺全套样（加题重
 
 ## 8. 通道依赖与降级
 
-首次开通三层本件自己写全（见本件 README 的「首次开通 Cue」那一节）：装本件用 `npx skills add huhoo/cue-awesome --skill dd-checklist`，取证腿 `cue-data-mcp`（`cue-omni-reader` 按需）由 sensedeal 集合发布；注册→`/hub/api-key` 取 key 入本地凭据→带 Bearer 按域 `routing` 实连且 `tools/list` 有返回才算「已连」，匿名 catalog 有返回只算「目录可达」。**不装不报错**。域与工具映射、发现规则、`coming_soon` 域口径见 `references/channel-map.md`。降级路径：data-mcp 不可得→用户贴披露清单（标可信级 L2（用户直供），`sources` 用 `user_supplied`+`path`）（L2 在本件＝文本由用户贴入、未经域直查核验；分档完整定义在财报点评件那一面，本件只按这一档标注不另造）；research 不发起→对应类目整类标「未检索到」并进 §5 账，**不以常识补条目**；全降级仍可用，代价是覆盖率而非准确度。
+首次开通三层本件自己写全（见本件 README 的「首次开通 Cue」那一节）：装本件用 `npx skills add huhoo/cue-awesome --skill dd-checklist`，取证腿 `cue-data-mcp`（`cue-omni-reader` 按需）由 sensedeal 集合发布；注册→`/hub/api-key` 取 key 入本地凭据→带 Bearer 按域 `routing` 实连且 `tools/list` 有返回才算「已连」，匿名 catalog 有返回只算「目录可达」。**不装不报错**。域与工具映射、发现规则、`coming_soon` 域口径见 `references/channel-map.md`。降级路径：data-mcp 不可得→用户贴披露清单（标可信级 L2（用户直供），`sources` 用 `user_supplied`+`path`）（L2 在本件＝文本由用户贴入、未经域直查核验；分档完整定义在财报点评件那一面，本件只按这一档标注不另造）；research 不发起→对应类目整类标「未检索到」并进 §5 账，**不以常识补条目**；全降级仍可用，代价是覆盖率而非准确度。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>（本件的取证以数据腿为主；连不上就走上面那条降级路径，代价同句写明）；取证走解析腿时，其官方配置页 <https://cuecue.cn/hub/omni-reader>——那是按需的一腿，不配它本件照样出清单，缺的是远端正文那层的逐字与出处。
 
 ## 9. 边界与拒答
 

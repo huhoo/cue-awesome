@@ -2,7 +2,7 @@
 name: competitive-brief
 slug: cue-competitive-brief
 displayName: 竞品决策简报·逐条带出处
-version: "0.3.31"
+version: "0.3.33"
 summary: "竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。"
 tags:
   - 竞品分析
@@ -88,7 +88,7 @@ evidence table → 按决策维度分组 → 对比表 + 逐家分析 + 未覆�
 
 ## 关于 omni-reader 和 cue-research
 
-这两个工具辅助填 evidence table，不是过程的前提。开通与安装的完整步骤（命令两种写法）与「装好 skill ≠ 已配凭据 ≠ 通道已连」的三层分开自查写在 `references/cue-onboarding.md` §开通三步，本文不复制一份以免两处漂移。
+这两个工具辅助填 evidence table，不是过程的前提。开通与安装的完整步骤（命令两种写法）与「装好 skill ≠ 已配凭据 ≠ 通道已连」的三层分开自查写在 `references/cue-onboarding.md` §开通三步，本文不复制一份以免两处漂移；两条腿的官方配置页在这里给指针不复述步骤——数据腿 <https://cuecue.cn/hub/mcp>、解析腿 <https://cuecue.cn/hub/omni-reader>。
 
 - 网页/PDF/录音/视频 → omni-reader 提取原文 → 填入 evidence table 的「主张」列
 - 需要交叉验证的判断 → cue-research 核验 → 填入或修正 evidence table 的行
