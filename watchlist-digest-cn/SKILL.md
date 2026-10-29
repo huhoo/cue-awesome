@@ -4,7 +4,7 @@ slug: cue-watchlist-digest-cn
 displayName: "自选清单增量日报"
 summary: "对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。"
 description: "自选清单日报（状态文件驱动）：把公司名或 6 位代码落成 watchlist.json，每次运行从既有域取数与上次快照做差，产出「今日新增/近端变更/需人工」日报，每条挂官方出处＋asof；同日首跑按差集给增量、再跑复用当日记账（幂等只在当日内成立）。适合「我这几只票今天有什么新公告」「回购和激励推进到哪了」这类逐日重复需求。Do NOT use for: 行情、涨跌、资金流与北向（该域未开放，以 catalog 现值为准，本件不装）、风险评分或评级、一次性历史复盘。Triggers: 自选清单日报 / 我的票今天有什么新消息 / 盯公告 / watchlist daily digest"
-version: "0.2.22"
+version: "0.2.23"
 license: MIT
 consumes:
   - snapshot-prev
@@ -58,7 +58,7 @@ tags: [自选清单, 日报, 增量, 公告, 回购, 股权激励, 两融]
 
 ## 2. 数据腿（域面以 catalog 现值为准，不硬编码工具名）
 
-通道怎么开：三层（注册 → 取 api-key → 装 skill 后还要实连才算连上）写在 `README.md` §三 末小节，那一格给一条可执行的安装命令（本件 `npx skills add huhoo/cue-awesome --skill watchlist-digest-cn`；取证腿整套与单装两种写法）、按「要跑哪条腿就装哪几枚」列出三枚技能的名字，并把「装好 skill ≠ 已配凭据 ≠ 通道已连」三层分开给自查法——**已连＝带 Bearer 按目标域 `routing` 实连且 `tools/list` 有返回**，匿名 catalog 的当场返回只算「目录可达」，本件不把它叫「已连」；可跳过——不装不报错，只少证据密度与可回溯；本件不发请求，取数由 agent 侧调用通道后转写成事件文件。
+通道怎么开：三层（注册 → 取 api-key → 装 skill 后还要实连才算连上）写在 `README.md` §三 末小节，那一格给一条可执行的安装命令（本件 `npx skills add huhoo/cue-awesome --skill watchlist-digest-cn`；取证腿整套与单装两种写法）、按「要跑哪条腿就装哪几枚」列出三枚技能的名字，并把「装好 skill ≠ 已配凭据 ≠ 通道已连」三层分开给自查法——**已连＝带 Bearer 按目标域 `routing` 实连且 `tools/list` 有返回**，匿名 catalog 的当场返回只算「目录可达」，本件不把它叫「已连」；可跳过——不装不报错，只少证据密度与可回溯；本件不发请求，取数由 agent 侧调用通道后转写成事件文件。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件取数走数据腿、远端正文取回走解析腿），取 key 走 <https://cuecue.cn/hub/api-key>。
 
 | 腿 | 取什么 | 形制约束（实测所得，写进契约） |
 |---|---|---|

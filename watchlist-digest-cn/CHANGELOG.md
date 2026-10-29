@@ -1,5 +1,12 @@
 # CHANGELOG(watchlist-digest-cn)
 
+### 0.2.23 — 2026-10-29（指路补两页：入口那一格本来就把三层分写、已连定义也按数据腿写对了，缺的只是「去哪连」的两张官方页；句子一字未动，非能力面变更）
+- 改因：全仓同族一批的指路缺口这一格落到本包——面上把「装好 skill ≠ 已配凭据 ≠ 通道已连」三层与「已连＝带 Bearer 按目标域 `routing` 实连且 `tools/list` 有返回、匿名 catalog 的当场返回只算目录可达」都写清了，但没有一条指向官方配置页，用户读完知道差哪一层却不知道去哪补。产品仓两页常量本趟逐字复跑（只读）：`gtm/scripts/cue_onramp.py:25-27` 的 PAGE_MCP／PAGE_OMNI 与页面字面同形；盘上出处另见 `content/post-jike-v3-ledger.md:22` 的实测 HTTP 200 记录——本票未访问 live 页面，不代签网页现值。
+- 改法（只补一句指路，原句一字不动）：`SKILL.md:61` 末尾加「配置指路：数据腿官方配置页 `https://cuecue.cn/hub/mcp`、解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`（本件取数走数据腿、远端正文取回走解析腿），取 key 走 `https://cuecue.cn/hub/api-key`」。两页都引是因为本包确实两条腿都在（面上数据腿叙述按功能词现读 54 行；随包 `scripts/cue_connectivity_check.py` 读 `CUE_API_KEY` 并打 mcp-catalog，本趟现读该件仍取网）。
+- 复验（为什么这处不动句）：Lead 固化的闸件 `nameset_defect_scan.py` 把本包这一行与 cn-earnings-note 的对应行都列进反控清单（已知正确句），我跑 --selftest 现读 rc=0——正控 4 枚实漏 0、反控 7 枚误伤 0，其中本包 `SKILL.md:61` 判「否（不命中）」；再跑 `--faces watchlist-digest-cn,cn-earnings-note` 现读 面 0∥行 0∥次 0。所以那句没病，不动它；旧那把含裸串的宽式会把它判成病灶，照它归零就是把没病的句子改坏（这一格在他名下已升进 §10）。
+- 现测（写后）：本包 `hub/mcp` 1 枚、`hub/omni-reader` 1 枚、`hub/api-key` 3 枚；改后行长度 361 → 509 字符（只增这一句）；能力判据、判定 schema、事件文件形制与那支连通件一字未动，故本票不触发重验旧靶。
+- 号序与槽位：0.2.22 → 0.2.23（指路补齐＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' watchlist-digest-cn | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`）。
+
 ### 0.2.22 — 2026-10-22（凭据外发两关：非 https 或未授权目的地的 url 一律拒发，换源不免检）
 - 改因：外部安全扫描器判本包随包的连通自检件可把 CUE_API_KEY 外发到未授权目的地——带 --post 时它把 key 挂到目录返回的 routing.url 上，既不强制 https、也不校验目的地是不是被认下的那枚。改因写在这儿的是扫描器判语，不是渠道要求；渠道那一侧没有改过任何字。
 - 改法（只治在汇聚处）：发请求前统一到两关——scheme 必须是 https，且 host 命中授权后缀。缺省那一枚授权后缀由件头目录入口那枚现值推出（依据写在件头注释里，不另编一张域名清单），要放行别处由用户显式带 --allow-host。过不了就拒发：不读 key、不构造那个请求、退码 6，并把拒绝原因与目标 host 印出来；目录入口本身不是 https 走退码 7。--catalog-url 与 --catalog-file 两条换源路径过同一道关，不再有「换进去什么就打什么」那一形。

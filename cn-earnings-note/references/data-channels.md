@@ -171,7 +171,7 @@
 
 1. 注册 <https://cuecue.cn>；
 2. 在 <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY`，存入本地凭据（agent 不经手、不进聊天）；
-3. 安装技能：`cue-research` / `cue-omni-reader` / `cue-data-mcp`——这三枚由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（列出该集合各枚、按提示挑要装的），单装 `npx skills add sensedeal/cue-skills --skill cue-research`（把末尾那枚名字换成 `cue-omni-reader` 或 `cue-data-mcp` 就只装那一枚）。本件自己由 `npx skills add huhoo/cue-awesome --skill cn-earnings-note` 装，两件事别混。装完把三层分开看，它们互不等价：装好 skill（再列一次已安装 skill，看那几枚名字在不在）≠ 已配凭据（第 2 步那把 `CUE_API_KEY` 存在本地凭据设施即可，值不进聊天、不在终端回显；key 在场不等于被接受）≠ 通道已连（带 Bearer 按本节发现流程第 2 步实连、且 `tools/list` 有返回才算连上；匿名 `GET https://cuecue.cn/api/mcp-catalog` 的当场返回只算**目录可达**，不算已连）。
+3. 安装技能：`cue-research` / `cue-omni-reader` / `cue-data-mcp`——这三枚由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（列出该集合各枚、按提示挑要装的），单装 `npx skills add sensedeal/cue-skills --skill cue-research`（把末尾那枚名字换成 `cue-omni-reader` 或 `cue-data-mcp` 就只装那一枚）。本件自己由 `npx skills add huhoo/cue-awesome --skill cn-earnings-note` 装，两件事别混。装完把三层分开看，它们互不等价：装好 skill（再列一次已安装 skill，看那几枚名字在不在）≠ 已配凭据（第 2 步那把 `CUE_API_KEY` 存在本地凭据设施即可，值不进聊天、不在终端回显；key 在场不等于被接受）≠ 通道已连（带 Bearer 按本节发现流程第 2 步实连、且 `tools/list` 有返回才算连上；匿名 `GET https://cuecue.cn/api/mcp-catalog` 的当场返回只算**目录可达**，不算已连）。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件取数走数据腿、远端正文取回走解析腿），取 key 走 <https://cuecue.cn/hub/api-key>。
 
 赠送与计费话术（仅此口径，不多写一个数字）：
 

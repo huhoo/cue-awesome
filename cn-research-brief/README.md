@@ -45,7 +45,7 @@ curl -s -X POST "$ROUTING_URL" \
   -w '\nHTTP %{http_code}\n'
 ```
 
-`CATALOG` 是本面唯一一处目录入口字面（赋一次、散文不重抄）；`$ROUTING_URL` 是从该域 `routing` 里的 `url` 字段现取的逐字值，别把域名或路径抄死在这张面上。三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。匿名 `GET` 只证**目录可达**，本面不把它叫「已连」；带 key 实连且 `tools/list` 有返回才证那把 key 被接受，通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。解析那一腿走宿主 MCP：它的已连判据同样是宿主列工具的 `tools/list` 握手，返回里认得到 `parse`／`get_parse_status`／`read_result` 才算连上。目录返回里没有的域本面不装也不承诺；连接报错不等于域无数据，如实报。key 取自本地凭据设施，不进聊天、不在终端回显，本面不新增任何凭据读取动作；解析与深研的消耗以服务端返回为准，本件不代估也不代付，花之前一定先问。
+`CATALOG` 是本面唯一一处目录入口字面（赋一次、散文不重抄）；`$ROUTING_URL` 是从该域 `routing` 里的 `url` 字段现取的逐字值，别把域名或路径抄死在这张面上。三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。匿名 `GET` 只证**目录可达**，本面不把它叫「已连」；带 key 实连且 `tools/list` 有返回才证那把 key 被接受，通过＝HTTP 200 且 `result.tools` 非空（只按形状认，本面不列工具名也不承诺枚数）。解析那一腿走宿主 MCP：**连上之后**宿主列出的工具里应当能看到这些名字——remote-only 那一面是 `parse`、`get_parse_status`、`cancel_parse` 三枚，带 Bridge 的那一面再加 `read_result`、`read_outline`、`discard_result`、`save_result`，共七枚；两路枚数不同，拿一个固定数判两路必错一边。名字在场只证它们被暴露，不证解析跑得通——URL 那一腿要拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿要拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件）；本件不自证也不代跑。目录返回里没有的域本面不装也不承诺；连接报错不等于域无数据，如实报。key 取自本地凭据设施，不进聊天、不在终端回显，本面不新增任何凭据读取动作；解析与深研的消耗以服务端返回为准，本件不代估也不代付，花之前一定先问。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件两条腿都可能用上——目录发现与深研走数据腿，远端正文取回走解析腿），取 key 走 <https://cuecue.cn/hub/api-key>。
 
 ## 三、离线样例：30 秒看到形状
 

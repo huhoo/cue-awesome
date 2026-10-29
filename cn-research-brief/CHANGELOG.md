@@ -1,5 +1,12 @@
 # 更新日志
 
+### 0.1.2 — 2026-10-29（混合面只修半句：本面那句解析腿已连判据把两条路压成同一条固定枚数的名列；前半数据腿的形状本来就对、一字未动，指路补成两页都在；非能力面变更）
+- 改因：与已入仓两批同族（6.1 第十批复判落的两条 major 之后，同型句在全仓的余落点按批清）。本面是一条混合句：前半讲数据腿——匿名 `GET` 只证目录可达、带 key 实连且 `result.tools` 非空才证那把 key 被接受、只按形状认不列工具名也不承诺枚数——这半句本来就是按腿分写的正确形状，一字未改；后半讲解析腿，把宿主列工具的名字凑成三枚当共同判据，那半句才是病灶。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386、`SKILL.md:21`（行长 244）列 209 都明写 remote-only 不能读本地件；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚。
+- 改法（只改尾巴那半句，句前后文字不动）：解析腿部分改成方向句＋按路分写——连上之后宿主列出的工具里应当能看到这些名字，remote-only 那一面三枚（含 `cancel_parse`）、带 Bridge 的那一面再加四枚共七枚，两路枚数不同、拿一个固定数判两路必错一边；再把端到端写成两路各自可执行（URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路，remote-only 不读本地件），本件不自证也不代跑。指路按 Lead 裁定补成两页都在：数据腿 `https://cuecue.cn/hub/mcp`、解析腿 `https://cuecue.cn/hub/omni-reader`，取 key `https://cuecue.cn/hub/api-key`——本件确实两腿都用（面上数据腿叙述按功能词现读 25 行、含 catalog→routing→带 Bearer 的 tools/list 全流程；解析腿叙述 8 行），所以不写「只依赖一条腿」那种句子。
+- 落点与改后读数（面∥行∥改后行长∥新式串「真实 URL」起列）：README.md:48∥852∥488。改前后该行前半的数据腿文字逐字未动（只替换后半一句）。
+- 现测（写后用 Lead 固化的闸件复扫）：`nameset_defect_scan.py --faces cn-research-brief`＝面 0∥行 0∥次 0（同件 --selftest rc=0：正控 4 枚实漏 0、反控 7 枚误伤 0）；本包 `hub/omni-reader` 1 枚、`hub/mcp` 1 枚、`hub/api-key` 1 枚；含 `cancel_parse` 的面 1 枚。顶条一律描述式，不复写被废的句子。英文面（README.en.md）本趟没被闸件判为病灶，我不为对齐而改它——同射程与否随批报 Lead 定夺，不自扩。
+- 号序与槽位：0.1.1 → 0.1.2（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-research-brief | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`）。
+
 ### 0.1.1 — 2026-10-22（产出对象入册后 produces 两枚并留：速览本体与来源索引各自在册）
 - 改因：本件产出两样东西——一份多源研究速览本体，一份与它一一对应的来源索引。首版 produces 只写了后者：当时前者在全仓唯一口径的词表里还没有名字，而造名不归包自己定，于是图上看得见伴生物、看不见成品。那枚名字今已入册（canonical 那一层，家族不算边），缺的那一半就该补上——两枚并留，不互相顶掉。
 - 改法：frontmatter 的 produces 由一枚改两枚（research-brief 与 source-index，按字母序并列）；consumes、其余声明键、两面 README、机检与夹具一字未动。
