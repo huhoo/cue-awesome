@@ -63,7 +63,7 @@ python3 scripts/check_card.py assets/公告速读卡.md             # FAIL（8 �
 
 ### 首次开通 Cue（三步，可跳过）
 
-本件的取证腿有三条：公告与监管域的取数（data-mcp）＋附件与长文的解析（omni）＋同类对照与背景检索（cue-research）。 这三条腿各有官方配置页，这里只给指针、不复述开通步骤：域取数与同类对照检索都在数据腿上 <https://cuecue.cn/hub/mcp>，附件与长文那条走解析腿 <https://cuecue.cn/hub/omni-reader>；不装会少什么，本面下一句已经写着，这里不复写。
+本件的取证腿有三条：公告与监管域的取数（data-mcp）＋附件与长文的解析（omni）＋同类对照与背景检索（cue-research）。 这三条腿各有官方配置页，这里只给指针、不复述开通步骤：域取数在数据腿上 <https://cuecue.cn/hub/mcp>，附件与长文那条走解析腿 <https://cuecue.cn/hub/omni-reader>；深研那枚 `cue-research` 是独立入口（自带运行脚本）；它的凭据同那把 key，取 key 走 <https://cuecue.cn/hub/api-key>；不装会少什么，本面下一句已经写着，这里不复写。
 **不装不报错**——卡片前两段（类型判定＋关键数）不依赖任何通道，拿到原文就能出；后三段的检索与解析都有降级路（你手动供料＋agent 自由检索），代价是证据密度与可回查性下降。
 
 1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；

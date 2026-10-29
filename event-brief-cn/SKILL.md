@@ -52,7 +52,7 @@ tags: [投研, 公告, 事件驱动, 财报, A股]
 ## 4. 数据通道（以 live catalog 现值为准）
 - 发现先行：匿名 `GET https://cuecue.cn/api/mcp-catalog` 取 live 域清单，公告/监管相关域按现值 routing，**禁硬编码工具名与工具数**；
 - 深研补腿：research 通道跑同类对照与背景检索（发起前报「3–15 分钟+消耗 credits」等确认，同套件纪律；「好的/嗯」式单字应答不构成确认）；
-- 解析腿：附件/长文公告交 omni 通道（大纲→按节取用；计费与可用性以服务端返回为准）； 本节三条腿的官方配置页只给指针、不复述开通步骤：域取数与同类对照检索都在数据腿上 <https://cuecue.cn/hub/mcp>；上面那条解析腿 <https://cuecue.cn/hub/omni-reader>。
+- 解析腿：附件/长文公告交 omni 通道（大纲→按节取用；计费与可用性以服务端返回为准）； 本节三条腿的官方配置页只给指针、不复述开通步骤：域取数在数据腿上 <https://cuecue.cn/hub/mcp>；深研那枚 `cue-research` 是独立入口（自带运行脚本）；它的凭据同那把 key，取 key 走 <https://cuecue.cn/hub/api-key>；上面那条解析腿 <https://cuecue.cn/hub/omni-reader>。
 - 通道未覆盖的字段：只从公告原文取，取不到进待核清单，不编。
 
 ## 5. 引用与合规红线（随套件）

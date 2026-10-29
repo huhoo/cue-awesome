@@ -216,7 +216,7 @@ metadata:
 | `scripts/init_case.py` | 初始化案件工作目录，生成五张表、主控骨架与今日三件事.txt（枚数以脚本自报行为准） |
 | `scripts/export_docx.py` | markdown → Word 递交稿（公文体／诉状体两档），带 `--check` 文本覆盖校验；需 python-docx |
 
-两条可选辅助的官方配置页在这里只给指针、不复述开通步骤：素材桥 `cue-omni-reader` 走解析腿，其官方配置页 <https://cuecue.cn/hub/omni-reader>；检索桥 `cue-research` 走数据腿，其官方配置页 <https://cuecue.cn/hub/mcp>（本件的脚本与流程不联网，这两条都是使用人另装的可选辅助，用不用由使用人确认）。
+两条可选辅助的官方配置页在这里只给指针、不复述开通步骤：素材桥 `cue-omni-reader` 走解析腿，其官方配置页 <https://cuecue.cn/hub/omni-reader>；检索桥 `cue-research` 是独立入口（自带运行脚本）；它的凭据同那把 key，取 key 走 <https://cuecue.cn/hub/api-key>（本件的脚本与流程不联网，这两条都是使用人另装的可选辅助，用不用由使用人确认）。
 
 ## 交付物约定
 

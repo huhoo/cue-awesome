@@ -42,7 +42,7 @@ Agent 思考，Cue 感知。用 Cue 的通道读一家公司自己披露的文�
 | **cue-data-mcp**（可选） | `disclosure_cn`（A 股）/ `disclosure`（海外）域列公告清单和公告索引号，核对、补全 `fetch` 列出的清单 | `cue.py fetch` 从巨潮资讯 / SEC EDGAR 公开索引列清单（零消耗） |
 | **cue-research**（可选，≤1 次） | 给“为何现在”补行业、同业或事件背景，写进 explanation，**不作引文证据** | 不发起；explanation 只依据披露原文 |
 
-官方技能的调用契约以各自 `SKILL.md` 为准（那三枚技能面属包外件，不随本发布物交付）：omni 首调永远 `parse`，按实时 schema 调用；data-MCP 先匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿 live 域与 `routing`，再按 `tools/list` 现场发现工具，不硬编码工具名。 三条通道的官方配置页只给指针、不复述开通步骤：主解析腿 `cue-omni-reader` 的官方配置页 <https://cuecue.cn/hub/omni-reader>，可选的两枚（`cue-data-mcp`、`cue-research`）走数据腿官方配置页 <https://cuecue.cn/hub/mcp>；各自干什么、未开通时走哪条兜底，照上面那张表那三行，本件不在这里复写一份。
+官方技能的调用契约以各自 `SKILL.md` 为准（那三枚技能面属包外件，不随本发布物交付）：omni 首调永远 `parse`，按实时 schema 调用；data-MCP 先匿名 `GET https://cuecue.cn/api/mcp-catalog` 拿 live 域与 `routing`，再按 `tools/list` 现场发现工具，不硬编码工具名。 三条通道的官方配置页只给指针、不复述开通步骤：主解析腿 `cue-omni-reader` 的官方配置页 <https://cuecue.cn/hub/omni-reader>，可选的 `cue-data-mcp` 走数据腿官方配置页 <https://cuecue.cn/hub/mcp>；深研那枚 `cue-research` 是独立入口（自带运行脚本）；它的凭据同那把 key，取 key 走 <https://cuecue.cn/hub/api-key>；各自干什么、未开通时走哪条兜底，照上面那张表那三行，本件不在这里复写一份。
 
 ## 共守
 
