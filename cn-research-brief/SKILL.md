@@ -55,7 +55,7 @@ tags: [多源, 速览, 中文, 挂源, 研究]
 头部另有四件自标：AI 整理初稿／请回原文核对／不构成投资建议／判断位 [待人工]，逐字在位。
 
 ## 4. 通道与降级（两条路都真跑过）
-- **主路＝深研通道**：多源取证与逐条出处来自通道那条腿（`cue-research` 深研／`cue-omni-reader` 解析）。实连判据照仓内既有面写：装好 skill ≠ 已配凭据 ≠ 通道已连——带 key 实连且 `tools/list` 有返回才证那把 key 被接受。命令与三层自查见 `README.md` 的「首次开通」那一节。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件两条腿都可能用上——目录发现走数据腿，远端正文取回走解析腿；深研那枚 `cue-research` 是独立入口、自带运行脚本，凭据同那把 key），取 key 走 <https://cuecue.cn/hub/api-key>。
+- **主路＝深研通道**：多源取证与逐条出处来自通道那条腿（`cue-research` 深研／`cue-omni-reader` 解析）。实连判据照仓内既有面写：装好 skill ≠ 已配凭据 ≠ 通道已连——这一判据只管数据腿那一路：带 key 按目标域 `routing` 实连且该端 `tools/list` 有返回，才证那把 key 被接受、也只证数据腿连上；深研那枚 `cue-research` 不由 `tools/list` 判它已连——它自带运行脚本，用不用以它自己那次请求在服务端确认积分后的返回为准。命令与三层自查见 `README.md` 的「首次开通」那一节。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件两条腿都可能用上——目录发现走数据腿，远端正文取回走解析腿；深研那枚 `cue-research` 是独立入口、自带运行脚本，凭据同那把 key），取 key 走 <https://cuecue.cn/hub/api-key>。
 - **降级＝零通道**：本件仍能跑 `scripts/make_outline.py`，把已有来源清单排成一张待填骨架；代价同句写清——**缺的正是多源取证与逐条出处那一层，所以骨架只会有形状、不会有权衡后的结论**（结论位留占位，机检按设计发 `E-FORMAT`）。骨架不是速览，别把它当交付。
 
 ## 5. 红线（机检守，不由人守）
