@@ -24,7 +24,7 @@ from decimal import Decimal
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
-VERSION = "0.3.11"  # 与 SKILL.md 的 version 成对：升号必须同改这两处（包内产物与自报行都取这一枚）
+VERSION = "0.3.12"  # 与 SKILL.md 的 version 成对：升号必须同改这两处（包内产物与自报行都取这一枚）
 SCHEMA_VERSION = "0.1.0"
 ID = re.compile(r"^[A-Za-z][A-Za-z0-9_.:-]{0,119}$")
 HASH = re.compile(r"^[0-9a-f]{64}$")
