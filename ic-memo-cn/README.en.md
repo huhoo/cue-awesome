@@ -90,7 +90,7 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 
 ### First-time Cue setup (three steps, skippable)
 
-This package has two evidence legs: structured-disclosure retrieval (data-mcp) + parsing of the material you already hold (omni).
+This package has two evidence legs: structured-disclosure retrieval (data-mcp) + parsing of the material you already hold (omni). Those two legs have their official pages - pointers only, no restated setup steps: retrieval runs on the data leg <https://cuecue.cn/hub/mcp>, parsing of material you already hold runs on the parsing leg <https://cuecue.cn/hub/omni-reader>; what you lose without them is already the next sentence of this face, so it is not repeated here.
 **Not installing raises no error** - with a PDF or web page already in hand the seven-section draft still gets written; fields that neither material nor channel supplies go into the to-verify list marked not found - never invented, never filled on your behalf.
 
 1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);

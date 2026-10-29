@@ -90,7 +90,7 @@ python3 scripts/check_memo.py assets/投决备忘录.md --run scripts/fixtures/g
 
 ### 首次开通 Cue（三步，可跳过）
 
-本件的取证腿有两条：结构化披露的取数（data-mcp）＋手上材料的解析（omni）。
+本件的取证腿有两条：结构化披露的取数（data-mcp）＋手上材料的解析（omni）。 这两条腿各有官方配置页，这里只给指针、不复述开通步骤：取数走数据腿 <https://cuecue.cn/hub/mcp>，手上材料的解析走解析腿 <https://cuecue.cn/hub/omni-reader>；不装会少什么，本面下一句已经写着，这里不复写。
 **不装不报错**——手上已有 PDF 或网页时，七节草稿照写；通道与材料都没到位的字段进待核清单写明「未检索到」，不编、不代填缺失。
 
 1. 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）；
