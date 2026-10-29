@@ -32,7 +32,7 @@ Omni 解析和 cue-research 会消耗积分：Agent 发起前会先告诉你要�
 
 ## 首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装本件用到的三枚 skill：主解析腿是 `cue-omni-reader`，要列公告清单加 `cue-data-mcp`，要给「为何现在」补背景加 `cue-research`（≤1 次，可不做）。三枚都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（把末尾那枚名字换成 `cue-data-mcp` 或 `cue-research` 就只装那一枚）。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装本件用到的三枚 skill：主解析腿是 `cue-omni-reader`，要列公告清单加 `cue-data-mcp`，要给「为何现在」补背景加 `cue-research`（≤1 次，可不做）。三枚都由 Cue 官方技能集合（sensedeal）发布，一条命令两种写法：整套 `npx skills add sensedeal/cue-skills`（它会列出该集合公开的各枚 skill，按提示挑要装的）；单装 `npx skills add sensedeal/cue-skills --skill cue-omni-reader`（把末尾那枚名字换成 `cue-data-mcp` 或 `cue-research` 就只装那一枚）。 配置页也只给指针：主解析腿 `cue-omni-reader` 的官方配置页 <https://cuecue.cn/hub/omni-reader>，可选两枚（`cue-data-mcp`、`cue-research`）走数据腿官方配置页 <https://cuecue.cn/hub/mcp>；各自的用途与未开通时的兜底照上面那张表那三行。
 
    装完把三件事分开自查，它们互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。
    - 装好＝你这一侧重新列一次已安装 skill，清单里能看到上一步那几枚的名字（这只证明文件到位，不证明取到数）；

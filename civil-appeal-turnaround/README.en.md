@@ -87,7 +87,7 @@ Tier 4  Fallback: requires the court to clarify the legal relationship
 
 ### Two optional channels for material and for leads (both bounded)
 
-This skill's own scripts and flow stay offline. Both channels below are **auxiliaries the user installs separately**, used only where material cannot get in and where candidate leads are needed; whether to use them is confirmed with the user, and their format list, size cap and covered domains are taken from their own docs as they now stand - this package neither copies those tables nor promises outcomes.
+This skill's own scripts and flow stay offline. Both channels below are **auxiliaries the user installs separately**, used only where material cannot get in and where candidate leads are needed; whether to use them is confirmed with the user, and their format list, size cap and covered domains are taken from their own docs as they now stand - this package neither copies those tables nor promises outcomes. Configuration pointers for the two optional auxiliaries, pointers only and no restated setup steps: the material channel `cue-omni-reader` runs on the parsing leg, whose page is <https://cuecue.cn/hub/omni-reader>; the research channel `cue-research` runs on the data leg, whose page is <https://cuecue.cn/hub/mcp>. This package names no primary leg: the heading above marks both channels as optional and bounded, and the paragraph says they are auxiliaries the user installs separately.
 
 **Material channel · `cue-omni-reader`**: when evidence is a scan, a recording, a video or a packed bundle and the agent's own upload path refuses it (format or size), have this tool parse it into **locatable text** (page and time anchors included) before it enters the case directory. Every bound, none dropped:
 

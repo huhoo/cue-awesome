@@ -5,7 +5,7 @@ displayName: 民事二审翻案工程·论断逐条带出处
 summary: "一审败诉后建二审作战体系：判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见，条号递交前核对。"
 description: "民事一审败诉后的翻案工程：还原法官推理链、定位争点被框错的层；证据逐字比对截断/省略/割裂；请求权铺主攻/备位/兜底阶梯；事实台账三级出处；文书包同日递交与自行诉讼操作。不提供法律意见、不替代律师，条号与费用标准递交前核对。脚本与流程离线自包含。Triggers: 一审败诉上诉 / 二审上诉状 / 判决书拆解 / 为什么败诉 / 上诉期与继续保全 / 自行诉讼； lost at first instance / civil appeal / appeal deadline / self-represented litigant Do NOT use for: legal advice."
 agent_created: true
-version: "0.3.9"
+version: "0.3.10"
 license: MIT
 inputs:
   - case-materials
@@ -215,6 +215,8 @@ metadata:
 | `assets/事实台账.md` | Phase 4 产出模板 |
 | `scripts/init_case.py` | 初始化案件工作目录，生成五张表、主控骨架与今日三件事.txt（枚数以脚本自报行为准） |
 | `scripts/export_docx.py` | markdown → Word 递交稿（公文体／诉状体两档），带 `--check` 文本覆盖校验；需 python-docx |
+
+两条可选辅助的官方配置页在这里只给指针、不复述开通步骤：素材桥 `cue-omni-reader` 走解析腿，其官方配置页 <https://cuecue.cn/hub/omni-reader>；检索桥 `cue-research` 走数据腿，其官方配置页 <https://cuecue.cn/hub/mcp>（本件的脚本与流程不联网，这两条都是使用人另装的可选辅助，用不用由使用人确认）。
 
 ## 交付物约定
 
