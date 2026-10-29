@@ -2,7 +2,7 @@
 name: sector-overview
 displayName: 行业景气全景-cn
 slug: cue-sector-overview
-version: "0.1.33"
+version: "0.1.34"
 summary: "行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。"
 description: "给行业名＋时间窗，产出六节固定景气度报告：维度不背框架库，由深研按行业动态生成 2–4 个；交付带可比序列锚的行业冷热证据——判断词当场可答凭哪条序列与口径、截至哪天，附代表 A 股公司清单与覆盖缺口。评级词零容忍，不出行业观点。不适合：荐股择时、承诺非公开数据覆盖。适合：行业开题、会前准备、尽调章节。Do NOT use for: stock picks or timing, promises of non-public coverage. 装：npx skills add huhoo/cue-awesome --skill sector-overview（装完重列清单核对）。"
 tags: [投研, 行业研究, A股, 景气度]
@@ -78,7 +78,7 @@ sector-<行业名>-<窗口>/
 
 ## 5. 套件连携
 
-本件的「行业素材段」（§2+§3 的带锚序列与政策时间线）可作外部写作的参考输入：带锚序列与政策时间线留在文件里，被引用时锚随行走，不得只搬结论。
+本件的「行业素材段」（§2+§3 的带锚序列与政策时间线）可作外部写作的参考输入：带锚序列与政策时间线留在文件里，被引用时锚随行走，不得只搬结论。配置指针：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件取证腿＝`cue-data-mcp` 与 `cue-research`，`cue-omni-reader` 按需）。
 
 ## 6. 边界与拒答
 

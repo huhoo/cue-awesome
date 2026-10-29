@@ -40,7 +40,7 @@
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。
+注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（**别贴进聊天**）→ 装 `cue-data-mcp`（`cue-omni-reader` 按需）。配置指路：数据腿官方配置页 <https://cuecue.cn/hub/mcp>（本件的取证以 `data-mcp` 直查为主、默认不发起深研）、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（按需的一腿，用得上的场合是需要摘要级原文而域面 section 全文不足时）。
 不装也能跑（你贴披露原文，agent 组织成页并标「用户直供」）——但那就看不到通道取证的真实样子了，而这正是本件想展示的。
 
 三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。装好＝你这一侧重列一次已安装 skill，清单里看得到上面那些名字（只证明文件到位，不证明取到数）；配好凭据＝那把 `CUE_API_KEY` 存在于本地凭据设施即可，**key 在场不等于 key 被接受**；已连＝带上那把 key 按目标域 `routing` 里的 `url` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败），且 `tools/list` 有返回，工具名与入参 schema 一律以那份返回现值为准，不硬编码、不臆造参数。

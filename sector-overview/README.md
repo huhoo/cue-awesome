@@ -42,7 +42,7 @@
 
 ## 四、首次开通 Cue（三步，可跳过）
 
-取证腿装 `cue-data-mcp` / `cue-research`（`cue-omni-reader` 按需）——这几枚由 Cue 官方技能集合（sensedeal）发布：整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚，按提示挑），单装 `npx skills add sensedeal/cue-skills --skill cue-data-mcp`（把末尾那枚换成 `cue-research` 或 `cue-omni-reader` 就只装那一枚）。装本件是上一节那条 `huhoo/cue-awesome --skill sector-overview`，两件事别混。
+取证腿装 `cue-data-mcp` / `cue-research`（`cue-omni-reader` 按需）——这几枚由 Cue 官方技能集合（sensedeal）发布：整套 `npx skills add sensedeal/cue-skills`（列出该集合公开的各枚，按提示挑），单装 `npx skills add sensedeal/cue-skills --skill cue-data-mcp`（把末尾那枚换成 `cue-research` 或 `cue-omni-reader` 就只装那一枚）。装本件是上一节那条 `huhoo/cue-awesome --skill sector-overview`，两件事别混。配置指针：数据腿官方配置页 <https://cuecue.cn/hub/mcp>、解析腿官方配置页 <https://cuecue.cn/hub/omni-reader>（本件面文里的取证腿＝`cue-data-mcp` 与 `cue-research`，`cue-omni-reader` 按需）。
 注册 <https://cuecue.cn>（新账号注册送 500 积分、每日 10 积分，以服务端为准）→ <https://cuecue.cn/hub/api-key> 取 `CUE_API_KEY` 入本地凭据（别贴进聊天，也不在终端回显）。
 三层各自能证到什么，互不等价：**装好 skill ≠ 已配凭据 ≠ 通道已连**。装好＝重列一次已安装 skill 看得到上面那些名字（只证明文件到位，不证明取到数）；配好凭据＝那把 key 存在于本地凭据设施即可，**key 在场不等于 key 被接受**，接受与否要到下一层才判得出；已连＝带上那把 key 按目标域 `routing` 里的 `url` 实连（`Authorization: Bearer <$CUE_API_KEY>`，并带 `Accept: application/json, text/event-stream`——缺这个头会 406，是协议行为不是鉴权失败）且 `tools/list` 有返回，工具名与入参 schema 以那份返回现值为准。匿名 `GET` 块里那枚 `CATALOG` 有返回**只证目录可达**，本件不把它叫「已连」；连接报错≠域无数据，如实报。
 
