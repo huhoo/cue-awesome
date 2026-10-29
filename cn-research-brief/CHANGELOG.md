@@ -1,5 +1,13 @@
 # 更新日志
 
+### 0.1.3 — 2026-10-29（中英并读校正：英文面那句解析腿已连判据仍把两条路压成三枚名列，与中文面的按路分写正面矛盾；非能力面变更）
+- 改因：第十二批复判落下一枚 major（结论行「本批不签 LGTM；blocker 0／major 1／minor 0」，判定窗 HEAD b94df806…。英文说明面 `README.en.md:48`（改前行长 1158、病灶起列 669）写的是「宿主里那条 `tools/list` 握手，返回里含 `parse`、`get_parse_status`、`read_result` 就算连上」；产品权威 `cue-skills/cue-omni-reader/SKILL.md:76` 明写 remote-only 只暴露 `parse`／`get_parse_status`／`cancel_parse` 三支、`read_result` 只在 Bridge 那一面 ⇒ 只走 URL 的英文读者即使把那条路连对了，也永远判不成「已连」。同包中文面 `README.md:48`（行长 852）上一轮已按路分写（remote-only 在列 304、Bridge 在列 368）＝同一件事两种说法，中英正面矛盾。
+- 改法（只改这半句，同句前半的数据腿一字未动）：换成与中文面同语义的按路分写——连上之后那份返回里应当能看到这些名字：remote-only 三枚（含 `cancel_parse`）、Bridge 再加四枚共七枚，拿一个固定数判两路必错一边；再把端到端写成两路各自可执行（the URL route is verified by one real URL parse, the Bridge route by one real local-file parse, remote-only cannot read local files），本包不自证也不代跑。前半那句「匿名只算目录可达、带 key 实连且结果里工具非空才算被接受、只按形状认不列工具名也不承诺枚数」原样留着——那本来就是对的形状。
+- 现测（先证靶在场，再改，再复跑）：改前扫本包＝面 1∥行 1∥次 1（正是那一枚），改后同式＝面 0∥行 0∥次 0；全仓同尺改后现读面 1∥行 1∥次 1，只剩冻结区那一枚（`long-doc-translation/README.md:25`），本票不碰。中英并读两行原文（中文 :48 与英文 :48）同贴内部台账，两面的路划分与验收句同语义。仓闸、出包与件内读回记在本票回执。
+- 一格观察（不改面、随批报）：本包两页指路目前只在中文说明面，英文说明面 0 枚——按「三面指路齐」的口径这枚英文面仍未齐，不属本票射程（本票只判那半句病灶），留给下一批指路补齐。
+- 未动：判定与 schema、两支随包件、速览与深研的档位口径、「装本件自己」那条安装式、references 各面。故本票不触发重验旧靶。
+- 号序与槽位：0.1.2 → 0.1.3（中英口径校正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-research-brief | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`），合成靶不在本包。
+
 ### 0.1.2 — 2026-10-29（混合面只修半句：本面那句解析腿已连判据把两条路压成同一条固定枚数的名列；前半数据腿的形状本来就对、一字未动，指路补成两页都在；非能力面变更）
 - 改因：与已入仓两批同族（6.1 第十批复判落的两条 major 之后，同型句在全仓的余落点按批清）。本面是一条混合句：前半讲数据腿——匿名 `GET` 只证目录可达、带 key 实连且 `result.tools` 非空才证那把 key 被接受、只按形状认不列工具名也不承诺枚数——这半句本来就是按腿分写的正确形状，一字未改；后半讲解析腿，把宿主列工具的名字凑成三枚当共同判据，那半句才是病灶。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386、`SKILL.md:21`（行长 244）列 209 都明写 remote-only 不能读本地件；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚。
 - 改法（只改尾巴那半句，句前后文字不动）：解析腿部分改成方向句＋按路分写——连上之后宿主列出的工具里应当能看到这些名字，remote-only 那一面三枚（含 `cancel_parse`）、带 Bridge 的那一面再加四枚共七枚，两路枚数不同、拿一个固定数判两路必错一边；再把端到端写成两路各自可执行（URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路，remote-only 不读本地件），本件不自证也不代跑。指路按 Lead 裁定补成两页都在：数据腿 `https://cuecue.cn/hub/mcp`、解析腿 `https://cuecue.cn/hub/omni-reader`，取 key `https://cuecue.cn/hub/api-key`——本件确实两腿都用（面上数据腿叙述按功能词现读 25 行、含 catalog→routing→带 Bearer 的 tools/list 全流程；解析腿叙述 8 行），所以不写「只依赖一条腿」那种句子。
