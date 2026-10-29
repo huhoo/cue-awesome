@@ -69,7 +69,7 @@ python3 scripts/check_study_card.py assets/论文研读卡.md                   
 
 ### First-time Cue setup (three steps, skippable)
 
-This package has one evidence leg: parsing of papers and long documents (omni), which yields text with an outline, locatable sections and page anchors.
+This package has one evidence leg: parsing of papers and long documents (omni), which yields text with an outline, locatable sections and page anchors. The parsing leg has its official page at <https://cuecue.cn/hub/omni-reader> - pointers only, no restated setup steps; what you lose by not installing it is already the next sentence of this face, so it is not repeated here. The augmentation leg (academic database search) is not offered by this package, so only the parsing-leg page is pointed to.
 **Not installing raises no error** - without it the study card is still hand-fillable and still passes the gate; with the channel off, page anchors and section locations stop working and only whole-paragraph quotation from the text in hand remains - this package does not guess the channel's format. The enhancement leg (academic database search) is not offered here and no sentence claiming paper-retrieval reach is written.
 
 1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);

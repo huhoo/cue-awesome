@@ -69,7 +69,7 @@ python3 scripts/check_minutes_card.py assets/会议纪要卡.md                 
 
 ### First-time Cue setup (three steps, skippable)
 
-This package has one evidence leg: audio and video parsing (omni), where local files are admitted by byte size and the gate reports its own limit.
+This package has one evidence leg: audio and video parsing (omni), where local files are admitted by byte size and the gate reports its own limit. The parsing leg has its official page at <https://cuecue.cn/hub/omni-reader> - pointers only, no restated setup steps; what you lose by not installing it is already the next sentence of this face, so it is not repeated here. This package has that one evidence leg, so only the parsing-leg page is pointed to.
 **Not installing raises no error** - the minutes card can be filled by hand and still passes the machine gate; without the channel there is no verbatim transcript, no [mm:ss] anchors and no speaker labels - those exist only in the channel's response, this package neither guesses their format nor fakes a cleaned version of ASR homophones.
 
 1. Register at <https://cuecue.cn> (new accounts get 500 credits at signup and 10 credits daily - the server-side policy governs);
