@@ -1,10 +1,10 @@
 # 更新日志
 
-### 0.1.4 — 2026-10-29（连上判据按路分写：面文那句「认得到 `parse`、`get_parse_status`、`read_result` 才算已连」把 remote-only 与 Bridge 两路合成一条尺，又把工具在场当了解析可用判据；非能力面变更）
+### 0.1.4 — 2026-10-29（连上判据按路分写：面文那句把 remote-only 与 Bridge 两条路压成同一条固定枚数的名列（凑出的三枚两路都不等于全集），又把工具在场当了解析可用判据；非能力面变更）
 - 改因：与上一票出门的两包同源（6.1 第十批复判落的两条 major）。产品仓边界句本趟逐字复跑、带列号不截断：`cue-skills/cue-omni-reader/README.md:13`（行长 409）列 386「a remote-only connection covers URLs with no local install, but cannot read local files」；`cue-omni-reader/SKILL.md:21`（行长 244）列 209「remote-only cannot read local files」；`README.md:17` 与 `SKILL.md:76` 列 1 起写明 remote-only 恰好三枚。⇒ 旧句三处失真：已连的 remote-only 宿主被本件判成没连（它按产品契约就没有 `read_result`）；Bridge 那面全集七枚，凑来的三枚两路都不等；「工具在场」被当成解析可用判据，而两路端到端证据各不同、remote-only 又不读本地件。
 - 改法（三面同形、中英同射程）：名集方向改成「**连上之后**那份返回里应当能看到这些名字」并按路分写（remote-only 三枚 `parse`／`get_parse_status`／`cancel_parse`；Bridge 再加 `read_result`／`read_outline`／`discard_result`／`save_result` 共七枚）；端到端那句写成两路各自可执行——URL 那一腿拿一枚真实 URL 跑一次 parse 才证该路，本地文件那一腿拿一枚真实本地文件跑一次 parse 才证该路（remote-only 不读本地件），本件不自证也不代跑；尾句逐字取 Lead 点形（本票票面「点形＝你的 §四 a」），一字未改，英文只随句位首字母大写。SKILL 面补三态句「装好 skill ≠ 已配凭据 ≠ 通道已连」，句形取同族母本 `journal-draft/README.md:153`（E4 冻结面，只引句形不改它一字）；README 两面三态已在场，不堆第二句；「版本同一性由你指定并对齐」那一格一字未动。指路只引解析腿官方配置页 `https://cuecue.cn/hub/omni-reader`，数据腿那页不在本面引（本件只依赖解析腿：面上数据腿串 0 枚、脚本不碰通道）。
 - 落点与改后读数（面∥行∥改后行长∥新式串「真实 URL ∥ real URL parse」起列）：SKILL.md:58∥568∥317；README.md:28∥794∥385；README.en.md:28∥2051∥894。
-- 现测（写后复扫，判据①②可数）：本包三面宽式复扫（才算连上｜才算已连｜已连判据｜在场才算｜count as connected｜considered connected｜connected means｜proves connection｜proof of connection｜connected-test，re.I 逐行 splitlines）＝面 3∥行 0∥次 0；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚；含 `cancel_parse` 的面 3 枚；三态句在场 3 面。仓闸与本包自带自测读数记在本票回执。
+- 现测（写后复扫，判据①②可数）：宽式复扫本包三面＝面 3∥行 0∥次 0（那条检索式的中英十种写法随票在盘，本顶条不复写原串——上一版我把病灶串原样引在改因句与这条里，本轮补正按 §10 那条「改因句不许原样引病灶串」改成描述式，历史条目不回改）；`hub/omni-reader` 3 枚、`hub/mcp` 0 枚；含 `cancel_parse` 的面 3 枚；三态句在场 3 面。仓闸与本包自带自测读数记在本票回执。
 - 号序与槽位：0.1.3 → 0.1.4（对外承诺句射程修正＝patch，非能力面变更）。本包单槽——`grep -rn '^version:' cn-contract-clauses | grep -v fixtures/` 现读 1 枚（`SKILL.md:7`）。
 
 ### 0.1.3 — 2026-10-25（补判打回两枚：①降格没落全——随包报错原文与面文仍把通道说成能判版本同一性；②道五按物理行切、裸结果断言放行）
