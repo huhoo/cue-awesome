@@ -4,7 +4,7 @@ slug: cue-roadshow-minutes-cn
 displayName: "路演纪要"
 summary: "Verbatim eight-item card from roadshow minutes; figures tagged; no ratings."
 description: "Roadshow minutes read verbatim into an eight-item card: each line carries its source sentence and anchor, quantified lines add a spoken-not-verified tag, absent items are named not invented. Ratings, targets and direction calls stay human-only; not for advice. Triggers: roadshow minutes"
-version: "0.1.0"
+version: "0.1.1"
 license: MIT
 inputs:
   - roadshow-minutes
@@ -72,4 +72,4 @@ tags: [路演, 调研纪要, A股, 逐字卡, 口头表述]
 Supply one set of minutes → header declaration and the eight items come out first (both only need the text) → start the text leg or comparison leg for the few lines that need it → finish with the comparison, missing list and pending items. **The first step does not wait for parsing**: without either leg the card is still complete, at the cost of every figure staying at spoken level — that difference is written out in `references/oral-claims.md`.
 
 ## 7. Machine check
-`scripts/check_minutes.py`, four lanes (sections and all eight item names present / quote, anchor and spoken tag per item / red-line assertions outside pending lines zero / declared missing count reconciles), zero network. `--selftest` ships a good sample, a bad sample and four counter-examples, and cleans its temporary root.
+`scripts/check_minutes.py`, four lanes (five sections present and each of the eight item names occupying its own line starting `- 名目：` — a name merely mentioned in prose does not count / per item a real source sentence, an anchor with a non-empty value, and the spoken-claim tag for quantified lines; a bracket that is empty or a single character counts as no sentence / red-line assertions outside pending lines zero / exactly one completeness declaration, reconciled against the not-retrieved lines), zero network. `--selftest` ships a good sample, a bad sample and eight counter-examples, each naming the branch it is meant to fire so a finding cannot be read as another lane's, and cleans its temporary root.

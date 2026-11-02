@@ -14,10 +14,10 @@ It reads minutes that already exist. A list of what a company filed lives in `an
 
 ## 2. The four machine checks (zero network)
 
-`scripts/check_minutes.py` gates the card: five sections and all eight item names present / every item carries its quote, anchor and spoken-claim tag / red-line assertions appear only inside `[待人工]` lines / the declared missing-count reconciles with the missing list.
+`scripts/check_minutes.py` gates the card: five sections present and each of the eight item names occupying its own line (a name only mentioned in prose does not count) / every item carries a real source sentence, a non-empty anchor and the spoken-claim tag (an empty or single-character bracket counts as no sentence) / red-line assertions appear only inside `[待人工]` lines / exactly one completeness declaration, reconciled against the not-retrieved lines.
 
 ```bash
-python3 scripts/check_minutes.py --selftest                     # good sample must pass, bad sample must fire all four lanes, four counter-examples fire their own lane, temp files clean themselves
+python3 scripts/check_minutes.py --selftest                     # good sample must pass, bad sample must fire all four lanes, eight counter-examples each fire their own branch under a branch-unique label, temp files clean themselves
 python3 scripts/check_minutes.py scripts/fixtures/good-minutes.md    # PASS (zero findings)
 python3 scripts/check_minutes.py scripts/fixtures/bad-minutes.md     # FAIL (all four lanes, each naming its line)
 ```

@@ -12,11 +12,11 @@
 
 ## 二、四道机检（零网络）
 
-产物交给 `scripts/check_minutes.py` 过闸：五段齐与八项名目在场／每项原句、锚与口头表述标注／红线断言只准出现在 `[待人工]` 行／齐缺申报与清单对账。
+产物交给 `scripts/check_minutes.py` 过闸：五段齐＋八项名目行级在场（每枚名目须占一行，散文里提到不算）／每项原句、锚与口头表述标注（书名号内空或只剩一个字算缺原句，「锚：」后面空着也发）／红线断言只准出现在 `[待人工]` 行／齐缺申报恰一枚且与清单对账（两处互相矛盾的申报同样发）。
 
 ```bash
 python3 scripts/check_minutes.py --help                          # 参数说明
-python3 scripts/check_minutes.py --selftest                       # 好样须过、坏样四道齐发、四档反证各发各码、临时件自清
+python3 scripts/check_minutes.py --selftest                       # 好样须过、坏样四道齐发、八档反证各发各支且各带独有点名句、临时件自清
 python3 scripts/check_minutes.py scripts/fixtures/good-minutes.md      # PASS（发条 0 条）
 python3 scripts/check_minutes.py scripts/fixtures/bad-minutes.md       # FAIL（四道各发，逐条点名行号）
 ```
