@@ -46,6 +46,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`meeting-minutes-cn/`](meeting-minutes-cn/) | meeting-minutes-cn | [frontmatter](meeting-minutes-cn/SKILL.md) | 把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。 |
 | [`omni2docx/`](omni2docx/) | omni2docx | [frontmatter](omni2docx/SKILL.md) | 把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。 |
 | [`paper-study-cn/`](paper-study-cn/) | paper-study-cn | [frontmatter](paper-study-cn/SKILL.md) | 把一篇论文变成可核对的研读卡：论点-方法-数据-结论逐句挂页锚，复现清单，引用网络，综述骨架与待核清单；不代写、不编引文。 |
+| [`placement-terms-cn/`](placement-terms-cn/) | placement-terms-cn | [frontmatter](placement-terms-cn/SKILL.md) | 把一份A股定增方案拆成十项条款逐字卡：每项挂原句与锚，缺的点名未检索到，摊薄与值不值一律待人工。 |
 | [`skill-review-cn/`](skill-review-cn/) | skill-review-cn | [frontmatter](skill-review-cn/SKILL.md) | 装之前先给一枚 skill 体检：五面逐条挂原文与检索日，缺的点名，装不装留人工。 |
 | [`watchlist-digest-cn/`](watchlist-digest-cn/) | watchlist-digest-cn | [frontmatter](watchlist-digest-cn/SKILL.md) | 对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。 |
 
