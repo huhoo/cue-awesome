@@ -7,6 +7,11 @@
   "description": "Chinese-first investment-research and document skills. Numbers stay anchored to their source cell or page; ratings and target prices are left to humans. Data leg ships with the Cue channel — one API key, no self-hosted data sources.",
   "plugins": [
     {
+      "name": "announcement-daily-cn",
+      "source": "./announcement-daily-cn",
+      "description": "把一家公司或自选清单当天/当周的A股公告变成逐条要点清单：每条挂公告标题与披露日期，评级与目标价一律 [待人工]。"
+    },
+    {
       "name": "catalyst-calendar",
       "source": "./catalyst-calendar",
       "description": "你持仓清单未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
