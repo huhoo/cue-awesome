@@ -14,10 +14,10 @@ It reads a several-hundred-page document down to eight lines you can check back 
 
 ## 2. The five machine checks (zero network)
 
-`scripts/check_prospectus.py` gates the card: five sections and all eight item names present / every item carries its quote and a page anchor / an untagged self-praise sentence fires / red-line assertions appear only inside `[待人工]` lines / the declared missing count reconciles with the missing list.
+`scripts/check_prospectus.py` gates the card: five sections present and each of the eight item names occupying its own line (a name only mentioned in prose does not count) / every item carries a real source sentence and an anchor whose value is non-empty and lands back on a page (an empty or single-character bracket counts as no sentence) / an untagged self-praise sentence fires / red-line assertions appear only inside `[待人工]` lines / exactly one completeness declaration, reconciled against the not-retrieved lines.
 
 ```bash
-python3 scripts/check_prospectus.py --selftest                          # good sample must pass, bad sample must fire all five lanes, five counter-examples fire their own lane, temp files clean themselves
+python3 scripts/check_prospectus.py --selftest                          # good sample must pass, bad sample must fire all five lanes, nine counter-examples each fire their own branch under a branch-unique label, temp files clean themselves
 python3 scripts/check_prospectus.py scripts/fixtures/good-prospectus.md     # PASS (zero findings)
 python3 scripts/check_prospectus.py scripts/fixtures/bad-prospectus.md      # FAIL (all five lanes, each naming its line)
 ```

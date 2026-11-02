@@ -12,11 +12,11 @@
 
 ## 二、五道机检（零网络）
 
-产物交给 `scripts/check_prospectus.py` 过闸：五段齐与八项名目在场／每项原句与页码锚／自称句未标「发行人自述」即发／红线断言只准出现在 `[待人工]` 行／齐缺申报与清单对账。
+产物交给 `scripts/check_prospectus.py` 过闸：五段齐＋八项名目行级在场（每枚名目须占一行，散文里提到不算）／每项原句与页码锚（书名号内空或只剩一个字算缺原句；「锚：」后面空着发；锚里落不回页码也发）／自称句未标「发行人自述」即发／红线断言只准出现在 `[待人工]` 行／齐缺申报恰一枚且与清单对账（两处互相矛盾的申报同样发）。
 
 ```bash
 python3 scripts/check_prospectus.py --help                       # 参数说明
-python3 scripts/check_prospectus.py --selftest                    # 好样须过、坏样五道齐发、五档反证各发各码、临时件自清
+python3 scripts/check_prospectus.py --selftest                    # 好样须过、坏样五道齐发、九档反证各发各支且各带独有点名句、临时件自清
 python3 scripts/check_prospectus.py scripts/fixtures/good-prospectus.md   # PASS（发条 0 条）
 python3 scripts/check_prospectus.py scripts/fixtures/bad-prospectus.md    # FAIL（五道各发，逐条点名行号）
 ```

@@ -3,15 +3,15 @@
 """check_prospectus.py — 招股书速览卡的五道机检（零网络、只读传入文件）。
 
 五道码（缺一即不叫过闸）：
-  F-STRUCT 五段齐＋八项名目齐：头部申报／八项逐字速览／口径对照／缺数清单／待人工任一段缺失即发红；
-           八项里任何一项在全文不出现即发红——缺那一项也要占一行点名，不许省行。
-  F-ANCHOR 原句与页码锚：每项速读行必须带书名号内原句＋「锚：」，且锚里要能落回页码（第 N 页／页码／P.N 三种形制之一）；
-           写明「未检索到」的那一项免。
-  F-CLAIM  自称不当事实：书名号内的原句里出现自称或最高级（领先／先进水平／国际先进／最大／龙头／首创／之最／顶尖，以及「全球·国内·行业·全国·世界＋第一」）时——排名式的事实描述（如「第一大客户占比」）不在这一判里，它判的是没有第三方依据的那类话，
-           该行必须同时带「发行人自述」标注；标不出来的那句不进结论。
+  F-STRUCT 五段齐＋八项名目行级在场：头部申报／八项逐字速览／口径对照／缺数清单／待人工任一段缺失即发红；
+           八项里任何一项没有一枚以「- 名目：」起头的行即发红——名目只在散文里被提到不算占行，缺那一项也要占一行点名。
+  F-ANCHOR 原句与页码锚：每项速读行必须带书名号内原句（书名号内不得是单字或空占位）＋「锚：」且锚后必须有值，
+           且锚里要能落回页码（第 N 页／页码／P.N 三种形制之一）；写明「未检索到」的那一项免。
+  F-CLAIM  自称不当事实：书名号内的原句里出现自称或最高级时，该行必须同带「发行人自述」标注（详见 references/self-claimed.md 的界）。
   F-LINE   红线断言：估值、申购、买卖、涨跌与承诺类词只允许出现在带 [待人工] 的行里。
            书名号内的原文引用不参与本道——判的是我们自己写的断言，不是发行人写过的话。
-  F-COUNT  齐缺与申报对账：头部「共八项·缺 N 项」的 N 必须等于实际写明「未检索到」的项行数；申报缺失即发红；
+  F-COUNT  齐缺与申报对账：头部「共八项·缺 N 项」必须恰有一枚（出现多枚即发，两处互相矛盾的申报也在这判里）；
+           其 N 必须等于实际写明「未检索到」的项行数，申报缺失即发红；
            项值位写「无／不适用／略／待定」而不落到「未检索到」一律发红。
 
 用法：
@@ -37,6 +37,8 @@ ITEM_LINE = re.compile(r"^\s*[-*]\s*(" + "|".join(re.escape(x) for x in ITEMS) +
 ANCHOR = re.compile(r"锚[:：]")
 PAGE = re.compile(r"第\s*\d+\s*页|页码|P\.?\s*\d+")
 VERBATIM = re.compile(r"[「『][^」』]+[」』]")
+REAL_QUOTE = re.compile(r"[「『][^」』]{2,}[」』]")   # 单字或空占位不算原句
+ANCHOR_KV = re.compile(r"锚[:：]\s*[^\s」』]")            # 锚后必须有值
 MISS = re.compile(r"未检索到")
 DECL = re.compile(r"共八项·缺\s*(\d+)\s*项")
 FILLER = re.compile(r"[：:]\s*(?:无|不适用|略|待定)\s*$")
@@ -46,6 +48,8 @@ PENDING = re.compile(r"\[待人工\]")
 BANNED = re.compile(r"必涨|稳赚|零风险|保证收益|目标价\s*[:：]?\s*\d|上调评级|下调评级|买入|卖出|加仓|减仓"
                     r"|建议申购|值得申购|一定会涨|利好兑现")
 QUOTE = re.compile(r"[「『][^」』]*[」』]")
+SPEED_HEAD = re.compile(r"^#{2,3}.*八项逐字速览")
+
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速览", r"八项逐字速览|逐字速览"), ("口径对照", r"口径对照"),
             ("缺数清单", r"缺数清单"), ("待人工", r"待人工"))
 
@@ -57,17 +61,29 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     for name, pat in SECTIONS:
         if not re.search(pat, text):
             hits.append(("F-STRUCT", 0, f"缺段：{name}"))
+    speed = []
+    for idx, l in enumerate(lines):
+        if SPEED_HEAD.match(l):
+            for x in lines[idx + 1:]:
+                if x.startswith("## "):
+                    break
+                speed.append(x)
+            break
+    if not speed:
+        hits.append(("F-STRUCT", 0, "缺段：速览段标题不在场（判据落不到名目行）"))
     for name in ITEMS:
-        if name not in text:
-            hits.append(("F-STRUCT", 0, f"缺项名目：{name}（缺那一项也要占一行点名）"))
+        if not any(re.match(r"^\s*[-*]\s*" + re.escape(name) + r"[：:]", l) for l in speed):
+            hits.append(("F-STRUCT", 0, f"缺项行：{name}（名目必须在速览段里占一行，散文或对照段提到不算）"))
     for i, ln in enumerate(lines, 1):
         if ITEM_LINE.match(ln) and not MISS.search(ln):
             if not ANCHOR.search(ln):
                 hits.append(("F-ANCHOR", i, "该项缺「锚：」定位"))
+            elif not ANCHOR_KV.search(ln):
+                hits.append(("F-ANCHOR", i, "该项锚标签在但锚值为空"))
             elif not PAGE.search(ln):
                 hits.append(("F-ANCHOR", i, "该项锚里落不回页码（第 N 页／页码／P.N 三种形制之一）"))
-            if not VERBATIM.search(ln):
-                hits.append(("F-ANCHOR", i, "该项缺书名号内原句逐字"))
+            if not REAL_QUOTE.search(ln):
+                hits.append(("F-ANCHOR", i, "该项书名号内不是原句逐字（无书名号、空或单字占位同判）"))
             if FILLER.search(ln):
                 hits.append(("F-COUNT", i, "项值位用「无／不适用／略／待定」顶替，未落到「未检索到」"))
         quoted = "".join(QUOTE.findall(ln))
@@ -76,12 +92,15 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
         bare = QUOTE.sub("", ln)
         if BANNED.search(bare) and not PENDING.search(ln):
             hits.append(("F-LINE", i, "红线断言词出现在没有 [待人工] 的行"))
-    miss_rows = sum(1 for ln in lines if ITEM_LINE.match(ln) and MISS.search(ln))
-    m = DECL.search(text)
-    if not m:
+    miss_rows = sum(1 for ln in (speed or lines) if ITEM_LINE.match(ln) and MISS.search(ln))
+    decls = DECL.findall(text)
+    if not decls:
         hits.append(("F-COUNT", 0, "头部申报缺「共八项·缺 N 项」，无从对账"))
-    elif int(m.group(1)) != miss_rows:
-        hits.append(("F-COUNT", 0, f"申报缺 {m.group(1)} 项∥实际写明未检索到 {miss_rows} 项"))
+    elif len(decls) > 1:
+        hits.append(("F-COUNT", 0, f"齐缺申报出现 {len(decls)} 枚（应恰一枚：" + "∥".join(decls) +
+                     f"）｜实际写明未检索到 {miss_rows} 项"))
+    elif int(decls[0]) != miss_rows:
+        hits.append(("F-COUNT", 0, f"申报缺 {decls[0]} 项∥实际写明未检索到 {miss_rows} 项"))
     return hits
 
 
@@ -134,6 +153,33 @@ def selftest() -> int:
     h5 = check_text(p5.read_text(encoding="utf-8"))
     rows.append(("反证·齐缺申报改歪必发 F-COUNT", any(c == "F-COUNT" for c, _, _ in h5),
                  f"实发 {sum(1 for c, _, _ in h5 if c == 'F-COUNT')} 条"))
+    only_prose = tmp / "name-in-prose.md"
+    name = "股权结构与实际控制人"
+    body = "\n".join(l for l in gt.splitlines() if not re.match(r"^\s*[-*]\s*" + re.escape(name) + r"[：:]", l))
+    assert name in body, "名目须仍留在散文里，否则这形没测到东西"
+    only_prose.write_text(body, encoding="utf-8")
+    ph = check_text(only_prose.read_text(encoding="utf-8"))
+    rows.append(("反证·名目只留散文（不占行）必发 F-STRUCT｜独有句名「缺项行」",
+                 any(c == "F-STRUCT" and "缺项行" in m for c, _, m in ph),
+                 f"实发 {sum(1 for c, _, m in ph if c == 'F-STRUCT' and '缺项行' in m)} 条"))
+    p6 = tmp / "empty-anchor.md"
+    p6.write_text(re.sub(r"锚：\s*\S[^\n]*", "锚：", gt), encoding="utf-8")
+    h6 = check_text(p6.read_text(encoding="utf-8"))
+    rows.append(("反证·锚标签在而值为空必发 F-ANCHOR｜独有句名「锚值为空」",
+                 any(c == "F-ANCHOR" and "锚值为空" in m for c, _, m in h6),
+                 f"实发 {sum(1 for c, _, m in h6 if c == 'F-ANCHOR' and '锚值为空' in m)} 条"))
+    p7 = tmp / "one-char-quote.md"
+    p7.write_text(VERBATIM.sub("「略」", gt), encoding="utf-8")
+    h7 = check_text(p7.read_text(encoding="utf-8"))
+    rows.append(("反证·书名号内改单字占位必发 F-ANCHOR｜独有句名「单字占位同判」",
+                 any(c == "F-ANCHOR" and "单字占位同判" in m for c, _, m in h7),
+                 f"实发 {sum(1 for c, _, m in h7 if c == 'F-ANCHOR' and '单字或空占位' in m)} 条"))
+    p8 = tmp / "two-decls.md"
+    p8.write_text(gt.replace("- 齐缺申报：共八项·缺 1 项", "- 齐缺申报：共八项·缺 1 项\n- 复核申报：共八项·缺 0 项", 1), encoding="utf-8")
+    h8 = check_text(p8.read_text(encoding="utf-8"))
+    rows.append(("反证·两处矛盾申报必发 F-COUNT｜独有句名「齐缺申报出现」",
+                 any(c == "F-COUNT" and "齐缺申报出现" in m for c, _, m in h8),
+                 f"实发 {sum(1 for c, _, m in h8 if c == 'F-COUNT' and '齐缺申报出现' in m)} 条"))
     made = len(TMP_ROOTS)
     root = pathlib.Path(tempfile.gettempdir())
     for p in TMP_ROOTS:

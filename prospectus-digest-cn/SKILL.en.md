@@ -4,7 +4,7 @@ slug: cue-prospectus-digest-cn
 displayName: "招股书速览"
 summary: "Eight verbatim items from an IPO prospectus; page anchors; self-praise tagged."
 description: "An A-share IPO prospectus read verbatim into eight items: lines carry their source sentence and a page anchor, self-praise is tagged as the issuer statement, figures keep the printed period and unit, absent items are named. Valuation, subscription and direction calls stay human-only."
-version: "0.1.0"
+version: "0.1.1"
 license: MIT
 inputs:
   - prospectus-document
@@ -73,4 +73,4 @@ tags: [招股书, 逐字卡, A股, 发行, 页码锚]
 Supply one prospectus → header declaration and the eight items come out first (both only need the text) → start the section leg for items buried deep or inside attachments → finish with the comparison, missing list and pending items. **The first step does not wait for retrieval**: without it the card is still complete, at the cost of the R&D and risk sections staying `未检索到` — and those are exactly the sections where self-praise clusters. That difference is written out in `references/self-claimed.md`.
 
 ## 7. Machine check
-`scripts/check_prospectus.py`, five lanes (sections and all eight item names present / quote and page anchor per item / untagged self-praise fires / red-line assertions outside pending lines zero / declared missing count reconciles), zero network. `--selftest` ships a good sample, a bad sample and five counter-examples, and cleans its temporary root.
+`scripts/check_prospectus.py`, five lanes (five sections present and each of the eight item names occupying its own line starting `- 名目：` — a name merely mentioned in prose does not count / per item a real source sentence plus an anchor whose value is non-empty and lands back on a page (an empty or single-character bracket counts as no sentence) / untagged self-praise fires / red-line assertions outside pending lines zero / exactly one completeness declaration, reconciled against the not-retrieved lines), zero network. `--selftest` ships a good sample, a bad sample and nine counter-examples, each naming the branch it is meant to fire, and cleans its temporary root.
