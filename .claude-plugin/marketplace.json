@@ -102,6 +102,11 @@
       "description": "把一篇论文变成可核对的研读卡：论点-方法-数据-结论逐句挂页锚，复现清单，引用网络，综述骨架与待核清单；不代写、不编引文。"
     },
     {
+      "name": "placement-terms-cn",
+      "source": "./placement-terms-cn",
+      "description": "把一份A股定增方案拆成十项条款逐字卡：每项挂原句与锚，缺的点名未检索到，摊薄与值不值一律待人工。"
+    },
+    {
       "name": "sector-overview",
       "source": "./sector-overview",
       "description": "行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。"
