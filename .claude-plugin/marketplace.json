@@ -1,0 +1,120 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cue-awesome",
+  "owner": {
+    "name": "huhoo"
+  },
+  "description": "Chinese-first investment-research and document skills. Numbers stay anchored to their source cell or page; ratings and target prices are left to humans. Data leg ships with the Cue channel — one API key, no self-hosted data sources.",
+  "plugins": [
+    {
+      "name": "catalyst-calendar",
+      "source": "./catalyst-calendar",
+      "description": "你持仓清单未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
+    },
+    {
+      "name": "civil-appeal-turnaround",
+      "source": "./civil-appeal-turnaround",
+      "description": "一审败诉后建二审作战体系：判决逆向、证据逐字比对、请求权阶梯、台账与文书包。不是法律意见，条号递交前核对。"
+    },
+    {
+      "name": "cn-contract-clauses",
+      "source": "./cn-contract-clauses",
+      "description": "一份合同拆成逐条要点与需盯条款清单：每条挂 [S#] 与页码行号，七类逐类点名，不出法律意见、不判效力。"
+    },
+    {
+      "name": "cn-earnings-note",
+      "source": "./cn-earnings-note",
+      "description": "A股/港股财报深度点评初稿：四期差异、科目勾稽、预告对照；数字行按包内规则逐条要证据级标注，评级判断位 [待人工]。"
+    },
+    {
+      "name": "cn-link-to-note",
+      "source": "./cn-link-to-note",
+      "description": "一条链接进来、一条带出处的笔记出去：要点逐条挂 [S#]，原话逐字比回那一页那一行，缺口点名，判断留人工。"
+    },
+    {
+      "name": "cn-research-brief",
+      "source": "./cn-research-brief",
+      "description": "把多份中文来源整理成一份逐条挂源的速览：每条发现带一条可回查来源与检索日，缺的点名，判断留人工。"
+    },
+    {
+      "name": "cn-resume-jd-fit",
+      "source": "./cn-resume-jd-fit",
+      "description": "一份简历对一枚 JD 的双向核对：要求逐条挂到简历原话，缺口分两栏点名，不排先后、不下录用结论。"
+    },
+    {
+      "name": "cn-table-to-chart",
+      "source": "./cn-table-to-chart",
+      "description": "一张表变成能画的图规格＋读表要点：每个数配列头逐字回那一格，页码与行号各比各的，四类限度逐类点名，不据图给投资建议。"
+    },
+    {
+      "name": "competitive-brief",
+      "source": "./competitive-brief",
+      "description": "竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。"
+    },
+    {
+      "name": "cue-lead-pieces",
+      "source": "./cue-lead-pieces",
+      "description": "用 Cue Omni Reader 解析公司披露，建带页码的信用线索件，逐句核对引文是否逐字出自所注页±1，对不上的标出或改回。"
+    },
+    {
+      "name": "cue-omni-ontology",
+      "source": "./cue-omni-ontology",
+      "description": "从公开资料建可追溯业务知识包：逐字证据锚、口径、跨期变化与变化简报；可选数字包校验数字逐字出处；音视频限本地小段/切片。工具不判断真伪、不预警，须人工核证据。"
+    },
+    {
+      "name": "dd-checklist",
+      "source": "./dd-checklist",
+      "description": "给一家 A 股公司拉一份公开信息风险清单：查得到的逐条带披露锚，查不到的逐类写明原因；不给投资结论，不出法律意见。"
+    },
+    {
+      "name": "event-brief-cn",
+      "source": "./event-brief-cn",
+      "description": "把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。"
+    },
+    {
+      "name": "event-risk-scan",
+      "source": "./event-risk-scan",
+      "description": "对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。"
+    },
+    {
+      "name": "ic-memo-cn",
+      "source": "./ic-memo-cn",
+      "description": "给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。"
+    },
+    {
+      "name": "meeting-minutes-cn",
+      "source": "./meeting-minutes-cn",
+      "description": "把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。"
+    },
+    {
+      "name": "omni2docx",
+      "source": "./omni2docx",
+      "description": "把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。"
+    },
+    {
+      "name": "paper-study-cn",
+      "source": "./paper-study-cn",
+      "description": "把一篇论文变成可核对的研读卡：论点-方法-数据-结论逐句挂页锚，复现清单，引用网络，综述骨架与待核清单；不代写、不编引文。"
+    },
+    {
+      "name": "sector-overview",
+      "source": "./sector-overview",
+      "description": "行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。"
+    },
+    {
+      "name": "skill-review-cn",
+      "source": "./skill-review-cn",
+      "description": "装之前先给一枚 skill 体检：五面逐条挂原文与检索日，缺的点名，装不装留人工。"
+    },
+    {
+      "name": "tear-sheet",
+      "source": "./tear-sheet",
+      "description": "公司一页纸：五段形制机检钉死顺序——近四期双口径、事件≤4、风险1-3 只写直查命中，观点区三行 [待人工] 留白。"
+    },
+    {
+      "name": "watchlist-digest-cn",
+      "source": "./watchlist-digest-cn",
+      "description": "对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。"
+    }
+  ]
+}
