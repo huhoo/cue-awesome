@@ -1,9 +1,9 @@
 ---
 name: catalyst-calendar
-displayName: 持仓催化剂日历
+displayName: 日历·催化剂
 slug: cue-catalyst-calendar
-version: "0.1.32"
-summary: "未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
+version: "0.1.33"
+summary: "你持仓清单未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。"
 description: "给你持仓列表 + 时间窗，产出按日期排的盯盘日历：每条事件的日期要么已有披露在场且含明确 YYYY-MM-DD，要么 statute 原文推导且适用条件在锚内可判；未披露的推测事件、任何日期算术都进不了表。机检对评级词与褒贬零容忍（词族以机检现值为准，本文所举为常见例）。适合：财报季前置、组合盯盘节奏、投研会材料。不适合：涨跌与择时建议、事件影响判断（本件只陈述不判断，也没有留白判断位）。豁免只有两条口径：类型列整列不扫、官方披露词组按词形豁免。 Do NOT use for: trade timing, impact calls, rumour-sourced events."
 tags: [投研]
 license: MIT
@@ -25,7 +25,7 @@ metadata:
   optionalSkills: ["cue-data-mcp", "cue-research", "cue-omni-reader"]
 ---
 
-# catalyst-calendar — 持仓催化剂日历（AI 初稿）
+# catalyst-calendar — 日历·催化剂（AI 初稿）
 
 > 交付的是**带披露锚的日程表**，不是交易信号。日历上每一个日期都必须能回指一条在场公告或一条法条。
 > 铁律与通道契约语法继承姊妹件 `cn-earnings-note`；本件最大风险=**日期幻觉**，全部设计围绕它。
