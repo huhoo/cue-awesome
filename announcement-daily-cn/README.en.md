@@ -12,14 +12,14 @@ It manages the list, not the close reading of a single filing. That job belongs 
 2. Name the window: today by default; a window that straddles a weekend, a suspension or a resumption gets flagged as such in the output header.
 3. Read the output: the header declaration plus the itemized lines come out as soon as the list is retrieved. Only the lines that need to be checked against the original trigger attachment parsing — a slow or unavailable parsing leg does not block those first two sections; what it costs you is that the points stay at list level and clause-level differences need a human reading the original.
 
-## 2. The four machine checks (zero network)
+## 2. The five machine checks (zero network)
 
-`scripts/check_digest.py` gates the product: four sections present and shaped / every line carries title + date and an anchor / red-line assertions appear only inside `[待人工]` lines / counts match the declaration.
+`scripts/check_digest.py` gates the product: four sections present and shaped / every line carries title + date and an anchor / red-line assertions appear only inside `[待人工]` lines / counts match the declaration / a value slot may not stay empty or be filled with a one-character or punctuation-only placeholder.
 
 ```bash
-python3 scripts/check_digest.py --selftest                        # good sample must pass, bad sample must fire all four lanes, temp files clean themselves
+python3 scripts/check_digest.py --selftest                        # good sample must pass, bad sample must fire all five lanes, the five threshold pins each fire their own line, temp files clean themselves
 python3 scripts/check_digest.py scripts/fixtures/good-digest.md   # PASS (zero findings)
-python3 scripts/check_digest.py scripts/fixtures/bad-digest.md    # FAIL (all four lanes, each naming its line)
+python3 scripts/check_digest.py scripts/fixtures/bad-digest.md    # FAIL (all five lanes, each naming its line)
 ```
 
 ## 3. Getting started
@@ -92,5 +92,5 @@ Quotes and fund-flow figures are not in scope for this skill (that domain is jud
 ## 9. Resources
 
 - `SKILL.md`: the four-section output contract and the red lines, in full
-- `scripts/check_digest.py`: the four machine checks (zero network)
+- `scripts/check_digest.py`: the five machine checks (zero network)
 - `scripts/fixtures/`: one good sample and one bad sample, both consumed by `--selftest`

@@ -10,15 +10,15 @@
 2. 说清窗口：缺省＝当日；跨周末、停牌与停复牌日会在输出头部如实标窗。
 3. 出清单：先出「头部申报＋逐条要点」这两段（只要清单取到就能出）；只有需要回原文核对的那几条才发起附件解析——附件腿慢或不可用不阻塞前两段，代价是要点停在清单级、条款级差异要人看原文。
 
-## 二、四道机检（零网络）
+## 二、五道机检（零网络）
 
-产物交给 `scripts/check_digest.py` 过闸：形制四段齐／逐条双要素与锚／红线断言只准出现在 `[待人工] 行／计数与申报一致。
+产物交给 `scripts/check_digest.py` 过闸：形制四段齐／逐条双要素与锚／红线断言只准出现在 `[待人工]` 行／计数与申报一致／值位不许留空或以单字、标点占位顶替。
 
 ```bash
 python3 scripts/check_digest.py --help                      # 参数说明
-python3 scripts/check_digest.py --selftest                   # 好样须过、坏样四道齐发、临时件自清
+python3 scripts/check_digest.py --selftest                   # 好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清
 python3 scripts/check_digest.py scripts/fixtures/good-digest.md   # PASS（发条 0 条）
-python3 scripts/check_digest.py scripts/fixtures/bad-digest.md    # FAIL（四道各发，逐条点名行号）
+python3 scripts/check_digest.py scripts/fixtures/bad-digest.md    # FAIL（五道各发，逐条点名行号）
 ```
 
 ## 三、上手
@@ -91,5 +91,5 @@ curl -s -X POST "$ROUTING_URL" -H "Authorization: Bearer $CUE_API_KEY" \
 ## 九、资源
 
 - `SKILL.md`：四段输出契约与红线原文
-- `scripts/check_digest.py`：四道机检（零网络）
+- `scripts/check_digest.py`：五道机检（零网络）
 - `scripts/fixtures/`：一好一坏两份样例，`--selftest` 直接吃它们
