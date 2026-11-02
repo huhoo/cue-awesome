@@ -107,6 +107,11 @@
       "description": "把一份A股定增方案拆成十项条款逐字卡：每项挂原句与锚，缺的点名未检索到，摊薄与值不值一律待人工。"
     },
     {
+      "name": "policy-impact-cn",
+      "source": "./policy-impact-cn",
+      "description": "把一份政策文件拆成要点逐字卡＋受影响环节候选链：每条链挂政策原句依据与锚，因果与涨跌一律待人工。"
+    },
+    {
       "name": "sector-overview",
       "source": "./sector-overview",
       "description": "行业景气全景（A股口径）：六节固定形制，分析维度按行业动态生成 2–4 个——每个判断词当场答得出「凭什么：哪条序列、哪个口径、截至哪天」。"
