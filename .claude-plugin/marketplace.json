@@ -130,6 +130,16 @@
       "name": "watchlist-digest-cn",
       "source": "./watchlist-digest-cn",
       "description": "对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。"
+    },
+    {
+      "name": "prospectus-digest-cn",
+      "source": "./prospectus-digest-cn",
+      "description": "把一份招股书摘成八项逐字速览卡：每项挂原文页码锚，自称句标发行人自述，估值打新涨跌一律待人工。"
+    },
+    {
+      "name": "roadshow-minutes-cn",
+      "source": "./roadshow-minutes-cn",
+      "description": "把一份路演或调研纪要拆成八项逐字速读卡：每项挂原句、锚与口头表述标注，评级目标价一律待人工。"
     }
   ]
 }
