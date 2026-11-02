@@ -79,7 +79,7 @@ Each source line needs three keys - `title`, `url`, `asof` (retrieval date, `YYY
 | 1 format | `E-FORMAT` | The four header declarations word for word; four sections present and ordered; the one-sentence conclusion must be a real sentence - a placeholder fires |
 | 2 anchors | `E-ANCHOR` | Every finding ends with `[S#]`; that number exists in section four; every source line carries both a URL and a retrieval date |
 | 3 verdict words | `E-BANWORD` | Ratings, target prices, buy/sell and trend claims are zero-hit unless tagged `[待人工]` on the same line; hedged numbers never stand in for figures |
-| 4 gaps and counts | `E-COVERAGE` | Anything written as not-found must be named item by item in section three; an empty source section means there is no provenance at all |
+| 4 gaps and counts | `E-COVERAGE` | Anything written as not-found must be named item by item in section three, matched by item **coreference**: annotations and punctuation are stripped first, then a literal match, one side fully containing the other (shorter side ≥ 4 characters), or a Chinese-character overlap ratio ≥ 0.6 counts as the same item — so the same gap phrased differently does not turn the card red. An item named in section three with no coreferential line in the body fires too (both directions; the bare words "not retrieved" somewhere in the section do not count as naming); an empty source section means there is no provenance at all |
 
 ```bash
 python3 -B scripts/check_brief.py --help                              # four lanes, no network
