@@ -43,6 +43,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`cn-table-to-chart/`](cn-table-to-chart/) | cn-table-to-chart | [frontmatter](cn-table-to-chart/SKILL.md) | 一张表变成能画的图规格＋读表要点：每个数逐字回那一格，页码与行号各比各的，四类限度逐类点名，不据图给投资建议。 |
 | [`event-brief-cn/`](event-brief-cn/) | event-brief-cn | [frontmatter](event-brief-cn/SKILL.md) | 把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。 |
 | [`event-risk-scan/`](event-risk-scan/) | event-risk-scan | [frontmatter](event-risk-scan/SKILL.md) | 对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。 |
+| [`fund-facts-cn/`](fund-facts-cn/) | fund-facts-cn | [frontmatter](fund-facts-cn/SKILL.md) | 把一份境内基金资料拆成八项逐字卡：类型、范围、基准、费率、经理、风险、分红各挂原句和锚，打新收益一律待人工。 |
 | [`ic-memo-cn/`](ic-memo-cn/) | ic-memo-cn | [frontmatter](ic-memo-cn/SKILL.md) | 给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。 |
 | [`insurance-terms-cn/`](insurance-terms-cn/) | insurance-terms-cn | [frontmatter](insurance-terms-cn/SKILL.md) | 把一份境内保险条款拆成八项逐字卡：责任、免除、保额与免赔、等待期、期间、理赔时限各挂原句和锚，赔付测算一律待人工。 |
 | [`meeting-minutes-cn/`](meeting-minutes-cn/) | meeting-minutes-cn | [frontmatter](meeting-minutes-cn/SKILL.md) | 把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。 |
