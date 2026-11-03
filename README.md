@@ -28,6 +28,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`journal-draft/`](journal-draft/) | journal-draft | [frontmatter](journal-draft/SKILL.md) | 企业内刊、客户通讯、投资人信的成稿底稿：提纲→成稿→引证逐条回源→版面与编辑定位多道门禁，流程留痕可自证。 |
 | [`long-doc-translation/`](long-doc-translation/) | long-doc-translation | [frontmatter](long-doc-translation/SKILL.md) | 外文长篇（专著/古籍/档案/译著参考）全文中译流水线：主稿+阅读版+逐段备查+术语总表，拿不准的进存疑清单不硬翻。 |
 | [`competitive-brief/`](competitive-brief/) | competitive-brief | [frontmatter](competitive-brief/SKILL.md) | 竞对对比简报：先证据表后简报，每格带来源、日期与 fact/inference/opinion 级别；一页内结论先行给建议，缺口如实列明。 |
+| [`bond-terms-cn/`](bond-terms-cn/) | bond-terms-cn | [frontmatter](bond-terms-cn/SKILL.md) | 把一份境内债券发行文件拆成八项逐字卡：规模、利率、增信、赎回回售、违约各挂原句和锚，估值与评级一律待人工。 |
 | [`cn-earnings-note/`](cn-earnings-note/) | cn-earnings-note | [frontmatter](cn-earnings-note/SKILL.md) | A股/港股财报深度点评初稿：四期差异、科目勾稽、预告对照；数字行按包内规则逐条要证据级标注，评级判断位 [待人工]。 |
 | [`announcement-daily-cn/`](announcement-daily-cn/) | announcement-daily-cn | [frontmatter](announcement-daily-cn/SKILL.md) | 把一家公司或自选清单当天/当周的A股公告变成逐条要点清单：每条挂公告标题与披露日期，评级与目标价一律 [待人工]。 |
 | [`catalyst-calendar/`](catalyst-calendar/) | catalyst-calendar | [frontmatter](catalyst-calendar/SKILL.md) | 未来三个月有哪些确定日子要盯：业绩披露、解禁、股东大会——入表只认已披露含明确日期或法定可推导两种，不猜不判涨跌。 |
