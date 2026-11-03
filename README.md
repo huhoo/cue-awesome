@@ -43,6 +43,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`event-brief-cn/`](event-brief-cn/) | event-brief-cn | [frontmatter](event-brief-cn/SKILL.md) | 把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。 |
 | [`event-risk-scan/`](event-risk-scan/) | event-risk-scan | [frontmatter](event-risk-scan/SKILL.md) | 对一家公司跑处罚/监管措施/对外担保三源扫描卡：逐条带出处与日期，未达面明写未达；不评整体风险、不算违约概率。 |
 | [`ic-memo-cn/`](ic-memo-cn/) | ic-memo-cn | [frontmatter](ic-memo-cn/SKILL.md) | 给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。 |
+| [`insurance-terms-cn/`](insurance-terms-cn/) | insurance-terms-cn | [frontmatter](insurance-terms-cn/SKILL.md) | 把一份境内保险条款拆成八项逐字卡：责任、免除、保额与免赔、等待期、期间、理赔时限各挂原句和锚，赔付测算一律待人工。 |
 | [`meeting-minutes-cn/`](meeting-minutes-cn/) | meeting-minutes-cn | [frontmatter](meeting-minutes-cn/SKILL.md) | 把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。 |
 | [`omni2docx/`](omni2docx/) | omni2docx | [frontmatter](omni2docx/SKILL.md) | 把 Omni 解析结果重建为保真 .docx、展示 HTML、汇报 PPT：源页分页、真标题目录、溯源标注还原，按场景制式排版。 |
 | [`paper-study-cn/`](paper-study-cn/) | paper-study-cn | [frontmatter](paper-study-cn/SKILL.md) | 把一篇论文变成可核对的研读卡：论点-方法-数据-结论逐句挂页锚，复现清单，引用网络，综述骨架与待核清单；不代写、不编引文。 |
