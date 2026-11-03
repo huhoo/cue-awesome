@@ -50,6 +50,7 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 | [`policy-impact-cn/`](policy-impact-cn/) | policy-impact-cn | [frontmatter](policy-impact-cn/SKILL.md) | 把一份政策文件拆成要点逐字卡＋受影响环节候选链：每条链挂政策原句依据与锚，因果与涨跌一律待人工。 |
 | [`prospectus-digest-cn/`](prospectus-digest-cn/) | prospectus-digest-cn | [frontmatter](prospectus-digest-cn/SKILL.md) | 把一份招股书摘成八项逐字速览卡：每项挂原文页码锚，自称句标发行人自述，估值打新涨跌一律待人工。 |
 | [`roadshow-minutes-cn/`](roadshow-minutes-cn/) | roadshow-minutes-cn | [frontmatter](roadshow-minutes-cn/SKILL.md) | 把一份路演或调研纪要拆成八项逐字速读卡：每项挂原句、锚与口头表述标注，评级目标价一律待人工。 |
+| [`tax-policy-card-cn/`](tax-policy-card-cn/) | tax-policy-card-cn | [frontmatter](tax-policy-card-cn/SKILL.md) | 把一份境内税务文件拆成八项逐字卡：文号、税种、税率、计税依据与日期期限各挂原句和锚，测算一律待人工。 |
 | [`skill-review-cn/`](skill-review-cn/) | skill-review-cn | [frontmatter](skill-review-cn/SKILL.md) | 装之前先给一枚 skill 体检：五面逐条挂原文与检索日，缺的点名，装不装留人工。 |
 | [`watchlist-digest-cn/`](watchlist-digest-cn/) | watchlist-digest-cn | [frontmatter](watchlist-digest-cn/SKILL.md) | 对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。 |
 
