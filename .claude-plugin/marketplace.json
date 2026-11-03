@@ -87,6 +87,11 @@
       "description": "给一家公司起草投决备忘录：七个结构节，每条数字带官方出处与定位，缺数点名不填空；bull 与 bear 并陈，不评级不表决。"
     },
     {
+      "name": "insurance-terms-cn",
+      "source": "./insurance-terms-cn",
+      "description": "把一份境内保险条款拆成八项逐字卡：责任、免除、保额与免赔、等待期、期间、理赔时限各挂原句和锚，赔付测算一律待人工。"
+    },
+    {
       "name": "meeting-minutes-cn",
       "source": "./meeting-minutes-cn",
       "description": "把会议录音变成带时间锚的分段纪要：逐字句挂 mm:ss，话题归段自标，决策与待办逐条回查原话；边界内工作，不承诺实时。"
