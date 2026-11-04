@@ -6,18 +6,27 @@
   BP-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
             八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   BP-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  BP-LINE   红线断言：中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／围标／串通报价／
-            利益输送，以及判断式三族——异议…成立／目标价／评级上调下调／收入（营收）增加·上升·提升·减少·下滑，
-            只允许出现在带 [待人工] 的行里，否则发（这类结论本件一律不自判）；
+  BP-LINE   红线断言两道：①定式禁词中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／
+            围标／串通报价／利益输送，以及异议…成立／目标价／评级上调下调／收入（营收）增减；
+            ②判断式规则——项行先拆成字段（名目／书名号原句／锚／句体），红线判据域只取本件自己写的话：
+            非 [待人工]、非「不接／不出／不判」类免责行、剥掉公告原句（书名号内）与锚之后，只要主题词
+            （异议·质疑·评级·目标价·收入·营收·利润·概率·利好·收益·风险·废标·围标·串标·回款·工期）
+            与判断语气（应·应予·予以·将·会·必·有望·可能·足以·构成·属于·支持·成立·上调·下调·增加·减少·无疑…）
+            同段出现即发——不靠枚举结论短语，「应予支持／予以支持／应被支持」都算同一族；
   BP-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
             「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  BP-AMT    中标金额只认该项原句：「中标候选人及金额」一项，凡未写「未检索到」的，其书名号原句里必须带
-            中标／投标报价／成交口径的金额数字（亿元／万元／元）——预算、概算等其它款项的数不顶中标账；
-            「详见…」「以合同为准」「另行确定」「金额待定」属空泛语，出现即发，且不因原句夹带其它数字而过闸。
+  BP-AMT    中标金额按**规则**判、不按词表判：先把项行拆成字段，取该项自己的原句作判据域，
+            ①先剥日期（YYYY年M月D日／YYYY年／M月D日一律从取数域剔除）；
+            ②剩下的句段必须有一段**同时**带金额量纲（N 元／万元／亿元）与中标口径词
+            （中标·决标·定标·成交·候选人·投标·报价·合同价），且该段不带上限·控制价·预算·概算·估算·限价·
+            最高·最低·保证金·意向·参考这类干扰口径——「投标报价上限 2 亿元」「项目预算 2 亿元」都不顶中标实额；
+            ③反向判：剥日期与剔掉不合格口径后一段合格段都没有、又没写「未检索到」，即发——
+            空泛语（详见…／以…为准／另行确定／另行约定／另定／尚未披露／未披露／届时／待定）只决定那句话怎么措辞，
+            换同义词换不掉这一判；发红时把被剔的段与剥掉的日期一并点名。
 
 用法：
   python3 -B scripts/check_bid_card.py <待检文件>      # 逐条发红，全过则 PASS
-  python3 -B scripts/check_bid_card.py --selftest      # 好样须过、坏样五道齐发、八形钉阈各钉一档、临时件自清
+  python3 -B scripts/check_bid_card.py --selftest      # 好样须过、坏样五道齐发、钉阈按整族各钉一档、对照样不误伤、临时件自清
   python3 -B scripts/check_bid_card.py --help
 退码：0＝过（或自测全合）；1＝发红／自测不合；2＝用法错。
 """
@@ -38,14 +47,26 @@ ITEMS = ("项目名称与编号", "招标人与代理机构", "开标时间与�
 AMT_ITEM = "中标候选人及金额"
 ITEM = re.compile(r"^\s*[-*]\s*(" + "|".join(map(re.escape, ITEMS)) + r")[：:]")
 TITLE = re.compile(r"[「『«][^」』»]+[」』»]")
+QUOTES = re.compile(r"[「『«]([^」』»]*)[」』»]")
+ANCHOR_SPLIT = re.compile(r"锚[:：]")
 ANCHOR_VAL = re.compile(r"锚[:：]\s*(\S.*)$")
 BANNED = re.compile(r"中标概率|必中标|稳赚|零风险|保证收益|利好|建议投标|代客投标|陪标|围标|串通报价|利益输送"
                     r"|异议[^，。；、」』]{0,6}成立|目标价|评级上调|评级下调|(?:收入|营收)[^，。；、」』]{0,8}?(?:增加|上升|提升|减少|下滑)")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
 EMPTY_LIE = re.compile(r"(?:^|[\s：:])无(?:该项|此项)|没有(?:该项|此项)")
-AMT_NUM = re.compile(r"(?:中标|投标报价|投标|成交|报价|合同价?)\D{0,8}?\d[\d,\.]*\s*(?:亿元|万元|元)")
-AMT_VAGUE = re.compile(r"详见[^，。]*|以合同为准|另行确定|金额待定|待定")
+DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
+                       r"|\d{4}\s*年(?:\s*\d{1,2}\s*月)?(?:\s*\d{1,2}\s*日)?"
+                       r"|\d{1,2}\s*月\s*\d{1,2}\s*日"
+                       r"|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}")
+SEG_SPLIT = re.compile(r"[，。；、！？；]+|[,!](?!\s*\d)")   # 千分位逗号不断段（8,600 是一枚数）
+AMT_SEM = re.compile(r"中标|决标|定标|成交|候选人|投标|报价|合同价|发包价|签约价")
+AMT_DISQUAL = re.compile(r"上限|控制价|预算|概算|估算|限价|最高|最低|不高于|不低于|保证金|意向|参考")
+AMT_UNIT = re.compile(r"\d[\d,\.]*\s*(?:亿元|万元|元)")
+AMT_VAGUE = re.compile(r"详见[^，。]*|以合同为准|以[^，。]{0,6}为准|另行确定|另行约定|另行公告|另定|金额待定|待定|尚未披露|未披露|尚未公布|未公布|届时|尚未明确")
+SUBJECT = re.compile(r"异议|质疑|评级|目标价|收入|营收|利润|概率|利好|收益|风险|废标|围标|串标|中标可能|回款|工期")
+TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|提升|下滑|增加|减少|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
+DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
 CORE_STRIP = re.compile(r"[\s\u3000「」『』«»“”（）()《》【】，,。.；;：:、！!？~\-—_·/％%*#]+")
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速读", r"逐字速读|八项速读"),
             ("口径对照", r"口径对照"), ("缺数清单", r"缺数清单"), ("待人工", r"待人工"))
@@ -55,6 +76,58 @@ ANY_HEAD = re.compile(r"^#{1,4}\s")
 
 def core_len(s: str) -> int:
     return len(CORE_STRIP.sub("", s))
+
+
+def parse_item_line(ln: str):
+    """项行拆成字段：名目／书名号原句／锚／原句外句体——判定按字段来，不按整行。"""
+    m = ITEM.match(ln)
+    if not m:
+        return None
+    name = m.group(1)
+    body = ln[m.end():]
+    anchor = ""
+    ma = ANCHOR_SPLIT.search(body)
+    if ma:
+        anchor = body[ma.end():].strip()
+        body = body[:ma.start()]
+    quotes = QUOTES.findall(body)
+    spoken = QUOTES.sub(" ", body).strip()
+    return {"name": name, "quotes": quotes, "anchor": anchor, "spoken": spoken, "body": body.strip()}
+
+
+def amount_field(item: dict) -> str:
+    """金额判据域＝该项自己的原句；没有书名号时退化为去掉锚段与名目前缀后的句体。"""
+    if item["quotes"]:
+        return " ".join(item["quotes"])
+    return item["spoken"] or item["body"]
+
+
+def amount_gap(clause: str):
+    """按规则找合格金额段：剥日期 → 分段 → 该段须带中标口径且不带上限／预算／控制价这类干扰口径。"""
+    dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
+    naked = DATE_SPAN.sub(" ", clause)
+    vague = AMT_VAGUE.search(naked)
+    rejected = []
+    for seg in SEG_SPLIT.split(naked):
+        s = seg.strip()
+        if not s or not AMT_UNIT.search(s):
+            continue
+        if AMT_SEM.search(s) and not AMT_DISQUAL.search(s):
+            return dates, s, None, vague
+        why = AMT_DISQUAL.search(s)
+        rejected.append((s, why.group(0) if why else "无中标口径词"))
+    return dates, None, rejected, vague
+
+
+def judge_field(ln: str) -> str:
+    """红线判据域＝本件自己写的话：拆字段后剥掉书名号内的公告原句与锚段，项名前缀也不进域。"""
+    item = parse_item_line(ln)
+    body = item["body"] if item else ln
+    body = QUOTES.sub(" ", body)
+    ma = ANCHOR_SPLIT.search(body)
+    if ma:
+        body = body[:ma.start()]
+    return body.strip()
 
 
 def speed_zone(lines: list[str]) -> range:
@@ -84,26 +157,32 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     seen = {}
     for i in zone:
         ln = lines[i]
-        m = ITEM.match(ln)
-        if not m:
+        item = parse_item_line(ln)
+        if not item:
             continue
-        name = m.group(1)
+        name = item["name"]
         seen.setdefault(name, i + 1)
-        if "未检索到" not in ln:
-            if not TITLE.search(ln):
-                hits.append(("BP-QUOTE", i + 1, f"缺项原句：{name} 那一行没有书名号内的原文"))
-            elif any(core_len(q) <= 1 for q in re.findall(r"[「『«]([^」』»]*)[」』»]", ln)):
-                hits.append(("BP-QUOTE", i + 1, f"原句占位：{name} 那一行的书名号内为空或只剩单字"))
-            mv = ANCHOR_VAL.search(ln)
-            if not mv or core_len(mv.group(1)) == 0:
-                hits.append(("BP-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
-            if name == AMT_ITEM:
-                segs = re.findall(r"[「『«]([^」』»]*)[」』»]", ln)
-                clause = " ".join(segs) if segs else re.sub(r"^\s*[-*]\s*[^：:]+[：:]\s*", "", re.split(r"锚[:：]", ln, 1)[0])
-                if AMT_VAGUE.search(clause):
-                    hits.append(("BP-AMT", i + 1, f"中标金额以空泛语顶替：{name} 原句出现「详见…／以合同为准／另行确定／金额待定」——同句另有其它款项的数字也不顶中标账，空泛语不带数豁免"))
-                elif not AMT_NUM.search(clause):
-                    hits.append(("BP-AMT", i + 1, f"中标金额无数字原值：{name} 原句里没有中标／投标报价口径的金额数字（预算、概算等其它款项金额不顶账）"))
+        if "未检索到" in ln:
+            continue
+        if not item["quotes"]:
+            hits.append(("BP-QUOTE", i + 1, f"缺项原句：{name} 那一行没有书名号内的原文"))
+        elif any(core_len(q) <= 1 for q in item["quotes"]):
+            hits.append(("BP-QUOTE", i + 1, f"原句占位：{name} 那一行的书名号内为空或只剩单字"))
+        mv = ANCHOR_VAL.search(ln)
+        if not mv or core_len(mv.group(1)) == 0:
+            hits.append(("BP-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
+        if name == AMT_ITEM:
+            dates, ok_seg, rejected, vague = amount_gap(amount_field(item))
+            ev = ""
+            if rejected:
+                ev = "｜有数但被剔的段：" + "∥".join(f"「{s}」＝{why}" for s, why in rejected)
+            if dates:
+                ev += "｜剥掉的日期：" + "∥".join(dates)
+            if ok_seg is None:
+                if vague:
+                    hits.append(("BP-AMT", i + 1, f"中标金额以空泛语顶替：{name} 原句剥掉日期后没有任何一段给出中标／成交口径的实额，只剩「{vague.group(0)}」这类说法{ev}——上限·预算·控制价的数与日期都不顶中标账，换同义词也换不掉这一判"))
+                else:
+                    hits.append(("BP-AMT", i + 1, f"中标金额缺实额原值：{name} 原句剥掉日期后没有一段既带「N 元／万元／亿元」又落在中标口径（中标·决标·成交·候选人实投标报价）{ev}——干扰口径与别项的数不顶账，没取到就写「未检索到」"))
     for name in ITEMS:
         if name not in seen:
             hits.append(("BP-STRUCT", 0, f"缺项行：{name} 在逐字速读段里没有以「- 名目：」起头的行"))
@@ -116,8 +195,17 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("BP-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if BANNED.search(ln) and not PENDING.search(ln):
-            hits.append(("BP-LINE", i, "红线断言词出现在没有 [待人工] 的行"))
+        if not (PENDING.search(ln) or DISCLAIM.search(ln)):
+            dom = judge_field(ln)
+            mb = BANNED.search(dom)
+            if mb:
+                hits.append(("BP-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
+            else:
+                for seg in SEG_SPLIT.split(dom):
+                    ms, mt = SUBJECT.search(seg), TONE.search(seg)
+                    if ms and mt:
+                        hits.append(("BP-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——异议·评级·目标价·收入这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
+                        break
         if EMPTY_LIE.search(ln):
             hits.append(("BP-COUNT", i, "把「未检索到」写成「无／没有」"))
     return hits
@@ -155,6 +243,7 @@ def selftest() -> int:
     rows.append(("反证·剥锚必发 BP-QUOTE", any(c == "BP-QUOTE" for c, _, _ in sh), f"实发 {len(sh)} 条"))
     nproof = 1
     pin = make_tmp("check-bid-pin-")
+    ROW_AMT = "「第一中标候选人某建设集团，投标报价 8,600 万元」"
     tiers = (
         ("钉阈·名目只剩散文必发 BP-STRUCT",
          gt.replace("- 异议与质疑渠道：", "异议与质疑渠道在公告另有说明，", 1),
@@ -166,23 +255,42 @@ def selftest() -> int:
          gt.replace("共八项·缺 1 项", "共八项·缺 0 项", 1),
          "齐缺申报与清单不对账"),
         ("钉阈·中标金额写成详见公告必发 BP-AMT",
-         gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」", "「中标金额详见公告」", 1),
-         "中标金额以空泛语顶替"),
-        ("钉阈·预算金额洗中标额（带空泛语）必发 BP-AMT",
-         gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」",
-                    "「项目预算 2 亿元，中标金额以合同为准」", 1),
-         "中标金额以空泛语顶替"),
-        ("钉阈·预算金额洗中标额（不带空泛语）必发 BP-AMT",
-         gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」",
-                    "「项目预算 2 亿元，最终数额在合同阶段明确」", 1),
-         "中标金额无数字原值"),
-        ("钉阈·红线词落在非待人工行必发 BP-LINE",
-         gt.replace("｜附件腿：未发起", "｜附件腿：未发起｜中标概率高", 1),
-         "红线断言词出现在没有 [待人工] 的行"),
-        ("钉阈·判断式结论行必发 BP-LINE",
+         gt.replace(ROW_AMT, "「中标金额详见公告」", 1),
+         "只剩「详见公告」"),
+        ("钉阈·预算金额洗中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「项目预算 2 亿元，中标金额以合同为准」", 1),
+         "「项目预算 2 亿元」＝预算"),
+        ("钉阈·预算金额无空泛语也不放行必发 BP-AMT",
+         gt.replace(ROW_AMT, "「项目预算 2 亿元，最终数额在合同阶段明确」", 1),
+         "中标金额缺实额原值"),
+        ("钉阈·报价上限洗中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「投标报价上限 2 亿元，中标金额尚未披露」", 1),
+         "「投标报价上限 2 亿元」＝上限"),
+        ("钉阈·招标控制价洗中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「招标控制价 1.2 亿元，中标金额另行公告」", 1),
+         "「招标控制价 1.2 亿元」＝控制价"),
+        ("钉阈·保证金洗中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「投标保证金 80 万元，中标金额未披露」", 1),
+         "「投标保证金 80 万元」＝保证金"),
+        ("钉阈·红线定式词落在非待人工行必发 BP-LINE",
+         gt.replace("｜来路：官方原文", "｜来路：官方原文｜中标概率高", 1),
+         "话里有「中标概率」"),
+        ("钉阈·上轮判断式原句仍红必发 BP-LINE",
          gt.replace("## 二、八项逐字速读",
                     "- 结论：异议必然成立，目标价上调，项目收入将增加。\n\n## 二、八项逐字速读", 1),
-         "红线断言词出现在没有 [待人工] 的行"),
+         "话里有「异议必然成立」"),
+        ("钉阈·异议应予支持族必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：异议应予支持。\n\n## 二、八项逐字速读", 1),
+         "「异议」与判断语气「应予」"),
+        ("钉阈·异议予以支持族必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：该异议予以支持。\n\n## 二、八项逐字速读", 1),
+         "「异议」与判断语气「予以」"),
+        ("钉阈·评级目标价族必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：评级将上调。\n\n## 二、八项逐字速读", 1),
+         "「评级」与判断语气「将」"),
+        ("钉阈·收入影响族必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：项目收入可能翻倍。\n\n## 二、八项逐字速读", 1),
+         "「收入」与判断语气「可能」"),
     )
     for n, (name, text, needle) in enumerate(tiers, 1):
         nproof += 1
@@ -194,6 +302,14 @@ def selftest() -> int:
         rows.append((name, injected and bool(fired),
                      f"注入{'生效' if injected else '作废'}·实发 {len(ph)} 条·命中句 "
                      + ("∥".join(fired) if fired else "无")))
+    control = pin / "control-date-plus-amount.md"
+    ctl_text = gt.replace(ROW_AMT, "「公示日期为 2026 年 4 月 26 日，第一中标候选人某建设集团，投标报价 8,600 万元」", 1)
+    control.write_text(ctl_text, encoding="utf-8")
+    ch = check_text(control.read_text(encoding="utf-8"))
+    nproof += 1
+    rows.append(("对照·夹带日期的合格金额句不误伤（BP-AMT 零发）",
+                 ctl_text != gt and not [m for c, _, m in ch if c == "BP-AMT"],
+                 f"注入生效＝{ctl_text != gt}·BP-AMT 实发 {len([m for c, _, m in ch if c == 'BP-AMT'])} 条"))
     made = [p.name for p in TMP_ROOTS]
     root = pathlib.Path(tempfile.gettempdir())
     for p in TMP_ROOTS:
@@ -211,7 +327,7 @@ def selftest() -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="招投标披露全景卡五道机检（零网络）")
     ap.add_argument("target", nargs="?", help="待检文件（本件不读网络、不读目录）")
-    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、八形钉阈各钉一档、临时件自清")
+    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、钉阈按整族各钉一档、对照样不误伤、临时件自清")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
