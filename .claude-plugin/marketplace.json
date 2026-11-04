@@ -160,6 +160,16 @@
       "name": "watchlist-digest-cn",
       "source": "./watchlist-digest-cn",
       "description": "对你维护的自选清单跑每日增量：回购/股权激励/两融标的与折算率/公告/监管措施五腿，逐条带出处与 asof；无新增也明写，不评风险不预测。"
+    },
+    {
+      "name": "convertible-bond-terms-cn",
+      "source": "./convertible-bond-terms-cn",
+      "description": "把一份A股可转债募集说明书拆成八项条款逐字卡：规模、利率、转股价、修正、赎回、回售各挂原句与锚，触发条件一律逐字。"
+    },
+    {
+      "name": "bid-panorama-cn",
+      "source": "./bid-panorama-cn",
+      "description": "把一单招投标披露拆成八项逐字卡：项目、招标人、开标、评标、中标候选人金额、公示、履约、异议各挂原句与锚。"
     }
   ]
 }
