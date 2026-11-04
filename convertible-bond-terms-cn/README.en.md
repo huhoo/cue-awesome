@@ -8,15 +8,15 @@ It reads convertible bond clauses only: plain corporate bonds live in `bond-term
 
 1. Hand over one document: prospectus, issuance announcement, or a disclosure-page location. For anything it does not state, demand `未检索到` instead of a habit-based fill.
 2. Read the first two sections: header declaration plus eight verbatim clauses - both come out as soon as you have the document, no channel needed.
-3. Watch the three trigger clauses: revision line, call line and put-back line must carry numeric values (e.g. 85% / 130% / 70% plus N trading days); vague wording goes to the missing-data list.
+3. Watch the three trigger clauses: the revision / call / put-back line must carry a numeric trigger value (e.g. 85% / 130% / 70% plus N trading days) **inside the clause quote and next to the trigger wording** - the gate strips dates first, so a publication date never stands in for a trigger; if nothing qualifies, write 未检索到.
 
 ## 2. Five machine checks (no network)
 
-`scripts/check_cb_card.py` gates the card: five sections plus item-level presence of the eight names / quote and anchor per clause (empty or single-character quotes and empty anchors fire) / red-line assertions only on `[待人工]` lines / exactly one completeness declaration reconciled with the `未检索到` count / trigger clauses are read only from that clause's own quote - "meets the agreed conditions", "see the announcement" and "depends on the stock price" fire, and a vague phrase does not pass because the same sentence carries some other number.
+`scripts/check_cb_card.py` gates the card: five sections plus item-level presence of the eight names / quote and anchor per clause (empty or single-character quotes and empty anchors fire) / red-line assertions only on `[待人工]` lines / exactly one completeness declaration reconciled with the `未检索到` count / trigger clauses are judged by rule, not by wording: the item line is parsed into fields (name / quote / anchor), the clause quote is taken as the only evidence domain, dates are stripped out of it, and one segment must carry **both** a trigger magnitude (N% / N percentage points / N trading days / N interest years / N days) **and** trigger context (consecutive / below / above / conversion price / closing price / interest year / put-back line). A clause name alone is not context, so "the put-back price is 100% of face" does not pass; if no segment qualifies and the line does not read 未检索到, it fires - vague phrases ("meets the agreed conditions", "see the announcement", "to be fixed later") only choose the wording of the finding, and renaming them changes nothing.
 
 ```bash
 python3 scripts/check_cb_card.py --help                          # usage
-python3 scripts/check_cb_card.py --selftest                       # good sample passes, bad sample fires all five lanes, seven threshold pins, temp files clean themselves
+python3 scripts/check_cb_card.py --selftest                       # good sample passes, bad sample fires all five lanes, one pin per whole family (bare year, full date, another item number, to-be-agreed, to-be-announced), a control sample proves a dated-but-valid clause is not flagged, temp files clean themselves (the selftest reports how many pins ran)
 python3 scripts/check_cb_card.py scripts/fixtures/good-cb-card.md     # PASS (zero findings)
 python3 scripts/check_cb_card.py scripts/fixtures/bad-cb-card.md      # FAIL (five lanes, each naming its line)
 ```

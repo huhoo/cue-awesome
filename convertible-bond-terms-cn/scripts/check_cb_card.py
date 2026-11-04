@@ -6,18 +6,26 @@
   CB-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
             八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   CB-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  CB-LINE   红线断言：转股收益／转股价值／套利空间／一定能转／必被赎回／会被强制赎回／建议申购／代客申购／
-            代客转股／稳赚／零风险／保证收益／必涨／目标价／评级上调／评级下调，只允许出现在带 [待人工] 的行里，否则发；
+  CB-LINE   红线断言两道：①定式禁词转股收益／转股价值／套利空间／一定能转／必被赎回／会被强制赎回／建议申购／
+            代客申购／代客转股／稳赚／零风险／保证收益／必涨／目标价／评级上调／评级下调；②判断式规则——把项行拆成
+            字段（名目／书名号原句／锚／句体）后，凡非 [待人工]、非「不接／不出／不判」类免责行、非书名号内的公告原句，
+            只要「主题词（收益·价值·评级·目标价·赎回·回售·下修·风险·概率·利好）」与「判断语气（应·将·会·必·有望·
+            可能·足以·构成·属于·支持·成立·上调·下调…）」同段出现即发，不靠枚举结论短语；
   CB-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
             「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  CB-TRIG   修正、赎回、回售三项的触发数字只认「该项原句」，不拿同行其它位置的数字顶账：向下修正条款、有条件
-            赎回条款、回售条款三项，凡未写「未检索到」的，其书名号原句里必须带该组触发量纲（N%／N 个百分点／
-            N 个交易日／N 个计息年度／N 日／N 天／N 股）；「满足…条件」「按约定执行」「详见公告」「视股价而定」
-            「另行公告」「待定」属空泛语，出现即发，且空泛语不因原句另夹带数字而过闸（无关年份也洗不绿）。
+  CB-TRIG   修正、赎回、回售三项按**规则**判、不按词表判：先把项行拆成字段（名目／书名号原句／锚／句体），
+            取该项自己的原句作判据域，
+            ①先剥日期（YYYY年M月D日／YYYY年／M月D日一律从取数域剔除，日期凑不出触发数）；
+            ②剩下的句段必须有一段**同时**给出触发量纲（N%／N 个百分点／N 个交易日／N 个计息年度／N 日／N 天／N 股）
+            与触发语境（连续·低于·转股价格·收盘价·计息年度·回售线／赎回线／修正线这类词）——项名自己不算语境，
+            「回售价格为面值的 100%」那种价钱不是触发线；
+            别项的数、同段无关的数都不顶账；③反向判：剥日期后没有任何合格段、又没写「未检索到」，即发——
+            空泛语（满足…条件／按约定执行／详见公告／视股价而定／另行公告／另定／另行约定／尚未明确／待定）
+            只决定发红那句话的措辞，有没有数、数在哪一段才决定过不过闸，换同义词换不掉这一判。
 
 用法：
   python3 -B scripts/check_cb_card.py <待检文件>      # 逐条发红，全过则 PASS
-  python3 -B scripts/check_cb_card.py --selftest      # 好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清
+  python3 -B scripts/check_cb_card.py --selftest      # 好样须过、坏样五道齐发、钉阈各钉一档且每档整族钉、临时件自清
   python3 -B scripts/check_cb_card.py --help
 退码：0＝过（或自测全合）；1＝发红／自测不合；2＝用法错。
 """
@@ -36,15 +44,28 @@ TMP_ROOTS: list[pathlib.Path] = []
 ITEMS = ("发行规模与期限", "票面利率与计息", "转股价格与初始转股价格", "转股期与转股条件",
          "向下修正条款", "有条件赎回条款", "回售条款", "担保与评级")
 TRIG_ITEMS = ("向下修正条款", "有条件赎回条款", "回售条款")
+TRIG_SEM = {"向下修正条款": r"修正|下修", "有条件赎回条款": r"赎回|强赎", "回售条款": r"回售"}
+TRIG_SEM_LABEL = {"向下修正条款": "修正·下修", "有条件赎回条款": "赎回·强赎", "回售条款": "回售"}
 ITEM = re.compile(r"^\s*[-*]\s*(" + "|".join(map(re.escape, ITEMS)) + r")[：:]")
 TITLE = re.compile(r"[「『«][^」』»]+[」』»]")
+QUOTES = re.compile(r"[「『«]([^」』»]*)[」』»]")
+ANCHOR_SPLIT = re.compile(r"锚[:：]")
 ANCHOR_VAL = re.compile(r"锚[:：]\s*(\S.*)$")
 BANNED = re.compile(r"转股收益|转股价值|套利空间|一定能转|必被赎回|会被强制赎回|建议申购|代客申购|代客转股|稳赚|零风险|保证收益|必涨|目标价|评级上调|评级下调")
+SUBJECT = re.compile(r"收益|价值|评级|目标价|赎回|回售|下修|修正|风险|概率|利好|套利|转股")
+TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|提升|下滑|增加|减少|回升|破发|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
+DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
 EMPTY_LIE = re.compile(r"(?:^|[\s：:])无(?:该项|此项)|没有(?:该项|此项)")
+DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
+                       r"|\d{4}\s*年(?:\s*\d{1,2}\s*月)?(?:\s*\d{1,2}\s*日)?"
+                       r"|\d{1,2}\s*月\s*\d{1,2}\s*日"
+                       r"|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}")
+SEG_SPLIT = re.compile(r"[，。；、！？；]+|[,!](?!\s*\d)")   # 千分位逗号不断段（8,600 是一枚数）
 TRIG_NUM = re.compile(r"\d[\d,\.]*\s*(?:%|个百分点|个交易日|个计息年度|个月|日|天|股)")
-TRIG_VAGUE = re.compile(r"满足[^，。、；」』]{0,4}条件|按约定执行|详见公告|视股价而定|另行公告|待定")
+TRIG_CTX = re.compile(r"连续|低于|高于|不低于|不高于|转股价格|收盘价|均价|触发|计息年度|期满|届满|回售线|赎回线|修正线|调整幅度")
+TRIG_VAGUE = re.compile(r"满足[^，。、；」』]{0,4}条件|按约定执行|按约定|详见公告|视股价而定|另行公告|另行约定|另行确定|另定|尚未明确|尚未披露|未披露|届时|待定|以合同为准|以[^，。]{0,6}为准")
 CORE_STRIP = re.compile(r"[\s\u3000「」『』«»“”（）()《》【】，,。.；;：:、！!？~\-—_·/％%*#]+")
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速读", r"逐字速读|八项速读"),
             ("口径对照", r"口径对照"), ("缺数清单", r"缺数清单"), ("待人工", r"待人工"))
@@ -54,6 +75,54 @@ ANY_HEAD = re.compile(r"^#{1,4}\s")
 
 def core_len(s: str) -> int:
     return len(CORE_STRIP.sub("", s))
+
+
+def parse_item_line(ln: str):
+    """项行拆成字段：名目／书名号原句／锚／原句外句体——判定按字段来，不按整行。"""
+    m = ITEM.match(ln)
+    if not m:
+        return None
+    name = m.group(1)
+    body = ln[m.end():]
+    anchor = ""
+    ma = ANCHOR_SPLIT.search(body)
+    if ma:
+        anchor = body[ma.end():].strip()
+        body = body[:ma.start()]
+    quotes = QUOTES.findall(body)
+    spoken = QUOTES.sub(" ", body).strip()
+    return {"name": name, "quotes": quotes, "anchor": anchor, "spoken": spoken, "body": body.strip()}
+
+
+def trigger_field(item: dict) -> str:
+    """触发判据域＝该项自己的原句；没有书名号时退化为去掉锚段与名目前缀后的句体。"""
+    if item["quotes"]:
+        return " ".join(item["quotes"])
+    return item["spoken"] or item["body"]
+
+
+def trigger_gap(clause: str, sem: str):
+    """按规则找合格触发段：剥日期 → 分段 → 该段须同时有触发量纲与触发语境（项名自己不算语境）。返回（被剥日期，合格段，空泛语）。"""
+    dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
+    naked = DATE_SPAN.sub(" ", clause)
+    vague = TRIG_VAGUE.search(naked)
+    for seg in SEG_SPLIT.split(naked):
+        if not seg.strip():
+            continue
+        if TRIG_NUM.search(seg) and TRIG_CTX.search(seg):
+            return dates, seg.strip(), vague
+    return dates, None, vague
+
+
+def judge_field(ln: str) -> str:
+    """红线判据域＝本件自己写的话：拆字段后剥掉书名号内的公告原句与锚段，项名前缀也不进域。"""
+    item = parse_item_line(ln)
+    body = item["body"] if item else ln
+    body = QUOTES.sub(" ", body)
+    ma = ANCHOR_SPLIT.search(body)
+    if ma:
+        body = body[:ma.start()]
+    return body.strip()
 
 
 def speed_zone(lines: list[str]) -> range:
@@ -83,26 +152,29 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     seen = {}
     for i in zone:
         ln = lines[i]
-        m = ITEM.match(ln)
-        if not m:
+        item = parse_item_line(ln)
+        if not item:
             continue
-        name = m.group(1)
+        name = item["name"]
         seen.setdefault(name, i + 1)
-        if "未检索到" not in ln:
-            if not TITLE.search(ln):
-                hits.append(("CB-QUOTE", i + 1, f"缺项原句：{name} 那一行没有书名号内的原文"))
-            elif any(core_len(q) <= 1 for q in re.findall(r"[「『«]([^」』»]*)[」』»]", ln)):
-                hits.append(("CB-QUOTE", i + 1, f"原句占位：{name} 那一行的书名号内为空或只剩单字"))
-            mv = ANCHOR_VAL.search(ln)
-            if not mv or core_len(mv.group(1)) == 0:
-                hits.append(("CB-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
-            if name in TRIG_ITEMS:
-                segs = re.findall(r"[「『«]([^」』»]*)[」』»]", ln)
-                clause = " ".join(segs) if segs else re.sub(r"^\s*[-*]\s*[^：:]+[：:]\s*", "", re.split(r"锚[:：]", ln, 1)[0])
-                if TRIG_VAGUE.search(clause):
-                    hits.append(("CB-TRIG", i + 1, f"触发条款以空泛语顶替：{name} 原句里出现「满足…条件／按约定执行／详见公告／视股价而定／另行公告」——空泛语不因同句另有数字而过闸，只认该项原句"))
-                elif not TRIG_NUM.search(clause):
-                    hits.append(("CB-TRIG", i + 1, f"触发条款无数字原值：{name} 原句里既没写「未检索到」也没有「N%／N 个交易日／N 日」这类触发量纲（同行其它位置的数字与日期不顶账）"))
+        if "未检索到" in ln:
+            continue
+        if not item["quotes"]:
+            hits.append(("CB-QUOTE", i + 1, f"缺项原句：{name} 那一行没有书名号内的原文"))
+        elif any(core_len(q) <= 1 for q in item["quotes"]):
+            hits.append(("CB-QUOTE", i + 1, f"原句占位：{name} 那一行的书名号内为空或只剩单字"))
+        mv = ANCHOR_VAL.search(ln)
+        if not mv or core_len(mv.group(1)) == 0:
+            hits.append(("CB-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
+        if name in TRIG_ITEMS:
+            clause = trigger_field(item)
+            dates, ok_seg, vague = trigger_gap(clause, TRIG_SEM[name])
+            if ok_seg is None:
+                ev = "｜剥掉的日期：" + "∥".join(dates) if dates else ""
+                if vague:
+                    hits.append(("CB-TRIG", i + 1, f"触发条款以空泛语顶替：{name} 原句剥掉日期后没有任何一段同时给出触发量纲与触发语境，只剩「{vague.group(0)}」这类空泛说法{ev}——空泛语不因同段另有数字而过闸，别项的数与日期都不顶账"))
+                else:
+                    hits.append(("CB-TRIG", i + 1, f"触发条款缺该项触发量纲：{name} 原句剥掉日期后，没有一段既带「N%／N 个交易日／N 个计息年度／N 日」又落到本条款的触发语境（连续·低于·转股价格·计息年度·{TRIG_SEM_LABEL[name]}线这类词——项名不算语境）{ev}——日期与别项的数不顶触发账"))
     for name in ITEMS:
         if name not in seen:
             hits.append(("CB-STRUCT", 0, f"缺项行：{name} 在逐字速读段里没有以「- 名目：」起头的行"))
@@ -115,8 +187,17 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("CB-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if BANNED.search(ln) and not PENDING.search(ln):
-            hits.append(("CB-LINE", i, "红线断言词出现在没有 [待人工] 的行"))
+        if not (PENDING.search(ln) or DISCLAIM.search(ln)):
+            dom = judge_field(ln)
+            mb = BANNED.search(dom)
+            if mb:
+                hits.append(("CB-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
+            else:
+                for seg in SEG_SPLIT.split(dom):
+                    ms, mt = SUBJECT.search(seg), TONE.search(seg)
+                    if ms and mt:
+                        hits.append(("CB-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
+                        break
         if EMPTY_LIE.search(ln):
             hits.append(("CB-COUNT", i, "把「未检索到」写成「无／没有」"))
     return hits
@@ -154,6 +235,8 @@ def selftest() -> int:
     rows.append(("反证·剥锚必发 CB-QUOTE", any(c == "CB-QUOTE" for c, _, _ in sh), f"实发 {len(sh)} 条"))
     nproof = 1
     pin = make_tmp("check-cb-pin-")
+    ROW_HUI = "「最后两个计息年度，股票收盘价连续三十个交易日低于当期转股价格的 70% 时，持有人可回售」"
+    ROW_SHU = "「可转债转股日起二十个交易日后，若公司股票收盘价格不低于当期转股价格的 130%，发行人有权赎回」"
     tiers = (
         ("钉阈·名目只剩散文必发 CB-STRUCT",
          gt.replace("- 担保与评级：", "担保与评级在募集说明书另有说明，", 1),
@@ -164,21 +247,36 @@ def selftest() -> int:
         ("钉阈·齐缺申报改数必发 CB-COUNT",
          gt.replace("共八项·缺 1 项", "共八项·缺 0 项", 1),
          "齐缺申报与清单不对账"),
-        ("钉阈·赎回条款原句漏数必发 CB-TRIG",
-         gt.replace("「可转债转股日起二十个交易日后，若公司股票收盘价格不低于当期转股价格的 130%，发行人有权赎回」",
-                    "「发行人有权决定是否办理赎回事宜」", 1),
-         "触发条款无数字原值"),
-        ("钉阈·空泛语同句带数也不放行必发 CB-TRIG",
-         gt.replace("「可转债转股日起二十个交易日后，若公司股票收盘价格不低于当期转股价格的 130%，发行人有权赎回」",
-                    "「票面利率 1.5%，满足约定条件时发行人有权赎回」", 1),
-         "触发条款以空泛语顶替"),
-        ("钉阈·无关年份混入回售原句必发 CB-TRIG",
-         gt.replace("「最后两个计息年度，股票收盘价连续三十个交易日低于当期转股价格的 70% 时，持有人可回售」",
-                    "「发行日期为 2026 年，满足回售条件时可回售」", 1),
-         "触发条款以空泛语顶替"),
-        ("钉阈·红线词落在非待人工行必发 CB-LINE",
-         gt.replace("｜附件腿：未发起", "｜附件腿：未发起｜转股收益可观", 1),
+        ("钉阈·赎回原句整段没数必发 CB-TRIG",
+         gt.replace(ROW_SHU, "「发行人有权决定是否办理赎回事宜」", 1),
+         "缺该项触发量纲：有条件赎回条款"),
+        ("钉阈·别项数字顶触发账（空泛同段带数）必发 CB-TRIG",
+         gt.replace(ROW_SHU, "「票面利率 1.5%，满足约定条件时发行人有权赎回」", 1),
+         "以空泛语顶替：有条件赎回条款"),
+        ("钉阈·裸年份混入回售原句必发 CB-TRIG",
+         gt.replace(ROW_HUI, "「发行日期为 2026 年，满足回售条件时可回售」", 1),
+         "只剩「满足回售条件」"),
+        ("钉阈·全日期冒充回售触发必发 CB-TRIG",
+         gt.replace(ROW_HUI, "「公告日期为 2026 年 4 月 1 日，回售条件另定」", 1),
+         "只剩「另定」"),
+        ("钉阈·全日期无数无空泛必发 CB-TRIG",
+         gt.replace(ROW_HUI, "「公告日期为 2026 年 4 月 1 日，持有人可回售」", 1),
+         "缺该项触发量纲：回售条款"),
+        ("钉阈·另行约定族顶回售触发必发 CB-TRIG",
+         gt.replace(ROW_HUI, "「回售条件另行约定」", 1),
+         "只剩「另行约定」"),
+        ("钉阈·届时公告族顶赎回触发必发 CB-TRIG",
+         gt.replace(ROW_SHU, "「赎回触发条件届时公告」", 1),
+         "只剩「届时」"),
+        ("钉阈·红线定式词落在非待人工行必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：本单建议申购，稳赚。\n\n## 二、八项逐字速读", 1),
          "红线断言词出现在没有 [待人工] 的行"),
+        ("钉阈·判断式家族一（主题＋语气）必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：回售收益可期。\n\n## 二、八项逐字速读", 1),
+         "「回售」与判断语气「可期」"),
+        ("钉阈·判断式家族二（主题＋语气）必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：评级将上调。\n\n## 二、八项逐字速读", 1),
+         "「评级」与判断语气「将」"),
     )
     for n, (name, text, needle) in enumerate(tiers, 1):
         nproof += 1
@@ -190,6 +288,14 @@ def selftest() -> int:
         rows.append((name, injected and bool(fired),
                      f"注入{'生效' if injected else '作废'}·实发 {len(ph)} 条·命中句 "
                      + ("∥".join(fired) if fired else "无")))
+    control = pin / "control-date-plus-value.md"
+    ctl_text = gt.replace(ROW_HUI, "「公告日期为 2026 年 4 月 1 日，最后两个计息年度内股票收盘价连续三十个交易日低于当期转股价格的 70% 时，持有人可回售」", 1)
+    control.write_text(ctl_text, encoding="utf-8")
+    ch = check_text(control.read_text(encoding="utf-8"))
+    nproof += 1
+    rows.append(("对照·夹带日期的合格触发句不误伤（CB-TRIG 零发）",
+                 ctl_text != gt and not [m for c, _, m in ch if c == "CB-TRIG"],
+                 f"注入生效＝{ctl_text != gt}·CB-TRIG 实发 {len([m for c, _, m in ch if c == 'CB-TRIG'])} 条"))
     made = [p.name for p in TMP_ROOTS]
     root = pathlib.Path(tempfile.gettempdir())
     for p in TMP_ROOTS:
@@ -207,7 +313,7 @@ def selftest() -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="可转债条款卡五道机检（零网络）")
     ap.add_argument("target", nargs="?", help="待检文件（本件不读网络、不读目录）")
-    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清")
+    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、钉阈按整族各钉一档、对照样不误伤、临时件自清")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()

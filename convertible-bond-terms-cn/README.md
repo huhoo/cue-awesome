@@ -16,7 +16,7 @@
 
 ```bash
 python3 scripts/check_cb_card.py --help                          # 参数说明
-python3 scripts/check_cb_card.py --selftest                       # 好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清
+python3 scripts/check_cb_card.py --selftest                       # 好样须过、坏样五道齐发、钉阈按整族各钉一档、对照样不误伤、临时件自清（枚数由自测自报）
 python3 scripts/check_cb_card.py scripts/fixtures/good-cb-card.md     # PASS（发条 0 条）
 python3 scripts/check_cb_card.py scripts/fixtures/bad-cb-card.md      # FAIL（五道各发，逐条点名行号）
 ```
@@ -67,7 +67,7 @@ curl -s -X POST "$ROUTING_URL" -H "Authorization: Bearer $CUE_API_KEY" \
 
 - 转股收益、转股价值、套利空间、是否会被强制赎回、下修会不会发生、评级与目标价一律 `[待人工]`；禁一定能转／必被赎回／建议申购／稳赚／零风险／保证收益；
 - 不接申购与转股操作：本件不出申购单、不做转股指令、不代客操作；
-- 触发条款逐字：数字与天数只认该项书名号原句里的，无关句段的年份与别的数字不顶账；「满足…条件」「详见公告」不许顶替，且空泛语不因同句带数而过闸；
+- 触发条款逐字按规则判：机检先把项行拆成字段，只认该项原句，**先剥日期**，再要求同一段同时给出触发量纲与触发语境（项名不算语境、别项的数与日期都不顶账）；空泛语（满足…条件／详见公告／另行公告／另定／待定）只是发红那句话的措辞，换同义词换不掉这一判；
 - 未检索到＝照实写「未检索到」，禁以同类转债惯例补写，也不写「无该项」顶替；
 - 域与工具名以 live catalog 现值为准，本件不列固定清单、不承诺枚数，也不承诺该域是否开放与原文的实时性。
 
