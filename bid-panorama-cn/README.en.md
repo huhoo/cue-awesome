@@ -12,11 +12,11 @@ It reads one tender's disclosure chain only: convertible-bond terms live in `con
 
 ## 2. Five machine checks (no network)
 
-`scripts/check_bid_card.py` gates the card: five sections plus item-level presence of the eight names / quote and anchor per item (empty or single-character quotes and empty anchors fire) / red-line assertions only on `[待人工]` lines / exactly one completeness declaration reconciled with the `未检索到` count / the winning-amount line must carry a number - "see the notice" and "per the contract" fire.
+`scripts/check_bid_card.py` gates the card: five sections plus item-level presence of the eight names / quote and anchor per item (empty or single-character quotes and empty anchors fire) / red-line assertions only on `[待人工]` lines / exactly one completeness declaration reconciled with the `未检索到` count / the winning-amount figure is read only from that item's own quote (award / bid-price / transaction wording) - budget or estimate amounts do not count, and "see the notice" and "per the contract" fire without a number-based exemption.
 
 ```bash
 python3 scripts/check_bid_card.py --help                          # usage
-python3 scripts/check_bid_card.py --selftest                       # good sample passes, bad sample fires all five lanes, five threshold pins, temp files clean themselves
+python3 scripts/check_bid_card.py --selftest                       # good sample passes, bad sample fires all five lanes, eight threshold pins, temp files clean themselves
 python3 scripts/check_bid_card.py scripts/fixtures/good-bid-card.md     # PASS (zero findings)
 python3 scripts/check_bid_card.py scripts/fixtures/bad-bid-card.md      # FAIL (five lanes, each naming its line)
 ```

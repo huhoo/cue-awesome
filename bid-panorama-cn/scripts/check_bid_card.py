@@ -6,16 +6,18 @@
   BP-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
             八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   BP-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  BP-LINE   红线断言：中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／围标／串通报价／利益输送，
-            只允许出现在带 [待人工] 的行里，否则发；
+  BP-LINE   红线断言：中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／围标／串通报价／
+            利益输送，以及判断式三族——异议…成立／目标价／评级上调下调／收入（营收）增加·上升·提升·减少·下滑，
+            只允许出现在带 [待人工] 的行里，否则发（这类结论本件一律不自判）；
   BP-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
             「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  BP-AMT    中标金额不许空泛：中标候选人及金额一项，凡未写「未检索到」的，行内必须带数字金额原值（元／万元／亿元）；
-            「详见公告」「以合同为准」「另行确定」「金额待定」这类空泛语不算值，出现即发。
+  BP-AMT    中标金额只认该项原句：「中标候选人及金额」一项，凡未写「未检索到」的，其书名号原句里必须带
+            中标／投标报价／成交口径的金额数字（亿元／万元／元）——预算、概算等其它款项的数不顶中标账；
+            「详见…」「以合同为准」「另行确定」「金额待定」属空泛语，出现即发，且不因原句夹带其它数字而过闸。
 
 用法：
   python3 -B scripts/check_bid_card.py <待检文件>      # 逐条发红，全过则 PASS
-  python3 -B scripts/check_bid_card.py --selftest      # 好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清
+  python3 -B scripts/check_bid_card.py --selftest      # 好样须过、坏样五道齐发、八形钉阈各钉一档、临时件自清
   python3 -B scripts/check_bid_card.py --help
 退码：0＝过（或自测全合）；1＝发红／自测不合；2＝用法错。
 """
@@ -37,12 +39,13 @@ AMT_ITEM = "中标候选人及金额"
 ITEM = re.compile(r"^\s*[-*]\s*(" + "|".join(map(re.escape, ITEMS)) + r")[：:]")
 TITLE = re.compile(r"[「『«][^」』»]+[」』»]")
 ANCHOR_VAL = re.compile(r"锚[:：]\s*(\S.*)$")
-BANNED = re.compile(r"中标概率|必中标|稳赚|零风险|保证收益|利好|建议投标|代客投标|陪标|围标|串通报价|利益输送")
+BANNED = re.compile(r"中标概率|必中标|稳赚|零风险|保证收益|利好|建议投标|代客投标|陪标|围标|串通报价|利益输送"
+                    r"|异议[^，。；、」』]{0,6}成立|目标价|评级上调|评级下调|(?:收入|营收)[^，。；、」』]{0,8}?(?:增加|上升|提升|减少|下滑)")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
 EMPTY_LIE = re.compile(r"(?:^|[\s：:])无(?:该项|此项)|没有(?:该项|此项)")
-AMT_NUM = re.compile(r"\d[\d,\.]*\s*(?:元|万元|亿元|万|亿)")
-AMT_VAGUE = re.compile(r"详见公告|以合同为准|另行确定|金额待定")
+AMT_NUM = re.compile(r"(?:中标|投标报价|投标|成交|报价|合同价?)\D{0,8}?\d[\d,\.]*\s*(?:亿元|万元|元)")
+AMT_VAGUE = re.compile(r"详见[^，。]*|以合同为准|另行确定|金额待定|待定")
 CORE_STRIP = re.compile(r"[\s\u3000「」『』«»“”（）()《》【】，,。.；;：:、！!？~\-—_·/％%*#]+")
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速读", r"逐字速读|八项速读"),
             ("口径对照", r"口径对照"), ("缺数清单", r"缺数清单"), ("待人工", r"待人工"))
@@ -94,8 +97,13 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
             mv = ANCHOR_VAL.search(ln)
             if not mv or core_len(mv.group(1)) == 0:
                 hits.append(("BP-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
-            if name == AMT_ITEM and not AMT_NUM.search(ln):
-                hits.append(("BP-AMT", i + 1, f"中标金额无数字原值：{name} 那一行既没写「未检索到」也没有「元／万元／亿元」这类金额"))
+            if name == AMT_ITEM:
+                segs = re.findall(r"[「『«]([^」』»]*)[」』»]", ln)
+                clause = " ".join(segs) if segs else re.sub(r"^\s*[-*]\s*[^：:]+[：:]\s*", "", re.split(r"锚[:：]", ln, 1)[0])
+                if AMT_VAGUE.search(clause):
+                    hits.append(("BP-AMT", i + 1, f"中标金额以空泛语顶替：{name} 原句出现「详见…／以合同为准／另行确定／金额待定」——同句另有其它款项的数字也不顶中标账，空泛语不带数豁免"))
+                elif not AMT_NUM.search(clause):
+                    hits.append(("BP-AMT", i + 1, f"中标金额无数字原值：{name} 原句里没有中标／投标报价口径的金额数字（预算、概算等其它款项金额不顶账）"))
     for name in ITEMS:
         if name not in seen:
             hits.append(("BP-STRUCT", 0, f"缺项行：{name} 在逐字速读段里没有以「- 名目：」起头的行"))
@@ -159,9 +167,21 @@ def selftest() -> int:
          "齐缺申报与清单不对账"),
         ("钉阈·中标金额写成详见公告必发 BP-AMT",
          gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」", "「中标金额详见公告」", 1),
+         "中标金额以空泛语顶替"),
+        ("钉阈·预算金额洗中标额（带空泛语）必发 BP-AMT",
+         gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」",
+                    "「项目预算 2 亿元，中标金额以合同为准」", 1),
+         "中标金额以空泛语顶替"),
+        ("钉阈·预算金额洗中标额（不带空泛语）必发 BP-AMT",
+         gt.replace("「第一中标候选人某建设集团，投标报价 8,600 万元」",
+                    "「项目预算 2 亿元，最终数额在合同阶段明确」", 1),
          "中标金额无数字原值"),
         ("钉阈·红线词落在非待人工行必发 BP-LINE",
          gt.replace("｜附件腿：未发起", "｜附件腿：未发起｜中标概率高", 1),
+         "红线断言词出现在没有 [待人工] 的行"),
+        ("钉阈·判断式结论行必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读",
+                    "- 结论：异议必然成立，目标价上调，项目收入将增加。\n\n## 二、八项逐字速读", 1),
          "红线断言词出现在没有 [待人工] 的行"),
     )
     for n, (name, text, needle) in enumerate(tiers, 1):
@@ -191,7 +211,7 @@ def selftest() -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="招投标披露全景卡五道机检（零网络）")
     ap.add_argument("target", nargs="?", help="待检文件（本件不读网络、不读目录）")
-    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清")
+    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、八形钉阈各钉一档、临时件自清")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
