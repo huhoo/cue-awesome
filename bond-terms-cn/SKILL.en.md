@@ -4,7 +4,7 @@ slug: cue-bond-terms-cn
 displayName: "Bond Terms Card (China)"
 summary: "Eight-item verbatim card of one Chinese bond; valuation stays [待人工]."
 description: "Mainland bond card: one prospectus or issue plan into eight verbatim items, each with a quote and an anchor; missing items read 未检索到; scale and coupon stay verbatim; rating symbols need an anchor on the same line; valuation and ratings stay [待人工]. Not for advice or valuation. Triggers: bond terms"
-version: "0.1.0"
+version: "0.1.1"
 license: MIT
 inputs:
   - bond-document
@@ -24,7 +24,7 @@ tags: [bonds, issue terms, China, verbatim card, credit enhancement]
 
 # Bond Terms Card (design authority)
 
-**What it is**: turn one mainland bond document into an **eight-item verbatim card**, each item carrying a **verbatim quote + anchor**; a missing item is named `未检索到` and keeps its own line. **It is not** a valuation, not a yield calculation, and not investment advice - it records what the terms say, not what the bond is worth. Placement and convertible terms live in `placement-terms-cn`; prospectus digests in `prospectus-digest-cn`; company filing lists in `announcement-daily-cn`.
+**What it is**: turn one mainland bond document into an **eight-item verbatim card**, each item carrying a **verbatim quote + anchor**; a missing item is named `未检索到` and keeps its own line. **It is not** a valuation, not a yield calculation, and not investment advice - it records what the terms say, not what the bond is worth. Convertible bond terms live in `convertible-bond-terms-cn`; placement terms in `placement-terms-cn`; prospectus digests in `prospectus-digest-cn`; company filing lists in `announcement-daily-cn`.
 
 ## 0. What it is / what it is not
 | Is | Is not |

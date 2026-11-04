@@ -2,7 +2,7 @@
 
 **Give it one mainland bond document and get back an eight-item verbatim card: issuer, size and tenor, coupon, issue price, credit enhancement, put and call, disclosure and trustee, default clauses - each item carrying a verbatim quote and a source anchor. Valuation and ratings stay `[待人工]`.**
 
-It reads one bond document only: placement and convertible terms live in `placement-terms-cn`, prospectus digests in `prospectus-digest-cn`, company filing lists in `announcement-daily-cn`. The prospectus is the only authority - **issue announcements and underwriter decks must be labelled by level**, and that boundary is why this skill exists.
+It reads one bond document only: convertible bond terms live in `convertible-bond-terms-cn`, placement terms in `placement-terms-cn`, prospectus digests in `prospectus-digest-cn`, company filing lists in `announcement-daily-cn`. The prospectus is the only authority - **issue announcements and underwriter decks must be labelled by level**, and that boundary is why this skill exists.
 
 ## 1. Three steps to get going
 
