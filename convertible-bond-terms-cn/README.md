@@ -16,7 +16,7 @@
 
 ```bash
 python3 scripts/check_cb_card.py --help                          # 参数说明
-python3 scripts/check_cb_card.py --selftest                       # 好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清
+python3 scripts/check_cb_card.py --selftest                       # 好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清
 python3 scripts/check_cb_card.py scripts/fixtures/good-cb-card.md     # PASS（发条 0 条）
 python3 scripts/check_cb_card.py scripts/fixtures/bad-cb-card.md      # FAIL（五道各发，逐条点名行号）
 ```
@@ -67,7 +67,7 @@ curl -s -X POST "$ROUTING_URL" -H "Authorization: Bearer $CUE_API_KEY" \
 
 - 转股收益、转股价值、套利空间、是否会被强制赎回、下修会不会发生、评级与目标价一律 `[待人工]`；禁一定能转／必被赎回／建议申购／稳赚／零风险／保证收益；
 - 不接申购与转股操作：本件不出申购单、不做转股指令、不代客操作；
-- 触发条款逐字：数字与天数不许被「满足约定条件」「详见公告」顶替；
+- 触发条款逐字：数字与天数只认该项书名号原句里的，无关句段的年份与别的数字不顶账；「满足…条件」「详见公告」不许顶替，且空泛语不因同句带数而过闸；
 - 未检索到＝照实写「未检索到」，禁以同类转债惯例补写，也不写「无该项」顶替；
 - 域与工具名以 live catalog 现值为准，本件不列固定清单、不承诺枚数，也不承诺该域是否开放与原文的实时性。
 

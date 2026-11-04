@@ -10,13 +10,14 @@
             代客转股／稳赚／零风险／保证收益／必涨／目标价／评级上调／评级下调，只允许出现在带 [待人工] 的行里，否则发；
   CB-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
             「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  CB-TRIG   修正、赎回、回售三项不许用空泛语顶替：向下修正条款、有条件赎回条款、回售条款三项，凡未写
-            「未检索到」的，行内必须带数字触发原值（N%、N 个交易日、N 日、N 个月、N 年、N 股，或日期原值）；
-            「满足约定条件」「按约定执行」「详见公告」「视股价而定」「触发后另行公告」属空泛语，出现即发。
+  CB-TRIG   修正、赎回、回售三项的触发数字只认「该项原句」，不拿同行其它位置的数字顶账：向下修正条款、有条件
+            赎回条款、回售条款三项，凡未写「未检索到」的，其书名号原句里必须带该组触发量纲（N%／N 个百分点／
+            N 个交易日／N 个计息年度／N 日／N 天／N 股）；「满足…条件」「按约定执行」「详见公告」「视股价而定」
+            「另行公告」「待定」属空泛语，出现即发，且空泛语不因原句另夹带数字而过闸（无关年份也洗不绿）。
 
 用法：
   python3 -B scripts/check_cb_card.py <待检文件>      # 逐条发红，全过则 PASS
-  python3 -B scripts/check_cb_card.py --selftest      # 好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清
+  python3 -B scripts/check_cb_card.py --selftest      # 好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清
   python3 -B scripts/check_cb_card.py --help
 退码：0＝过（或自测全合）；1＝发红／自测不合；2＝用法错。
 """
@@ -42,8 +43,8 @@ BANNED = re.compile(r"转股收益|转股价值|套利空间|一定能转|必被
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
 EMPTY_LIE = re.compile(r"(?:^|[\s：:])无(?:该项|此项)|没有(?:该项|此项)")
-TRIG_NUM = re.compile(r"\d[\d,\.]*\s*(?:%|个交易日|日|个月|年|股)|\d{4}-\d{2}-\d{2}|\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日")
-TRIG_VAGUE = re.compile(r"满足约定条件|按约定执行|详见公告|视股价而定|触发后另行公告")
+TRIG_NUM = re.compile(r"\d[\d,\.]*\s*(?:%|个百分点|个交易日|个计息年度|个月|日|天|股)")
+TRIG_VAGUE = re.compile(r"满足[^，。、；」』]{0,4}条件|按约定执行|详见公告|视股价而定|另行公告|待定")
 CORE_STRIP = re.compile(r"[\s\u3000「」『』«»“”（）()《》【】，,。.；;：:、！!？~\-—_·/％%*#]+")
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速读", r"逐字速读|八项速读"),
             ("口径对照", r"口径对照"), ("缺数清单", r"缺数清单"), ("待人工", r"待人工"))
@@ -96,10 +97,12 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
             if not mv or core_len(mv.group(1)) == 0:
                 hits.append(("CB-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
             if name in TRIG_ITEMS:
-                if not TRIG_NUM.search(ln):
-                    hits.append(("CB-TRIG", i + 1, f"触发条款无数字原值：{name} 那一行既没写「未检索到」也没有「N%／N 个交易日／N 日」这类触发条件"))
-                elif TRIG_VAGUE.search(ln):
-                    hits.append(("CB-TRIG", i + 1, f"触发条款以空泛语顶替：{name} 那一行出现「满足约定条件／按约定执行／详见公告／视股价而定／触发后另行公告」，空泛语不算触发条件"))
+                segs = re.findall(r"[「『«]([^」』»]*)[」』»]", ln)
+                clause = " ".join(segs) if segs else re.sub(r"^\s*[-*]\s*[^：:]+[：:]\s*", "", re.split(r"锚[:：]", ln, 1)[0])
+                if TRIG_VAGUE.search(clause):
+                    hits.append(("CB-TRIG", i + 1, f"触发条款以空泛语顶替：{name} 原句里出现「满足…条件／按约定执行／详见公告／视股价而定／另行公告」——空泛语不因同句另有数字而过闸，只认该项原句"))
+                elif not TRIG_NUM.search(clause):
+                    hits.append(("CB-TRIG", i + 1, f"触发条款无数字原值：{name} 原句里既没写「未检索到」也没有「N%／N 个交易日／N 日」这类触发量纲（同行其它位置的数字与日期不顶账）"))
     for name in ITEMS:
         if name not in seen:
             hits.append(("CB-STRUCT", 0, f"缺项行：{name} 在逐字速读段里没有以「- 名目：」起头的行"))
@@ -161,10 +164,18 @@ def selftest() -> int:
         ("钉阈·齐缺申报改数必发 CB-COUNT",
          gt.replace("共八项·缺 1 项", "共八项·缺 0 项", 1),
          "齐缺申报与清单不对账"),
-        ("钉阈·赎回条款写成满足约定条件必发 CB-TRIG",
+        ("钉阈·赎回条款原句漏数必发 CB-TRIG",
          gt.replace("「可转债转股日起二十个交易日后，若公司股票收盘价格不低于当期转股价格的 130%，发行人有权赎回」",
-                    "「满足约定条件时发行人有权赎回」", 1),
+                    "「发行人有权决定是否办理赎回事宜」", 1),
          "触发条款无数字原值"),
+        ("钉阈·空泛语同句带数也不放行必发 CB-TRIG",
+         gt.replace("「可转债转股日起二十个交易日后，若公司股票收盘价格不低于当期转股价格的 130%，发行人有权赎回」",
+                    "「票面利率 1.5%，满足约定条件时发行人有权赎回」", 1),
+         "触发条款以空泛语顶替"),
+        ("钉阈·无关年份混入回售原句必发 CB-TRIG",
+         gt.replace("「最后两个计息年度，股票收盘价连续三十个交易日低于当期转股价格的 70% 时，持有人可回售」",
+                    "「发行日期为 2026 年，满足回售条件时可回售」", 1),
+         "触发条款以空泛语顶替"),
         ("钉阈·红线词落在非待人工行必发 CB-LINE",
          gt.replace("｜附件腿：未发起", "｜附件腿：未发起｜转股收益可观", 1),
          "红线断言词出现在没有 [待人工] 的行"),
@@ -196,7 +207,7 @@ def selftest() -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="可转债条款卡五道机检（零网络）")
     ap.add_argument("target", nargs="?", help="待检文件（本件不读网络、不读目录）")
-    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、五形钉阈各钉一档、临时件自清")
+    ap.add_argument("--selftest", action="store_true", help="好样须过、坏样五道齐发、七形钉阈各钉一档、临时件自清")
     a = ap.parse_args(argv)
     if a.selftest:
         return selftest()
