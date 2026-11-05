@@ -11,7 +11,9 @@
             字段（名目／书名号原句／锚／句体）后，凡非 [待人工]、非「不接／不出／不判」类免责行、非书名号内的公告原句，
             只要「主题词（收益·价值·评级·目标价·赎回·回售·下修·风险·概率·利好）」与「判断语气（应·将·会·必·有望·
             可能·足以·构成·属于·支持·成立·上调·下调…）」同段出现即发，不靠枚举结论短语；
-            ②另有自裁效力层：裁定前缀（结论／综上／因此／本院认为／判定…）与效力判断（无效／有效／作废／成立／
+            语气域先洗掉机构名 token（委员会／董事会／监事会／股东大会后缀的「会」是名词后缀不是判断语气），
+            所以「赎回价格由董事会拟定」不误红，「回售应予否决」照发；
+            ③自裁效力层：裁定前缀（结论／综上／因此／本院认为／判定…）与效力判断（无效／有效／作废／成立／
             撤销…）同现即发；
   CB-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
             「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
@@ -62,6 +64,7 @@ SUBJECT = re.compile(r"收益|价值|评级|目标价|赎回|回售|下修|修�
 TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|提升|下滑|增加|减少|回升|破发|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
 VERDICT = re.compile(r"结论|综上|因此|可见|据此|本院认为|本件认为|本卡认为|本件判断|判定|认定|断言")
 EFFECT = re.compile(r"无效|有效|作废|不成立|成立|撤销|违法|违规|应予支持|予以支持|应支持|支持|必然|属实")
+NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会")   # 机构名 token（委员会·董事会·监事会·股东大会·理事会·工会·发布会…）的「会」是名词后缀不是判断语气，先从语气域整体洗掉再判
 DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
@@ -222,6 +225,7 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
                 hits.append(("CB-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
             else:
                 for seg in SEG_SPLIT.split(dom):
+                    seg = NOUN_WASH.sub("", seg)
                     ms, mt = SUBJECT.search(seg), TONE.search(seg)
                     if ms and mt:
                         hits.append(("CB-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
@@ -306,6 +310,9 @@ def selftest() -> int:
         ("钉阈·本项词与别项数混排必发 CB-TRIG",
          gt.replace(ROW_HUI, "「回售条件另定，股票收盘价连续三十个交易日低于转股价格的 85% 时，董事会可下修」", 1),
          "落在别项触发语境「下修」里"),
+        ("钉阈·否决式判断句必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：回售应予否决。\n\n## 二、八项逐字速读", 1),
+         "「回售」与判断语气「应予」"),
         ("钉阈·红线定式词落在非待人工行必发 CB-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：本单建议申购，稳赚。\n\n## 二、八项逐字速读", 1),
          "红线断言词出现在没有 [待人工] 的行"),
@@ -343,6 +350,14 @@ def selftest() -> int:
     rows.append(("对照·修正项夹带日期不误伤（CB-TRIG 零发）",
                  ctl2 != gt and not [m for c, _, m in ch2 if c == "CB-TRIG"],
                  f"注入生效＝{ctl2 != gt}·CB-TRIG 实发 {len([m for c, _, m in ch2 if c == 'CB-TRIG'])} 条"))
+    ctrl_hui = pin / "control-institution-name.md"
+    text_hui = gt.replace("## 二、八项逐字速读", "- 说明：回售价格调整由董事会与薪酬委员会核实。\n\n## 二、八项逐字速读", 1)
+    ctrl_hui.write_text(text_hui, encoding="utf-8")
+    hh = check_text(ctrl_hui.read_text(encoding="utf-8"))
+    nproof += 1
+    fired_hui = [m for cd, _, m in hh if cd == "CB-LINE"]
+    rows.append(("对照·机构名陈述句不误伤（CB-LINE 零发）", text_hui != gt and not fired_hui,
+                 f"注入{'生效' if text_hui != gt else '作废'}·CB-LINE 实发 {len(fired_hui)} 条"))
     made = [p.name for p in TMP_ROOTS]
     root = pathlib.Path(tempfile.gettempdir())
     for p in TMP_ROOTS:
