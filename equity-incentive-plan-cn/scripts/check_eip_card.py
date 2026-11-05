@@ -51,7 +51,9 @@ PRICE_ABS = re.compile(r"每股\s*\d[\d,\.]*\s*元|\d[\d,\.]*\s*元(?:\/股)?")
 PRICE_RATIO = re.compile(r"\d[\d,\.]*\s*(?:%|％|折)")
 PRICE_RATIO_CTX = re.compile(r"不低于|高于|低于|均价|折扣|定价")   # 泛用的「比例」不算定价语境——「解除限售比例 40%」会冒充定价
 PRICE_FOREIGN = re.compile(r"增长率|净利润|营业收入|解除限售|占比|股本总额|有效期|激励对象共?|人数")
-PRICE_IMPOSTOR = re.compile(r"市价|面值|收盘价|开盘价|均价|账面净资产|账面值|净值|评估价|参考价|市场价")   # 参照价不是授予价：数挂在这些词上就不算本项实额
+PRICE_IMPOSTOR = re.compile(r"市价|市场价|面值|收盘价|开盘价|均价|账面净资产|账面值|净值|评估价|参考价|基准价|评标基准")   # 参照价不是授予价：数挂在这些词上就不算本项实额
+PRICE_HEAD = re.compile(r"授予价格|授予价|行权价格|行权价|每股|定价|折扣")   # 能领出一个真价的词（均价·市价·面值是参照价，不在其列）
+HEAD_GAP = 8   # 领价词与数之间最多隔几字（够放下「为」「按」「不低于」这类短连接词）
 PRICE_VAGUE = re.compile(r"另行确定|另行约定|另行公告|另定|届时公告|届时确定|届时|由董事会确定|由股东大会确定|"
                         r"按有关规定执行|按规定执行|待定|以[^，。]{0,8}为准|尚未确定|未确定|协商确定")
 DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
@@ -113,48 +115,54 @@ def price_field(item: dict) -> str:
 
 
 def price_gap(clause: str):
-    """按规则找合格定价段：剥日期 → 分段 → 该段须自己给出价格原值（每股 N 元／N 元），
-    或给出百分比且定价语境（不低于·均价·折扣·定价·比例）在同段或紧邻前段收束；
-    两种都要本项定价语在场（数同段最佳，只在邻段也算在），且数同段不带上别的项名。
-    返回（被剥日期，合格段，空泛语，落空候选）。"""
+    """按规则给本项定价定性，**顺序无关**：把该项原句（剥日期后）里所有金额候选数逐个归类——
+    数前面（≤HEAD_GAP 字）有领价词（授予价格·行权价格·每股·定价·折扣）且中间不夹参照价词＝合格授予价；
+    夹着市价·面值·均价·收盘价·净值·账面·评估价·参考价·基准价＝那是参照价，不算；
+    百分比走定价语境那条（同段或紧邻前段收束，泛用的「比例」不算语境）。
+    **存在一个合格数即过；一个都没有、又没写「未检索到」才发**——不取首数即返回，也不靠逗号位置。
+    返回（被剥日期，合格数，空泛语，落空候选）。"""
     dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
     naked = DATE_SPAN.sub(" ", clause)
     vague = PRICE_VAGUE.search(naked)
-    segs = [s.strip() for s in SEG_SPLIT.split(naked)]
     candidates: list[tuple[str, str]] = []
+    prev_end = 0
+    for m in PRICE_ABS.finditer(naked):
+        # 局部域：从上一个数或上一个标点之后起，只在这个数自己的短语里找领价词
+        cut = prev_end
+        for punct in SEG_SPLIT.finditer(naked, prev_end, m.start()):
+            cut = punct.end()
+        window = naked[cut:m.start()]
+        phrase = naked[cut:m.end()].strip()
+        heads = [(h.start() + cut, h.end() + cut, h.group(0)) for h in PRICE_HEAD.finditer(window)]
+        if m.group(0).startswith("每股"):
+            heads.append((m.start(), m.start() + 2, "每股"))
+        if not heads:
+            candidates.append((phrase, "数前没有领价词（授予价格·行权价格·每股·定价·折扣）"))
+            prev_end = m.end()
+            continue
+        gap = naked[heads[-1][1]:m.start()]
+        imp = PRICE_IMPOSTOR.search(gap)
+        if imp:
+            candidates.append((phrase, f"数挂在参照价「{imp.group(0)}」上，不是授予价或行权价"))
+            prev_end = m.end()
+            continue
+        if len(gap.strip()) > HEAD_GAP:
+            candidates.append((phrase, "领价词与数之间隔了别的话，这个数不归本项定价"))
+            prev_end = m.end()
+            continue
+        return dates, phrase, vague, candidates
+    segs = [s.strip() for s in SEG_SPLIT.split(naked)]
     for idx, s in enumerate(segs):
-        if not s:
+        if not s or not PRICE_RATIO.search(s):
             continue
-        absolute = PRICE_ABS.search(s)
-        ratio = PRICE_RATIO.search(s)
-        if not (absolute or ratio):
-            continue
-        own_here = bool(PRICE_OWN.search(s))
-        own_clause = bool(PRICE_OWN.search(naked))
-        foreign = PRICE_FOREIGN.search(s)
-        if absolute:
-            if not own_here:
-                candidates.append((s, "本项定价语（授予价格·行权价格·定价·每股）不在数同段"))
-                continue
-            own_start = PRICE_OWN.search(s).start()
-            imp = None
-            for cand in PRICE_IMPOSTOR.finditer(s[:absolute.start()]):
-                if cand.start() >= own_start:
-                    imp = cand
-            if imp:
-                candidates.append((s, f"数落在参照价「{imp.group(0)}」上，不是授予价或行权价"))
-                continue
-            if foreign:
-                candidates.append((s, f"数同段出现别项语境「{foreign.group(0)}」"))
-                continue
-            return dates, s, vague, candidates
         prev_ok = idx > 0 and bool(PRICE_RATIO_CTX.search(segs[idx - 1] or ""))
         if not (PRICE_RATIO_CTX.search(s) or prev_ok):
             candidates.append((s, "百分比没落在不低于·均价·折扣·定价的定价语境"))
             continue
-        if not (own_here or own_clause):
+        if not PRICE_OWN.search(s) and not PRICE_OWN.search(naked):
             candidates.append((s, "本项定价语（授予价格·行权价格·均价·定价·每股）在取数域里不出现"))
             continue
+        foreign = PRICE_FOREIGN.search(s)
         if foreign:
             candidates.append((s, f"数同段出现别项语境「{foreign.group(0)}」"))
             continue
@@ -318,8 +326,8 @@ def selftest() -> int:
          gt.replace(ROW_PRICE, "「限制性股票授予价格由董事会按有关规定确定」", 1),
          "取数域（剥日期后）首段：「限制性股票授予价格由董事会"),
         ("钉阈·市价数不顶授予价必发 EIP-PRICE",
-         gt.replace(ROW_PRICE, "「授予价格另行确定，参考市价 30 元」", 1),
-         "「参考市价 30 元」＝本项定价语"),
+         gt.replace(ROW_PRICE, "「授予价格另行确定，市场价 30 元」", 1),
+         "「市场价 30 元」＝数前没有领价词"),
         ("钉阈·别项百分比顶定价账必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「授予价格为 1.20%」", 1),
          "「授予价格为 1.20%」＝百分比没落在"),
@@ -350,18 +358,21 @@ def selftest() -> int:
         ("钉阈·真判断语气（会）必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 本次解锁条件会达成。\n\n## 二、八项逐字速读", 1),
          "「解锁」与判断语气「会」"),
+        ("钉阈·参照价在前授予价在后仍须发必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「参考市价 30 元后授予价格另行确定」", 1),
+         "「参考市价 30 元」＝数前没有领价词"),
         ("钉阈·市价冒充授予价必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「授予价格参考市价 30 元，最终由董事会决定」", 1),
-         "数落在参照价「市价」上"),
+         "「授予价格参考市价 30 元」＝数挂在参照价「市价」上"),
         ("钉阈·面值冒充授予价必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「授予价格以股票面值 1 元为基准，实际价格待定」", 1),
-         "数落在参照价「面值」上"),
+         "「授予价格以股票面值 1 元」＝数挂在参照价「面值」上"),
         ("钉阈·账面值冒充必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「授予价格按每股账面净资产 8.50 元确定」", 1),
-         "数落在参照价「账面净资产」上"),
+         "「授予价格按每股账面净资产 8.50 元」＝数挂在参照价「账面净资产」上"),
         ("钉阈·均价是参照价不是授予价必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「授予价格即前 20 个交易日均价 25.20 元」", 1),
-         "数落在参照价「均价」上"),
+         "＝数挂在参照价「均价」上"),
         ("钉阈·否决式判断句必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：授予应予否决。\n\n## 二、八项逐字速读", 1),
          "「授予」与判断语气「应予」"),
@@ -399,6 +410,12 @@ def selftest() -> int:
          gt.replace("## 二、八项逐字速读", "- 说明：行权会计处理按草案列示。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
         ("对照·会议记录陈述不误伤（EIP-LINE 零发）",
          gt.replace("## 二、八项逐字速读", "- 说明：会议记录载明考核条款见第六章。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
+        ("对照·参照价之后另有合格授予价不误伤（EIP-PRICE 零发）",
+         gt.replace(ROW_PRICE, "「授予价格参考面值 1 元后最终定为每股 12.60 元」", 1), "EIP-PRICE"),
+        ("对照·同上形加逗号也不误伤（EIP-PRICE 零发）",
+         gt.replace(ROW_PRICE, "「授予价格参考面值 1 元，后最终定为每股 12.60 元」", 1), "EIP-PRICE"),
+        ("对照·合格价在前参照价在后不误伤（EIP-PRICE 零发）",
+         gt.replace(ROW_PRICE, "「授予价格为每股 12.60 元，参考面值 1 元」", 1), "EIP-PRICE"),
         ("对照·每股金额带下限括注不误伤（EIP-PRICE 零发）",
          gt.replace(ROW_PRICE, "「授予价格为每股 12.60 元（不低于法定下限）」", 1), "EIP-PRICE"),
         ("对照·考核委员会陈述句不误伤（EIP-LINE 零发）",
