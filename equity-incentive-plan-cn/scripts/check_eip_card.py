@@ -51,6 +51,7 @@ PRICE_ABS = re.compile(r"每股\s*\d[\d,\.]*\s*元|\d[\d,\.]*\s*元(?:\/股)?")
 PRICE_RATIO = re.compile(r"\d[\d,\.]*\s*(?:%|％|折)")
 PRICE_RATIO_CTX = re.compile(r"不低于|高于|低于|均价|折扣|定价")   # 泛用的「比例」不算定价语境——「解除限售比例 40%」会冒充定价
 PRICE_FOREIGN = re.compile(r"增长率|净利润|营业收入|解除限售|占比|股本总额|有效期|激励对象共?|人数")
+PRICE_IMPOSTOR = re.compile(r"市价|面值|收盘价|开盘价|均价|账面净资产|账面值|净值|评估价|参考价|市场价")   # 参照价不是授予价：数挂在这些词上就不算本项实额
 PRICE_VAGUE = re.compile(r"另行确定|另行约定|另行公告|另定|届时公告|届时确定|届时|由董事会确定|由股东大会确定|"
                         r"按有关规定执行|按规定执行|待定|以[^，。]{0,8}为准|尚未确定|未确定|协商确定")
 DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
@@ -58,7 +59,7 @@ DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1
                        r"|\d{1,2}\s*月\s*\d{1,2}\s*日"
                        r"|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}")
 SEG_SPLIT = re.compile(r"[，。；、！？；]+|[,!](?!\s*\d)")   # 千分位逗号不断段
-NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会")   # 机构名 token（委员会·董事会·监事会·股东大会·理事会·工会·发布会…）的「会」是名词后缀不是判断语气，先从语气域整体洗掉再判
+NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会|会[计议场话晤所馆堂员]")   # 「X 会」机构名后缀（委员会·董事会·股东大会…）与「会 X」名词（会计·会议·会场·会员…）里的「会」都是名词性成分，不是判断语气——两头都按形态洗，不枚举个案
 ATTRIB_WINDOW = 24
 ITEM = re.compile(r"^\s*[-*]\s*(" + "|".join(map(re.escape, ITEMS)) + r")[：:]")
 TITLE = re.compile(r"[「『«][^」』»]+[」』»]")
@@ -133,7 +134,15 @@ def price_gap(clause: str):
         foreign = PRICE_FOREIGN.search(s)
         if absolute:
             if not own_here:
-                candidates.append((s, "本项定价语（授予价格·行权价格·均价·定价·每股）不在数同段"))
+                candidates.append((s, "本项定价语（授予价格·行权价格·定价·每股）不在数同段"))
+                continue
+            own_start = PRICE_OWN.search(s).start()
+            imp = None
+            for cand in PRICE_IMPOSTOR.finditer(s[:absolute.start()]):
+                if cand.start() >= own_start:
+                    imp = cand
+            if imp:
+                candidates.append((s, f"数落在参照价「{imp.group(0)}」上，不是授予价或行权价"))
                 continue
             if foreign:
                 candidates.append((s, f"数同段出现别项语境「{foreign.group(0)}」"))
@@ -231,22 +240,29 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("EIP-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if not (PENDING.search(ln) or DISCLAIM.search(ln)):
+        if PENDING.search(ln):
+            pass   # 行首 [待人工] 标记管全行：这些判断的登记位就在这一行里
+        else:
             dom = judge_field(ln)
-            mb = BANNED.search(dom)
-            if mb:
-                hits.append(("EIP-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
-            else:
-                for seg in SEG_SPLIT.split(dom):
-                    seg = NOUN_WASH.sub("", seg)
-                    ms, mt = SUBJECT.search(seg), TONE.search(seg)
-                    if ms and mt:
-                        hits.append(("EIP-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——解锁·行权·摊销·摊薄·业绩这类判断一律留 [待人工]，草案原句（书名号内）与锚不在此列"))
-                        break
-                else:
-                    mv2, me = VERDICT.search(dom), EFFECT.search(NOUN_WASH.sub("", dom))
-                    if mv2 and me:
-                        hits.append(("EIP-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——本次计划是否有效·程序是否违法这类裁定本件一律不自判，留 [待人工]；草案原句（书名号内）与锚不在此列"))
+            flagged = False
+            for seg in SEG_SPLIT.split(dom):
+                if DISCLAIM.search(seg):
+                    continue   # 免责按分句算，不跨句把后半句的真判断一起免掉
+                seg = NOUN_WASH.sub("", seg)
+                mb = BANNED.search(seg)
+                if mb:
+                    hits.append(("EIP-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」——同一行前半写了免责句也不顶，豁免只到分句为止"))
+                    flagged = True
+                    break
+                ms, mt = SUBJECT.search(seg), TONE.search(seg)
+                if ms and mt:
+                    hits.append(("EIP-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——解锁·行权·摊销·摊薄·业绩这类判断一律留 [待人工]，草案原句（书名号内）与锚不在此列"))
+                    flagged = True
+                    break
+            if not flagged:
+                mv2, me = VERDICT.search(dom), EFFECT.search(NOUN_WASH.sub("", dom))
+                if mv2 and me:
+                    hits.append(("EIP-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——本次计划是否有效·程序是否违法这类裁定本件一律不自判，留 [待人工]；草案原句（书名号内）与锚不在此列"))
         if EMPTY_LIE.search(ln):
             hits.append(("EIP-COUNT", i, "把「未检索到」写成「无／没有」"))
     return hits
@@ -334,9 +350,30 @@ def selftest() -> int:
         ("钉阈·真判断语气（会）必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 本次解锁条件会达成。\n\n## 二、八项逐字速读", 1),
          "「解锁」与判断语气「会」"),
+        ("钉阈·市价冒充授予价必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「授予价格参考市价 30 元，最终由董事会决定」", 1),
+         "数落在参照价「市价」上"),
+        ("钉阈·面值冒充授予价必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「授予价格以股票面值 1 元为基准，实际价格待定」", 1),
+         "数落在参照价「面值」上"),
+        ("钉阈·账面值冒充必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「授予价格按每股账面净资产 8.50 元确定」", 1),
+         "数落在参照价「账面净资产」上"),
+        ("钉阈·均价是参照价不是授予价必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「授予价格即前 20 个交易日均价 25.20 元」", 1),
+         "数落在参照价「均价」上"),
         ("钉阈·否决式判断句必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：授予应予否决。\n\n## 二、八项逐字速读", 1),
          "「授予」与判断语气「应予」"),
+        ("钉阈·免责句后半的真判断必发 EIP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 说明：本件不判名单真伪；授予一定能行权。\n\n## 二、八项逐字速读", 1),
+         "本件自己写的话里有「一定能行权」"),
+        ("钉阈·免责句后半的判断式必发 EIP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 本件不接代办；摊销会逐年上升。\n\n## 二、八项逐字速读", 1),
+         "「摊销」与判断语气「会」"),
+        ("钉阈·裸判断语气（会）家族必发 EIP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：股权激励会带来收益。\n\n## 二、八项逐字速读", 1),
+         "「收益」与判断语气「会」"),
         ("钉阈·自裁效力族二必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 综上，本次审议程序违规。\n\n## 二、八项逐字速读", 1),
          "裁定前缀「综上」＋效力判断「违规」"),
@@ -358,6 +395,12 @@ def selftest() -> int:
          gt.replace("## 二、八项逐字速读", "- 说明：草案另载有回购注销安排，原句见第八章。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
         ("对照·机构名里的「会」不误伤（EIP-LINE 零发）",
          gt.replace("## 二、八项逐字速读", "- 说明：激励对象名单以股东大会批准为准。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
+        ("对照·会计处理说明不误伤（EIP-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：行权会计处理按草案列示。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
+        ("对照·会议记录陈述不误伤（EIP-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：会议记录载明考核条款见第六章。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
+        ("对照·每股金额带下限括注不误伤（EIP-PRICE 零发）",
+         gt.replace(ROW_PRICE, "「授予价格为每股 12.60 元（不低于法定下限）」", 1), "EIP-PRICE"),
         ("对照·考核委员会陈述句不误伤（EIP-LINE 零发）",
          gt.replace("## 二、八项逐字速读", "- 说明：本次授予由薪酬与考核委员会核实。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
         ("对照·委员会拟定行权价不误伤（EIP-LINE 零发）",
