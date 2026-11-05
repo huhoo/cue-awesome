@@ -77,6 +77,11 @@
       "description": "给一家 A 股公司拉一份公开信息风险清单：查得到的逐条带披露锚，查不到的逐类写明原因；不给投资结论，不出法律意见。"
     },
     {
+      "name": "equity-incentive-plan-cn",
+      "source": "./equity-incentive-plan-cn",
+      "description": "把一份A股股权激励草案拆成八项条款逐字卡：形式、数量、对象、价格、期限、考核、特殊情形、程序各挂原句与锚，测算一律待人工。"
+    },
+    {
       "name": "event-brief-cn",
       "source": "./event-brief-cn",
       "description": "把一份A股临时公告变成五段可核对速读卡：逐字关键数带出处、影响链候选、同类对照、待核清单；评级目标价一律[待人工]。"
