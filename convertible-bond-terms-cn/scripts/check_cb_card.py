@@ -6,7 +6,7 @@
   CB-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
             八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   CB-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  CB-LINE   红线断言两道：①定式禁词转股收益／转股价值／套利空间／一定能转／必被赎回／会被强制赎回／建议申购／
+  CB-LINE   红线断言三道：①定式禁词转股收益／转股价值／套利空间／一定能转／必被赎回／会被强制赎回／建议申购／
             代客申购／代客转股／稳赚／零风险／保证收益／必涨／目标价／评级上调／评级下调；②判断式规则——把项行拆成
             字段（名目／书名号原句／锚／句体）后，凡非 [待人工]、非「不接／不出／不判」类免责行、非书名号内的公告原句，
             只要「主题词（收益·价值·评级·目标价·赎回·回售·下修·风险·概率·利好）」与「判断语气（应·将·会·必·有望·
@@ -64,7 +64,7 @@ SUBJECT = re.compile(r"收益|价值|评级|目标价|赎回|回售|下修|修�
 TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|提升|下滑|增加|减少|回升|破发|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
 VERDICT = re.compile(r"结论|综上|因此|可见|据此|本院认为|本件认为|本卡认为|本件判断|判定|认定|断言")
 EFFECT = re.compile(r"无效|有效|作废|不成立|成立|撤销|违法|违规|应予支持|予以支持|应支持|支持|必然|属实")
-NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会")   # 机构名 token（委员会·董事会·监事会·股东大会·理事会·工会·发布会…）的「会」是名词后缀不是判断语气，先从语气域整体洗掉再判
+NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会|会[计议场话晤所馆堂员]")   # 「X 会」机构名后缀与「会 X」名词（会计·会议·会场·会员·会话）两头的「会」都是名词性成分，不是判断语气——两头按形态一起洗，不枚举个案
 DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
@@ -218,22 +218,29 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("CB-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if not (PENDING.search(ln) or DISCLAIM.search(ln)):
+        if PENDING.search(ln):
+            pass   # 行首 [待人工] 标记管全行：这些判断的登记位就在这一行里
+        else:
             dom = judge_field(ln)
-            mb = BANNED.search(dom)
-            if mb:
-                hits.append(("CB-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
-            else:
-                for seg in SEG_SPLIT.split(dom):
-                    seg = NOUN_WASH.sub("", seg)
-                    ms, mt = SUBJECT.search(seg), TONE.search(seg)
-                    if ms and mt:
-                        hits.append(("CB-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
-                        break
-                else:
-                    mv2, me = VERDICT.search(dom), EFFECT.search(dom)
-                    if mv2 and me:
-                        hits.append(("CB-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——某条款是否有效·是否构成利好这类裁定本件一律不自判，留 [待人工]；公告原句（书名号内）与锚不在此列"))
+            flagged = False
+            for seg in SEG_SPLIT.split(dom):
+                if DISCLAIM.search(seg):
+                    continue   # 免责按分句算，不跨句把后半句的真判断一起免掉
+                seg = NOUN_WASH.sub("", seg)
+                mb = BANNED.search(seg)
+                if mb:
+                    hits.append(("CB-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」——同一行前半写了免责句也不顶，豁免只到分句为止"))
+                    flagged = True
+                    break
+                ms, mt = SUBJECT.search(seg), TONE.search(seg)
+                if ms and mt:
+                    hits.append(("CB-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——收益·价值·评级·目标价·赎回·回售这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
+                    flagged = True
+                    break
+            if not flagged:
+                mv2, me = VERDICT.search(dom), EFFECT.search(NOUN_WASH.sub("", dom))
+                if mv2 and me:
+                    hits.append(("CB-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——本次发行是否有效·条款是否成立这类裁定本件一律不自判，留 [待人工]；公告原句（书名号内）与锚不在此列"))
         if EMPTY_LIE.search(ln):
             hits.append(("CB-COUNT", i, "把「未检索到」写成「无／没有」"))
     return hits
@@ -310,6 +317,15 @@ def selftest() -> int:
         ("钉阈·本项词与别项数混排必发 CB-TRIG",
          gt.replace(ROW_HUI, "「回售条件另定，股票收盘价连续三十个交易日低于转股价格的 85% 时，董事会可下修」", 1),
          "落在别项触发语境「下修」里"),
+        ("钉阈·免责句后半的真判断必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 说明：本件不接申购；转股收益一定能兑现。\n\n## 二、八项逐字速读", 1),
+         "本件自己写的话里有「转股收益」"),
+        ("钉阈·自裁效力族一必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 结论：本次发行无效。\n\n## 二、八项逐字速读", 1),
+         "裁定前缀「结论」＋效力判断「无效」"),
+        ("钉阈·自裁效力族二必发 CB-LINE",
+         gt.replace("## 二、八项逐字速读", "- 综上，该赎回条款作废。\n\n## 二、八项逐字速读", 1),
+         "裁定前缀「综上」＋效力判断「作废」"),
         ("钉阈·否决式判断句必发 CB-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：回售应予否决。\n\n## 二、八项逐字速读", 1),
          "「回售」与判断语气「应予」"),
@@ -341,6 +357,19 @@ def selftest() -> int:
     rows.append(("对照·夹带日期的合格触发句不误伤（CB-TRIG 零发）",
                  ctl_text != gt and not [m for c, _, m in ch if c == "CB-TRIG"],
                  f"注入生效＝{ctl_text != gt}·CB-TRIG 实发 {len([m for c, _, m in ch if c == 'CB-TRIG'])} 条"))
+    ctrls_cb = (
+        ("对照·会计处理说明不误伤（CB-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：赎回的会计处理以募集说明书为准。\n\n## 二、八项逐字速读", 1), "CB-LINE"),
+        ("对照·会议记录陈述不误伤（CB-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：会议记录载明票面利率梯度。\n\n## 二、八项逐字速读", 1), "CB-LINE"),
+    )
+    for n, (name, text, code) in enumerate(ctrls_cb, 1):
+        nproof += 1
+        cz = pin / f"control-cb-{n}.md"
+        cz.write_text(text, encoding="utf-8")
+        th = check_text(cz.read_text(encoding="utf-8"))
+        fired = [m for cd, _, m in th if cd == code]
+        rows.append((name, text != gt and not fired, f"注入{'生效' if text != gt else '作废'}·{code} 实发 {len(fired)} 条"))
     control2 = pin / "control-revision-dated.md"
     ctl2 = gt.replace("「前二十个交易日中至少十个交易日收盘价低于当期转股价格的 85% 时，董事会有权提出修正方案」",
                       "「公告日期为 2026 年 3 月 1 日，前二十个交易日中至少十个交易日收盘价低于当期转股价格的 85% 时，董事会有权提出修正方案」", 1)

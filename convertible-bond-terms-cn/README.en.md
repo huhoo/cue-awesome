@@ -59,7 +59,7 @@ curl -s -X POST "$ROUTING_URL" -H "Authorization: Bearer $CUE_API_KEY" \
 
 ## 5. Boundaries
 
-- Conversion gain, conversion value, arbitrage space, call outcomes, revision likelihood, ratings and target prices stay `[待人工]`; no "sure to convert", "must be called", "subscribe now", "steady win", "zero risk", "guaranteed return"; the card never adjudicates validity or whether a clause should be rejected - that shape fires under the verdict-prefix plus effect-word rule;
+- Conversion gain, conversion value, arbitrage space, call outcomes, revision likelihood, ratings and target prices stay `[待人工]`; no "sure to convert", "must be called", "subscribe now", "steady win", "zero risk", "guaranteed return"; the card never adjudicates validity or whether a clause should be rejected - that shape fires under the verdict-prefix plus effect-word rule; noun-shaped 会 is washed out of the tone domain in both directions (the suffix of 董事会 / 委员会 / 监事会 / 股东大会, the head of 会计 / 会议 / 会员), so "the call price is set by the board" and "the accounting treatment follows the prospectus" stay green while "conversion gains will surely materialise" fires, and exemptions are clause-scoped - a disclaimer at the head of a line does not shelter a judgement written after the semicolon;
 - No subscription or conversion operations: no subscription orders, no conversion instructions, no acting on your behalf;
 - Trigger values verbatim: numbers and day counts may not be replaced by "meets the agreed conditions" or "see the announcement";
 - Missing means `未检索到`, never a habit-based fill and never "none";

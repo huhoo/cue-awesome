@@ -6,7 +6,7 @@
   BP-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
             八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   BP-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  BP-LINE   红线断言两道：①定式禁词中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／
+  BP-LINE   红线断言三道：①定式禁词中标概率／必中标／稳赚／零风险／保证收益／利好／建议投标／代客投标／陪标／
             围标／串通报价／利益输送，以及异议…成立／目标价／评级上调下调／收入（营收）增减；
             ②判断式规则——项行先拆成字段（名目／书名号原句／锚／句体），红线判据域只取本件自己写的话：
             非 [待人工]、非「不接／不出／不判」类免责行、剥掉公告原句（书名号内）与锚之后，只要主题词
@@ -70,14 +70,15 @@ SEG_SPLIT = re.compile(r"[，。；、！？；]+|[,!](?!\s*\d)")   # 千分位�
 AMT_SEM = re.compile(r"中标|决标|定标|成交|候选人|投标|报价|合同价|发包价|签约价")
 AMT_BRACKET = re.compile(r"^[（(]")
 ATTRIB_WINDOW = 24
-AMT_DISQUAL = re.compile(r"上限|控制价|预算|概算|估算|限价|最高|最低|不高于|不低于|保证金|意向|参考")
+AMT_REF_NOUN = r"上限|控制价|最高限价|限价|预算|概算|估算|基准价|评标基准|账面净资产|账面值|净值|评估价|参考价|市场价|市价|面值|保证金|意向价"
+AMT_DISQUAL = re.compile(AMT_REF_NOUN + r"|最高|最低|不高于|不低于|参考|意向")   # 参照价词族：数挂在这些词上就不是中标实额（与「实额后的括注约束」两分）
 AMT_UNIT = re.compile(r"\d[\d,\.]*\s*(?:亿元|万元|元)")
 AMT_VAGUE = re.compile(r"详见[^，。]*|以合同为准|以[^，。]{0,6}为准|另行确定|另行约定|另行公告|另定|金额待定|待定|尚未披露|未披露|尚未公布|未公布|届时|尚未明确")
 SUBJECT = re.compile(r"异议|质疑|评级|目标价|收入|营收|利润|概率|利好|收益|风险|废标|围标|串标|中标可能|回款|工期")
 TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|提升|下滑|增加|减少|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
 VERDICT = re.compile(r"结论|综上|因此|可见|据此|本院认为|本件认为|本卡认为|本件判断|判定|认定|断言")
 EFFECT = re.compile(r"无效|有效|作废|不成立|成立|撤销|违法|违规|应予支持|予以支持|应支持|支持|必然|属实")
-NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会")   # 机构名 token（委员会·董事会·监事会·股东大会·理事会·工会·发布会…）的「会」是名词后缀不是判断语气，先从语气域整体洗掉再判
+NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组]会|会[计议场话晤所馆堂员]")   # 「X 会」机构名后缀与「会 X」名词（会计·会议·会场·会员·会话）两头的「会」都是名词性成分，不是判断语气——两头按形态一起洗，不枚举个案
 DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
 CORE_STRIP = re.compile(r"[\s\u3000「」『』«»“”（）()《》【】，,。.；;：:、！!？~\-—_·/％%*#]+")
 SECTIONS = (("头部申报", r"头部申报"), ("八项逐字速读", r"逐字速读|八项速读"),
@@ -114,8 +115,8 @@ def amount_field(item: dict) -> str:
     return item["spoken"] or item["body"]
 
 
-AMT_AS_CAP = re.compile(r"^[为是即报]?\s*(?:不高于|不低于)?[^，。；、）)]{0,10}?(上限|控制价|限价|最高限价|概算|预算)")
-AMT_CAP_AFTER = re.compile(r"^[，、]?\s*(?:即|为|系|是|属于?)\s*[^，。]{0,10}(上限|控制价|限价|概算|预算)")
+AMT_AS_CAP = re.compile(r"^[为是即报]?\s*(?:不高于|不低于)?[^，。；、）)]{0,10}?(" + AMT_REF_NOUN + ")")
+AMT_CAP_AFTER = re.compile(r"^[，、]?\s*(?:即|为|系|是|属于?)\s*[^，。]{0,12}(" + AMT_REF_NOUN + ")")
 
 
 def amount_gap(clause: str):
@@ -230,22 +231,29 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("BP-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if not (PENDING.search(ln) or DISCLAIM.search(ln)):
+        if PENDING.search(ln):
+            pass   # 行首 [待人工] 标记管全行：这些判断的登记位就在这一行里
+        else:
             dom = judge_field(ln)
-            mb = BANNED.search(dom)
-            if mb:
-                hits.append(("BP-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」"))
-            else:
-                for seg in SEG_SPLIT.split(dom):
-                    seg = NOUN_WASH.sub("", seg)
-                    ms, mt = SUBJECT.search(seg), TONE.search(seg)
-                    if ms and mt:
-                        hits.append(("BP-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——异议·评级·目标价·收入这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
-                        break
-                else:
-                    mv2, me = VERDICT.search(dom), EFFECT.search(dom)
-                    if mv2 and me:
-                        hits.append(("BP-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——中标效力·异议是否成立这类裁定本件一律不自判，留 [待人工]；公告原句（书名号内）与锚不在此列"))
+            flagged = False
+            for seg in SEG_SPLIT.split(dom):
+                if DISCLAIM.search(seg):
+                    continue   # 免责按分句算，不跨句把后半句的真判断一起免掉
+                seg = NOUN_WASH.sub("", seg)
+                mb = BANNED.search(seg)
+                if mb:
+                    hits.append(("BP-LINE", i, f"红线断言词出现在没有 [待人工] 的行：本件自己写的话里有「{mb.group(0)}」——同一行前半写了免责句也不顶，豁免只到分句为止"))
+                    flagged = True
+                    break
+                ms, mt = SUBJECT.search(seg), TONE.search(seg)
+                if ms and mt:
+                    hits.append(("BP-LINE", i, f"判断式结论落在非待人工行：本件自己写的话里「{ms.group(0)}」与判断语气「{mt.group(0)}」同段出现——异议·评级·目标价·收入这类判断一律留 [待人工]，公告原句（书名号内）与锚不在此列"))
+                    flagged = True
+                    break
+            if not flagged:
+                mv2, me = VERDICT.search(dom), EFFECT.search(NOUN_WASH.sub("", dom))
+                if mv2 and me:
+                    hits.append(("BP-LINE", i, f"自裁效力判断落在非待人工行：本件自己写的话里裁定前缀「{mv2.group(0)}」＋效力判断「{me.group(0)}」——中标效力·异议是否成立这类裁定本件一律不自判，留 [待人工]；公告原句（书名号内）与锚不在此列"))
         if EMPTY_LIE.search(ln):
             hits.append(("BP-COUNT", i, "把「未检索到」写成「无／没有」"))
     return hits
@@ -337,6 +345,15 @@ def selftest() -> int:
         ("钉阈·收入影响族必发 BP-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：项目收入可能翻倍。\n\n## 二、八项逐字速读", 1),
          "「收入」与判断语气「可能」"),
+        ("钉阈·免责句后半的真判断必发 BP-LINE",
+         gt.replace("## 二、八项逐字速读", "- 说明：本件不判异议是否成立；项目收入一定能增加。\n\n## 二、八项逐字速读", 1),
+         "本件自己写的话里有「收入一定能增加」"),
+        ("钉阈·评标基准价冒充中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「投标报价为评标基准价 8,600 万元」", 1),
+         "＝评标基准"),
+        ("钉阈·账面值冒充中标额必发 BP-AMT",
+         gt.replace(ROW_AMT, "「中标金额为账面值 8,600 万元」", 1),
+         "＝账面值"),
         ("钉阈·否决式判断句必发 BP-LINE",
          gt.replace("## 二、八项逐字速读", "- 结论：异议应予否决。\n\n## 二、八项逐字速读", 1),
          "「异议」与判断语气「应予」"),
@@ -370,6 +387,12 @@ def selftest() -> int:
          gt.replace(ROW_AMT, "「第一中标候选人为甲，投标报价为人民币 8,600 万元（不高于最高投标限价）」", 1), "BP-AMT"),
         ("对照·拟中标实额按边界放行（BP-AMT 零发）",
          gt.replace(ROW_AMT, "「第一候选人甲，拟中标金额 8,600 万元」", 1), "BP-AMT"),
+        ("对照·会议记录陈述不误伤（BP-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：会议记录载明异议渠道见第六节。\n\n## 二、八项逐字速读", 1), "BP-LINE"),
+        ("对照·评标委员会组建句不误伤（BP-LINE 零发）",
+         gt.replace("## 二、八项逐字速读", "- 说明：评标委员会由招标人依法组建。\n\n## 二、八项逐字速读", 1), "BP-LINE"),
+        ("对照·实额后不跟参照价不误伤（BP-AMT 零发）",
+         gt.replace(ROW_AMT, "「第一中标候选人某建设集团，中标金额为人民币 8,600 万元」", 1), "BP-AMT"),
         ("对照·机构名陈述句不误伤（BP-LINE 零发）",
          gt.replace("## 二、八项逐字速读", "- 说明：异议需提交股东大会处理。\n\n## 二、八项逐字速读", 1), "BP-LINE"),
         ("对照·委员会核实句不误伤（BP-LINE 零发）",
