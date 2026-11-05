@@ -16,14 +16,16 @@
              判定／认定…）与效力判断（无效／有效／作废／不成立／成立／撤销／违法／违规／属实…）同现即发；
   EIP-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里
              「未检索到」的项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  EIP-PRICE  授予价格与定价方法一项按**规则**判、不按词表判：①先把项行拆成字段（名目／书名号原句／锚／句体），
+  EIP-PRICE  授予价格与定价方法一项按**结构体**判、不按词表也不按位置判：①先把项行拆成字段（名目／书名号原句／锚／句体），
              判据域只取该项自己的原句；②先剥日期（YYYY年M月D日／YYYY年／M月D日／ISO 形一律从取数域剔除，
-             公告日的「1 日」不是价格）；③**紧邻限定词归类**：句里每个金额候选单独归档——从数往前跳过单位与连接词（每股·每份·人民币·为·即·按·暂定·
-             最终·后·前…），取最近的那个实义名词定所有权：领价名词（授予价格·行权价格·定价·折扣）才算本项实额，
-             参照价名词（市价·市场价·面值·均价·收盘价·开盘价·净值·账面值·账面净资产·评估价·参考价·基准价）
-             **即剔，哪怕同一窗口别处写了「授予价格」**；「每股」是单位不是所有者，「面值每股 1 元」仍归面值；
-             左边没有名词时看同段里数右边最近的名词，走到前一个数或前一个标点为止（前一个参照价数不越界管后面的数）；
-             百分比另走定价语境那条（不低于·均价·折扣·定价在同段或紧邻前段收束，泛用的「比例」不算）；④反向判兜底：剥日期后没有一段合格、又没写「未检索到」即发，
+             公告日的「1 日」不是价格）；③**先建结构体、判定只吃结构体**（不在原文上挪窗、也不靠补词）：取数域按「SEG_SPLIT 标点 ∪ PRICE_ABS 金额边界」
+             切成短语表，每短语＝〔数左｜内金额｜数右〕，内领价·内参照·内金额三列偏移各自算好；一枚候选归谁所有只在本短语内判一次——
+             数左跳过单位（每股·每份·人民币·元·约·为·即·按·暂定·最终·后·前…）后最近的实义名词是领价族（授予价格·行权价格·定价·折扣）
+             才算本项实额，是参照族（市价·市场价·面值·均价·收盘价·开盘价·净值·账面值·账面净资产·评估价·参考价·基准价）且比领价更靠数
+             即剔，**哪怕同一短语别处写了「授予价格」**；「每股」是单位不是所有者，「面值每股 1 元」仍归面值；数左什么都不剩时看本短语数右
+             （「每股 12.60 元的授予价格」合格、「每股 1 元的股票面值」即剔）；短语内两头都没名词＝**孤立数**（主语省略，
+             「最终每股 12.60 元」里「最终」是状语不是所有者）：继承前序最近一次的领价名词，**前序从头到尾只出现过参照价时不继承、
+             本数仍归参照**（防把参照洗成合格）；④反向判兜底：剥日期后没有一段合格、又没写「未检索到」即发，
              空泛语（另行确定·另行约定·届时公告·待定·由董事会确定·按有关规定执行·以…为准）只决定发红那句话的措辞，
              换同义词换不掉判据。发红句把被剥的日期、落空的候选段与取数域首段一并点名当证据。
 
@@ -115,73 +117,109 @@ def price_field(item: dict) -> str:
     return item["spoken"] or item["body"]
 
 
+def trim_units(pre: str):
+    """数左那一段先跳过单位与连接词（每股·每份·人民币·元·约·为·是·即·按·暂定·最终·后·前·的·等…），
+    返回剩余左文与被跳过段里是否出现过系词——「每股」是单位不是所有者，「定为」才是谓语。"""
+    rest, copula = pre, False
+    while True:
+        stripped = UNIT_SKIP.sub("", rest)
+        if stripped == rest:
+            break
+        if COPULA_SEEN.search(rest[len(stripped):]):
+            copula = True
+        rest = stripped
+    if rest.rstrip().endswith("股"):
+        rest = rest.rstrip()[:-1]
+    return rest, copula
+
+
+def build_phrases(domain: str) -> list[dict]:
+    """显式结构体：把取数域按「SEG_SPLIT 标点 ∪ PRICE_ABS 金额边界」切成**短语表**，判定只吃这张表。
+    每短语＝〔数左 pre｜内金额｜数右 post〕，三列偏移各自算好：
+    heads_pre∥refs_pre＝本短语内的领价名词与参照价名词（带偏移），heads_post∥refs_post＝数右那两段同理，
+    left_at＝本短语起点（在它之前的全部文本是「前序」，供孤立数继承），text＝本短语全文（发红句要引它）。"""
+    money = list(PRICE_ABS.finditer(domain))
+    phrases: list[dict] = []
+    floor = 0
+    for k, m in enumerate(money):
+        start = floor
+        for punct in SEG_SPLIT.finditer(domain[floor:m.start()]):
+            start = max(start, floor + punct.end())
+        nxt_punct = len(domain)
+        for punct in SEG_SPLIT.finditer(domain[m.end():]):
+            nxt_punct = m.end() + punct.start()
+            break
+        nxt_money = money[k + 1].start() if k + 1 < len(money) else len(domain)
+        end = min(nxt_punct, nxt_money)
+        pre, post = domain[start:m.start()], domain[m.end():end]
+        phrases.append({
+            "money": m.group(0), "pre": pre, "post": post, "left_at": start,
+            "text": domain[start:end].strip(), "seg": (pre + m.group(0)).strip(),
+            "heads_pre": [(h.start(), h.group(0)) for h in PRICE_HEAD.finditer(pre)],
+            "refs_pre": [(r.start(), r.group(0)) for r in PRICE_IMPOSTOR.finditer(pre)],
+            "heads_post": [(h.start(), h.group(0)) for h in PRICE_HEAD.finditer(post)],
+            "refs_post": [(r.start(), r.group(0)) for r in PRICE_IMPOSTOR.finditer(post)],
+        })
+        floor = m.end()
+    return phrases
+
+
 def price_gap(clause: str):
-    """按**紧邻限定词**给本项定价定性（顺序与标点都不参与）：把该项原句（剥日期后）里每个金额候选单独归档——
-    从数往前跳过单位与连接词（UNIT_SKIP：每股·每份·人民币·元·约·为·是·即·按·暂定·最终·后·前·的·等…），
-    取途中最近的那个实义名词定所有权：是 PRICE_HEAD（授予价格·行权价格·定价·折扣）＝本项实额，算合格；
-    是 PRICE_IMPOSTOR（市价·市场价·面值·均价·收盘价·开盘价·净值·账面值·账面净资产·评估价·参考价·基准价·评标基准）
-    ＝参照价，即剔，**哪怕同一窗口别处出现了 PRICE_HEAD**；「每股」只是单位（UNIT_SKIP 里），不是所有者。
-    往前走的界＝上一个数或上一个标点中更靠后的那个（前一个参照价数不越界管后面的数）；
-    那一小段左边没有名词时，看同段里数**右边**最近的实义名词（「每股 12.60 元的授予价格」算合格）。
-    百分比另走定价语境那条：不低于·均价·折扣·定价·比例语境在同段或紧邻前段收束才算定价比例，泛用的「比例」不算。
-    **存在一个合格数即过；一个都没有、又没写「未检索到」才发**——不取首数即返回，也不靠逗号位置。
-    返回（被剥日期，合格数或 None，空泛语，落空候选与各自的剔除理由）。"""
+    """给本项定价定性：**先建短语结构体，判定只吃结构体**（不再在原文上挪窗、也不再补词）——
+    ①该项原句剥日期（DATE_SPAN：公告日·发行日这类一律从取数域剔除）后交 build_phrases 切成短语表，
+    每短语收一枚金额候选，带内领价·内参照·内金额三列偏移；②一枚候选归谁所有按这个次序判，只判一次：
+      （甲）**本短语数左**有名词：跳过单位后最近的实义名词是领价族（授予价格·行权价格·定价·折扣）＝本项实额，合格；
+            是参照族（市价·市场价·面值·均价·收盘价·开盘价·净值·账面值·账面净资产·评估价·参考价·基准价）
+            且比内领价更靠数＝参照价，即剔，**哪怕同一短语别处写了「授予价格」**（「面值每股 1 元」仍归面值）；
+            左文跳过单位后什么都不剩、但途中见过系词（定为·即·按·暂定…）＝谓语领出的实价，合格；
+      （乙）数左什么都没有：看**本短语数右**最近的名词（「每股 12.60 元的授予价格」合格、「每股 1 元的股票面值」即剔）；
+      （丙）短语内两头都没有名词＝**孤立数**（主语省略，如「最终每股 12.60 元」——「最终」是状语不是所有者）：
+            **继承前序最近一次的领价名词**（跨逗号的所有权传递）；前序从头到尾只出现过参照价、一次领价都没有时
+            **不继承、本数仍归参照**（防把参照洗成合格）；前序连名词都没有＝落空；
+    ③比率（N%／N折）另走定价语境那条，不参与上面的名词归属：不低于·均价·折扣·定价在同段或紧邻前段收束才算，
+      泛用的「比例」不算，别项语境（增长率·净利润·解除限售·占比·股本总额·有效期）同段出现即剔。
+    **存在一个合格候选即过；一个都没有、又没写「未检索到」才发**——不取首数即返回，也不看逗号在哪。
+    返回（被剥日期，合格段或 None，空泛语，落空候选与各自的剔除理由）。"""
     dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
     naked = DATE_SPAN.sub(" ", clause)
     vague = PRICE_VAGUE.search(naked)
     candidates: list[tuple[str, str]] = []
-    prev_end = 0
-    for m in PRICE_ABS.finditer(naked):
-        # 紧邻限定词归类：在数所在的那一小段里，从数往前跳过单位与连接词，取最近的那个实义名词来定档——
-        # 「每股」是单位不是所有者，所以「面值每股 1 元」归面值（参照价），「定为每股 12.60 元」归那个「定为」引导的实价。
-        # 往前走的界是「上一个数」与「上一个标点」中更靠后的那个：前一个数（哪怕是参照价）不越界管后面的数。
-        cut = prev_end
-        for punct in SEG_SPLIT.finditer(naked[prev_end:m.start()]):
-            cut = max(cut, prev_end + punct.end())
-        window = naked[cut:m.start()]
-        phrase = naked[cut:m.end()].strip()
-        owner = None
-        copula = False
-        rest = window
-        while True:
-            stripped = UNIT_SKIP.sub("", rest)
-            if stripped != rest:
-                if COPULA_SEEN.search(rest[len(stripped):]):
-                    copula = True
-                rest = stripped
-                continue
-            break
-        if rest.rstrip().endswith(tuple(["股"])):
-            rest = rest.rstrip()[:-1]
-        mh = None
+    for ph in build_phrases(naked):
+        seg = ph["seg"]
+        rest, copula = trim_units(ph["pre"])
+        mh = mr = None
         for h in PRICE_HEAD.finditer(rest):
             mh = h
-        mr = None
         for r in PRICE_IMPOSTOR.finditer(rest):
             if mr is None or r.start() > mr.start():
                 mr = r
         if mr and (not mh or mr.start() > mh.end()):
-            candidates.append((phrase, f"数紧挨着参照价「{mr.group(0)}」，那是市价·面值·均价一类的参照数，不是授予价或行权价"))
-            prev_end = m.end()
+            candidates.append((seg, f"数紧挨着参照价「{mr.group(0)}」（在本短语数左），那是市价·面值·均价一类的参照数，不是授予价或行权价"))
             continue
         if mh:
-            return dates, phrase, vague, candidates
+            return dates, seg, vague, candidates
         if copula and not mr:
-            return dates, phrase, vague, candidates
-        # 左边什么都没有时，看同一小段里数的右边最近的那个名词（「每股 12.60 元的授予价格」）
-        right = naked[m.end():]
-        nxt_punct = SEG_SPLIT.search(right)
-        right = right[:nxt_punct.start()] if nxt_punct else right
-        rh = [h for h in PRICE_HEAD.finditer(right)]
-        rr = [r for r in PRICE_IMPOSTOR.finditer(right)]
-        if rr and (not rh or rr[0].start() < rh[-1].start()):
-            candidates.append((phrase, f"数紧挨着参照价「{rr[0].group(0)}」（在数之后），不是授予价或行权价"))
-            prev_end = m.end()
+            return dates, seg, vague, candidates
+        r0 = ph["refs_post"][0] if ph["refs_post"] else None
+        h_last = ph["heads_post"][-1] if ph["heads_post"] else None
+        if r0 and (h_last is None or r0[0] < h_last[0]):
+            candidates.append((seg, "数紧挨着参照价「" + r0[1] + "」（在本短语数右），不是授予价或行权价"))
             continue
-        if rh:
-            return dates, phrase, vague, candidates
-        candidates.append((phrase, "数前后都没有领价的实义名词（授予价格·行权价格·定价·折扣），也没有「定为每股 N 元」这类谓语"))
-        prev_end = m.end()
+        if ph["heads_post"]:
+            return dates, seg, vague, candidates
+        before = naked[:ph["left_at"]]
+        bh = None
+        for h in PRICE_HEAD.finditer(before):
+            bh = h
+        br = None
+        for r in PRICE_IMPOSTOR.finditer(before):
+            br = r
+        if bh:
+            return dates, seg, vague, candidates
+        if br:
+            candidates.append((seg, f"本短语两头都没有领价名词，前序也只出现过参照价「{br.group(0)}」，孤立数不越界继承"))
+            continue
+        candidates.append((seg, "数前后与本短语都没有领价的实义名词（授予价格·行权价格·定价·折扣），也没有「定为每股 N 元」这类谓语，前序同样没有所有者可继承"))
     segs = [s.strip() for s in SEG_SPLIT.split(naked)]
     for idx, s in enumerate(segs):
         if not s or not PRICE_RATIO.search(s):
@@ -389,9 +427,15 @@ def selftest() -> int:
         ("钉阈·真判断语气（会）必发 EIP-LINE",
          gt.replace("## 二、八项逐字速读", "- 本次解锁条件会达成。\n\n## 二、八项逐字速读", 1),
          "「解锁」与判断语气「会」"),
+        ("钉阈·继承不越界：本短语自归参照必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「授予价格参考股票面值 1 元，市价 5 元」", 1),
+         "「市价 5 元」＝数紧挨着参照价「市价」（在本短语数左）"),
+        ("钉阈·孤立数无前序领价不洗绿必发 EIP-PRICE",
+         gt.replace(ROW_PRICE, "「参考市价 30 元，每股 12.60 元」", 1),
+         "「每股 12.60 元」＝本短语两头都没有领价名词，前序也只出现过参照价「市价」，孤立数不越界继承"),
         ("钉阈·数后紧跟参照价必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「每股 1 元面值的股票另行确定价格」", 1),
-         "＝数紧挨着参照价「面值」（在数之后）"),
+         "＝数紧挨着参照价「面值」（在本短语数右）"),
         ("钉阈·参照价在前授予价在后仍须发必发 EIP-PRICE",
          gt.replace(ROW_PRICE, "「参考市价 30 元后授予价格另行确定」", 1),
          "「参考市价 30 元」＝数紧挨着参照价「市价」"),
@@ -452,6 +496,12 @@ def selftest() -> int:
          gt.replace("## 二、八项逐字速读", "- 说明：会议记录载明考核条款见第六章。\n\n## 二、八项逐字速读", 1), "EIP-LINE"),
         ("对照·面值每股在前、合格价在后不误伤（EIP-PRICE 零发）",
          gt.replace(ROW_PRICE, "「授予价格参考股票面值每股 1 元，最终定为每股 12.60 元」", 1), "EIP-PRICE"),
+        ("对照·主语省略的授予价不误伤（EIP-PRICE 零发·R4-1）",
+         gt.replace(ROW_PRICE, "「授予价格参考面值 1 元，最终每股 12.60 元」", 1), "EIP-PRICE"),
+        ("对照·状语非系词跨逗号不误伤（EIP-PRICE 零发·R4-1 同族）",
+         gt.replace(ROW_PRICE, "「授予价格参考股票面值 1 元，最终由董事会决定每股 12.60 元」", 1), "EIP-PRICE"),
+        ("对照·均价在前而领价在场不误伤（EIP-PRICE 零发）",
+         gt.replace(ROW_PRICE, "「授予价格不低于草案公告前 20 个交易日均价，最终每股 12.60 元」", 1), "EIP-PRICE"),
         ("对照·数右有领价名词不误伤（EIP-PRICE 零发）",
          gt.replace(ROW_PRICE, "「每股 12.60 元的授予价格」", 1), "EIP-PRICE"),
         ("对照·参照价之后另有合格授予价不误伤（EIP-PRICE 零发）",
