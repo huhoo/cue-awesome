@@ -175,6 +175,11 @@
       "name": "bid-panorama-cn",
       "source": "./bid-panorama-cn",
       "description": "把一单招投标披露拆成八项逐字卡：项目、招标人、开标、评标、中标候选人金额、公示、履约、异议各挂原句与锚。"
+    },
+    {
+      "name": "ma-restructuring-terms-cn",
+      "source": "./ma-restructuring-terms-cn",
+      "description": "把一份A股重大资产重组文件拆成八项逐字卡：概况、对方、标的、定价、支付、承诺、锁定、审批各挂原句与锚，参照数不顶账。"
     }
   ]
 }
