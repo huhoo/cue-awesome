@@ -17,6 +17,16 @@ npx skills add huhoo/cue-awesome --skill cue-omni-ontology
 
 [上手与复用指令](cue-omni-ontology/README.md) · [微软公开披露新解析实测](cue-omni-ontology/assets/public-example/live-preview.md) · [验证范围与边界](cue-omni-ontology/references/verification.md)
 
+## 再试一次：A 股场景三枚
+
+| 想问什么 | 装哪一枚 | 装完之后一句 prompt |
+|---|---|---|
+| 「这家公司最近几期数字摆在一起是什么形状」 | `npx skills add huhoo/cue-awesome --skill tear-sheet` | 「用 tear-sheet 出一份 [公司] 的一页纸，事件与风险只填直查命中的，观点区留白。」 |
+| 「这份财报有没有什么能对比的差异」 | `npx skills add huhoo/cue-awesome --skill cn-earnings-note` | 「用 cn-earnings-note 出一份 [公司][季度] 财报点评初稿：四期差异、科目勾稽、预告对照，评级判断位一律 [待人工]。」 |
+| 「未来三个月有哪些确定日子要盯」 | `npx skills add huhoo/cue-awesome --skill catalyst-calendar` | 「用 catalyst-calendar 出一份自选清单未来 90 天的事件表，只列已披露或法定可推导两种口径的日期。」 |
+
+三枚都走 Cue 通道，装完配一把 key 就能问；不装也照面文出卡骨架，代价是数据腿那一栏只能写「未检索到」。取 key：<https://cuecue.cn/hub/api-key>。
+
 ## Skills
 
 > 「用途」列取自各包 frontmatter 的 `summary`,为**逐字现值**——单一权威字段,原样呈现,本表不另撰写、不改写。

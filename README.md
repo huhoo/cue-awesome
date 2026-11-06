@@ -17,6 +17,16 @@ Then ask: **“Use cue-omni-ontology with its bundled demo. Show what the new re
 
 [Quick start and repeat-use prompts](cue-omni-ontology/README.en.md) · [Fresh Microsoft disclosure run](cue-omni-ontology/assets/public-example/live-preview.md) · [Verified scope and limits](cue-omni-ontology/references/verification.md)
 
+## Try three A-share scenarios
+
+| What to ask | Which skill to install | First prompt after installing |
+|---|---|---|
+| "How do the last few quarters line up for this company?" | `npx skills add huhoo/cue-awesome --skill tear-sheet` | "Use tear-sheet on [company]; fill events and risks only with items directly found, leave the view rows for manual." |
+| "Are there comparable differences in this filing?" | `npx skills add huhoo/cue-awesome --skill cn-earnings-note` | "Use cn-earnings-note to draft a review of [company]'s [quarter] filing: four-period deltas, account reconciliations, outlook comparison; rating and target price rows stay [manual]." |
+| "What confirmed dates should I watch in the next three months?" | `npx skills add huhoo/cue-awesome --skill catalyst-calendar` | "Use catalyst-calendar to build the 90-day event table for a watchlist, listing only dates that are already disclosed or legally derivable." |
+
+All three run on the Cue channel — install and configure one key to ask; without the channel they still produce the skeleton, the cost being that the data-leg column has to say "not found". Get a key: <https://cuecue.cn/hub/api-key>.
+
 ## Skills
 
 > The "What it does" column is each package's frontmatter `summary` shown **verbatim** — the single canonical summary field, reproduced as-is and not translated in this table.
