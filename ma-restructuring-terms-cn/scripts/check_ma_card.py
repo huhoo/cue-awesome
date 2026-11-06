@@ -6,17 +6,22 @@
   MA-STRUCT 五段齐：头部申报／八项逐字速读／口径对照／缺数清单／待人工，任一节缺失即发；
              八项名目另须在「逐字速读」段内**行级在场**——每枚名目一行以「- 名目：」起头，只在散文里提到不算占行；
   MA-QUOTE  每项原句与锚：项行的书名号（「」『』«»）内原句不得为空或只剩单字；「锚：」标签在而锚值为空同样发；
-  MA-LINE   红线断言三道：①定式禁词（是否划算／必能过会／稳赚／零风险／保证收益／利好／建议参与／建议申购／套利／
-             内幕信息／绕开审批／规避披露／代客申报／利益输送／估值合理）；②判断式规则——项行拆字段后，红线判据域只取
+  MA-LINE   红线断言三道：①定式禁词，含两支**按词族收**的断言——估值类评价（估值·评估值·定价·作价·对价 × 合理·公允·偏低·
+             偏高·充分·审慎，插语「很·较为·基本·大体·相当」不构成豁免）与审批类预测（获批·过会·核准·注册生效 × 概率·可能性 ×
+             大·高·很小·极低），另加是否划算／必能过会／稳赚／零风险／保证收益／利好／建议参与／建议申购／套利／内幕信息／
+             绕开审批／规避披露／代客申报／利益输送；②判断式规则——项行拆字段后，红线判据域只取
              本件自己写的话（剥掉书名号内的报告书原句与锚，非 [待人工] 行；免责按**分句**算不跨句，机构名「X 会」与
              「会 X」名词里的「会」先从语气域按形态洗掉），主题词（重组·并购·交易·标的·对价·评估·估值·承诺·补偿·
              锁定·过会·注册·审批·披露·股价·摊薄·稀释·收益·风险·业绩·协同·整合·复牌）与判断语气（应·应予·予以·将·会·
              必·有望·可期·可能·足以·构成·属于·意味着·支持·成立·无效·有效·上调·下调·增加·减少·高于·低于·赚·亏·
-             无疑·显然·肯定…）同段出现即发；③自裁效力层：裁定前缀（结论／综上／因此／本件认为／判定／认定…）与
+             无疑·显然·肯定·合理·公允·概率大·可能性极低…）同段出现即发——评价词族只写一份排除（「合理性·公允性·审慎性」名词形是说明对象不是断言），定式表与主题×语气共用同一份词表、不留双份真值；
+             `[待人工]` 标记与免责句都**只登记自己那一分句**（按分号、句号、逗号 cut 后逐段判），同一行后半写的肯定预测照发；③自裁效力层：裁定前缀（结论／综上／因此／本件认为／判定／认定…）与
              效力判断（无效／有效／作废／不成立／成立／撤销／违法／违规／属实…）同现即发；
   MA-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里「未检索到」的
              项行数；把「未检索到」写成「无该项／没有此项」一律发；
-  MA-VALUE  三格数字归属（定价方法与交易对价／支付方式与股份发行／业绩承诺与补偿安排）**以短语结构体为主**判：
+  MA-VALUE  三格数字归属（定价方法与交易对价／支付方式与股份发行／业绩承诺与补偿安排）**以短语结构体为主**判，
+             每格按面文的「X 与 Y」拆成**两个元素各自判**（评估值↔交易对价、发行价格↔发行数量、承诺净利润↔补偿安排；
+             前五个元素要有各自合格的数字候选，补偿安排那一支按安排用词认；唯一例外是共指——同短语内两本格名词夹着             系词（即为·即·为·是·等于·均为·都是）而只一枚数时，该数同时满足两元素），一枚合格候选只算它那一个要素到位、不替整组放行：
              ①项行拆字段，判据域只取该项自己的原句；②先剥日期（评估基准日、审计基准日、上市日这类一律从取数域剔除，
              「2025 年 12 月 31 日」不是对价）；③取数域按「标点 ∪ 数字边界」切成短语表，每枚候选（金额·股数·百分比）
              只在它自己那条短语里定档——数左跳过单位与连接词后最近的实义名词是本格族（评估值·交易对价·发行价格·
@@ -51,21 +56,49 @@ TMP_ROOTS: list[pathlib.Path] = []
 ITEMS = ("交易概况与方式", "交易对方与关联关系", "标的资产与权属", "定价方法与交易对价",
          "支付方式与股份发行", "业绩承诺与补偿安排", "锁定期与减持限制", "审批程序与披露义务")
 
-# 三格数字归属：每格一本族（算本格取到）与一外族（参照数，不顶本格账），共用同一台结构体机器
+# 参照数族（外族）：审计类按词族收——资产形与值·价·数·结果形都在同一族里，不举个案
+REF_COMMON = (r"账面价值|账面净值|账面净资产|净资产|审计(?:后)?(?:的)?(?:净)?资产|审计值|审计价|审计数|审计结果|"
+              r"评估机构|同行业|可比交易|可比公司|市盈率|市净率")
+# 三格数字归属：每格两元素（面文里那两个「与」各自的名字），共用同一台结构体机器。
+# kind="num" 的元素要有属于它自己的合格候选；kind="term" 的元素要原句里出现它自己的安排用词（补偿方式或补偿公式）。
+# 一元素判档时，外族＝本格参照数 ∪ 同格别元素的领有名词——别元素的数不顶本元素的账。
 NUM_CELLS = {
     "定价方法与交易对价": {
-        "own": re.compile(r"评估值|评估结果|评估净值|交易对价|对价总额|对价|标的估值|估值|增值额|增值率|定价"),
-        "foreign": re.compile(r"账面价值|账面净值|账面净资产|净资产|审计(?:后)?(?:的)?(?:净)?资产|评估机构|同行业|市盈率|市净率|可比交易|可比公司|股价|收盘价|开盘价|均价|配套募集资金|募集配套资金|发行数量|承诺净利润"),
+        "foreign": re.compile(REF_COMMON),
+        "elements": (
+            ("评估值", "num", re.compile(r"评估值|评估结果|评估净值|标的估值|估值|增值额|增值率")),
+            ("交易对价", "num", re.compile(r"交易对价|对价总额|支付对价|对价")),
+        ),
     },
     "支付方式与股份发行": {
-        "own": re.compile(r"发行价格|发行价|发行数量|发行股数|拟发行|本次发行|新增股份|支付股份|对价股份|现金对价|对价金额"),
-        "foreign": re.compile(r"发行前总股本|总股本|股本总额|发行上限|不超过|募集资金|配套资金|收盘价|开盘价|均价|市价|账面|评估值|交易对价|承诺净利润"),
+        "foreign": re.compile(REF_COMMON + r"|发行前总股本|总股本|股本总额|发行上限|不超过|募集资金|配套资金|"
+                              r"股价|收盘价|开盘价|均价|市价"),
+        "elements": (
+            ("发行价格", "num", re.compile(r"发行价格|发行价|每股的发行|定价基准")),
+            ("发行数量", "num", re.compile(r"发行数量|发行股数|拟发行|新增股份数|对价股份数|股份数量")),
+        ),
     },
     "业绩承诺与补偿安排": {
-        "own": re.compile(r"承诺净利润|承诺[^\n]{0,24}净利润|净利润承诺|业绩承诺|承诺数|承诺金额|应补偿股份|补偿股份数?|补偿金额|应回购股份"),
-        "foreign": re.compile(r"已实现净利润|实现净利润|实际净利润|历史净利润|营业收入|净利润率|净资产收益率|同比增长|上年|基准净利润|交易对价|发行价格|评估值"),
+        "foreign": re.compile(REF_COMMON + r"|已实现净利润|实现净利润|实际净利润|历史净利润|营业收入|净利润率|"
+                              r"净资产收益率|同比增长|上年|基准净利润"),
+        "elements": (
+            ("承诺净利润", "num", re.compile(r"承诺[^\n]{0,24}净利润|净利润承诺|承诺数|承诺金额|业绩承诺")),
+            ("补偿安排", "term", re.compile(r"补偿金额|应补偿股份|补偿股份数?|补偿比例|以股份补偿|股份补偿|"
+                                            r"现金补偿|先股份后现金|回购注销|不足部分以")),
+        ),
     },
 }
+# 外族还包含「别格的数」：别格元素的名词并入本格外族——交易对价的数不顶承诺净利润的账，
+# 评估值的数不顶发行数量的账（同格另一元素的数同样不算本元素的合格候选）。
+def _other_cells_own(this):
+    """别格元素的名词进本格外族；同格两元素之间不互相当参照数——它们各自是本格要的名词，归谁靠最近邻定，不靠互斥。"""
+    parts = [e[2].pattern for _c in NUM_CELLS.values() if _c is not this for e in _c["elements"]]
+    return "|".join(parts)
+
+
+for _name, _cell in NUM_CELLS.items():
+    _cell["foreign"] = re.compile(_cell["foreign"].pattern + "|(" + _other_cells_own(_cell) + ")")
+
 NUM = re.compile(r"\d[\d,\.]*\s*(?:万元|亿元|亿股|万股|倍|％|%|元|股)")
 DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
                        r"|\d{4}\s*年(?:\s*\d{1,2}\s*月)?(?:\s*\d{1,2}\s*日)?"
@@ -77,6 +110,7 @@ VAGUE = re.compile(r"另行确定|另行约定|另行协商|另定|届时公告|
 UNIT_SKIP = re.compile(r"(?:每股|每份|每一元|人民币|约|为|是|即|按|暂定|最终|合计|总计|分别|不低于|不超过|不高于|"
                        r"高于|低于|占|比例|占比|其中|含|部分|等|的|后|前|则|并|至|以及|万股|亿股|万元|亿元|股|元|万|亿)+"
                        r"\s*$")
+COPA_REF = re.compile(r"即为|均为|都是|等于|即|为|是")
 COPA = re.compile(r"为|定为|即|按|暂定|是|确定|达|至")
 SEG_SPLIT = re.compile(r"[，。；：！？]+|[,;](?!\s*\d)")   # 千分位逗号不断段；顿号算枚举不算归属边界（分年度枚举别把所有者切开）
 NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组独立]会|会[计议场话晤所馆堂员]")
@@ -84,15 +118,24 @@ ITEM = re.compile(r"^\s*[-*]\s*(" + "|".join(map(re.escape, ITEMS)) + r")[：:]"
 QUOTES = re.compile(r"[「『«]([^」』»]*)[」』»]")
 ANCHOR_SPLIT = re.compile(r"锚[:：]")
 ANCHOR_VAL = re.compile(r"锚[:：]\s*(\S.*)$")
+# 评价断言族与预测断言族按词族收：被评价的名词 × 插语（可有可无）× 评价词；预测动作 × 概率名词 × 程度词。
+# 插语不构成豁免——「估值很合理」「估值基本公允」与「估值合理」同判；「获批可能性极低」与「获批概率大」同判。
+VALUER_WORDS = r"合理(?!性)|公允(?!性)|偏低|偏高|充分|审慎(?!性)"   # 名词形「合理性·公允性·审慎性」是说明对象，不是评价断言
+DEGREE_WORDS = r"很|较为|比较|基本|大体|显然|明显|相当"
+VALUER_ASSERT = r"(?:估值|评估值?|定价|作价|对价)(?:的)?(?:" + DEGREE_WORDS + r")?(?:" + VALUER_WORDS + r")"
+PREDICT_ASSERT = r"(?:获批|通过审核|审核通过|过会|核准|注册生效|通过)(?:的)?(?:概率|可能性|几率)(?:很|非常|比|较|极)?"                  r"(?:大|高|小|低|不大|不高|极低)"
 BANNED = re.compile(r"是否划算|必能过会|一定能过会|稳赚|零风险|保证收益|利好|建议参与|建议申购|建议买入|建议卖出|"
-                    r"套利|内幕信息|绕开审批|规避披露|代客申报|代客投票|利益输送|估值合理|估值公允|必然获批")
+                    r"套利|内幕信息|绕开审批|规避披露|代客申报|代客投票|利益输送|必然获批"
+                    r"|" + VALUER_ASSERT + r"|" + PREDICT_ASSERT)
 SUBJECT = re.compile(r"重组|并购|交易|标的|对价|评估|估值|承诺|补偿|锁定|过会|注册|审批|披露|股价|摊薄|稀释|"
                      r"收益|风险|业绩|协同|整合|复牌|停复牌|发行|上市")
+# 同一份词族喂给两支：BANNED 认整句断言，主题×语气这一支认「名词与评价词被别的话隔开」的写法——排除式只写一次
 TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以|构成|属于|意味着|支持|成立|推翻|无效|有效|上调|下调|"
-                  r"提升|下滑|增加|减少|回升|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)")
+                  r"提升|下滑|增加|减少|回升|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)|"
+                  + VALUER_WORDS + r"|" + PREDICT_ASSERT)
 VERDICT = re.compile(r"结论|综上|因此|可见|据此|本院认为|本件认为|本卡认为|本件判断|判定|认定|断言")
 EFFECT = re.compile(r"无效|有效|作废|不成立|成立|撤销|违法|违规|应予支持|予以支持|应支持|支持|必然|属实")
-DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|禁止|未证|无法|不承诺")
+DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|不碰|不做|不代|禁止|未证|无法|不承诺")
 PENDING = re.compile(r"\[待人工\]")
 DECL = re.compile(r"共\s*(?:八|8)\s*项\s*[·：:|｜、]\s*缺\s*(\d+)\s*项")
 EMPTY_LIE = re.compile(r"(?:^|[\s：:])无(?:该项|此项)|没有(?:该项|此项)")
@@ -145,11 +188,11 @@ def trim_units(pre: str):
     return rest, copula
 
 
-def build_phrases(domain: str, spec: dict) -> list[dict]:
+def build_phrases(domain: str, own_list: list, foreign: re.Pattern) -> list[dict]:
     """显式结构体：把取数域按「SEG_SPLIT 标点 ∪ NUM 数字边界」切成短语表。
-    每短语＝〔数左｜本短语收的那枚候选｜数右〕，三列偏移＝内本格名词·内参照数名词·内候选，各自带偏移位；
-    候选形制＝金额（元·万元·亿元）∪股数（股·万股·亿股）∪倍数（倍）∪百分比（%·％）。"""
-    own, foreign = spec["own"], spec["foreign"]
+    每短语＝〔数左｜本短语收的那枚候选｜数右〕，三列偏移＝内本格名词（带元素序号）·内参照数名词·内候选，各自带偏移位；
+    候选形制＝金额（元·万元·亿元）∪股数（股·万股·亿股）∪倍数（倍）∪百分比（%·％）。
+    own_all 是整条短语里（数左＋数＋数右）所有本格名词的偏移与元素序号——共指判据要看整条短语，不只看数左。"""
     nums = list(NUM.finditer(domain))
     phrases: list[dict] = []
     floor = 0
@@ -164,68 +207,123 @@ def build_phrases(domain: str, spec: dict) -> list[dict]:
         nxt_num = nums[k + 1].start() if k + 1 < len(nums) else len(domain)
         end = min(nxt_punct, nxt_num)
         pre, post = domain[start:m.start()], domain[m.end():end]
+        text = domain[start:end]
+        own_pre, own_post, own_all = [], [], []
+        for idx, rx in enumerate(own_list):
+            for h in rx.finditer(pre):
+                own_pre.append((h.start(), h.end(), idx, h.group(0)))
+            for h in rx.finditer(post):
+                own_post.append((h.start(), h.end(), idx, h.group(0)))
+            for h in rx.finditer(text):
+                own_all.append((h.start(), h.end(), idx, h.group(0)))
         phrases.append({
-            "num": m.group(0), "pre": pre, "post": post, "left_at": start,
+            "num": m.group(0), "pre": pre, "post": post, "left_at": start, "text": text,
             "seg": (pre + m.group(0)).strip(),
-            "own_pre": [(h.start(), h.group(0)) for h in own.finditer(pre)],
-            "for_pre": [(r.start(), r.group(0)) for r in foreign.finditer(pre)],
-            "own_post": [(h.start(), h.group(0)) for h in own.finditer(post)],
-            "for_post": [(r.start(), r.group(0)) for r in foreign.finditer(post)],
+            "own_pre": own_pre, "own_post": own_post, "own_all": own_all,
+            "for_pre": [(r.start(), r.end(), r.group(0)) for r in foreign.finditer(pre)],
+            "for_post": [(r.start(), r.end(), r.group(0)) for r in foreign.finditer(post)],
+            "won": None,
         })
         floor = m.end()
     return phrases
 
 
 def value_gap(clause: str, spec: dict):
-    """三格数字归属的判法（**以短语结构体为主**，射程写在顶条，不自称覆盖所有归属表达）：
-    ①剥日期；②build_phrases 切短语表；③每枚候选只在本短语内定档——数左跳过单位后最近的实义名词属本族＝合格、
-    属外族且更靠数＝剔（哪怕同一短语别处写了本族名词）；数左什么都不剩时看数右；谓语（确定为·为·即…）领出的数
-    也算合格；④短语两头都没有名词＝孤立数（主语省略）才继承**前序最近一次的本族名词**——这一步扫的是剥日期后的
-    原串对应段（本短语起点之前的全部文本），不是结构体本身；前序一次本族名词都没出现过时不继承、本数仍归参照；
-    ⑤存在一枚合格候选即过，一枚都没有又没写「未检索到」才发。返回（被剥日期，合格段或 None，空泛语，落空候选与理由）。"""
+    """给一格的两个元素定档（**以短语结构体为主**，射程写在顶条，不自称覆盖所有归属表达）：
+    ①剥日期；②build_phrases 切短语表，每短语一枚候选、三列偏移里本格名词带元素序号；③候选归谁按这个次序判一次：
+      （甲）本短语数左——跳过单位与连接词后最近的实义名词：参照数与本格名词比位置，参照更靠数（或与本格同位）即剔，
+            否则本格名词属哪个元素，这枚候选就满足哪个元素；
+      （乙）数左什么都没有：看本短语数右最近的名词（参照更近即剔，本格更近则满足该元素）；
+      （丙）两头都空＝孤立数（主语省略）：从前序取最近的一个本格名词继承；前序只出现过参照数则不继承、仍归参照；
+      （丁）谓语（确定为·即·按…）领出而没踩到参照数时，按（丙）走继承，不单独放行；
+    ④**共指**：某元素在①〜③里没有自己的候选时，若同一短语内另一元素赢下一枚候选、而本元素的本格名词也在同一条短语里、
+      两者之间夹着共指系词（即为·均为·都是·等于·即·为·是），则该枚候选同时满足两元素——
+      「评估值即为交易对价 86,000 万元」是同值句，两个名词共指一枚数；共指系词不在场时严格式不动，
+      「评估值 86,000 万元，交易对价待定」仍发；
+    ⑤kind="term" 的元素（补偿安排）认它自己的安排用词，不要求金额；
+    ⑥逐元素判：每个元素各自要有落点，缺任一元素又没写「未检索到」才发。返回（被剥日期，缺的要素列表，空泛语，落空候选与理由）。"""
     dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
     naked = DATE_SPAN.sub(" ", clause)
     vague = VAGUE.search(naked)
     candidates: list[tuple[str, str]] = []
-    own, foreign = spec["own"], spec["foreign"]
-    for ph in build_phrases(naked, spec):
+    elems = list(spec["elements"])
+    own_list = [rx for (_, _, rx) in elems]
+    foreign = spec["foreign"]
+    satisfied: dict[int, str] = {}
+    for i, (ename, kind, rx) in enumerate(elems):
+        if kind == "term" and rx.search(naked):
+            satisfied[i] = ename + "（安排用词在场）"
+    phrases = build_phrases(naked, own_list, foreign)
+    for ph in phrases:
         seg = ph["seg"]
         rest, copula = trim_units(ph["pre"])
-        mh = mr = None
-        for h in own.finditer(rest):
-            mh = h
-        for r in foreign.finditer(rest):
-            if mr is None or r.start() > mr.start():
-                mr = r
-        if mr and (not mh or mr.start() >= mh.end()):
-            candidates.append((seg, "数紧挨着参照数「" + mr.group(0) + "」（在本短语数左），那是账面值·净资产·市盈率·"
-                                          "已实现净利润·募集资金一类的参照数，不是本格要的原值"))
+        hits = []
+        for idx, rx in enumerate(own_list):
+            last = None
+            for mm in rx.finditer(rest):
+                last = mm
+            if last:
+                hits.append((last.start(), last.end(), idx, last.group(0)))
+        near = max(hits, key=lambda x: (x[0], x[1])) if hits else None
+        fr = None
+        for rr in foreign.finditer(rest):     # 与本格名词同坐标系：都在跳过单位后的左文里量
+            if fr is None or rr.start() >= fr[0]:
+                fr = (rr.start(), rr.group(0))
+        if fr and (near is None or fr[0] >= near[1]):
+            candidates.append((seg, "数紧挨着参照数「" + fr[1] + "」（在本短语数左），那是账面值·净资产·审计值·市盈率·"
+                                    "已实现净利润·募集资金一类的参照数，或同格别元素自己的数，不是本元素要的原值"))
             continue
-        if mh:
-            return dates, seg, vague, candidates
-        if copula and not mr:
-            return dates, seg, vague, candidates
-        r0 = ph["for_post"][0] if ph["for_post"] else None
-        h_last = ph["own_post"][-1] if ph["own_post"] else None
-        if r0 and (h_last is None or r0[0] < h_last[0]):
-            candidates.append((seg, "数紧挨着参照数「" + r0[1] + "」（在本短语数右），不是本格原值"))
+        if near:
+            satisfied[near[2]] = near[3]
+            ph["won"] = near[2]
             continue
-        if ph["own_post"]:
-            return dates, seg, vague, candidates
+        own_r = min(ph["own_post"], key=lambda x: x[0]) if ph["own_post"] else None
+        fr_r = min(ph["for_post"], key=lambda x: x[0]) if ph["for_post"] else None
+        if fr_r and (own_r is None or fr_r[0] <= own_r[0]):
+            candidates.append((seg, "数紧挨着参照数「" + fr_r[2] + "」（在本短语数右），不是本元素原值"))
+            continue
+        if own_r:
+            satisfied[own_r[2]] = own_r[3]
+            ph["won"] = own_r[2]
+            continue
         before = naked[:ph["left_at"]]
-        bh = br = None
-        for h in own.finditer(before):
-            bh = h
-        for r in foreign.finditer(before):
-            br = r
-        if bh:
-            return dates, seg, vague, candidates
-        if br:
-            candidates.append((seg, "本短语两头都没有本格名词，前序也只出现过参照数「" + br.group(0) + "」，孤立数不越界继承"))
+        inh = None
+        for idx, rx in enumerate(own_list):
+            last = None
+            for mm in rx.finditer(before):
+                last = mm
+            if last and (inh is None or last.start() >= inh[0]):
+                inh = (last.start(), last.group(0), idx)
+        frb = None
+        for rr in foreign.finditer(before):
+            if frb is None or rr.start() >= frb[0]:
+                frb = (rr.start(), rr.group(0))
+        if inh:
+            satisfied[inh[2]] = inh[1] + "（孤立数继承前序）"
+            ph["won"] = inh[2]
             continue
-        candidates.append((seg, "数前后与本短语都没有本格名词（评估值·交易对价·发行价格·发行数量·承诺净利润·补偿金额一类的），"
+        if frb:
+            candidates.append((seg, "本短语两头都没有本格名词，前序也只出现过参照数「" + frb[1] + "」，孤立数不越界继承"))
+            continue
+        candidates.append((seg, "数前后与本短语都没有本格名词（评估值·交易对价·发行价格·发行数量·承诺净利润一类的），"
                                 "也没有「确定为每股 N 元」这类谓语，前序同样没有所有者可继承"))
-    return dates, None, vague, candidates
+    for i, (ename, kind, rx) in enumerate(elems):
+        if i in satisfied or kind == "term":
+            continue
+        for ph in phrases:
+            if ph["won"] is None or ph["won"] == i:
+                continue
+            mine = [(s, e) for (s, e, idx, _) in ph["own_all"] if idx == i]
+            theirs = [(s, e) for (s, e, idx, _) in ph["own_all"] if idx == ph["won"]]
+            if not mine or not theirs:
+                continue
+            lo, hi = min(mine[0][0], theirs[0][0]), max(mine[0][1], theirs[0][1])
+            if any(s >= lo and e <= hi + 6 for (s, e) in [(c.start(), c.end()) for c in COPA_REF.finditer(ph["text"])]):
+                satisfied[i] = "共指（同短语内「即为·为·是·等于·均为·都是」共指同一枚数）"
+                break
+    missing = [(ename, "没有属于本元素的合格候选（参照数与别元素的数都不顶账；共指系词也不在场）")
+               for i, (ename, kind, rx) in enumerate(elems) if i not in satisfied]
+    return dates, missing, vague, candidates
 
 
 def judge_field(ln: str) -> str:
@@ -281,22 +379,23 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
         if not mv or core_len(mv.group(1)) == 0:
             hits.append(("MA-QUOTE", i + 1, f"锚值为空：{name} 那一行的「锚：」后面没有来源定位"))
         if name in NUM_CELLS:
-            dates, ok_seg, vague, cands = value_gap(value_field(item), NUM_CELLS[name])
+            dates, missing, vague, cands = value_gap(value_field(item), NUM_CELLS[name])
             ev = ""
             if cands:
                 ev = "｜有数但不合格的段：" + "∥".join(f"「{s}」＝{why}" for s, why in cands)
             if dates:
                 ev += "｜剥掉的日期：" + "∥".join(dates)
-            if not cands and ok_seg is None:
-                ev += "｜取数域（剥日期后）首段：「" + value_field(item).strip()[:28] + "」"
-            if ok_seg is None:
+            if missing:
+                miss = "、".join(e + "（" + why + "）" for e, why in missing)
+                both = "∥".join(e for e, _ in missing)
                 if vague:
-                    hits.append(("MA-VALUE", i + 1, f"{name} 以空泛语顶替原值：原句剥掉日期后没有任何一段给出本格原值，"
-                                                   f"只剩「{vague.group(0)}」这类说法{ev}——别格的数、参照数与日期都不顶本格的账，"
-                                                   "换同义词换不掉这一判"))
+                    hits.append(("MA-VALUE", i + 1, f"{name} 以空泛语顶替原值：这一格的两个要素「{both}」没有各自拿到合格候选，"
+                                                   f"句里只剩「{vague.group(0)}」这类说法；缺的要素：{miss}{ev}——面文写的「X 与 Y」"
+                                                   "是两组同时给，一枚合格数只算它那一个要素到位，不替整组放行；别格的数、参照数与"
+                                                   "日期都不顶账，没取到就写「未检索到」"))
                 else:
-                    hits.append(("MA-VALUE", i + 1, f"{name} 缺本格原值：原句剥掉日期后没有一段给出属于本格的数量原值"
-                                                    f"（金额·股数·百分比），且数与本格名词在同一短语内相邻{ev}——参照数不顶账，"
+                    hits.append(("MA-VALUE", i + 1, f"{name} 缺本格原值：两要素里没有各自给出属于本元素的合格候选；缺的要素："
+                                                    f"{miss}{ev}——本元素的原值要与本元素的名词同短语相邻，参照数与别元素的数不顶账，"
                                                     "没取到就写「未检索到」"))
     for name in ITEMS:
         if name not in seen:
@@ -310,13 +409,13 @@ def check_text(text: str) -> list[tuple[str, int, str]]:
     elif not decls:
         hits.append(("MA-COUNT", 0, "头部缺「共八项·缺 N 项」申报，无从对账"))
     for i, ln in enumerate(lines, 1):
-        if PENDING.search(ln):
-            continue   # 行首 [待人工] 标记管全行：这些判断的登记位就在这一行里
         dom = judge_field(ln)
         flagged = False
         for seg in SEG_SPLIT.split(dom):
-            if DISCLAIM.search(seg):
-                continue   # 免责按分句算，不跨句把后半句的真判断一起免掉
+            # marker 只登记它所在那一分句（「[待人工] 估值是否合理留人工」），分号与句号之后的分句照走红线；
+            # 免责句同样按分句算——两样豁免都不跨句。
+            if PENDING.search(seg) or DISCLAIM.search(seg):
+                continue
             seg = NOUN_WASH.sub("", seg)
             mb = BANNED.search(seg)
             if mb:
@@ -378,6 +477,8 @@ def selftest() -> int:
     ROW_PAY = "「本次发行价格为每股 12.60 元，发行数量合计 6,825 万股，现金对价 8,600 万元」"
     ROW_PAX = "「交易对方承诺 2026 年、2027 年、2028 年净利润分别不低于 5,000 万元、6,500 万元、8,000 万元，不足部分以股份补偿」"
     HEAD = "## 二、八项逐字速读"
+    PENDING_LINE = ("- [待人工] 交易是否划算、估值是否合理、能否通过交易所审核与证监会注册、复牌后股价表现、"
+                 "摊薄与稀释影响，全部留人工；本件不接代办，也不碰内幕信息与规避披露的做法。")
     tiers = (
         ("钉阈·名目只剩散文必发 MA-STRUCT",
          gt.replace("- 锁定期与减持限制：", "锁定期与减持限制在报告书另有专节，", 1),
@@ -427,6 +528,36 @@ def selftest() -> int:
         ("钉阈·别格数不顶本格账必发 MA-VALUE",
          gt.replace(ROW_PAX, "「标的交易对价为 86,000 万元，承诺净利润待定」", 1),
          "数紧挨着参照数「交易对价」"),
+        ("钉阈·pair 缺一枚：对价待定必发 MA-VALUE（M566-1）",
+         gt.replace(ROW_PRICE, "「标的评估值为 86,000 万元，交易对价待定」", 1),
+         "缺的要素：交易对价"),
+        ("钉阈·pair 缺一枚：发行数量待定必发 MA-VALUE（M566-1）",
+         gt.replace(ROW_PAY, "「本次发行价格为每股 12.60 元，发行数量待定，现金对价待定」", 1),
+         "缺的要素：发行数量"),
+        ("钉阈·pair 缺一枚：承诺数待定必发 MA-VALUE（M566-1）",
+         gt.replace(ROW_PAX, "「交易对方承诺净利润待定，补偿金额为 1,000 万元」", 1),
+         "缺的要素：承诺净利润"),
+        ("钉阈·无共指系词时 pair 严格式仍发必发 MA-VALUE（M567b 共指对偶）",
+         gt.replace(ROW_PRICE, "「标的评估值 86,000 万元，交易对价待定」", 1),
+         "缺的要素：交易对价"),
+        ("钉阈·审计值按词族认出必发 MA-VALUE（M566-2）",
+         gt.replace(ROW_PRICE, "「交易对价参考审计值 40,000 万元，交易对价另行确定」", 1),
+         "数紧挨着参照数「审计值」"),
+        ("钉阈·估值评价带插语必发 MA-LINE（M566-3）",
+         gt.replace(HEAD, "- 本次交易估值很合理。\n\n" + HEAD, 1),
+         "「估值很合理」"),
+        ("钉阈·估值评价插语另一支必发 MA-LINE（M566-3）",
+         gt.replace(HEAD, "- 本次交易作价基本公允。\n\n" + HEAD, 1),
+         "「作价基本公允」"),
+        ("钉阈·获批概率预测必发 MA-LINE（M566-3）",
+         gt.replace(HEAD, "- 本次重组获批概率大。\n\n" + HEAD, 1),
+         "「获批概率大」"),
+        ("钉阈·待人工行分号后的预测照判必发 MA-LINE（M566-4）",
+         gt.replace(PENDING_LINE, "- [待人工] 估值是否合理留人工；本次交易必能过会。", 1),
+         "「必能过会」"),
+        ("钉阈·无 marker 的过会预测必发 MA-LINE（M566-4 同支）",
+         gt.replace(PENDING_LINE, "- 本次交易必能过会。", 1),
+         "「必能过会」"),
         ("钉阈·红线定式词必发 MA-LINE",
          gt.replace(HEAD, "- 另：本次交易稳赚。\n\n" + HEAD, 1),
          "「稳赚」"),
@@ -444,18 +575,32 @@ def selftest() -> int:
          "「是否划算」"),
     )
     ctrls = (
+        ("对照·共指系词的同值句不误伤（MA-VALUE 零发·M567b）",
+         gt.replace(ROW_PRICE, "「标的评估值即为交易对价 86,000 万元」", 1), "MA-VALUE"),
+        ("对照·名词形评价不误伤（MA-LINE 零发·M567b）",
+         gt.replace(HEAD, "- 本次交易需说明定价的合理性。\n\n" + HEAD, 1), "MA-LINE"),
+        ("对照·pair 两要素齐备不误伤（MA-VALUE 零发·M566-1）",
+         gt.replace(ROW_PRICE, "「经审计值为 78,000 万元作参考，标的评估值为 86,000 万元，交易对价确定为 86,000 万元」", 1),
+         "MA-VALUE"),
+        ("对照·承诺数与补偿方式齐备不误伤（MA-VALUE 零发·M566-1 term 支）",
+         gt.replace(ROW_PAX, "「交易对方承诺净利润不低于 5,000 万元，未达标部分以股份补偿或现金补偿」", 1), "MA-VALUE"),
+        ("对照·待人工登记行不误伤（MA-LINE 零发·M566-4）",
+         gt.replace(PENDING_LINE, "- [待人工] 摊薄影响与复牌后股价留人工；本件不做估值判断。", 1), "MA-LINE"),
+        ("对照·估值留人工的登记句不误伤（MA-LINE 零发·M566-3）",
+         gt.replace(HEAD, "- [待人工] 本次交易估值留人工。\n\n" + HEAD, 1), "MA-LINE"),
         ("对照·本格原值带括注约束不误伤（MA-VALUE 零发）",
          gt.replace(ROW_PRICE, "「标的评估值为 86,000 万元（不低于账面价值），交易对价确定为 86,000 万元」", 1), "MA-VALUE"),
-        ("对照·主语省略的孤立数继承本格名词不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PRICE, "「交易对价参考标的账面价值 32,000 万元，最终确定为 86,000 万元」", 1), "MA-VALUE"),
+        ("对照·主语省略的孤立数继承本格名词不误伤（MA-VALUE 零发·两要素齐备形）",
+         gt.replace(ROW_PRICE, "「标的评估值为 86,000 万元，交易对价参考其账面价值 32,000 万元后最终确定为 86,000 万元」", 1),
+         "MA-VALUE"),
         ("对照·数右有本格名词不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PAY, "「每股 12.60 元的发行价格」", 1), "MA-VALUE"),
+         gt.replace(ROW_PAY, "「每股 12.60 元的发行价格，合计 6,825 万股的发行数量」", 1), "MA-VALUE"),
         ("对照·发行价在前参照价在后不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PAY, "「发行价格为每股 12.60 元，参照停牌前均价 20.35 元」", 1), "MA-VALUE"),
+         gt.replace(ROW_PAY, "「发行价格为每股 12.60 元，发行数量 6,825 万股，另参照停牌前均价 20.35 元」", 1), "MA-VALUE"),
         ("对照·承诺数与实现数并列不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PAX, "「标的 2024 年已实现净利润 4,200 万元，交易对方承诺净利润不低于 5,000 万元」", 1), "MA-VALUE"),
+         gt.replace(ROW_PAX, "「标的 2024 年已实现净利润 4,200 万元，交易对方承诺净利润不低于 5,000 万元，未达标部分以股份补偿」", 1), "MA-VALUE"),
         ("对照·分年度承诺三档不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PAX, "「承诺 2026 年、2027 年、2028 年净利润分别不低于 5,000 万元、6,500 万元、8,000 万元」", 1), "MA-VALUE"),
+         gt.replace(ROW_PAX, "「承诺 2026 年、2027 年、2028 年净利润分别不低于 5,000 万元、6,500 万元、8,000 万元，未达标以股份补偿」", 1), "MA-VALUE"),
         ("对照·补偿公式带承诺数不误伤（MA-VALUE 零发）",
          gt.replace(ROW_PAX, "「应补偿股份数＝（承诺净利润－实际净利润）÷承诺净利润×发行股份数量，承诺净利润不低于 5,000 万元」", 1), "MA-VALUE"),
         ("对照·机构名里的「会」不误伤（MA-LINE 零发）",
@@ -479,9 +624,9 @@ def selftest() -> int:
         ok = (text != gt) and any(needle in m for _, _, m in th)
         rows.append((name, ok, f"注入{'生效' if text != gt else '作废'}·命中句 {'有' if ok else '无'}"))
     ctrls += (
-        ("对照·好样定价行原形不误伤（MA-VALUE 零发）", gt.replace(ROW_PAY, "「本次发行价格为每股 12.60 元」", 1), "MA-VALUE"),
+        ("对照·发行格两要素齐备不误伤（MA-VALUE 零发）", gt.replace(ROW_PAY, "「本次发行价格为每股 12.60 元，发行数量合计 6,825 万股」", 1), "MA-VALUE"),
         ("对照·带日期与括注的承诺数不误伤（MA-VALUE 零发）",
-         gt.replace(ROW_PAX, "「交易对方承诺 2026 年净利润不低于 5,000 万元（以经审计的扣非前后孰低者为准）」", 1), "MA-VALUE"),
+         gt.replace(ROW_PAX, "「交易对方承诺 2026 年净利润不低于 5,000 万元（以经审计的扣非前后孰低者为准），未达标以股份补偿」", 1), "MA-VALUE"),
     )
     for n, (name, text, code) in enumerate(ctrls, 1):
         nproof += 1
