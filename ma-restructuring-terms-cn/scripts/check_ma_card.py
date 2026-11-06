@@ -14,14 +14,14 @@
              「会 X」名词里的「会」先从语气域按形态洗掉），主题词（重组·并购·交易·标的·对价·评估·估值·承诺·补偿·
              锁定·过会·注册·审批·披露·股价·摊薄·稀释·收益·风险·业绩·协同·整合·复牌）与判断语气（应·应予·予以·将·会·
              必·有望·可期·可能·足以·构成·属于·意味着·支持·成立·无效·有效·上调·下调·增加·减少·高于·低于·赚·亏·
-             无疑·显然·肯定·合理·公允·概率大·可能性极低…）同段出现即发——评价词族只写一份排除（「合理性·公允性·审慎性」名词形是说明对象不是断言），定式表与主题×语气共用同一份词表、不留双份真值；
+             无疑·显然·肯定·合理·公允·概率大·可能性极低…）同段出现即发——评价词族只写一份排除（评价词后接「性·度·论」任一名词后缀——合理性·公允性·充分性·合理度·公允度——是说明对象不是断言），定式表与主题×语气共用同一份词表、不留双份真值；
              `[待人工]` 标记与免责句都**只登记自己那一分句**（按分号、句号、逗号 cut 后逐段判），同一行后半写的肯定预测照发；③自裁效力层：裁定前缀（结论／综上／因此／本件认为／判定／认定…）与
              效力判断（无效／有效／作废／不成立／成立／撤销／违法／违规／属实…）同现即发；
   MA-COUNT  齐缺申报恰一枚：头部「共八项·缺 N 项」只准出现一处（两处并存即发），且 N 必须等于速读段里「未检索到」的
              项行数；把「未检索到」写成「无该项／没有此项」一律发；
   MA-VALUE  三格数字归属（定价方法与交易对价／支付方式与股份发行／业绩承诺与补偿安排）**以短语结构体为主**判，
              每格按面文的「X 与 Y」拆成**两个元素各自判**（评估值↔交易对价、发行价格↔发行数量、承诺净利润↔补偿安排；
-             前五个元素要有各自合格的数字候选，补偿安排那一支按安排用词认；唯一例外是共指——同短语内两本格名词夹着             系词（即为·即·为·是·等于·均为·都是）而只一枚数时，该数同时满足两元素），一枚合格候选只算它那一个要素到位、不替整组放行：
+             前五个元素要有各自合格的数字候选，补偿安排那一支按安排用词认；唯一例外是共指——同短语内两本格名词夹着             系词（即为·即·为·是·等于·均为·都是）、**且中间不得带否定形**（不是·并非·不视为·不等同·未·无）而只一枚数时，该数同时满足两元素——否定形在场那枚数只归最近的名词，另一元素仍要自己落点），一枚合格候选只算它那一个要素到位、不替整组放行：
              ①项行拆字段，判据域只取该项自己的原句；②先剥日期（评估基准日、审计基准日、上市日这类一律从取数域剔除，
              「2025 年 12 月 31 日」不是对价）；③取数域按「标点 ∪ 数字边界」切成短语表，每枚候选（金额·股数·百分比）
              只在它自己那条短语里定档——数左跳过单位与连接词后最近的实义名词是本格族（评估值·交易对价·发行价格·
@@ -111,6 +111,7 @@ UNIT_SKIP = re.compile(r"(?:每股|每份|每一元|人民币|约|为|是|即|�
                        r"高于|低于|占|比例|占比|其中|含|部分|等|的|后|前|则|并|至|以及|万股|亿股|万元|亿元|股|元|万|亿)+"
                        r"\s*$")
 COPA_REF = re.compile(r"即为|均为|都是|等于|即|为|是")
+NEG_COPA = re.compile(r"不|非|未|无|别|勿|毋")   # 否定形在场＝两名词不共指，各回各的落点（不是·并非·不视为·不等同·不等值）
 COPA = re.compile(r"为|定为|即|按|暂定|是|确定|达|至")
 SEG_SPLIT = re.compile(r"[，。；：！？]+|[,;](?!\s*\d)")   # 千分位逗号不断段；顿号算枚举不算归属边界（分年度枚举别把所有者切开）
 NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组独立]会|会[计议场话晤所馆堂员]")
@@ -120,7 +121,8 @@ ANCHOR_SPLIT = re.compile(r"锚[:：]")
 ANCHOR_VAL = re.compile(r"锚[:：]\s*(\S.*)$")
 # 评价断言族与预测断言族按词族收：被评价的名词 × 插语（可有可无）× 评价词；预测动作 × 概率名词 × 程度词。
 # 插语不构成豁免——「估值很合理」「估值基本公允」与「估值合理」同判；「获批可能性极低」与「获批概率大」同判。
-VALUER_WORDS = r"合理(?!性)|公允(?!性)|偏低|偏高|充分|审慎(?!性)"   # 名词形「合理性·公允性·审慎性」是说明对象，不是评价断言
+NOUN_FORM = r"(?![性度论])"   # 名词形豁免只写这一处：性·度·论三种后缀都是被说明的对象，不是本件自己下的评价断言
+VALUER_WORDS = "|".join(w + NOUN_FORM for w in ("合理", "公允", "偏低", "偏高", "充分", "审慎"))
 DEGREE_WORDS = r"很|较为|比较|基本|大体|显然|明显|相当"
 VALUER_ASSERT = r"(?:估值|评估值?|定价|作价|对价)(?:的)?(?:" + DEGREE_WORDS + r")?(?:" + VALUER_WORDS + r")"
 PREDICT_ASSERT = r"(?:获批|通过审核|审核通过|过会|核准|注册生效|通过)(?:的)?(?:概率|可能性|几率)(?:很|非常|比|较|极)?"                  r"(?:大|高|小|低|不大|不高|极低)"
@@ -172,6 +174,25 @@ def value_field(item: dict) -> str:
     if item["quotes"]:
         return " ".join(item["quotes"])
     return item["spoken"] or item["body"]
+
+
+def segments_of(domain: str) -> list[tuple[int, str]]:
+    """按 SEG_SPLIT 把取数域切成〔起点，句段〕表——term 元素要判的是「同一个句段里有没有空泛语」。"""
+    out, cur = [], 0
+    for m in SEG_SPLIT.finditer(domain):
+        out.append((cur, domain[cur:m.start()]))
+        cur = m.end()
+    out.append((cur, domain[cur:]))
+    return out
+
+
+def seg_of(bounds: list[tuple[int, str]], pos: int) -> tuple[int, str]:
+    """给定域内位置，返回它所在的句段（term 命中点用它定位）。"""
+    last = bounds[-1] if bounds else (0, "")
+    for start, text in bounds:
+        if pos <= start + len(text):
+            return start, text
+    return last
 
 
 def trim_units(pre: str):
@@ -237,10 +258,10 @@ def value_gap(clause: str, spec: dict):
       （丙）两头都空＝孤立数（主语省略）：从前序取最近的一个本格名词继承；前序只出现过参照数则不继承、仍归参照；
       （丁）谓语（确定为·即·按…）领出而没踩到参照数时，按（丙）走继承，不单独放行；
     ④**共指**：某元素在①〜③里没有自己的候选时，若同一短语内另一元素赢下一枚候选、而本元素的本格名词也在同一条短语里、
-      两者之间夹着共指系词（即为·均为·都是·等于·即·为·是），则该枚候选同时满足两元素——
+      两者之间夹着**肯定**共指系词（即为·均为·都是·等于·即·为·是）且中间不带否定形（不是·并非·不视为·不等同·未·无），      则该枚候选同时满足两元素——否定形在场时那枚数只归最近的名词，另一元素仍要自己的落点；
       「评估值即为交易对价 86,000 万元」是同值句，两个名词共指一枚数；共指系词不在场时严格式不动，
       「评估值 86,000 万元，交易对价待定」仍发；
-    ⑤kind="term" 的元素（补偿安排）认它自己的安排用词，不要求金额；
+    ⑤kind="term" 的元素（补偿安排）认它自己的安排用词、不要求金额，但与 num 元素一样判空泛语：用词与「待定·另行约定·届时·协商确定」同在一句时只说还没定，不算该元素读到，落进落空清单；
     ⑥逐元素判：每个元素各自要有落点，缺任一元素又没写「未检索到」才发。返回（被剥日期，缺的要素列表，空泛语，落空候选与理由）。"""
     dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
     naked = DATE_SPAN.sub(" ", clause)
@@ -250,9 +271,22 @@ def value_gap(clause: str, spec: dict):
     own_list = [rx for (_, _, rx) in elems]
     foreign = spec["foreign"]
     satisfied: dict[int, str] = {}
+    seg_bounds = segments_of(naked)
     for i, (ename, kind, rx) in enumerate(elems):
-        if kind == "term" and rx.search(naked):
-            satisfied[i] = ename + "（安排用词在场）"
+        if kind != "term":
+            continue
+        got = None
+        for mm in rx.finditer(naked):
+            _, seg_text = seg_of(seg_bounds, mm.start())
+            v = VAGUE.search(seg_text)
+            if v:
+                candidates.append((seg_text.strip()[:44], "安排用词「" + mm.group(0) + "」与空泛语「" + v.group(0)
+                                   + "」在同一句里——那句只说补偿还没定，不算安排读到"))
+                continue
+            got = mm.group(0)
+            break
+        if got:
+            satisfied[i] = ename + "（安排用词「" + got + "」在场、同句无空泛语）"
     phrases = build_phrases(naked, own_list, foreign)
     for ph in phrases:
         seg = ph["seg"]
@@ -317,11 +351,15 @@ def value_gap(clause: str, spec: dict):
             theirs = [(s, e) for (s, e, idx, _) in ph["own_all"] if idx == ph["won"]]
             if not mine or not theirs:
                 continue
-            lo, hi = min(mine[0][0], theirs[0][0]), max(mine[0][1], theirs[0][1])
-            if any(s >= lo and e <= hi + 6 for (s, e) in [(c.start(), c.end()) for c in COPA_REF.finditer(ph["text"])]):
-                satisfied[i] = "共指（同短语内「即为·为·是·等于·均为·都是」共指同一枚数）"
+            a, b = mine[0], theirs[0]
+            mid_lo, mid_hi = min(a[1], b[1]), max(a[0], b[0])
+            mid = ph["text"][mid_lo:mid_hi] if mid_hi > mid_lo else ""
+            cop = COPA_REF.search(mid)
+            if cop and not NEG_COPA.search(mid):
+                satisfied[i] = "共指（同短语内肯定系词「" + cop.group(0) + "」共指同一枚数）"
                 break
-    missing = [(ename, "没有属于本元素的合格候选（参照数与别元素的数都不顶账；共指系词也不在场）")
+    missing = [(ename, ("安排用词要么没出现、要么与空泛语同句（待定·另行约定·届时·协商确定一类），不算这一元素读到"
+                        if kind == "term" else "没有属于本元素的合格候选（参照数与别元素的数都不顶账；肯定系词的共指也不在场）"))
                for i, (ename, kind, rx) in enumerate(elems) if i not in satisfied]
     return dates, missing, vague, candidates
 
@@ -537,6 +575,12 @@ def selftest() -> int:
         ("钉阈·pair 缺一枚：承诺数待定必发 MA-VALUE（M566-1）",
          gt.replace(ROW_PAX, "「交易对方承诺净利润待定，补偿金额为 1,000 万元」", 1),
          "缺的要素：承诺净利润"),
+        ("钉阈·否定关系不认共指必发 MA-VALUE（M569-1）",
+         gt.replace(ROW_PRICE, "「标的评估值不是交易对价 86,000 万元」", 1),
+         "缺的要素：评估值（没有属于本元素的合格候选"),   # 否定形在场时那枚数只归最近的名词（交易对价），共指被拒→评估值元素落空
+        ("钉阈·安排用词遇空泛语必发 MA-VALUE（M569-2）",
+         gt.replace(ROW_PAX, "「交易对方承诺净利润不低于 5,000 万元，补偿金额待定」", 1),
+         "与空泛语「待定」在同一句里"),
         ("钉阈·无共指系词时 pair 严格式仍发必发 MA-VALUE（M567b 共指对偶）",
          gt.replace(ROW_PRICE, "「标的评估值 86,000 万元，交易对价待定」", 1),
          "缺的要素：交易对价"),
@@ -575,6 +619,12 @@ def selftest() -> int:
          "「是否划算」"),
     )
     ctrls = (
+        ("对照·性后缀名词形不误伤（MA-LINE 零发·M569-3）",
+         gt.replace(HEAD, "- 估值充分性说明待补充。\n\n" + HEAD, 1), "MA-LINE"),
+        ("对照·度后缀名词形不误伤（MA-LINE 零发·M569-3）",
+         gt.replace(HEAD, "- 估值合理度讨论待补充。\n\n" + HEAD, 1), "MA-LINE"),
+        ("对照·论后缀名词形不误伤（MA-LINE 零发·M569-3）",
+         gt.replace(HEAD, "- 定价公允性论证见附件。\n\n" + HEAD, 1), "MA-LINE"),
         ("对照·共指系词的同值句不误伤（MA-VALUE 零发·M567b）",
          gt.replace(ROW_PRICE, "「标的评估值即为交易对价 86,000 万元」", 1), "MA-VALUE"),
         ("对照·名词形评价不误伤（MA-LINE 零发·M567b）",
