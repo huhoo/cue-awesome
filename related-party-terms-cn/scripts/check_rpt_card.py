@@ -89,6 +89,8 @@ NUM_CELLS = {
     },
 }
 NUM = re.compile(r"\d[\d,\.]*\s*(?:万元|亿元|元|倍|％|%)")
+MONEY_UNIT = re.compile(r"(?:万元|亿元|元)\s*$")   # 只有带金额量纲的候选才能结算元素；倍·%·％＝比率，只逐字登记
+RATIO_MARK = re.compile(r"(?:占比|比例|上浮|增幅|降幅|下降|增长|比重|折扣|折价|溢价)\s*[^，。；\d]{0,4}$")
 DATE_SPAN = re.compile(r"\d{4}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])?\s*\d{1,2}\s*日?"
                        r"|\d{4}\s*年(?:\s*\d{1,2}\s*月)?(?:\s*\d{1,2}\s*日)?"
                        r"|\d{1,2}\s*月\s*\d{1,2}\s*日"
@@ -128,6 +130,8 @@ TONE = re.compile(r"应当|应予|予以|将|会|必|有望|可期|可能|足以
                   r"提升|下滑|增加|减少|回升|高于|低于|稳赚|赚|亏|无疑|显然|肯定|应(?!急)|"
                   + VALUER_WORDS + r"|" + PREDICT_ASSERT)
 VERDICT = re.compile(r"结论|综上|因此|可见|据此|本院认为|本件认为|本卡认为|本件判断|判定|认定|断言")
+# 作者自述口吻（只在书名号之外本件自己写的字里认）：这枚标记在场＝该行书名号不是引原文，豁免不给（M576-2）
+AUTHOR_VOICE = re.compile(r"本件|本卡|笔者|本速读|我[们]?认为|结论|综上|据此|因此|可见|判定|断言|说明[：:]|注[：:]")
 EFFECT = re.compile(r"无效|有效|作废|不成立|成立|撤销|违法|违规|应予支持|予以支持|应支持|支持|必然|属实")
 DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|不碰|不做|不代|禁止|未证|无法|不承诺")
 PENDING = re.compile(r"\[待人工\]")
@@ -204,7 +208,8 @@ def trim_units(pre: str):
 def build_phrases(domain: str, own_list: list, foreign: re.Pattern) -> list[dict]:
     """显式结构体：把取数域按「SEG_SPLIT 标点 ∪ NUM 数字边界」切成短语表。
     每短语＝〔数左｜本短语收的那枚候选｜数右〕，三列偏移＝内本格名词（带元素序号）·内参照数名词·内候选，各自带偏移位；
-    候选形制＝金额（元·万元·亿元）∪股数（股·万股·亿股）∪倍数（倍）∪百分比（%·％）。
+    候选形制＝金额（元·万元·亿元）∪股数（股·万股·亿股）∪倍数（倍）∪百分比（%·％），但 money 列把后两支标成比率：
+             比率（%·倍·占比·上浮一类的说法）只逐字登记、不结算任何元素，M576-1 就是这条从面文落进实现。
     own_all 是整条短语里（数左＋数＋数右）所有本格名词的偏移与元素序号——共指判据要看整条短语，不只看数左。"""
     nums = list(NUM.finditer(domain))
     phrases: list[dict] = []
@@ -231,7 +236,7 @@ def build_phrases(domain: str, own_list: list, foreign: re.Pattern) -> list[dict
                 own_all.append((h.start(), h.end(), idx, h.group(0)))
         phrases.append({
             "num": m.group(0), "pre": pre, "post": post, "left_at": start, "text": text,
-            "seg": (pre + m.group(0)).strip(),
+            "seg": (pre + m.group(0)).strip(), "money": bool(MONEY_UNIT.search(m.group(0))),
             "own_pre": own_pre, "own_post": own_post, "own_all": own_all,
             "for_pre": [(r.start(), r.end(), r.group(0)) for r in foreign.finditer(pre)],
             "for_post": [(r.start(), r.end(), r.group(0)) for r in foreign.finditer(post)],
@@ -251,9 +256,9 @@ def value_gap(clause: str, spec: dict):
       （丁）谓语（确定为·即·按…）领出而没踩到参照数时，按（丙）走继承，不单独放行；
     ④**共指**：某元素在①〜③里没有自己的候选时，若同一短语内另一元素赢下一枚候选、而本元素的本格名词也在同一条短语里、
       两者之间夹着**肯定**共指系词（即为·均为·都是·等于·即·为·是）且中间不带否定形（不是·并非·不视为·不等同·未·无），      则该枚候选同时满足两元素——否定形在场时那枚数只归最近的名词，另一元素仍要自己的落点；系词必须落在两名词之间，同位式（系词在两名词之后）不在覆盖之内；
-      「评估值即为交易对价 86,000 万元」是同值句，两个名词共指一枚数；共指系词不在场时严格式不动，
-      「评估值 86,000 万元，交易对价待定」仍发；
-    ⑤kind="term" 的元素（补偿安排）认它自己的安排用词、不要求金额，但与 num 元素一样判空泛语：用词与「待定·另行约定·届时·协商确定」同在一句时只说还没定，不算该元素读到，落进落空清单；「金额待定但方式已定」这种同段共存式也按未定判（已知覆盖不到，分号或句号切开才读得到方式）；
+      「交易金额即为预计年度额度上限 8,600 万元」是同值句，两个名词共指一枚数；共指系词不在场时严格式不动，
+      「交易金额 8,600 万元，预计年度额度待定」仍发；
+    ⑤kind="term" 的元素（定价依据）认它自己的安排用词、不要求金额，但与 num 元素一样判空泛语：用词与「待定·另行约定·届时·协商确定」同在一句时只说还没定，不算该元素读到，落进落空清单；「金额待定但方式已定」这种同段共存式也按未定判（已知覆盖不到，分号或句号切开才读得到方式）；
     ⑥逐元素判：每个元素各自要有落点，缺任一元素又没写「未检索到」才发。返回（被剥日期，缺的要素列表，空泛语，落空候选与理由）。"""
     dates = [d.strip() for d in DATE_SPAN.findall(clause) if d.strip()]
     naked = DATE_SPAN.sub(" ", clause)
@@ -273,7 +278,7 @@ def value_gap(clause: str, spec: dict):
             v = VAGUE.search(seg_text)
             if v:
                 candidates.append((seg_text.strip()[:44], "安排用词「" + mm.group(0) + "」与空泛语「" + v.group(0)
-                                   + "」在同一句里——那句只说补偿还没定，不算安排读到"))
+                                   + "」在同一句里——那句只说定价依据还没定，不算安排读到"))
                 continue
             got = mm.group(0)
             break
@@ -282,6 +287,15 @@ def value_gap(clause: str, spec: dict):
     phrases = build_phrases(naked, own_list, foreign)
     for ph in phrases:
         seg = ph["seg"]
+        if not ph["money"]:
+            candidates.append((seg, "「" + ph["num"].strip() + "」是比率或倍数（%·％·倍一类的量纲），不是金额——"
+                                    "面文写的「比率与期限不参与归属」在这一条：比率只逐字登记，不结算任何元素"))
+            continue
+        rmark = RATIO_MARK.search(ph["pre"])
+        if rmark:
+            candidates.append((seg, "数前紧挨着比率词「" + rmark.group(0).strip() + "」——那句给的是占比·上浮·降幅一类的"
+                                    "比率说法，不是本元素的原值；比率只逐字登记，不结算任何元素"))
+            continue
         rest, copula = trim_units(ph["pre"])
         hits = []
         for idx, rx in enumerate(own_list):
@@ -296,8 +310,8 @@ def value_gap(clause: str, spec: dict):
             if fr is None or rr.start() >= fr[0]:
                 fr = (rr.start(), rr.group(0))
         if fr and (near is None or fr[0] >= near[1]):
-            candidates.append((seg, "数紧挨着参照数「" + fr[1] + "」（在本短语数左），那是账面值·净资产·审计值·市盈率·"
-                                    "已实现净利润·募集资金一类的参照数，或同格别元素自己的数，不是本元素要的原值"))
+            candidates.append((seg, "数紧挨着参照数「" + fr[1] + "」（在本短语数左），那是账面价值·净资产·审计值·"
+                                    "上年同期价·市场均价·累计已发生额一类的参照数，或同格别元素自己的数，不是本元素要的原值"))
             continue
         if near:
             satisfied[near[2]] = near[3]
@@ -331,8 +345,8 @@ def value_gap(clause: str, spec: dict):
         if frb:
             candidates.append((seg, "本短语两头都没有本格名词，前序也只出现过参照数「" + frb[1] + "」，孤立数不越界继承"))
             continue
-        candidates.append((seg, "数前后与本短语都没有本格名词（评估值·交易对价·发行价格·发行数量·承诺净利润一类的），"
-                                "也没有「确定为每股 N 元」这类谓语，前序同样没有所有者可继承"))
+        candidates.append((seg, "数前后与本短语都没有本格名词（交易价格·交易金额·预计年度额度·定价依据一类的），"
+                                "也没有「确定为每公斤 N 元」这类谓语，前序同样没有所有者可继承"))
     for i, (ename, kind, rx) in enumerate(elems):
         if i in satisfied or kind == "term":
             continue
@@ -357,10 +371,16 @@ def value_gap(clause: str, spec: dict):
 
 
 def judge_field(ln: str) -> str:
-    """红线判据域＝本件自己写的话：拆字段后剥掉书名号内的报告书原句与锚段，项名前缀也不进域。"""
+    """红线判据域＝本件自己写的话：拆字段后剥掉书名号内的报告书原句与锚段，项名前缀也不进域。
+    书名号豁免按「有锚的原文登记」给，不当万能挡（M576-2）：①该行「锚：」值为空＝不是原文登记，
+    书名号内的字照进判据域；②该行主语是本件自述（结论：·综上·据此·说明：·本件认为一类的作者口吻）＝
+    哪怕挂了锚也不豁免，作者把自己的裁定包进书名号不算引原文。其余照旧豁免——公告原句里有裁定措辞不误伤。"""
     item = parse_item_line(ln)
     body = item["body"] if item else ln
-    body = QUOTES.sub(" ", body)
+    voice_src = item["spoken"] if item else QUOTES.sub(" ", ln)   # 自述标记只在书名号之外认，引文里的「认定·结论」不算作者口吻
+    anchored = bool(item["anchor"].strip()) if item else bool(ANCHOR_VAL.search(ln))
+    if anchored and not AUTHOR_VOICE.search(voice_src):
+        body = QUOTES.sub(" ", body)
     ma = ANCHOR_SPLIT.search(body)
     if ma:
         body = body[:ma.start()]
@@ -527,9 +547,27 @@ def selftest() -> int:
         ("钉阈·上年同期价冒充交易价格必发 RP-VALUE",
          gt.replace(ROW_PRICE, "「交易价格参照上年同期价格 12.00 元，定价依据为市场公开价格」", 1),
          "数紧挨着参照数「上年同期价」"),
-        ("钉阈·市场均价倍数不顶价格账必发 RP-VALUE",
+        ("钉阈·均价倍数按比率量纲剔必发 RP-VALUE",
          gt.replace(ROW_PRICE, "「定价依据为市场均价的 1.2 倍，交易价格另行确定」", 1),
-         "数紧挨着参照数「市场均价」"),
+         "是比率或倍数"),
+        ("钉阈·比率顶金额账必发 RP-VALUE（M576-1）",
+         gt.replace(ROW_AMOUNT, "「本次交易金额占比 10%，列入年度预计总额度不超过 12,000 万元」", 1),
+         "是比率或倍数"),
+        ("钉阈·比率词顶着金额数必发 RP-VALUE（M576-1 另一支）",
+         gt.replace(ROW_AMOUNT, "「本次交易金额较上年上浮 1,200 万元，预计年度额度 12,000 万元」", 1),
+         "紧挨着比率词"),
+        ("钉阈·格内两数全是比率必发 RP-VALUE（M576-1 整格）",
+         gt.replace(ROW_AMOUNT, "「本次交易金额占比 10%，年度预计总额度占比 8%」", 1),
+         "是比率或倍数"),
+        ("钉阈·书名号包作者自裁必发 RP-LINE（M576-2）",
+         gt.replace(HEAD, "- 本件结论：「本次关联交易定价公允」。\n\n" + HEAD, 1),
+         "红线断言词出现在没有 [待人工] 的行"),
+        ("钉阈·作者自裁包书名号又挂锚仍必发 RP-LINE（M576-2 另一支）",
+         gt.replace(HEAD, "- 本件结论：「本次交易一定能过会」 锚：公告 第二节\n\n" + HEAD, 1),
+         "红线断言词出现在没有 [待人工] 的行"),
+        ("钉阈·整句塞进书名号必发 RP-LINE（M576-2 无锚支）",
+         gt.replace(HEAD, "- 「本件结论：本次关联交易定价公允」。\n\n" + HEAD, 1),
+         "红线断言词出现在没有 [待人工] 的行"),
         ("钉阈·账面值冒充年度额度必发 RP-VALUE",
          gt.replace(ROW_AMOUNT, "「本次交易金额合计 8,600 万元，年度额度参照账面价值 30,000 万元」", 1),
          "数紧挨着参照数「账面价值」"),
@@ -618,7 +656,11 @@ def selftest() -> int:
          gt.replace(HEAD, "- 说明：审计委员会核实了关联方身份。\n\n" + HEAD, 1), "RP-LINE"),
         ("对照·会计处理陈述不误伤（RP-LINE 零发）",
          gt.replace(HEAD, "- 说明：关联交易的会计处理按公告列示。\n\n" + HEAD, 1), "RP-LINE"),
-        ("对照·公告原句里的裁定措辞不误伤（RP-LINE 零发）",
+        ("对照·比率在场而两元素金额齐备不误伤（RP-VALUE 零发）（M576-1 对照）",
+         gt.replace(ROW_AMOUNT,
+                    "「本次交易金额合计 8,600 万元，占年度预计总额度的比例 71%，年度预计总额度 12,000 万元」", 1),
+         "RP-VALUE"),
+        ("对照·有锚公告原句里的裁定措辞不误伤（RP-LINE 零发）",
          gt.replace("- 披露与豁免安排：「本次关联交易达到披露标准，可在年度预计额度内免于逐项提交股东大会审议」 锚：公告 第七节 披露与豁免",
                     "- 披露与豁免安排：「本次交易的效力以股东大会审议结果为准，关联股东回避表决的认定见公告」 锚：公告 第七节", 1), "RP-LINE"),
         ("对照·纯待人工登记行不误伤（RP-LINE 零发）",
