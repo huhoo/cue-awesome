@@ -97,6 +97,27 @@ inputs:                        # 这一族写进包面的 inputs: 键，不参�
   - insurance-terms
   - roadshow-minutes
 
+terminal:                      # 终端交付物名（M593 形制）：这些名字**不并入图、不参与算边**，
+                               # 只表示「该件产出即为此物，设计上没有下游消费方」。
+                               # 包面必须同时声明 `terminal: true` 才放行；两处缺一即报错。
+                               # 为什么单列一族而不是靠布尔开关放行任意表外名：布尔开关分不清
+                               # 「经认可的终端产物」与「canonical 名的拼写错误」——6.1 M593-1 的
+                               # 隔离反证就是给 related-party-transaction-card 注入一个错拼，
+                               # 因 terminal: true 仍退码 0。登记在这里，错名不在表内，照旧响亮。
+  - announcement-digest
+  - bid-card
+  - bond-card
+  - convertible-bond-card
+  - fund-card
+  - incentive-plan-card
+  - insurance-card
+  - ma-restructuring-card
+  - minutes-card
+  - policy-chain-card
+  - prospectus-card
+  - tax-card
+  - terms-card
+
 canonical:                     # 参与算边的工件名（规范名全集；alias 不在列）
   - research-brief          # M382 落字补全（lead）：上一拍只写进 families、没进 canonical＝落了一半（4.1 用两头验出来的）
   - event-brief-card

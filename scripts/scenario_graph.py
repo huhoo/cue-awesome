@@ -70,7 +70,7 @@ def load_vocabulary(path):
     """读词表（受限 YAML 子集：顶层键 + 缩进列表 + 缩进 `k: v`）；缺任一族即失败，不猜。"""
     text = path.read_text(encoding="utf-8", errors="replace")
     top, fam = None, None
-    vocab = {"aliases": {}, "families": {}, "inputs": [], "canonical": []}
+    vocab = {"aliases": {}, "families": {}, "inputs": [], "canonical": [], "terminal": []}
     for raw in text.split("\n"):
         ln = strip_comment(raw)
         if not ln.strip():
@@ -79,14 +79,14 @@ def load_vocabulary(path):
             fam = None
             top = ln.split(":")[0].strip()
             if top not in vocab:
-                print("  注：词表 %s 出现不认识的顶层键：%s（本件只读 aliases/families/inputs/canonical）" % (
+                print("  注：词表 %s 出现不认识的顶层键：%s（本件只读 aliases/families/inputs/canonical/terminal）" % (
                     path.name, top), file=sys.stderr)
             continue
         body = ln.strip()
         if top == "aliases" and ":" in body:
             k, v = body.split(":", 1)
             vocab["aliases"][k.strip().strip("\"'")] = v.strip().strip("\"'")
-        elif top in ("inputs", "canonical") and body.startswith("- "):
+        elif top in ("inputs", "canonical", "terminal") and body.startswith("- "):
             vocab[top].append(body[2:].strip().strip("\"'"))
         elif top == "families":
             if body.startswith("- "):
@@ -97,7 +97,7 @@ def load_vocabulary(path):
             elif body.endswith(":"):
                 fam = body[:-1].strip()
                 vocab["families"].setdefault(fam, [])
-    for k in ("aliases", "families", "inputs", "canonical"):
+    for k in ("aliases", "families", "inputs", "canonical", "terminal"):
         if not vocab[k]:
             raise SystemExit(die("词表 %s 里没有 %s 这一族（本件不猜词表，缺即失败）" % (path, k)))
     return {k: (dict(v) if isinstance(v, dict) else sorted(set(v))) if k != "families"
@@ -229,6 +229,7 @@ def read_packages(repo):
 def normalize(pkgs, vocab):
     """套 alias 归一并对照词表：表外名字／同物挂两处的都退 1 点名（`legs:` 装域 id，不比词表）。"""
     canon, ins, alias = set(vocab["canonical"]), set(vocab["inputs"]), vocab["aliases"]
+    term = set(vocab["terminal"])
     fixed, notes, bad = {}, [], []
     for name, decl in sorted(pkgs.items()):
         row = {}
@@ -240,9 +241,16 @@ def normalize(pkgs, vocab):
                     notes.append("%s 的 %s：%s 按词表归一为 %s" % (name, where, v, alias[v]))
                     v = alias[v]
                 if v not in allowed:
-                    if where == "produces" and decl.get("terminal"):
-                        notes.append("%s 的 produces：%s 不在 canonical，但该包声明 terminal: true"
-                                     "（终端交付物，无下游消费方；不并入图、不制造假边）" % (name, v))
+                    # 终端交付物：名字必须**同时**在词表 terminal 族登记、且该包声明 terminal: true。
+                    # 两处缺一即报错——布尔开关单独不足以放行，否则 canonical 名的拼写错误也会被放过
+                    # （6.1 M593-1 的隔离反证）。
+                    if where == "produces" and decl.get("terminal") and v in term:
+                        notes.append("%s 的 produces：%s 是词表 terminal 族登记的终端交付物，"
+                                     "且该包声明 terminal: true（无下游消费方；不并入图、不制造假边）" % (name, v))
+                    elif where == "produces" and decl.get("terminal") and v not in term:
+                        bad.append("%s 的 produces：%s 不在 canonical，也不在词表 terminal 族——"
+                                   "该包虽声明 terminal: true，但终端名必须先在词表登记（拼写错误不许借终端声明过关）" % (
+                                       name, v))
                     else:
                         bad.append("%s 的 %s 写了词表外的名字：%s（该族的允许值＝%s；改名请改词表，别散在包里重谈）" % (
                             name, where, v, label))
