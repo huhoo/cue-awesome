@@ -114,6 +114,15 @@ def load_vocabulary(path):
     if alias_to_term:
         raise SystemExit(die("词表 %s 里 alias 指向 terminal 族：%s——归一后会把名字拉回 canonical 侧建边，"
                              "与 terminal「不参与算边」冲突。" % (path.name, "、".join(alias_to_term))))
+    # M593R3-1（6.1 三轮）：alias 的**键**本身是 terminal 名时，归一发生在允许集检查**之前**——
+    # `bond-card: parsed-doc` 会把包面的 bond-card 洗成 parsed-doc（真 canonical 名），
+    # 于是终端产物被并入跨包边、该包不再是孤点、终端交付物 14→13，而 rc=0 不点名。
+    # 前两条只拦「值指向 terminal」，拦不住「键是 terminal」——键才是被洗掉的那一侧。
+    alias_key_term = sorted(k for k in vocab["aliases"] if k in set(vocab["terminal"]))
+    if alias_key_term:
+        raise SystemExit(die("词表 %s 里 alias 的键是 terminal 族名：%s——归一发生在允许集检查之前，"
+                             "会把终端产物洗成 canonical 名并照旧建边，与 terminal「不参与算边」冲突。"
+                             "终端名不许做 alias 的源。" % (path.name, "、".join(alias_key_term))))
     return {k: (dict(v) if isinstance(v, dict) else sorted(set(v))) if k != "families"
             else {f: sorted(set(m)) for f, m in v.items()} for k, v in vocab.items()}
 
