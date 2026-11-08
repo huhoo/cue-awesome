@@ -180,6 +180,11 @@
       "name": "ma-restructuring-terms-cn",
       "source": "./ma-restructuring-terms-cn",
       "description": "把一份A股重大资产重组文件拆成八项逐字卡：概况、对方、标的、定价、支付、承诺、锁定、审批各挂原句与锚，参照数不顶账。"
+    },
+    {
+      "name": "related-party-terms-cn",
+      "description": "把一份A股关联交易公告或协议拆成八项逐字卡：身份、标的、定价、金额、结算、回避、独董、披露各挂原句与锚。",
+      "source": "./related-party-terms-cn"
     }
   ]
 }
