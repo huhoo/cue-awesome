@@ -100,6 +100,20 @@ def load_vocabulary(path):
     for k in ("aliases", "families", "inputs", "canonical", "terminal"):
         if not vocab[k]:
             raise SystemExit(die("词表 %s 里没有 %s 这一族（本件不猜词表，缺即失败）" % (path, k)))
+    # M593R2-1（6.1 二轮）：terminal 族声明「不并入图、不参与算边」，但若同一名字同时登记在
+    # canonical 与 terminal，代码会在 canonical 命中时跳过 terminal 分支、照旧建边——声明与实现冲突。
+    # 现盘两族交集为空，这是**未来输入**的缺口；在加载处拦掉，比在算边处逐处判更彻底。
+    # 同理 alias 指向 terminal 族也会把名字拉回 canonical 侧，一并拦。
+    overlap = sorted(set(vocab["canonical"]) & set(vocab["terminal"]))
+    if overlap:
+        raise SystemExit(die("词表 %s 里 terminal 族与 canonical 族重名：%s——"
+                             "terminal 声明「不参与算边」，重名会让它照旧建边（声明与实现冲突）。"
+                             "一个名字只能属于一族：要么是终端交付物，要么是链条上的工件。" % (
+                                 path.name, "、".join(overlap))))
+    alias_to_term = sorted(k for k, v in vocab["aliases"].items() if v in set(vocab["terminal"]))
+    if alias_to_term:
+        raise SystemExit(die("词表 %s 里 alias 指向 terminal 族：%s——归一后会把名字拉回 canonical 侧建边，"
+                             "与 terminal「不参与算边」冲突。" % (path.name, "、".join(alias_to_term))))
     return {k: (dict(v) if isinstance(v, dict) else sorted(set(v))) if k != "families"
             else {f: sorted(set(m)) for f, m in v.items()} for k, v in vocab.items()}
 
