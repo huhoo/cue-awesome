@@ -10,6 +10,7 @@ inputs:
   - bond-document
 produces:
   - bond-card
+terminal: true
 metadata:
   openclaw:
     requires:

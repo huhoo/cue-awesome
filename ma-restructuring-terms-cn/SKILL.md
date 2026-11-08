@@ -10,6 +10,7 @@ inputs:
   - ma-restructuring-document
 produces:
   - ma-restructuring-card
+terminal: true
 metadata:
   openclaw:
     requires:

@@ -10,6 +10,7 @@ inputs:
   - incentive-plan-document
 produces:
   - incentive-plan-card
+terminal: true
 metadata:
   openclaw:
     requires:

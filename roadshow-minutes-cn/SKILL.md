@@ -10,6 +10,7 @@ inputs:
   - roadshow-minutes
 produces:
   - minutes-card
+terminal: true
 metadata:
   openclaw:
     requires:

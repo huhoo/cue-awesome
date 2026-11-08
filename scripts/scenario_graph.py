@@ -166,6 +166,29 @@ def parse_frontmatter_list(text, key):
     return sorted(vals), 0, set()
 
 
+def parse_frontmatter_scalar(fm, key):
+    """读顶格标量键（`terminal: true`）。返回 (值字符串或 None, 是否重复出现)。
+
+    只认顶格（缩进 0）的 `key: 值` 行——缩进的是别人的子键，不算本键。
+    重复出现＝不可判（与列表键同一口径：宁可响亮，不猜哪一个是真的）。
+    """
+    vals = []
+    for ln in (fm.split("\n") if isinstance(fm, str) else fm):
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        if ln[0] in " \t":
+            continue
+        if ":" not in ln:
+            continue
+        k, v = ln.split(":", 1)
+        if k.strip() != key:
+            continue
+        vals.append(strip_comment(v).strip().strip("\"'"))
+    if not vals:
+        return None, False
+    return vals[0], len(vals) > 1
+
+
 def read_packages(repo):
     """枚枚读 frontmatter → ({包名: {四把键}}, 缺键点名, 不可判 {包: [键]}, 形制不齐点名)。
 
@@ -194,7 +217,12 @@ def read_packages(repo):
         if bad_here:
             unj[d.name] = sorted(bad_here)
             out.setdefault(d.name, {})
-        out[d.name] = {k: ([] if k in bad_here else (got[k] or [])) for k in FM_KEYS}
+        row = {k: ([] if k in bad_here else (got[k] or [])) for k in FM_KEYS}
+        tv, tdup = parse_frontmatter_scalar(fm, "terminal")
+        if tdup:
+            unj.setdefault(d.name, []).append("terminal")
+        row["terminal"] = (tv or "").strip().lower() == "true"
+        out[d.name] = row
     return out, notes, unj, sorted(loose)
 
 
@@ -212,11 +240,16 @@ def normalize(pkgs, vocab):
                     notes.append("%s 的 %s：%s 按词表归一为 %s" % (name, where, v, alias[v]))
                     v = alias[v]
                 if v not in allowed:
-                    bad.append("%s 的 %s 写了词表外的名字：%s（该族的允许值＝%s；改名请改词表，别散在包里重谈）" % (
-                        name, where, v, label))
+                    if where == "produces" and decl.get("terminal"):
+                        notes.append("%s 的 produces：%s 不在 canonical，但该包声明 terminal: true"
+                                     "（终端交付物，无下游消费方；不并入图、不制造假边）" % (name, v))
+                    else:
+                        bad.append("%s 的 %s 写了词表外的名字：%s（该族的允许值＝%s；改名请改词表，别散在包里重谈）" % (
+                            name, where, v, label))
                 vals.append(v)
             row[where] = sorted(set(vals))
         row["legs"] = sorted(set(decl["legs"]))
+        row["terminal"] = bool(decl.get("terminal"))
         both = sorted(set(row["consumes"]) & set(row["inputs"]))
         if both:
             bad.append("%s 的同一枚名字同时出现在 consumes 与 inputs：%s（边与入参只准挂一处）" % (name, "、".join(both)))
@@ -402,10 +435,16 @@ def main():
     print("== 表一 孤点（跨件入度与出度皆 0；inputs 不算边、自环不算边）==")
     for n in unj_rows:
         print("  " + n)
-    for n in iso:
-        print("  %s ｜ %s" % (n, rel(repo / n / "SKILL.md")))
-    print("  枚数=%d（由上列现算）｜全包=%d 枚｜取到 %d 枚包／跳过 %d 枚包（不可判 %d 把键）｜非孤点=%d 枚" % (
-        len(iso), len(pkgs), taken_pkgs, len(unj_rows), len(unj_keys_total), taken_pkgs - len(iso)))
+    iso_term = [n for n in iso if pkgs[n].get("terminal")]
+    iso_open = [n for n in iso if not pkgs[n].get("terminal")]
+    for n in iso_open:
+        print("  %s ｜ %s ｜ 该接没接（未声明 terminal）" % (n, rel(repo / n / "SKILL.md")))
+    for n in iso_term:
+        print("  %s ｜ %s ｜ 终端交付物（terminal: true，无下游消费方）" % (n, rel(repo / n / "SKILL.md")))
+    print("  枚数=%d（由上列现算）｜其中终端交付物=%d 枚∥该接没接=%d 枚｜全包=%d 枚｜"
+          "取到 %d 枚包／跳过 %d 枚包（不可判 %d 把键）｜非孤点=%d 枚" % (
+              len(iso), len(iso_term), len(iso_open), len(pkgs), taken_pkgs, len(unj_rows),
+              len(unj_keys_total), taken_pkgs - len(iso)))
     if loops:
         print("  附注·自环（自产自消，不计入链条）：")
         for l in loops:

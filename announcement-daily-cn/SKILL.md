@@ -11,6 +11,7 @@ inputs:
   - watchlist
 produces:
   - announcement-digest
+terminal: true
 metadata:
   openclaw:
     requires:

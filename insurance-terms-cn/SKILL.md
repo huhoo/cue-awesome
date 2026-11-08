@@ -10,6 +10,7 @@ inputs:
   - insurance-terms
 produces:
   - insurance-card
+terminal: true
 metadata:
   openclaw:
     requires:

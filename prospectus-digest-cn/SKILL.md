@@ -10,6 +10,7 @@ inputs:
   - prospectus-document
 produces:
   - prospectus-card
+terminal: true
 metadata:
   openclaw:
     requires:

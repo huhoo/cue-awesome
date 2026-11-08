@@ -10,6 +10,7 @@ inputs:
   - convertible-bond-document
 produces:
   - convertible-bond-card
+terminal: true
 metadata:
   openclaw:
     requires:

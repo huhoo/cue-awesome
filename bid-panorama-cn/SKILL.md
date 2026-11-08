@@ -10,6 +10,7 @@ inputs:
   - tender-notice
 produces:
   - bid-card
+terminal: true
 metadata:
   openclaw:
     requires:

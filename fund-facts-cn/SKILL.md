@@ -10,6 +10,7 @@ inputs:
   - fund-document
 produces:
   - fund-card
+terminal: true
 metadata:
   openclaw:
     requires:

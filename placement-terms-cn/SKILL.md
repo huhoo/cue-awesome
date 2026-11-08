@@ -10,6 +10,7 @@ inputs:
   - placement-announcement
 produces:
   - terms-card
+terminal: true
 metadata:
   openclaw:
     requires:

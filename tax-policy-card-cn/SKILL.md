@@ -10,6 +10,7 @@ inputs:
   - tax-document
 produces:
   - tax-card
+terminal: true
 metadata:
   openclaw:
     requires:

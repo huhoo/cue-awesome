@@ -10,6 +10,7 @@ inputs:
   - policy-document
 produces:
   - policy-chain-card
+terminal: true
 metadata:
   openclaw:
     requires:
