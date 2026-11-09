@@ -102,7 +102,15 @@ curl -s -X POST "$MCP_ENDPOINT" -H 'Content-Type: application/json' \
 - `[待人工]` 只豁免它**自己那一分句**；同一行后半写的断言照发。
 - 公告只判到**标题级在场**，不判标题内容是否与你关注的标的匹配（标的层归属请人工核对）。
 
-## 九、资源
+## 九、工件接口（图上接得上的那两处）
+
+- `consumes: parsed-doc` — 吃 `cue-omni-reader` 解析出来的隔夜公告标题与附件正文，这是本件真实的数据腿；
+  零 key 时这条腿断开，按面文降级走用户直供。
+- `produces: structured-note` — 在册 canonical 工件名，`cn-customer-concentration`、`ic-memo-cn` 等现役件已在消费它，
+  所以本件不是孤点。**注意：本件不产出 `daily-digest`**——那个名字虽然也在册，但全仓没有一件消费它，
+  产出它等于图上出度为 0。
+
+## 十、资源
 
 - `SKILL.md` — 权威面文（中文）
 - `SKILL.en.md` — 英文对照

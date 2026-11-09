@@ -102,7 +102,15 @@ curl -s -X POST "$MCP_ENDPOINT" -H 'Content-Type: application/json' \
 - A `[待人工]` marker exempts only **its own clause**; an assertion later in the same line still fires.
 - Announcements are checked for **title presence only**, not whether the title matches the instruments you care about — verify instrument attribution by hand.
 
-## 9. Resources
+## 9. Artifact wiring (the two edges that connect)
+
+- `consumes: parsed-doc` — takes the parsed overnight announcement titles and attachment text produced by `cue-omni-reader`;
+  this is the real data leg. Without a key the leg is down, and the brief degrades to user-supplied input as described on the face.
+- `produces: structured-note` — a registered canonical artifact name already consumed by `cn-customer-concentration` and `ic-memo-cn`,
+  so this skill is not an isolated node. **It does not produce `daily-digest`**: that name is registered too, but nothing in the repo
+  consumes it, so producing it would leave the out-degree at zero.
+
+## 10. Resources
 
 - `SKILL.md` — authoritative face (Chinese)
 - `SKILL.en.md` — English counterpart

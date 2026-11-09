@@ -1,5 +1,29 @@
 # 变更记录
 
+### 0.1.3 — 2026-11-09（排查记录，无内容变更）
+
+- 记录：为定位 category 空 / download 404，逐一排除并各自证伪的假设——
+  `Triggers:` 行缺失（补后仍 404）、`recommendedSkills` 独有（实为 25 件共用）、
+  `displayName` 含全角括号（23 件皆有）、`description` 长度（全仓 48 件入库后均为 0）、
+  slug 命名（换 slug 新建记录仍归 EMPTY）。
+- 结论：非本包 frontmatter 可控项，属渠道侧归类器对该件判定失败；已转人工处理。
+- 本版无任何面文或判据变更。
+
+### 0.1.2 — 2026-11-09（补 Triggers，假设未成立）
+
+- **假设**（后被 0.1.3 证伪）：渠道归类器靠 description 末尾的 `Triggers:` 行判 category；
+  本件缺该行，故入库后 `category=""`、产物通道 404。据此补 `Triggers: 晨会纪要 / 盘前早报 / …`（中英两面）。
+- **实测结果**：补后重发 0.1.2，`category` 仍为 EMPTY、`download?slug=` 仍 404。
+  Triggers 不是原因，保留该行仅因其对齐同批三件的写法。
+- 判据逻辑与面文一字未动；SKILL.en.md description 压到 296 字符以守 300 帽。
+
+### 0.1.1 — 2026-11-09（渠道重发）
+
+- 仅版本号前移，判据与面文一字未动。原因：0.1.0 在 skillhub 侧留下一条 `stats.versions=1` 的存根，
+  但 `GET /api/v1/download?slug=cue-cn-morning-brief` 稳定 404、`versions` 列表恒空，
+  用户侧安装失败；同批 48 件 download 均为 302。重发同版本被服务端以「版本已存在」拒绝，
+  故前移版本号重新入库。
+
 ### 0.1.0 — 2026-11-09（首版）
 
 - 新件 `cn-morning-brief`：把**一个时点**（隔夜／盘前）压成一页八槽纪要约——

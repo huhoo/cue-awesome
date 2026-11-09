@@ -3,8 +3,8 @@ name: cn-morning-brief
 slug: cue-cn-morning-brief
 displayName: "晨会纪要·数据槽与覆盖率（盘前早报）"
 summary: "Pre-market CN morning brief: eight anchored slots, coverage self-checked."
-description: "Pre-market A-share morning brief in two layers: five market slots and three instrument slots, each anchored to a source and a retrieval date. The header declares filled over total and reconciles it against the slot table; every gap is named both ways; all judgement stays with a human."
-version: "0.1.0"
+description: "Pre-market A-share morning brief: five market slots plus three instrument slots, each anchored to a source and retrieval date; the header declares filled-over-total and reconciles it against the slot table; gaps named both ways; judgement stays human. Triggers: 晨会纪要 / 盘前早报 / 隔夜要闻 / 盘前数据槽 / 解禁与披露"
+version: "0.1.3"
 license: MIT
 consumes:
   - parsed-doc
