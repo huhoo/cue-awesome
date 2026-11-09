@@ -20,7 +20,7 @@ metadata:
     envVars:
       - name: CUE_API_KEY
         required: false
-        description: "可选凭据：缺位时本件按面文所述走用户直供与降级路径；带上才走渠道侧取原文与附件解析。"
+        desc: "可选凭据：缺位时本件按面文所述走用户直供与降级路径；带上才走渠道侧取原文与附件解析。"
 tags: [定增, 条款, A股, 再融资, 逐字卡]
 ---
 

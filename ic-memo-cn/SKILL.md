@@ -27,7 +27,7 @@ metadata:
     envVars:
       - name: CUE_API_KEY
         required: false
-        description: "可选凭据：缺位时本包按面文所述走用户直供与降级路径；带上才走渠道侧取证。"
+        desc: "可选凭据：缺位时本包按面文所述走用户直供与降级路径；带上才走渠道侧取证。"
 tags: [投决, 备忘录, 投前, 可回查, 尽调]
 ---
 

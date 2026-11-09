@@ -20,7 +20,7 @@ metadata:
     envVars:
       - name: CUE_API_KEY
         required: false
-        description: "可选。走数据腿定位公告与年报时用；不配也能出零通道骨架。"
+        desc: "可选。走数据腿定位公告与年报时用；不配也能出零通道骨架。"
   tags:
     - 产业链
     - 上下游

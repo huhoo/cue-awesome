@@ -4,7 +4,7 @@ slug: cue-employee-stock-ownership-cn
 displayName: "Employee Stock Ownership Terms Card"
 summary: "Eight verbatim cards from one A-share ESOP draft, each with quote and anchor."
 description: "A-share employee stock ownership card: one ESOP draft into eight verbatim items with quote and anchor; gaps read 未检索到; transfer price and share count each need their own figure, not a trading average or par value; tax registered, never judged; participation value stays [待人工]. Triggers: 员工持股条款"
-version: "0.1.0"
+version: "0.1.1"
 license: MIT
 consumes: []                     # explicit empty: this package reads the draft you hand it and consumes no upstream artifact (not an omission)
 inputs:

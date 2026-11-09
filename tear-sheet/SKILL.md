@@ -21,7 +21,7 @@ metadata:
     envVars:
       - name: CUE_API_KEY
         required: false
-        description: "可选凭据：本包的页面生成本身不直接读这枚变量（现读：包内代码级引用 0 枚件）；它属于伴生渠道的凭据，缺位时按 README 所述走用户直供。"
+        desc: "可选凭据：本包的页面生成本身不直接读这枚变量（现读：包内代码级引用 0 枚件）；它属于伴生渠道的凭据，缺位时按 README 所述走用户直供。"
   optionalSkills: ["cue-data-mcp", "cue-omni-reader"]
 ---
 

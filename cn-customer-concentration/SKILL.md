@@ -21,7 +21,7 @@ metadata:
     envVars:
       - name: CUE_API_KEY
         required: false
-        description: "可选。走数据腿定位年报与募集说明书时用；不配也能出零通道骨架。"
+        desc: "可选。走数据腿定位年报与募集说明书时用；不配也能出零通道骨架。"
   tags:
     - 客户集中度
     - 大客户依赖
