@@ -1,373 +1,525 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_note.py — 校一份「未出财报期的个股研究初稿」是否合 `SKILL.md` §3 七节契约与 §5 红线。
+"""check_note.py — 个股深度研究稿五道机检（零网络、零外发、不读环境变量）
 
 用法：
-    python3 check_note.py <研究稿.md>        校一份研究稿（纯标准库、零网络、不发任何请求）
-    python3 check_note.py --selftest         跑包内夹具：好样必须过，六枚坏样必须各发它该发的那一道
-    python3 check_note.py --help             本说明
+    python3 scripts/check_note.py <研究稿>.md
+    python3 scripts/check_note.py --selftest
 
-出口形制（与套件姊妹件同族）：
-    失败 = 一行 "FAIL: <文件>（N 条）"，其下每条详行先打错误码前缀（五枚 E-* 之一），道名后是行号与该道规格；
-           末行 "码表:" 只列本次真正用到的码与含义。
-    全过 = 一行 "PASS: <文件>（…）"，并印「扫过 N 行」与五道计数——计数说看到多少，不说猜多少。
+道一 ER-FORM 形制
+  头部（第一个 `## ` 之前）四件自标逐字在位：AI 整理初稿／请回原文核对／不构成投资建议／判断位 [待人工]；
+  `主体：` 行在场且非空；`截至日：YYYY-MM-DD` 行在场且值可认；
+  六节齐且按序：业务拆解／竞争位／驱动因子／风险清单／关键数字表／来源；
+  业务拆解至风险清单四节各至少一条 `- ` 发现行（空节＝不是一份研究稿），且节内只许出现
+  `- ` 发现行、`### ` 子标题与空行——散文段落无处挂锚，按非发现行发；
+  关键数字表须有表头行与至少一条数据行，表头含「原句」「锚」「来源」三列；
+  来源节至少一条来源行。
 
-五道是什么（判定全集在本脚本，本文只指路，不复述细节）：
-    道一 形制：头部四件自标逐字在位＋「财报状态：」行在场且值为未出＋七节齐且按一至七有序
-                ＋一句话结论非空非占位＋四个内容节（业务拆解／竞争位／驱动因子／风险清单）各至少一行
-    道二 锚：内容节每条发现行行末带 [S#]，且该编号在第七节有对应行；第七节每行必须同时带 URL 与 YYYY-MM-DD 检索日
-    道三 红线：评级／目标价／买卖与走势类断言一律零命中，要写只能同行挂 [待人工]；改数词（约／左右／大概）不得替数字打底
-    道四 未取到与计数：正文写了「未取到／未检索到」的，第六节必须逐条点名它；第六节列了而正文没有这条表述的同样发
-    道五 边界：财报状态写「已出」＝这一期该走 cn-earnings-note 的逐数点评，本件的四节框架不适用
+道二 ER-ANCHOR 原句与锚
+  四节每条 `- ` 发现行必须以「」原句 + 〔锚：…〕 + [S#] 三元组收尾，可挂多组；
+  原句不得为空，锚不得为空；
+  关键数字表每条数据行须同时出现「」原句、(S#) 编号与「锚」列；
+  来源行形制 `- [S#] 标题 | URL | 检索日 YYYY-MM-DD`，URL 与检索日缺一不可，且须是可点的 http(s) 地址；
+  正文引用的每个 [S#] 必须在来源节有对应行；引用了没登记的，发。
 
-退码：0 全过；1 有发条（详行逐条给码、道名、行号与规格）；2 用法错；3 取值域故障（文件读不到，不读成「零违例」）。
+道三 ER-REDLINE 红线（评级／目标价／股价预测／看好看空）
+  硬词零命中：目标价、目标市值、买入评级、增持评级、中性评级、跑赢大盘、跑输大盘、强烈推荐、
+  首次覆盖、上调评级、下调评级、严重低估、严重高估、看好、看空、看多、看淡、必涨、必跌、
+  稳赚、零风险、保证收益；
+  情境词：`股价／市值／估值` 与 `翻倍／上涨空间／见底／见顶／创新高／再创新低` 相距 10 字以内视为预测；
+  `(评级|给予|维持|首次覆盖|上调|下调)` 与 `买入／增持／中性／减持／推荐` 相距 8 字以内视为评级。
+  含 [待人工] 的分句豁免，且只豁免它自己那一句（按 ；;。，,｜ 切分），同行后半句照样发。
+
+道四 ER-NOSELF 不得自算
+  发现行里出现百分数（`12.3%` 或 `12.3％`）时，该数值必须能在同一行的「」原句里逐字找到；
+  找不到的，该行须标 `〔自算〕`，且同一行同时给出 `分子…[S#]` 与 `分母…[S#]`——分子分母各自挂源；
+  标了 〔自算〕 却缺分子或缺分母的来源，同样发。
+  毛利率、市占率、增速、渗透率、占比、周转率、负债率、复合增长率这些比率词出现在发现行里，
+  也按同一条走：只认原句，披露没写就不许自己除。关键数字表的数据行同验。
+  非百分数的自算（如「约为 X 倍」）不强制 〔自算〕，但行里真标了就照上面查分子分母。
+
+道五 ER-SCOPE 边界
+  正文出现「已出财报」「财报点评」「四期差异」「科目勾稽」「覆盖账本」→ 点名改走 cn-earnings-note；
+  正文出现「问题清单」「逐问作答」「问题驱动」「多源速览」→ 点名改走 cn-research-brief；
+  正文出现「研报摘要」「研报结论」「研报原文摘录」→ 点名：本件只认能回到句子的原句，不搬研报结论。
+
+退码：0 全过 / 1 有发条 / 3 读不到文件、缺参数或空稿。
 """
 
-from __future__ import annotations
-
 import argparse
-import atexit
 import re
-import shutil
 import sys
-import tempfile
-from pathlib import Path
 
-TMP_ROOTS = []
+CODES = ("ER-FORM", "ER-ANCHOR", "ER-REDLINE", "ER-NOSELF", "ER-SCOPE")
+
+MARK_TEXTS = ("AI 整理初稿", "请回原文核对", "不构成投资建议", "判断位 [待人工]")
+
+SECTIONS = ("业务拆解", "竞争位", "驱动因子", "风险清单", "关键数字表", "来源")
+CONTENT_SECTIONS = SECTIONS[:4]
+TABLE_SECTION = "关键数字表"
+SOURCE_SECTION = "来源"
+
+HEADING = re.compile(r"^##(?!#)\s*(.+?)\s*$")
+NUMBERING = re.compile(r"^(?:[0-9]+[.、)]|[一二三四五六七八九十]+[、.])\s*")
+
+SUBJECT = re.compile(r"^主体：\s*(\S.*)$")
+ASOF = re.compile(r"^截至日：\s*(\d{4}-\d{2}-\d{2})\s*$")
+
+TRIPLE = re.compile(r"「(?P<q>[^」]*)」\s*〔\s*锚\s*[:：]\s*(?P<a>[^〕]*)〕\s*\[(?P<s>S\d+)\]")
+QUOTE = re.compile(r"「([^」]*)」")
+ANCHOR_REF = re.compile(r"\[(S\d+)\]")
+
+SOURCE_LINE = re.compile(
+    r"^-\s*\[(?P<s>S\d+)\]\s*(?P<rest>.+?)"
+    r"\|\s*(?P<url>https?://\S+)\s*\|"
+    r"\s*检索日\s*(?P<d>\d{4}-\d{2}-\d{2})\s*(?:\|.*)?$"
+)
+
+PCT = re.compile(r"\d+(?:\.\d+)?\s*[%％]")
+RATIO_KW = ("毛利率", "净利率", "市占率", "市场份额", "增速", "增长率", "渗透率",
+            "占比", "周转率", "负债率", "复合增长", "集中度")
+
+HARD_BAN = ("目标价", "目标市值", "买入评级", "增持评级", "中性评级", "跑赢大盘", "跑输大盘",
+            "强烈推荐", "首次覆盖", "上调评级", "下调评级", "严重低估", "严重高估",
+            "看好", "看空", "看多", "看淡", "必涨", "必跌", "稳赚", "零风险", "保证收益")
+
+PRICE_WORDS = ("股价", "市值", "估值")
+PRED_WORDS = ("翻倍", "上涨空间", "见底", "见顶", "创新高", "再创新低", "下行空间")
+
+RATING_VERB = ("评级", "给予", "维持", "首次覆盖", "上调", "下调", "建议")
+RATING_WORD = ("买入", "增持", "中性", "减持", "推荐")
+
+CLAUSE_SPLIT = re.compile(r"[；;。，,｜|]")
+
+SCOPE_RULES = (
+    (("已出财报", "财报点评", "四期差异", "科目勾稽", "覆盖账本"),
+     "改走 cn-earnings-note：那一件做已出财报的逐数点评，本件只做未出财报期的个股研究"),
+    (("问题清单", "逐问作答", "问题驱动", "多源速览"),
+     "改走 cn-research-brief：那一件是问题驱动的多源速览，本件是标的主键驱动"),
+    (("研报摘要", "研报结论", "研报原文摘录"),
+     "本件只认能回到句子的原句，不搬研报结论；要抓研报原文另走研报原文类工具"),
+)
 
 
-@atexit.register
-def _cleanup_tmp() -> None:
-    for d in TMP_ROOTS:
-        shutil.rmtree(d, ignore_errors=True)
+def _norm_pct(tok):
+    return tok.replace(" ", "").replace("％", "%")
 
 
-def _probe_copy(text: str) -> Path:
-    d = Path(tempfile.mkdtemp(prefix='check-equity-note-', dir=tempfile.gettempdir()))
-    TMP_ROOTS.append(d)
-    f = d / 'probe.md'
-    f.write_text(text, encoding='utf-8')
-    return f
+def _clauses(line):
+    return [c for c in CLAUSE_SPLIT.split(line)]
 
 
-SECTIONS = ('一句话结论', '业务拆解', '竞争位', '驱动因子', '风险清单', '未取到与口径', '来源')
-CONTENT_IDX = (2, 3, 4, 5)          # 四个内容节：各至少一行，空节＝不是一份研究稿
-MARKS = ('AI 整理初稿', '请回原文核对', '不构成投资建议', '判断位 [待人工]')
-URL_RE = re.compile(r'https?://|www\.[A-Za-z0-9.-]+')
-DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
-ANCHOR_RE = re.compile(r'\[S(\d+)\]\s*$')
-PLACEHOLDER_RE = re.compile(r'^\s*(（[^）]*）)?[—\-–]\s*$|待定|待填|TBD|<[^>]*>$')
-STATUS_RE = re.compile(r'^财报状态[：:]\s*(.+?)\s*$')
-# 红线词族：只收「推荐动作」与「涨跌承诺」的确形。增持／减持**不收**——股东增减持公告是事实陈述，
-# 收进来会把「控股股东计划减持不超过 2%」这类正当登记判红；要禁的是「建议增持」这种推荐语。
-BANNED = re.compile(r'买入|卖出|建仓|清仓|加仓|目标价|止盈|止损|必涨|必跌|稳赚|无风险'
-                    r'|强烈建议|建议持有|建议买入|建议增持|建议减持|翻倍|跑赢大盘'
-                    r'|严重低估|严重高估|值得买入|可以买入')
-HEDGE = re.compile(r'约\s*[\d０-９]|左右|大概|大约')
-CODES = {'E-FORMAT': '道一 形制', 'E-ANCHOR': '道二 锚', 'E-BANWORD': '道三 红线',
-         'E-COVERAGE': '道四 未取到与计数', 'E-SCOPE': '道五 边界'}
-
-
-def scan(path: Path):
-    issues = []
-    seen = set()
-
-    def add(code, lane, line_no, msg):
-        key = (code, line_no, msg)
-        if key not in seen:
-            seen.add(key)
-            issues.append((code, lane, line_no, msg))
-
-    lines = path.read_text(encoding='utf-8', errors='replace').split('\n')
-    first_h2 = next((i for i, ln in enumerate(lines) if ln.startswith('## ')), len(lines))
-    head = '\n'.join(lines[:first_h2])
-
-    # ---- 道一 头部自标 ----
-    for need in MARKS:
-        if need not in head:
-            add('E-FORMAT', '头部', 1, f"头部自标缺『{need}』（规格：四件逐字齐，写在第一个「## 」之前）")
-
-    # ---- 道一／道五 财报状态 ----
-    st = None
-    for i in range(first_h2):
-        m = STATUS_RE.match(lines[i].strip())
-        if m:
-            st = (i, m.group(1))
+def _section_of(heading):
+    h = heading.strip()
+    for _ in range(2):
+        h2 = NUMBERING.sub("", h)
+        if h2 == h:
             break
-    if st is None:
-        add('E-FORMAT', '财报状态', 1,
-            '头部缺「财报状态：」行（规格：本件只做未出财报期，这一格是它与财报点评的分界，必须自报）')
-    else:
-        i, v = st
-        if '已出' in v:
-            add('E-SCOPE', '边界', i + 1,
-                f'财报状态写的是「{v}」——已出财报期的逐数点评走 cn-earnings-note（四期差异／科目勾稽／覆盖账本），'
-                '本件的业务拆解四节框架不适用；要么改走那一件，要么把研究窗口挪到财报空窗期')
-        elif '未出' not in v:
-            add('E-FORMAT', '财报状态', i + 1,
-                f'财报状态「{v}」认不出（规格：以「未出」起头并注明最近一期，如「未出（最近一期：2025 年报）」）')
+        h = h2
+    h = h.strip()
+    for name in SECTIONS:
+        if h.startswith(name):
+            return name
+    return None
 
-    # ---- 道一 七节齐且有序 ----
-    idxs = []
-    for n, name in enumerate(SECTIONS, 1):
-        hit = [i for i, ln in enumerate(lines) if re.match(rf'^##\s*{n}、{re.escape(name)}\s*$', ln)]
-        if not hit:
-            add('E-FORMAT', '七节', 1, f"缺「## {n}、{name}」段（规格：七节齐且按一至七有序）")
-        else:
-            idxs.append((n, hit[0]))
-    if len(idxs) > 1 and [n for n, _ in idxs] != sorted(n for n, _ in idxs):
-        add('E-FORMAT', '七节', idxs[0][1] + 1, '七节次序与契约不一致（规格：一至七有序）')
-    bounds = {}
-    for pos, (n, i0) in enumerate(idxs):
-        i1 = idxs[pos + 1][1] if pos + 1 < len(idxs) else len(lines)
-        bounds[n] = (i0, i1)
 
-    # ---- 道一 结论非空非占位 ----
-    if 1 in bounds:
-        i0, i1 = bounds[1]
-        body = [ln for ln in lines[i0 + 1:i1] if ln.strip() and not ln.startswith('#')]
-        if not body:
-            add('E-FORMAT', '结论', i0 + 1, '一句话结论留空（规格：至少一行实句，不留占位）')
-        else:
-            bad = next((ln for ln in body if PLACEHOLDER_RE.search(ln)), None)
-            if bad is not None:
-                add('E-FORMAT', '结论', i0 + 1 + body.index(bad),
-                    '一句话结论仍是占位（规格：写成可核的实句；判断走 [待人工]，不靠占位）')
-
-    # ---- 道一 四个内容节各至少一行 ----
-    for n in CONTENT_IDX:
-        if n not in bounds:
-            continue
-        i0, i1 = bounds[n]
-        rows = [ln for ln in lines[i0 + 1:i1] if ln.strip() and not ln.startswith('#')]
-        if not rows:
-            add('E-FORMAT', '内容节', i0 + 1,
-                f'「{SECTIONS[n - 1]}」整节为空（规格：四个内容节各至少一行——没有风险清单的研究稿不是研究稿）')
-
-    # ---- 道二 锚 ----
-    anchors_used, listed = [], set()
-    for n in CONTENT_IDX:
-        if n not in bounds:
-            continue
-        i0, i1 = bounds[n]
-        for i in range(i0 + 1, i1):
-            ln = lines[i]
-            if not ln.strip().startswith(('-', '*', '|')):
+def split_doc(text):
+    """→ (header_lines, [(name, heading_lineno, [(lineno, line)])], stray_headings)"""
+    lines = text.splitlines()
+    header = []
+    sections = []
+    cur = None
+    seen_h2 = False
+    stray = []
+    for i, raw in enumerate(lines, 1):
+        m = HEADING.match(raw)
+        if m:
+            seen_h2 = True
+            name = _section_of(m.group(1))
+            if name is None:
+                stray.append((i, raw.strip()))
+                cur = None
                 continue
-            m = ANCHOR_RE.search(ln.strip())
-            if not m:
-                add('E-ANCHOR', '锚', i + 1,
-                    '发现行行末没有 [S#] 锚（规格：每条发现一行、行末带一个锚；没有锚就不要写进内容节）')
-            else:
-                anchors_used.append((int(m.group(1)), i + 1))
-            if HEDGE.search(ln):
-                add('E-BANWORD', '改数', i + 1,
-                    f"命中改数词「{HEDGE.search(ln).group(0)}」（规格：数值要么照来源写，要么落第六节写未取到，不用约／左右打底）")
-
-    if 7 in bounds:
-        i0, i1 = bounds[7]
-        rows = [ln for ln in lines[i0 + 1:i1] if ln.strip().startswith(('-', '*'))]
-        if not rows:
-            add('E-COVERAGE', '来源', i0 + 1, '第七节一行来源都没有（规格：逐条挂源的价值就在这一节，空节等于没有出处）')
-        for k, ln in enumerate(rows, 1):
-            no = i0 + 1 + lines[i0 + 1:i1].index(ln) + 1
-            m = re.match(r'^[-*]\s*\[S(\d+)\]', ln.strip())
-            if not m:
-                add('E-ANCHOR', '来源', no, f'来源第 {k} 行不以 [S#] 开头（规格：编号与正文锚一一对应）')
-            else:
-                listed.add(int(m.group(1)))
-            if not URL_RE.search(ln):
-                add('E-ANCHOR', '来源', no,
-                    f'来源 [S{m.group(1) if m else k}] 缺 URL（规格：逐条可回查——域名或链接原样写进同一行）')
-            if not DATE_RE.search(ln):
-                add('E-ANCHOR', '来源', no,
-                    f'来源 [S{m.group(1) if m else k}] 缺检索日 YYYY-MM-DD（规格：个股研究的时效以检索日为凭）')
-    for num, ln_no in anchors_used:
-        if num not in listed:
-            add('E-ANCHOR', '锚', ln_no, f'锚 [S{num}] 在第七节没有对应行（规格：正文用的每个编号都要能回到来源行）')
-
-    # ---- 道三 红线 ----
-    for i, ln in enumerate(lines, 1):
-        m = BANNED.search(ln)
-        if m and '[待人工]' not in ln:
-            add('E-BANWORD', '判断词', i,
-                f"命中「{m.group(0)}」（规格：评级／目标价／买卖与走势类断言本件不产出；要写就同行挂 [待人工]，或改中性陈述）")
-
-    # ---- 道四 未取到两向点名 ----
-    MISS_WORD = re.compile(r"未取到|未检索到|没取到|没检索到")
-    STOP_TOK = {"它", "这", "该", "其", "本节", "来源", "渠道", "本条", "该项", "本次"}
-    # 名目「同指」判：先剥括号注与标点，再按核心名词短语判——字面全等算同指；一方含另一方且短的一方 ≥4 字算同指；
-    # 否则取汉字集合的 Jaccard ≥ SAME_REF_MIN 算同指。阈值写在这里、由自测的三形钉死，不按文体特例放宽。
-    SAME_REF_MIN = 0.6
-    PUNCT_STRIP = re.compile(r"[^一-龥A-Za-z0-9]")
-
-    def core(tok):
-        return PUNCT_STRIP.sub("", re.sub(r"[（(][^）)]*[）)]", "", tok))
-
-    def same_ref(a, b):
-        ca, cb = core(a), core(b)
-        if not ca or not cb:
-            return False
-        if ca == cb:
-            return True
-        if (ca in cb or cb in ca) and min(len(ca), len(cb)) >= 4:
-            return True
-        sa, sb = set(ca), set(cb)
-        return len(sa & sb) / len(sa | sb) >= SAME_REF_MIN
-
-    def refs(tok, pool):
-        return any(same_ref(tok, other) for other in pool)
-
-    def miss_tokens(seg_lines):
-        out = []
-        for off, ln in seg_lines:
-            if ln.strip().startswith("#") or not MISS_WORD.search(ln):
+            if any(name == n for n, _ln, _b in sections):
+                stray.append((i, raw.strip()))
+                cur = None
                 continue
-            # 后置形只认「未取到：X」与「未取到X」两种——**逗号不算分隔符**：
-            # 「分品类收入未取到，本期无定期报告」里逗号后面是原因从句，不是名目；
-            # 把逗号当分隔符会把整句原因抓成名目，于是好样被判「第六节多列一项」。
-            for m in re.finditer(r"(?:未取到|未检索到|没取到|没检索到)[：:\s]*([^\s，。；、：:｜\[\]（）()「」【】\n]{3,24})", ln):
-                tok = m.group(1)
-                if tok not in STOP_TOK:
-                    out.append((tok, off))
-            for m in re.finditer(r"([^\s，。；、：:｜\[\]（）()「」【】\n]{3,24}?)(?:未取到|未检索到|没取到|没检索到)", ln):
-                tok = m.group(1)
-                if tok not in STOP_TOK:
-                    out.append((tok, off))
-        return out
-
-    body_seg = [(i, lines[i]) for n, (a, b) in bounds.items() if n != 6 for i in range(a + 1, b)]
-    sec6_seg = [(i, lines[i]) for i in range(bounds[6][0] + 1, bounds[6][1])] if 6 in bounds else []
-    body_toks = [tok for tok, _ in miss_tokens(body_seg)]
-    sec6_toks = [tok for tok, _ in miss_tokens(sec6_seg)]
-    for tok, no in miss_tokens(body_seg):
-        if not refs(tok, sec6_toks):
-            add("E-COVERAGE", "未取到点名", no + 1,
-                f"第六节的点名缺一项：正文写了「{tok}」未取到，第六节没有同指的名目"
-                "（规格：没列就是没说——逐条点名按名目同指对，不认整节出现过一个「未取到」）")
-    for tok, no in miss_tokens(sec6_seg):
-        if not refs(tok, body_toks):
-            add("E-COVERAGE", "未取到点名", no + 1,
-                f"第六节多列一项：「{tok}」在第六节点名为未取到，正文没有同指的这条表述"
-                "（规格：反向同判——多列与少列都不许）")
-    return issues, lines
+            cur = (name, i, [])
+            sections.append(cur)
+            continue
+        if not seen_h2:
+            header.append((i, raw))
+        elif cur is not None:
+            cur[2].append((i, raw))
+    return header, sections, stray
 
 
-def run_one(path: Path, quiet=False):
-    issues, lines = scan(path)
-    codes = sorted({c for c, _, _, _ in issues})
-    if not quiet:
-        for code, lane, no, msg in issues:
-            print(f"  [{code}] [{lane}] 第 {no} 行：{msg}")
-    counts = {}
-    for code, _, _, _ in issues:
-        counts[code] = counts.get(code, 0) + 1
-    if issues:
-        print(f'FAIL: {path.name}（{len(issues)} 条）')
-        print('       ' + '；'.join(f'{CODES[c]} {n} 条' for c, n in sorted(counts.items())))
-        print('       码表: ' + '；'.join(f'{c}={CODES[c]}' for c in codes))
-        return 1, len(issues), counts
-    print('PASS: ' + path.name + '（七节齐、自标在位、财报状态为未出、每条发现带可回锚、'
-          '来源行齐 URL 与检索日、判断词零命中、未取到逐条点名）')
-    print(f'       扫过 {len(lines)} 行，发条 0 条；判定与阈值全集以本脚本现值为准（--help 看五道说明）')
-    return 0, 0, {}
+def _is_finding_line(s):
+    return s.startswith("- ") or s == "-"
+
+
+def _check_redline(lineno, line, add):
+    for clause in _clauses(line):
+        if "[待人工]" in clause:
+            continue
+        hit = [w for w in HARD_BAN if w in clause]
+        for pw in PRICE_WORDS:
+            for idx in [m.start() for m in re.finditer(pw, clause)]:
+                window = clause[idx: idx + len(pw) + 10]
+                if any(w in window for w in PRED_WORDS):
+                    hit.append("%s+%s" % (pw, next(w for w in PRED_WORDS if w in window)))
+        m = re.search(r"(%s)[^，。；｜]{0,8}(%s)" % ("|".join(RATING_VERB), "|".join(RATING_WORD)), clause)
+        if m:
+            hit.append(m.group(0))
+        if hit:
+            add("ER-REDLINE", lineno, "红线词：%s（%s）" % ("、".join(sorted(set(hit))), clause.strip()[:40]))
+            return
+
+
+def _check_selfcalc(lineno, line, add, kind="行"):
+    toks = PCT.findall(line)
+    if not toks:
+        return
+    quotes = "".join(m.group(1) for m in QUOTE.finditer(line))
+    missing = [t for t in toks if _norm_pct(t) not in quotes.replace(" ", "")]
+    if not missing:
+        return
+    if "〔自算〕" in line:
+        # 分子／分母的 [S#] 必须挂在自己那个数上：不许跨过 ｜、引号或锚的收尾去借下一处来源
+        mol = re.search(r"分子[^｜|〕」；。]*\[S\d+\]", line)
+        den = re.search(r"分母[^｜|〕」；。]*\[S\d+\]", line)
+        if mol and den:
+            return
+        why = []
+        if not mol:
+            why.append("缺分子来源")
+        if not den:
+            why.append("缺分母来源")
+        add("ER-NOSELF", lineno, "自算未交代%s：%s" % ("／".join(why), "、".join(missing)))
+        return
+    add("ER-NOSELF", lineno, "比率 %s 在原句里找不到，也没标〔自算〕：%s"
+        % ("、".join(missing), line.strip()[:40]))
+
+
+def _check_table_row(lineno, s, add):
+    if not (s.startswith("|") and s.endswith("|")):
+        add("ER-FORM", lineno, "关键数字表里出现非表格行：%s" % s.strip()[:40])
+        return
+    cells = [c.strip() for c in s.strip().strip("|").split("|")]
+    if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+        return
+    body = s
+    if "「" not in body or "」" not in body:
+        add("ER-ANCHOR", lineno, "关键数字表数据行缺「」原句：%s" % s.strip()[:40])
+    if not ANCHOR_REF.search(body):
+        add("ER-ANCHOR", lineno, "关键数字表数据行缺 [S#]：%s" % s.strip()[:40])
+    _check_selfcalc(lineno, body, add, kind="表行")
+
+
+def check_text(text):
+    findings = []
+    stats = {"finding_lines": 0, "sources": 0, "ratios": 0}
+
+    def add(code, lineno, msg):
+        findings.append((code, lineno, msg))
+
+    header, sections, stray = split_doc(text)
+
+    # ---- 道一 头部
+    htext = "\n".join(s for _i, s in header)
+    for mark in MARK_TEXTS:
+        if mark not in htext:
+            add("ER-FORM", 1, "头部缺自标「%s」" % mark)
+    if not any(SUBJECT.match(s) for _i, s in header):
+        add("ER-FORM", 1, "头部缺 `主体：` 行")
+    if not any(ASOF.match(s) for _i, s in header):
+        add("ER-FORM", 1, "头部缺 `截至日：YYYY-MM-DD` 行或日期不合形")
+
+    # ---- 道一 节齐与序
+    names = [n for n, _l, _b in sections]
+    for name in SECTIONS:
+        if name not in names:
+            add("ER-FORM", 1, "缺节「%s」" % name)
+    pos = [SECTIONS.index(n) for n in names]
+    if pos != sorted(pos):
+        add("ER-FORM", 1, "节序不对：现序 %s，应序 %s" % ("／".join(names), "／".join(SECTIONS)))
+    for lineno, raw in stray:
+        add("ER-FORM", lineno, "不认识的节标题或多出同名节：%s" % raw)
+
+    # ---- 正文引用收集
+    referenced = []
+
+    for name, hline, body in sections:
+        if name in CONTENT_SECTIONS:
+            n_find = 0
+            for lineno, s in body:
+                if not s.strip() or s.lstrip().startswith("###"):
+                    continue
+                if not _is_finding_line(s):
+                    add("ER-FORM", lineno, "四节内只许 `- ` 发现行：%s" % s.strip()[:40])
+                    continue
+                n_find += 1
+                stats["finding_lines"] += 1
+                referenced.extend(ANCHOR_REF.findall(s))
+                if not TRIPLE.search(s):
+                    if "未取到" in s or "【未取到】" in s:
+                        pass  # 缺料行本来就无原句可挂；道二只要求它挂 [S#] 指向查过的那一处
+                    elif "[待人工]" in s:
+                        pass  # 判断位待人工，无原句可挂
+                    elif "〔自算〕" in s:
+                        pass  # 自算值本来就没有原句；分子／分母各自挂源另在下面统一验
+                    else:
+                        add("ER-ANCHOR", lineno, "发现行缺「」原句 + 〔锚：…〕 + [S#] 三元组：%s"
+                            % s.strip()[:40])
+                else:
+                    for m in TRIPLE.finditer(s):
+                        if not m.group("q").strip():
+                            add("ER-ANCHOR", lineno, "原句为空")
+                        if not m.group("a").strip():
+                            add("ER-ANCHOR", lineno, "锚为空")
+                    if not re.search(r"\[S\d+\]\s*$", s.strip()):
+                        add("ER-ANCHOR", lineno, "发现行未以 [S#] 收尾（三元组须在行末）")
+                if "〔自算〕" in s:
+                    # 自算行无论挂不挂原句，分子与分母都必须各自挂源，不许借同一处
+                    if not (re.search(r"分子[^｜|〕」；。]*\[S\d+\]", s)
+                            and re.search(r"分母[^｜|〕」；。]*\[S\d+\]", s)):
+                        add("ER-ANCHOR", lineno, "自算行未分别给出分子与分母的 [S#]：%s"
+                            % s.strip()[:40])
+                _check_redline(lineno, s, add)
+                if PCT.findall(s) or any(k in s for k in RATIO_KW):
+                    stats["ratios"] += 1
+                _check_selfcalc(lineno, s, add)
+            if n_find == 0:
+                add("ER-FORM", hline, "节「%s」没有一条发现行（空节）" % name)
+
+        elif name == TABLE_SECTION:
+            rows = 0
+            header_row = None
+            for lineno, s in body:
+                if not s.strip():
+                    continue
+                if s.lstrip().startswith("###"):
+                    continue
+                if not s.lstrip().startswith("|"):
+                    add("ER-FORM", lineno, "关键数字表里出现非表格行：%s" % s.strip()[:40])
+                    continue
+                s = s.strip()
+                if header_row is None:
+                    header_row = (lineno, s)
+                    continue
+                _check_table_row(lineno, s, add)
+                cells = [c.strip() for c in s.strip("|").split("|")]
+                if all(re.fullmatch(r":?-{2,}:?", c) for c in cells if c):
+                    continue
+                rows += 1
+                referenced.extend(ANCHOR_REF.findall(s))
+            if header_row is None:
+                add("ER-FORM", hline, "关键数字表缺表头行")
+            else:
+                for col in ("原句", "锚", "来源"):
+                    if col not in header_row[1]:
+                        add("ER-FORM", header_row[0], "关键数字表表头缺列「%s」" % col)
+            if rows == 0:
+                add("ER-FORM", hline, "关键数字表没有数据行")
+
+        elif name == SOURCE_SECTION:
+            for lineno, s in body:
+                if not s.strip():
+                    continue
+                if not s.lstrip().startswith("- ["):
+                    add("ER-FORM", lineno, "来源节只许 `- [S#] …` 行：%s" % s.strip()[:40])
+                    continue
+                m = SOURCE_LINE.match(s.strip())
+                if not m:
+                    add("ER-ANCHOR", lineno, "来源行缺 URL 或检索日 YYYY-MM-DD：%s" % s.strip()[:50])
+                    continue
+                stats["sources"] += 1
+
+    # ---- 道二 引用与登记一一对应
+    defined = set()
+    for name, _hline, body in sections:
+        if name != SOURCE_SECTION:
+            continue
+        for _lineno, s in body:
+            m = SOURCE_LINE.match(s.strip())
+            if m:
+                defined.add(m.group("s"))
+    for ref in sorted(set(referenced)):
+        if ref not in defined:
+            add("ER-ANCHOR", 1, "正文引用 [%s]，来源节没有对应登记行" % ref)
+
+    # ---- 道五 边界
+    body_lines = [(ln, s) for name, _h, body in sections
+                  if name != SOURCE_SECTION for ln, s in body]
+    for words, tip in SCOPE_RULES:
+        for ln, s in body_lines:
+            if any(w in s for w in words):
+                add("ER-SCOPE", ln, "越界：%s" % tip)
+                break
+
+    findings.sort(key=lambda x: (x[1], CODES.index(x[0])))
+    return findings, stats
+
+
+def report(path, findings, stats):
+    print("稿：%s" % path)
+    print("统计：发现行 %d ｜ 来源 %d ｜ 涉比率行 %d"
+          % (stats["finding_lines"], stats["sources"], stats["ratios"]))
+    if not findings:
+        print("结论：五道全过（零发条）")
+        return
+    print("结论：发条 %d" % len(findings))
+    for code, lineno, msg in findings:
+        print("  %s L%-4d %s" % (code, lineno, msg))
+    hit = sorted(set(c for c, _l, _m in findings))
+    print("发条码：%s" % "、".join(hit))
+
+
+GOOD = r"""# 示例科技（600000.SH）个股深度研究初稿
+
+AI 整理初稿 ｜ 请回原文核对 ｜ 不构成投资建议 ｜ 判断位 [待人工]
+主体：示例科技（600000.SH）
+截至日：2026-11-09
+
+## 业务拆解
+
+- 收入按产品线分为数控机床与功能部件两块，数控机床是主要来源「公司主营业务收入主要来自数控机床及功能部件两大板块」〔锚：2025 年年报·第 46 页·营业收入构成表〕[S1]
+- 数控机床 2025 年实现营业收入 42.6 亿元，占主营业务收入 68.30%「数控机床产品实现营业收入 426,000.00 万元，占主营业务收入的 68.30%」〔锚：2025 年年报·第 46 页·营业收入构成表〕[S1]
+- 功能部件 2025 年实现营业收入 19.8 亿元「功能部件业务实现营业收入 198,000.00 万元」〔锚：2025 年年报·第 46 页·营业收入构成表〕[S1]
+- 机床业务收入约为功能部件的 2.15 倍〔自算〕分子＝数控机床 426,000.00 万元 [S1]｜分母＝功能部件 198,000.00 万元 [S1]
+
+## 竞争位
+
+- 国内数控机床行业 2025 年前五名企业合计市场份额为 31.20%「2025 年国内数控机床行业前五名企业合计市场份额为 31.20%」〔锚：行业研究·第 3 节·竞争格局〕[S2]
+- 已披露的同行业可比公司名单见招股说明书「同行业可比公司包括华中数控、海天精工等」〔锚：招股说明书·第 88 页·同行业可比公司〕[S3]
+- 未取到 公司在细分型号上的份额：行业资料只给前五名合计，未按型号拆分 [S2]
+
+## 驱动因子
+
+- 驱动变量为募投项目产能释放，投产进度直接影响 2027 年收入上限「募投项目预计于 2027 年三季度达到预定可使用状态」〔锚：2026-06-30 募集资金存放与使用情况公告·第二节〕[S4]
+- 可观测指标为在建工程转固金额，可在定期报告里逐期取得「在建工程本期转入固定资产 12,300.00 万元」〔锚：2026 年半年度报告·第 31 页·在建工程〕[S5]
+
+## 风险清单
+
+- 风险为原材料价格上行，触发条件为原材料价格出现大幅上涨「若原材料价格出现大幅上涨，公司毛利率存在下降风险」〔锚：2025 年年报·第 22 页·风险因素〕[S1]
+- 已披露的应对为集中采购与长期协议锁价「公司通过集中采购与长期协议锁定部分原材料成本」〔锚：2025 年年报·第 22 页·风险因素〕[S1]
+- 未取到 客户集中度的具体数值：公告未披露前五大客户占比 [S1]
+
+## 关键数字表
+
+| 指标 | 数值 | 口径与期间 | 原句 | 锚 | 来源 |
+|---|---|---|---|---|---|
+| 数控机床收入 | 42.6 亿元 | 2025 年度·合并口径 | 「数控机床产品实现营业收入 426,000.00 万元」 | 2025 年年报·第 46 页 | [S1] |
+| 数控机床收入占比 | 68.30% | 2025 年度·占主营业务收入 | 「占主营业务收入的 68.30%」 | 2025 年年报·第 46 页 | [S1] |
+| 前五名企业合计份额 | 31.20% | 2025 年度·行业口径 | 「前五名企业合计市场份额为 31.20%」 | 行业研究·第 3 节 | [S2] |
+
+## 来源
+
+- [S1] 示例科技 2025 年年度报告 | https://example.com/ann/S1 | 检索日 2026-11-09 | 类型：公告
+- [S2] 数控机床行业竞争格局研究 | https://example.com/res/S2 | 检索日 2026-11-09 | 类型：研报
+- [S3] 示例科技首次公开发行招股说明书 | https://example.com/ann/S3 | 检索日 2026-11-09 | 类型：公告
+- [S4] 示例科技 2026 年半年度募集资金存放与实际使用情况专项报告 | https://example.com/ann/S4 | 检索日 2026-11-09 | 类型：公告
+- [S5] 示例科技 2026 年半年度报告 | https://example.com/ann/S5 | 检索日 2026-11-09 | 类型：公告
+"""
+
+# ---- 各坏样：只发自己那道码
+BAD_FORM = GOOD.replace("## 驱动因子", "## 驱动因素")
+BAD_EMPTY = GOOD.replace(
+    "- 风险为原材料价格上行，触发条件为原材料价格出现大幅上涨「若原材料价格出现大幅上涨，公司毛利率存在下降风险」〔锚：2025 年年报·第 22 页·风险因素〕[S1]\n"
+    "- 已披露的应对为集中采购与长期协议锁价「公司通过集中采购与长期协议锁定部分原材料成本」〔锚：2025 年年报·第 22 页·风险因素〕[S1]\n"
+    "- 未取到 客户集中度的具体数值：公告未披露前五大客户占比 [S1]\n", "")
+BAD_ANCHOR = GOOD.replace(
+    "「募投项目预计于 2027 年三季度达到预定可使用状态」〔锚：2026-06-30 募集资金存放与使用情况公告·第二节〕[S4]",
+    "募投项目预计于 2027 年三季度达到预定可使用状态 [S4]")
+BAD_REDLINE = GOOD.replace(
+    "- 已披露的应对为集中采购与长期协议锁价",
+    "- 我们给予公司买入评级，目标价 58 元；已披露的应对为集中采购与长期协议锁价")
+BAD_NOSELF = GOOD.replace(
+    "| 数控机床收入占比 | 68.30% |", "| 数控机床收入占比 | 71.50% |")
+BAD_SCOPE = GOOD.replace(
+    "- 可观测指标为在建工程转固金额",
+    "- 本稿同时覆盖已出财报的四期差异与科目勾稽；可观测指标为在建工程转固金额")
+
+# ---- 反证样：不该发的必须不发
+OK_SELF_DECLARED = GOOD.replace(
+    "| 数控机床收入占比 | 68.30% |",
+    "| 机床与功能部件收入之比 | 2.15 倍 |")
+OK_HUMAN = GOOD.replace(
+    "- 未取到 客户集中度的具体数值：公告未披露前五大客户占比 [S1]",
+    "- 未取到 客户集中度的具体数值：公告未披露前五大客户占比 [S1]\n"
+    "- 公司是否属于行业龙头，交由人工判断 [待人工]")
+
+BAD_HUMAN_HALF = GOOD.replace(
+    "- 未取到 客户集中度的具体数值：公告未披露前五大客户占比 [S1]",
+    "- 未取到 客户集中度的具体数值 [待人工]，建议买入 [S1]")
+
+# 自算行里分母跨过引号去借下一处来源的锚——分母没自己的出处
+BAD_SELF_BORROW = GOOD.replace(
+    "- 机床业务收入约为功能部件的 2.15 倍〔自算〕分子＝数控机床 426,000.00 万元 [S1]｜分母＝功能部件 198,000.00 万元 [S1]",
+    "- 机床业务收入约为功能部件的 2.15 倍〔自算〕分子＝数控机床 426,000.00 万元 [S1]｜分母＝功能部件 198,000.00 万元"
+    "「功能部件业务实现营业收入 198,000.00 万元」〔锚：2025 年年报·第 46 页〕[S1]")
+
+
+def _codes(text):
+    findings, _stats = check_text(text)
+    return findings, set(c for c, _l, _m in findings)
 
 
 def selftest():
-    fx = Path(__file__).resolve().parent / 'fixtures'
-    cases = [('good-note.md', 0, None),
-             ('bad-no-anchor.md', 1, 'E-ANCHOR'),
-             ('bad-missing-section.md', 1, 'E-FORMAT'),
-             ('bad-rating-word.md', 1, 'E-BANWORD'),
-             ('bad-gap-unlisted.md', 1, 'E-COVERAGE'),
-             ('bad-earnings-period.md', 1, 'E-SCOPE'),
-             ('bad-empty-section.md', 1, 'E-FORMAT')]
+    cases = (
+        ("好样应零发条", GOOD, set()),
+        ("形制：节标题写错（驱动因素）", BAD_FORM, {"ER-FORM"}),
+        ("形制：风险清单空节", BAD_EMPTY, {"ER-FORM"}),
+        ("锚：发现行没挂原句与锚", BAD_ANCHOR, {"ER-ANCHOR"}),
+        ("红线：买入评级＋目标价", BAD_REDLINE, {"ER-REDLINE"}),
+        ("自算：表内比率原句里找不到", BAD_NOSELF, {"ER-NOSELF"}),
+        ("边界：写成已出财报的四期差异", BAD_SCOPE, {"ER-SCOPE"}),
+        ("反证：非百分数自算未标〔自算〕→ 不发", OK_SELF_DECLARED, set()),
+        ("反证：[待人工] 整句成立 → 不发", OK_HUMAN, set()),
+        ("反证：[待人工] 只豁免自己那句，后半句照样发", BAD_HUMAN_HALF, {"ER-REDLINE"}),
+        ("自算：分母跨过引号借下一处锚", BAD_SELF_BORROW, {"ER-ANCHOR"}),
+    )
     bad = 0
-    gt = (fx / 'good-note.md').read_text(encoding='utf-8')
-    body_gap_line = '- 分品类收入未取到，本期无定期报告 [S1]'
-    sec6_line = '- 未取到：分品类收入（本期无定期报告，只有 2025 年报口径）'
-    assert gt.count(body_gap_line) == 1 and gt.count(sec6_line) == 1, '夹具形制变了，反证档要跟着改'
-    probes = []
-    # 阈值三形钉死：字面全等与同指异词都算点到，真无关才算多列
-    p0a = gt.replace(sec6_line, '- 未取到：分品类收入（本期无定期报告）')
-    probes.append(('钉阈·字面全等（两侧都写「分品类收入」）不得报多列', p0a, '第六节多列一项', False))
-    p0b = gt.replace(sec6_line, '- 未取到：分品类收入数据（本期无定期报告）')
-    probes.append(('钉阈·同指异词（正文「分品类收入」∥第六节「分品类收入数据」）不得报多列', p0b, '第六节多列一项', False))
-    p0c = gt.replace(sec6_line, '- 未取到：质押股份比例')
-    probes.append(('钉阈·真无关（第六节只列「质押股份比例」）必须报多列', p0c, '第六节多列一项', True))
-    p1 = gt.replace(body_gap_line, body_gap_line + '\n- 境外子公司担保余额未取到 [S2]')
-    probes.append(('反证·正文多写一条未取到而第六节不列｜独有句「第六节的点名缺一项」', p1, '第六节的点名缺一项', True))
-    p2 = gt.replace(sec6_line, sec6_line + '；质押股份比例未取到')
-    probes.append(('反证·第六节多列一条而正文无｜独有句「第六节多列一项」', p2, '第六节多列一项', True))
-    p3 = gt.replace('\n' + body_gap_line, '').replace(
-        sec6_line, '- 口径：产能数字为公司公告口径的名义产能，非实际产量')
-    probes.append(('反证·两处都无这一项时本支不发｜独有句反向断言', p3, '第六节的点名缺一项', False))
-    probes.append(('反证·两处都有时本支不发（好样原样）', gt, '第六节多列一项', False))
-    for name, txt, needle, want in probes:
-        assert txt != gt or not want, '注入自证：反证档必须真改过文本（除好样档）'
-        pf = _probe_copy(txt)
-        iss_p, _ls_p = scan(pf)
-        detail_p = "\n".join(f'[{c}] 第 {no} 行：{msg}' for c, lane, no, msg in iss_p)
-        rc_p = 1 if iss_p else 0
-        hit = needle in detail_p
-        okp = (hit if want else not hit)
-        print(f"  {'ok  ' if okp else 'FAIL'} {name}｜实发{'含' if hit else '不含'}独有句、退码 {rc_p}")
-        if not okp:
+    for label, text, want in cases:
+        findings, got = _codes(text)
+        if got == want:
+            print("过   %s（发条 %d 条：%s）" % (label, len(findings),
+                                                "、".join(sorted(got)) or "无"))
+        else:
             bad += 1
-    root = Path(tempfile.gettempdir())
-    for d in TMP_ROOTS:
-        shutil.rmtree(d, ignore_errors=True)
-    leftover = sorted(q.name for q in root.iterdir() if q.name.startswith('check-equity-note-')) if root.is_dir() else []
-    print(f"  {'ok  ' if not leftover else 'FAIL'} 临时根自清（跑后不增）｜本次建 {len(TMP_ROOTS)} 枚·跑后残留 {len(leftover)} 枚")
-    if leftover:
-        bad += 1
-    for name, want_rc, want_code in cases:
-        p = fx / name
-        if not p.is_file():
-            print(f'  selftest 取值域故障：夹具不在场 {name}')
-            return 3
-        import io
-        import contextlib
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            rc, n, counts = run_one(p, quiet=True)
-        detail = buf.getvalue()
-        if rc != want_rc:
-            print(f'  不合 {name}：期望退码 {want_rc}，实发 {rc}')
-            bad += 1
-            continue
-        if want_code and want_code not in detail:
-            print(f'  不合 {name}：期望发码 {want_code}，实发详行不含它')
-            bad += 1
-            continue
-        if want_code is None and rc == 0:
-            print(f'  ok   {name}（退码 {rc}·发条 {n}）')
-        elif want_code:
-            print(f'  ok   {name}（退码 {rc}·发条 {n}·实发 {want_code}）')
-    print('selftest: ' + ('ALL GREEN（好样 1 枚·坏样六道 6/6）' if bad == 0 else f'{bad} 条不合期望'))
-    return 1 if bad else 0
+            detail = "；".join("%s L%d %s" % (c, l, m) for c, l, m in findings[:4])
+            print("不合 %s：期望 %s 实得 %s ｜ %s"
+                  % (label, sorted(want) or "无", sorted(got) or "无", detail))
+    print("——")
+    print("自测档数=%d｜不合=%d｜不可判=0" % (len(cases), bad))
+    return 0 if bad == 0 else 1
 
 
-def main():
-    ap = argparse.ArgumentParser(prog='check_note.py', add_help=False,
-                                 description='校一份未出财报期的个股研究初稿（五道，见 --help 正文）')
-    ap.add_argument('target', nargs='?')
-    ap.add_argument('--selftest', action='store_true', help='跑包内夹具（好样须过、六枚坏样须各发红）')
-    ap.add_argument('--quiet', action='store_true', help='只报末行')
-    ap.add_argument('-h', '--help', action='store_true', help='本说明')
-    a = ap.parse_args()
-    if a.help or (not a.target and not a.selftest):
-        print(__doc__)
-        return 0 if a.help else 2
-    if a.selftest:
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="个股深度研究稿五道机检（零网络）")
+    ap.add_argument("path", nargs="?", help="研究稿 .md 路径")
+    ap.add_argument("--selftest", action="store_true", help="跑包内夹具自检")
+    args = ap.parse_args(argv)
+
+    if args.selftest:
         return selftest()
-    p = Path(a.target)
-    if not p.is_file():
-        print(f'取值域故障：读不到研究稿文件 {p}（不当「零违例」读）')
+    if not args.path:
+        ap.print_help()
         return 3
-    rc, _, _ = run_one(p, quiet=a.quiet)
-    return rc
+    try:
+        with open(args.path, "r", encoding="utf-8") as fh:
+            text = fh.read()
+    except (IOError, OSError) as exc:
+        print("读不到文件：%s（%s）" % (args.path, exc))
+        return 3
+    if not text.strip():
+        print("空稿：%s" % args.path)
+        return 3
+
+    findings, stats = check_text(text)
+    report(args.path, findings, stats)
+    return 0 if not findings else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
