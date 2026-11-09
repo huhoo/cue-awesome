@@ -4,7 +4,7 @@ slug: cue-cn-equity-research-note
 displayName: "Equity Deep-Dive Note · Every Claim Sourced (个股深度研究)"
 summary: "Pre-earnings single-name study: business, competition, drivers, risks, figures."
 description: "Pre-earnings study: business, competition, drivers, risks, key figures. Every claim carries quote, anchor and [S#]; sources carry URL and date. Ratios only from quotes. No ratings, targets or forecasts. Triggers: equity research / business breakdown / competitive position / drivers / risk list"
-version: "0.1.0"
+version: "0.2.0"
 license: MIT
 tags: [equity-research, deep-dive, sourced-claims, business-breakdown, key-figures]
 ---
