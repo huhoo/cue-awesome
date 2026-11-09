@@ -140,6 +140,8 @@ UNIT_SKIP = re.compile(r"(?:每股|每份|每一元|人民币|约|为|是|即|�
                        r"高于|低于|占|比例|占比|其中|含|部分|等|的|后|前|则|并|至|以及|万股|亿股|万元|亿元|股|元|万|亿)+"
                        r"\s*$")
 COPA_REF = re.compile(r"即为|均为|都是|等于|即|为|是")
+# ⚠ COPA_REF 声明但**不接线**：本域不设共指补判（见模块 docstring ⑤）。
+# 留着是为了让「为什么没有这条分支」在代码里可查，不是漏用。
 SEG_SPLIT = re.compile(r"[，。；：！？]+|[,;](?!\s*\d)")   # 千分位逗号不断段；顿号算枚举不算归属边界
 NOUN_WASH = re.compile(r"[员委事大东议工学协商年例常布明谈论聚汇组独立]会|会[计议场话晤所馆堂员]")
 # 本域独有的预处理：`每 N 股` 里的 N 是**分母**不是值。
@@ -231,6 +233,8 @@ DISCLAIM = re.compile(r"不接|不出|不提供|不作|不判|不碰|不做|不�
 PENDING = re.compile(r"\[待人工\]")
 CLAUSE = re.compile(r"[；;。，,]")
 REF_PRICE = r"回购价格|回购价|价格上限|价格区间|每股价格|每股回购价"
+# ⚠ REF_PRICE 声明但**不接线**：回购价格是「回购价格区间与资金来源」这一格的**本格**名词，
+# 不是参照数；它出现在 REF_SH 之外是刻意的。留着备下一版做跨格互斥时用。
 
 
 # ── 基础工具 ────────────────────────────────────────────────────────────
@@ -276,8 +280,19 @@ def no_self_ref(q: str) -> bool:
 
 
 def own_field(body: str) -> str:
-    """SR-LINE 的判据域：剥掉锚，剥掉**纯引注**的书名号；非纯引注的留在域内照扫。"""
-    head = ANCHOR_SPLIT.split(body, maxsplit=1)[0]
+    """SR-LINE 的判据域：剥掉锚**值**，剥掉**纯引注**的书名号；非纯引注的留在域内照扫。
+
+    ⚠ 只剥锚值本身（`锚：公告 五` 里的「公告 五」是定位词），**锚值之后的分句照扫**。
+    早先整段 `锚：` 之后一律丢弃，于是「… 锚：公告 五；建议增持，稳赚」能整句绕过红线——
+    锚是行尾标签，不是判据域的终点。
+    """
+    parts = ANCHOR_SPLIT.split(body)
+    head = parts[0]
+    for tail in parts[1:]:
+        # 锚值＝到第一个分句分隔符为止的定位词；其后的分句是卡面自己写的话，留在域内。
+        pieces = CLAUSE.split(tail, maxsplit=1)
+        if len(pieces) > 1:
+            head += " " + pieces[1]
     out, pos = [], 0
     for m in QUOTES.finditer(head):
         out.append(head[pos:m.start()])
@@ -371,7 +386,13 @@ def value_gap(item: str, text: str):
                 [(s, "foreign", None) for s, _e in ph["foreign"]]
         for _s, kind, name in sorted(marks):
             last_noun = (kind, name)
+        # 空泛语：本短语写了「另行确定／届时公告／以实际…为准」这类，本短语的数一律不结算——
+        # 那是估计值或上限，不是公告承诺的本项数值。不结算不等于静默：进证据串。
+        vague = VAGUE.search(seg)
         for i, (cs, ce, ctext) in enumerate(cands):
+            if vague:
+                evidence.append("空泛语不结算：" + ctext + "（" + vague.group(0) + "）")
+                continue
             lo = cands[i - 1][1] if i else 0
             left = seg[lo:cs]
             if RATIO_MARK.search(left):
@@ -463,9 +484,12 @@ def check_text(text: str):
         for cl in CLAUSE.split(dom):
             if PENDING.search(cl) or DISCLAIM.search(cl):
                 continue
+            # 机构名里的「会」先按形态洗掉再判语气：董事会／股东大会／监事会／审计委员会／
+            # 薪酬与考核委员会都不该因为一个「会」字被当成判断语气（docstring 承诺的那条）。
+            tone_dom = NOUN_WASH.sub("", cl)
             for m in BANNED.finditer(cl):
                 findings.append(("SR-LINE", i + 1, "定式禁词：" + m.group(0)))
-            if name is not None and SUBJECT.search(cl) and TONE.search(cl):
+            if name is not None and SUBJECT.search(cl) and TONE.search(tone_dom):
                 findings.append(("SR-LINE", i + 1, "主题词×判断语气同段：" + cl.strip()[:40]))
             if VERDICT.search(cl) and EFFECT.search(cl):
                 findings.append(("SR-LINE", i + 1, "自裁效力层：" + cl.strip()[:40]))
